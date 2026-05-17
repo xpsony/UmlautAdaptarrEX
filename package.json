@@ -62,7 +62,7 @@
     "fast-xml-parser": "^5.7.3",
     "fastify": "^5.8.5",
     "lru-cache": "^11.3.6",
-    "lucide-react": "^1.14.0",
+    "lucide-react": "^1.16.0",
     "moviedb-promise": "^4.0.8",
     "nanoid": "^5.1.11",
     "next": "^16.2.6",
