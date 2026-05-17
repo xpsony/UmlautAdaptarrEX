@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM node:24-alpine AS base
+FROM node:26-alpine AS base
 WORKDIR /app
 RUN apk add --no-cache openssl libstdc++ su-exec \
   && npm install -g pnpm@10.33.3 \
