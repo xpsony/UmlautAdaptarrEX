@@ -213,7 +213,7 @@ describe("DELETE /api/admin/instances/prowlarr/config", () => {
 });
 
 describe("POST /api/admin/instances/prowlarr/preview", () => {
-  it("returns apps with raw apiKeys (admin route, no vault tokens)", async () => {
+  it("returns apps with vault-token apiKeys (admin route, no cleartext in response)", async () => {
     fetchAppsMock.mockResolvedValueOnce({
       ok: true,
       apps: [
@@ -243,10 +243,14 @@ describe("POST /api/admin/instances/prowlarr/preview", () => {
     });
     expect(r.statusCode).toBe(200);
     const body = r.json() as { apps: Array<{ apiKey: string }> };
-    // The admin /preview route returns raw keys (the user is already
-    // authenticated). Vault tokens are an /auth/prowlarr/preview-only thing
-    // (used during the open setup wizard).
-    expect(body.apps[0]?.apiKey).toBe("raw-sonarr-key-1234");
+    // The admin /preview route vault-tokenises downstream-app keys so a
+    // leaked browser snapshot (devtools, history, screenshots) can't
+    // exfiltrate every third-party API key the operator has configured.
+    // The import route resolves the token back at submission time.
+    const returnedKey = body.apps[0]?.apiKey ?? "";
+    expect(returnedKey.startsWith("__ua_key:")).toBe(true);
+    expect(returnedKey).not.toBe("raw-sonarr-key-1234");
+    expect(returnedKey).not.toContain("raw-sonarr-key");
   });
 
   it("uses stored creds when useStored=true", async () => {

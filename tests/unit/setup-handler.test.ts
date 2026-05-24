@@ -98,6 +98,7 @@ const validBody: SetupInput = {
 
 describe("handleSetupSubmit", () => {
   it("returns 409 when an admin user already exists", async () => {
+    mockSetting.findUnique.mockResolvedValueOnce({ setupComplete: false });
     mockAdmin.findFirst.mockResolvedValueOnce({ id: "u1" });
     const r = await app.inject({
       method: "POST",
@@ -106,6 +107,35 @@ describe("handleSetupSubmit", () => {
     });
     expect(r.statusCode).toBe(409);
     expect(r.json()).toEqual({ error: "user-already-exists" });
+  });
+
+  it("returns 409 when setupComplete=true is observed inside the submit (race re-check)", async () => {
+    mockSetting.findUnique.mockResolvedValueOnce({ setupComplete: true });
+    const r = await app.inject({
+      method: "POST",
+      url: "/setup",
+      payload: validBody,
+    });
+    expect(r.statusCode).toBe(409);
+    expect(r.json()).toEqual({ error: "setup-already-complete" });
+    expect(mockAdmin.create).not.toHaveBeenCalled();
+  });
+
+  it("translates a P2002 unique-constraint violation on adminUser.create into a clean 409", async () => {
+    mockSetting.findUnique.mockResolvedValueOnce({ setupComplete: false });
+    mockAdmin.findFirst.mockResolvedValueOnce(null);
+    mockHash.mockResolvedValueOnce("hash");
+    mockAdmin.create.mockRejectedValueOnce(
+      Object.assign(new Error("unique constraint"), { code: "P2002" }),
+    );
+    const r = await app.inject({
+      method: "POST",
+      url: "/setup",
+      payload: validBody,
+    });
+    expect(r.statusCode).toBe(409);
+    expect(r.json()).toEqual({ error: "user-already-exists" });
+    expect(mockSetting.upsert).not.toHaveBeenCalled();
   });
 
   it("returns 422 when a non-DE plugin is enabled without a TMDB key", async () => {
@@ -251,6 +281,9 @@ describe("handleSetupSubmit", () => {
     mockHash.mockResolvedValueOnce("hash");
     mockAdmin.create.mockResolvedValueOnce({ id: "u1", username: "admin" });
     mockSetting.upsert.mockResolvedValueOnce({});
+    // First findUnique is the BUG-005 race re-check (setupComplete still
+    // false), second is the prowlarr-creds lookup inside the proxy install.
+    mockSetting.findUnique.mockResolvedValueOnce({ setupComplete: false });
     mockSetting.findUnique.mockResolvedValueOnce({
       prowlarrHost: "http://prowlarr",
       prowlarrApiKey: "k",
@@ -281,6 +314,8 @@ describe("handleSetupSubmit", () => {
     mockHash.mockResolvedValueOnce("hash");
     mockAdmin.create.mockResolvedValueOnce({ id: "u1", username: "admin" });
     mockSetting.upsert.mockResolvedValueOnce({});
+    // First call = BUG-005 race re-check, second call = prowlarr-creds lookup.
+    mockSetting.findUnique.mockResolvedValueOnce({ setupComplete: false });
     mockSetting.findUnique.mockResolvedValueOnce(null);
     mockCreateSession.mockResolvedValueOnce({
       id: "s1",

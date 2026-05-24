@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isMaskedSecret } from "@/lib/secrets";
 
 // Controls which components are active:
 //   "proxy"  -> only the HTTP proxy on 5006; legacy routes on 5005 reply
@@ -10,12 +11,17 @@ export const OperationModeSchema = z.enum(["proxy", "legacy", "both"]);
 export type OperationMode = z.infer<typeof OperationModeSchema>;
 
 // Empty form input maps to `null` so leaving the field blank disables the
-// TMDB provider on the next `reloadSettings`.
+// TMDB provider on the next `reloadSettings`. Masked echoes (the bullet
+// string the GET returns to indicate "secret is stored") map to `undefined`
+// so a round-trip save leaves the stored secret intact.
 const optionalSecret = z
-  .preprocess(
-    (v) => (typeof v === "string" && v.trim() === "" ? null : v),
-    z.string().min(1).max(256).nullable(),
-  )
+  .preprocess((v) => {
+    if (typeof v !== "string") return v;
+    const trimmed = v.trim();
+    if (trimmed === "") return null;
+    if (isMaskedSecret(trimmed)) return undefined;
+    return v;
+  }, z.string().min(1).max(256).nullable())
   .optional();
 
 // Empty password keeps the stored value (the UI shows the current one in

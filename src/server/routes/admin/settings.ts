@@ -11,6 +11,7 @@ import { probeTvdbKey } from "@/providers/tvdb";
 import { requiredLanguages } from "@/providers";
 import type { ProviderId } from "@/schemas/instance";
 import { pickMissingCandidates } from "@/server/title-cache/recheck";
+import { isMaskedSecret, maskSecret } from "@/lib/secrets";
 import { parseOrReply } from "./_helpers";
 
 const TmdbTestSchema = z.object({
@@ -60,9 +61,21 @@ async function getSettings(): Promise<unknown> {
     },
   });
   if (!setting) return null;
-  const { prowlarrApiKey, ...rest } = setting;
+  const { prowlarrApiKey, tmdbApiKey, tvdbApiKey, tvdbPin, ...rest } = setting;
+  // Third-party API keys/PINs are stored secrets the operator already
+  // entered — masking them stops a leaked admin session (or browser
+  // devtools snapshot) from exfiltrating the cleartext value. The settings
+  // schema treats `••••••••` as "leave alone" so a round-trip save keeps
+  // the stored secret. `appApiKey` and `proxyPassword` stay in cleartext
+  // because the operator must actively copy them into Sonarr/Prowlarr.
   return {
     ...rest,
+    tmdbApiKey: maskSecret(tmdbApiKey),
+    tvdbApiKey: maskSecret(tvdbApiKey),
+    tvdbPin: maskSecret(tvdbPin),
+    tmdbConfigured: !!tmdbApiKey,
+    tvdbConfigured: !!tvdbApiKey,
+    tvdbPinConfigured: !!tvdbPin,
     prowlarrConfigured: !!(setting.prowlarrHost && prowlarrApiKey),
   };
 }
@@ -100,14 +113,25 @@ async function putSettings(
       "operationMode changed — restart required to switch port 5006 listener",
     );
   }
-  // Strip server-side secrets before returning to the UI.
+  // Strip server-side secrets before returning to the UI. Third-party keys
+  // come back masked, identical to GET — see getSettings() for the
+  // rationale and the schema preprocess that round-trips the mask.
   const {
     prowlarrApiKey,
+    tmdbApiKey,
+    tvdbApiKey,
+    tvdbPin,
     csrfSecret: _csrf,
     ...rest
   } = updated as typeof updated & { csrfSecret?: string | null };
   return {
     ...rest,
+    tmdbApiKey: maskSecret(tmdbApiKey),
+    tvdbApiKey: maskSecret(tvdbApiKey),
+    tvdbPin: maskSecret(tvdbPin),
+    tmdbConfigured: !!tmdbApiKey,
+    tvdbConfigured: !!tvdbApiKey,
+    tvdbPinConfigured: !!tvdbPin,
     prowlarrConfigured: !!(updated.prowlarrHost && prowlarrApiKey),
   };
 }
@@ -118,7 +142,10 @@ async function postTestTmdbKey(
 ): Promise<unknown> {
   const data = parseOrReply(req.body ?? {}, TmdbTestSchema, reply);
   if (!data) return;
-  let key = data.apiKey?.trim() ?? "";
+  const raw = data.apiKey?.trim() ?? "";
+  // Masked echo from the UI means "test the stored key". Treating it as
+  // literal would send `••••••••` to TMDB.
+  let key = raw && !isMaskedSecret(raw) ? raw : "";
   if (!key) {
     const stored = await prisma.setting.findUnique({
       where: { id: 1 },
@@ -135,14 +162,16 @@ async function postTestTvdbKey(
 ): Promise<unknown> {
   const data = parseOrReply(req.body ?? {}, TvdbTestSchema, reply);
   if (!data) return;
-  let key = data.apiKey?.trim() ?? "";
-  let pin = data.pin?.trim() ?? "";
-  if (!key) {
+  const rawKey = data.apiKey?.trim() ?? "";
+  const rawPin = data.pin?.trim() ?? "";
+  let key = rawKey && !isMaskedSecret(rawKey) ? rawKey : "";
+  let pin = rawPin && !isMaskedSecret(rawPin) ? rawPin : "";
+  if (!key || !pin) {
     const stored = await prisma.setting.findUnique({
       where: { id: 1 },
       select: { tvdbApiKey: true, tvdbPin: true },
     });
-    key = stored?.tvdbApiKey?.trim() ?? "";
+    if (!key) key = stored?.tvdbApiKey?.trim() ?? "";
     if (!pin) pin = stored?.tvdbPin?.trim() ?? "";
   }
   return probeTvdbKey(key, pin || null);

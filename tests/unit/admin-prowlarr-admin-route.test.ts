@@ -225,6 +225,37 @@ describe("POST /api/admin/instances/prowlarr/preview", () => {
     });
     expect(r.statusCode).toBe(409);
   });
+
+  it("replaces downstream-app api keys with vault tokens (no cleartext leak)", async () => {
+    mockSetting.findUnique.mockResolvedValueOnce({
+      prowlarrHost: "http://prowlarr",
+      prowlarrApiKey: "k",
+    });
+    mockFetchApps.mockResolvedValueOnce({
+      ok: true,
+      apps: [
+        { name: "Sonarr", apiKey: "real-sonarr-secret-1234" },
+        { name: "Radarr", apiKey: "real-radarr-secret-5678" },
+        { name: "NoKey" },
+      ],
+      skipped: [],
+    });
+    mockSetting.upsert.mockResolvedValueOnce({});
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/admin/instances/prowlarr/preview",
+      payload: { useStored: true },
+    });
+    expect(r.statusCode).toBe(200);
+    const body = r.json() as { apps: Array<{ name: string; apiKey?: string }> };
+    const sonarr = body.apps.find((a) => a.name === "Sonarr");
+    const radarr = body.apps.find((a) => a.name === "Radarr");
+    const noKey = body.apps.find((a) => a.name === "NoKey");
+    expect(sonarr?.apiKey).toMatch(/^__ua_key:/);
+    expect(sonarr?.apiKey).not.toBe("real-sonarr-secret-1234");
+    expect(radarr?.apiKey).toMatch(/^__ua_key:/);
+    expect(noKey?.apiKey).toBeUndefined();
+  });
 });
 
 describe("POST /api/admin/instances/prowlarr/import", () => {

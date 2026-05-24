@@ -18,6 +18,8 @@ import {
   PROWLARR_PROXY_TAG_LABEL,
 } from "@/arr/prowlarr";
 import { testConnection } from "@/arr/test-connection";
+import { urlIsPrivate } from "@/server/security/ssrf";
+import { isLoopbackRequest } from "@/server/routes/legacy/util";
 import { getAppState } from "@/server/state";
 import { BUILTIN_PLUGINS } from "@/domain/plugins";
 import type { PluginListEntry } from "@/schemas/plugins";
@@ -127,7 +129,15 @@ async function postProwlarrPreview(
     return replyProwlarrUpstreamError(reply, result, "fetch_failed");
   }
   // Persist creds for later reuse; setupComplete stays false until the
-  // setup form is submitted.
+  // setup form is submitted. Re-check the gate here: between
+  // gateSetupOpen() and now (long-running upstream HTTP call) another
+  // request could have completed setup. Without this guard we would
+  // overwrite the freshly-persisted prowlarr creds with whatever this
+  // wizard call carries.
+  const latest = await loadSetting();
+  if (latest?.setupComplete) {
+    return reply.code(409).send({ error: "setup-already-complete" });
+  }
   await persistProwlarrCreds(creds.host, creds.apiKey, "");
   // Replace each downstream-app's real API key with an opaque token from
   // the in-memory vault. The wire response no longer carries the keys,
@@ -267,6 +277,24 @@ async function postInstancesTest(
   if (gate.gated) return;
   const data = parseOrReply(req.body, TestConnectionSchema, reply);
   if (!data) return;
+  // Pre-setup SSRF hardening: while there's no admin user yet anyone on
+  // the network can hit this endpoint and use it as an internal-host
+  // probe. We still allow loopback callers (the operator setting up from
+  // the same machine, which is the canonical deployment shape) but
+  // refuse private/LAN targets when the caller comes from elsewhere.
+  const fromLoopback = isLoopbackRequest(req);
+  if (!fromLoopback && urlIsPrivate(data.host)) {
+    req.log.warn(
+      { host: data.host, ip: req.ip },
+      "setup: pre-setup test refused — non-loopback caller probing a private host",
+    );
+    return reply.code(403).send({
+      ok: false,
+      code: "private_host_blocked",
+      error:
+        "During setup, private/LAN targets are only allowed from a loopback caller. Run setup from the same host, or finish setup first and toggle the SSRF setting.",
+    });
+  }
   const ua = getAppState().settings.userAgent;
   return testConnection(data.type, data.host, data.apiKey, ua, req.log);
 }

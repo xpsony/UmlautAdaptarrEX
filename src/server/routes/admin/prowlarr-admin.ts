@@ -21,6 +21,11 @@ import {
   persistProwlarrCreds,
   replyProwlarrUpstreamError,
 } from "@/server/prowlarr-helpers";
+import {
+  isVaultToken,
+  resolveVaultToken,
+  storeApiKey,
+} from "@/server/prowlarr-key-vault";
 import { parseOrReply } from "./_helpers";
 import { arrayToCsv } from "./instances-crud";
 import { describeError } from "@/lib/error-format";
@@ -137,16 +142,35 @@ async function postProwlarrPreview(
     creds.apiKey,
     getAppState().settings.appApiKey || "",
   );
-  return { apps: result.apps, skipped: result.skipped };
+  // Replace each downstream-app's real API key with an opaque vault token
+  // before the response leaves the server, identical to the setup-wizard
+  // preview path. The follow-up import resolves the token back without
+  // ever shipping the cleartext key to the browser.
+  const safeApps = result.apps.map((a) =>
+    a.apiKey ? { ...a, apiKey: storeApiKey(a.apiKey) } : a,
+  );
+  return { apps: safeApps, skipped: result.skipped };
 }
 
 // Upsert one selection. Returns "created" | "updated" so the caller can
 // tally totals. The provider order is CSV-encoded here because letting the
 // frontend's default land in the DB as the literal string "null" makes
 // sync fail with "No title provider could be built".
+//
+// If the incoming apiKey is a vault token (the preview endpoint replaces
+// real keys with opaque tokens), resolve it back. Stale tokens throw and
+// the caller logs the per-item failure.
 async function upsertImportSelection(
   sel: ImportSelection,
 ): Promise<"created" | "updated"> {
+  let resolvedKey = sel.apiKey;
+  if (isVaultToken(resolvedKey)) {
+    const real = resolveVaultToken(resolvedKey);
+    if (!real) {
+      throw new Error("stale_preview_token");
+    }
+    resolvedKey = real;
+  }
   const existing = await prisma.arrInstance.findUnique({
     where: { type_name: { type: sel.type, name: sel.name } },
     select: { id: true },
@@ -157,11 +181,11 @@ async function upsertImportSelection(
       type: sel.type,
       name: sel.name,
       host: sel.host,
-      apiKey: sel.apiKey,
+      apiKey: resolvedKey,
       enabled: sel.enabled,
       providerOrder: arrayToCsv(sel.providerOrder),
     },
-    update: { host: sel.host, apiKey: sel.apiKey },
+    update: { host: sel.host, apiKey: resolvedKey },
   });
   return existing ? "updated" : "created";
 }

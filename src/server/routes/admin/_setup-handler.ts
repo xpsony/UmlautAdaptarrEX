@@ -79,8 +79,16 @@ async function persistInitialSettings(
 async function persistPluginSelections(
   plugins: PluginSelection[],
 ): Promise<void> {
+  // Reject unknown plugin ids loudly: a silent `continue` lets the operator
+  // think their selection was saved when in reality the wizard threw it
+  // away (typo, removed plugin, future-revision shape, …).
+  const unknown = plugins.filter((p) => !getPlugin(p.id)).map((p) => p.id);
+  if (unknown.length > 0) {
+    throw new Error(
+      `Unknown plugin id(s) in setup payload: ${unknown.join(", ")}`,
+    );
+  }
   for (const p of plugins) {
-    if (!getPlugin(p.id)) continue;
     await prisma.plugin.upsert({
       where: { id: p.id },
       create: { id: p.id, enabled: p.enabled },
@@ -192,6 +200,31 @@ export async function handleSetupSubmit(
 
   if (!validateTmdbForPlugins(data, reply)) return;
 
+  // Reject unknown plugin ids before we mutate anything: persistPluginSelections
+  // throws on unknown ids, but it runs only after the user + settings are
+  // already created. Validating up-front keeps the failure mode atomic
+  // (nothing persisted, clean 400) and gives the SPA a chance to show a
+  // useful error.
+  if (data.plugins?.length) {
+    const unknown = data.plugins
+      .filter((p) => !getPlugin(p.id))
+      .map((p) => p.id);
+    if (unknown.length > 0) {
+      reply.code(400).send({ error: "unknown-plugin", ids: unknown });
+      return;
+    }
+  }
+
+  // Re-check setupComplete here even though gateSetupOpen already did:
+  // two concurrent setup submits both pass the gate, and we need a second
+  // read inside the actual mutation path so the later request doesn't
+  // overwrite the freshly-persisted settings.
+  const currentSetting = await prisma.setting.findUnique({ where: { id: 1 } });
+  if (currentSetting?.setupComplete) {
+    reply.code(409).send({ error: "setup-already-complete" });
+    return;
+  }
+
   const existingUser = await prisma.adminUser.findFirst();
   if (existingUser) {
     reply.code(409).send({ error: "user-already-exists" });
@@ -199,9 +232,20 @@ export async function handleSetupSubmit(
   }
 
   const passwordHash = await hashPassword(data.password);
-  const user = await prisma.adminUser.create({
-    data: { username: data.username, passwordHash },
-  });
+  let user: { id: string; username: string };
+  try {
+    user = await prisma.adminUser.create({
+      data: { username: data.username, passwordHash },
+    });
+  } catch (err) {
+    // P2002 = unique constraint violation on `username`. Translates a lost
+    // race between concurrent submits into a clean 409 instead of a 500.
+    if ((err as { code?: string }).code === "P2002") {
+      reply.code(409).send({ error: "user-already-exists" });
+      return;
+    }
+    throw err;
+  }
 
   await persistInitialSettings(data, nanoid(32));
 

@@ -116,7 +116,12 @@ describe("GET /api/admin/settings", () => {
     const body = r.json() as Record<string, unknown>;
     expect(body.prowlarrConfigured).toBe(true);
     expect(body).not.toHaveProperty("prowlarrApiKey");
-    expect(body.tmdbApiKey).toBe("tk");
+    // Third-party keys come back masked, never in cleartext, so a leaked
+    // admin session/devtools snapshot can't exfiltrate the upstream key.
+    expect(body.tmdbApiKey).toBe("••••••••");
+    expect(body.tmdbConfigured).toBe(true);
+    expect(body.tvdbApiKey).toBeNull();
+    expect(body.tvdbConfigured).toBe(false);
   });
 
   it("returns null when the setting row does not exist", async () => {
