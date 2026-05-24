@@ -4,6 +4,12 @@ import {getAppState} from "@/server/state";
 
 const FIRST_TICK_MS = 60_000;
 const INTERVAL_MS = 6 * 60 * 60 * 1000;
+// Safety net for a hung deleteMany (locked SQLite WAL, runaway transaction).
+// Without it, `this.running=true` would never reset and every future tick
+// would silently skip with "already running". A 30s deadline is more than
+// generous for purging old log rows; a real hang means something else is
+// holding the DB lock.
+const PURGE_TIMEOUT_MS = 30_000;
 
 interface LogRetentionOptions {
     logger: AppLogger;
@@ -42,9 +48,24 @@ export class LogRetentionScheduler {
         try {
             const days = getAppState().settings.logRetentionDays;
             const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-            const result = await prisma.logEntry.deleteMany({
-                where: {createdAt: {lt: cutoff}},
-            });
+            // Race the actual delete against a hard timeout so a stuck DB
+            // lock can't permanently disable cleanup.
+            const result = await Promise.race([
+                prisma.logEntry.deleteMany({
+                    where: { createdAt: { lt: cutoff } },
+                }),
+                new Promise<never>((_, reject) =>
+                    setTimeout(
+                        () =>
+                            reject(
+                                new Error(
+                                    `log retention purge timed out after ${PURGE_TIMEOUT_MS}ms`,
+                                ),
+                            ),
+                        PURGE_TIMEOUT_MS,
+                    ).unref?.(),
+                ),
+            ]);
             if (result.count > 0) {
                 this.opts.logger.info(
                     {deleted: result.count, retentionDays: days},

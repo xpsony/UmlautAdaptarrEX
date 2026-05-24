@@ -76,7 +76,7 @@ async function sendRaw({ port, payload }: ProxyRequest): Promise<string> {
   return new Promise((resolve, reject) => {
     const sock = net.createConnection(port, "127.0.0.1");
     const chunks: Buffer[] = [];
-    sock.on("data", (chunk) => chunks.push(chunk));
+    sock.on("data", (chunk: Buffer) => chunks.push(chunk));
     sock.on("close", () => resolve(Buffer.concat(chunks).toString("utf8")));
     sock.on("error", reject);
     sock.write(payload);

@@ -14,6 +14,7 @@ import csrfProtection from "@fastify/csrf-protection";
 import { LogBroadcaster } from "./logging/broadcast";
 import type { AppLogger } from "./logging/logger";
 import { createLogger } from "./logging/logger";
+import { redactApiKey } from "@/lib/log-redact";
 import { LogRetentionScheduler } from "./logging/retention";
 import { getAppState } from "./state";
 import { loginRoutes } from "./routes/admin/login";
@@ -146,7 +147,10 @@ export async function bootServer(opts: BootOptions): Promise<{
   };
 
   app.get("/api/health", async (_req, reply) => {
-    await reply.send({ status: "ok", uptime: process.uptime() });
+    // Public endpoint: keep the response opaque. Past versions exposed
+    // `process.uptime()` here, which leaks restart times an external
+    // probe could correlate with deploys for narrow timing attacks.
+    await reply.send({ status: "ok" });
   });
 
   app.get("/:apiKey/*", async (req, reply) => {
@@ -269,7 +273,10 @@ function installErrorHandlers(app: FastifyInstance, logger: AppLogger): void {
       const ctx = {
         reqId: req.id,
         method: req.method,
-        url: req.url,
+        // Legacy routes use `/<appApiKey>/<host>/api?…`. Strip the leading
+        // key segment + any `apikey=` query value before the URL hits the
+        // log so a malformed request can't leak the operator's appApiKey.
+        url: redactApiKey(req.url),
         ip: req.ip,
         status,
         err,
@@ -312,7 +319,7 @@ function installErrorHandlers(app: FastifyInstance, logger: AppLogger): void {
 
   app.setNotFoundHandler((req: FastifyRequest, reply: FastifyReply) => {
     req.log.debug(
-      { reqId: req.id, method: req.method, url: req.url },
+      { reqId: req.id, method: req.method, url: redactApiKey(req.url) },
       "route not found",
     );
     void reply.code(404).send({ error: "not_found" });
@@ -352,7 +359,7 @@ function installRequestTiming(app: FastifyInstance, _logger: AppLogger): void {
       const ctx = {
         reqId: req.id,
         method: req.method,
-        url: req.url,
+        url: redactApiKey(req.url),
         status,
         durationMs,
       };

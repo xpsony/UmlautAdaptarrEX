@@ -161,7 +161,11 @@ export class LogBroadcaster {
           ws.on("close", () => this.clients.delete(ws));
           ws.on("error", () => this.clients.delete(ws));
         });
-      })().catch(() => {
+      })().catch((err) => {
+        // We're inside the logging subsystem, so we can't safely use the
+        // app logger (it could be the very thing that just threw). Fall
+        // back to console.warn so the failure isn't silently swallowed.
+        console.warn("[ws/logs] upgrade handler failed:", err);
         try {
           socket.destroy();
         } catch {

@@ -37,9 +37,9 @@ Global rate limit defaults are 60 requests / minute (per IP). Login and setup en
 GET /api/health
 ```
 
-Returns `{ status: "ok", uptime }` (process uptime in seconds). Defined inline at
-[src/server/index.ts:146-148](../src/server/index.ts#L146-L148). Used by the start.mjs supervisor and Docker
-healthcheck.
+Returns `{ status: "ok" }`. Defined inline at
+[src/server/index.ts:149-154](../src/server/index.ts#L149-L154). Used by the start.mjs supervisor and Docker
+healthcheck. `uptime` was intentionally removed in 1.1.0 to avoid leaking process restart times to unauthenticated callers.
 
 ## `/api/auth/*` — login, setup wizard, session
 

@@ -70,7 +70,7 @@ describe("DisabledProxyStubServer", () => {
     const response = await new Promise<string>((resolve, reject) => {
       const sock = net.createConnection(booted.port, "127.0.0.1");
       const chunks: Buffer[] = [];
-      sock.on("data", (chunk) => chunks.push(chunk));
+      sock.on("data", (chunk: Buffer) => chunks.push(chunk));
       // Use the `close` event (fires once both ends are fully closed) so
       // the test only resolves when the connection is actually gone.
       sock.on("close", () => resolve(Buffer.concat(chunks).toString("utf8")));

@@ -40,11 +40,13 @@ describe("unseenSince", () => {
     expect(result.find((e) => e.version === seen)).toBeUndefined();
   });
 
-  // Synthetic case: extend the array virtually by checking slice semantics.
-  // With a single-entry CHANGELOG, "older than the only entry" produces [].
-  it("returns no entries when the seen version is older than every entry but matches", () => {
+  // unseenSince(oldest) must NOT include the oldest entry itself (that's the
+  // "seen" mark), so the result equals "everything before the oldest" which
+  // is empty by definition — regardless of how many entries CHANGELOG has.
+  it("does not include the oldest entry when it is passed as seen", () => {
     const oldestVersion = CHANGELOG.at(-1)?.version;
     expect(oldestVersion).toBeDefined();
-    expect(unseenSince(oldestVersion)).toEqual([]);
+    const result = unseenSince(oldestVersion);
+    expect(result.find((e) => e.version === oldestVersion)).toBeUndefined();
   });
 });

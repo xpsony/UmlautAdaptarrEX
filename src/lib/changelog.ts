@@ -23,10 +23,63 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
-    version: "2.0.0-alpha.1",
+    version: "1.1.0",
+    date: "2026-05-24",
+    title: "1.1.0: Hardening, sync performance & maintenance release",
+    description:
+      "Security hardening for admin auth and secret handling, a major sync performance upgrade that parallelises instance syncs and title-provider lookups, more resilient title providers and sync scheduler, plus a dependency refresh.",
+    items: [
+      {
+        type: "improvement",
+        text: "Sync is now parallelised end-to-end: enabled Sonarr/Radarr/Lidarr/Readarr instances sync concurrently, Lidarr/Readarr fetch albums/books in parallel batches, and TMDB/TVDB bulk lookups run in batches at safe rate limits (TMDB 20 req/s, TVDB 10 req/s) instead of one request at a time. Large libraries sync several times faster.",
+      },
+      {
+        type: "improvement",
+        text: "Title-provider rate limiter rewritten to be safe under parallelism: concurrent lookups no longer race past the configured request interval, so the new bulk batching stays comfortably below TMDB's and TVDB's request budgets.",
+      },
+      {
+        type: "improvement",
+        text: "Sync writes go to the database in small chunks instead of one giant transaction, so concurrent instance syncs interleave on SQLite and a mid-sync interruption keeps most of the progress.",
+      },
+      {
+        type: "fix",
+        text: "Admin login now rotates the session ID, runs a constant-time check for unknown users, awaits the CSRF gate before the route handler runs, and forces Secure cookies on any HTTPS request.",
+      },
+      {
+        type: "fix",
+        text: "API keys, passwords and Prowlarr secrets are now redacted from logs (including the live log stream and legacy-route logs) and masked in admin responses; the /api/health endpoint no longer exposes process uptime.",
+      },
+      {
+        type: "fix",
+        text: "Setup wizard handles concurrent completions, rejects unknown plugin IDs up-front and no longer issues outbound probes (Prowlarr connect) before authentication is in place.",
+      },
+      {
+        type: "improvement",
+        text: "TMDB bulk lookups use Promise.allSettled so a single failing ID no longer aborts the batch; TVDB has a retry guard against 401 token-refresh loops; rate limiter clamps negative Retry-After values.",
+      },
+      {
+        type: "improvement",
+        text: "Sync scheduler has a watchdog that detects stuck runs and unblocks the queue instead of waiting forever.",
+      },
+      {
+        type: "improvement",
+        text: "Refreshed third-party dependencies (React Query, react-hook-form, Tailwind, undici, ws, fast-xml-parser, lru-cache and others) to their latest minor and patch versions.",
+      },
+      {
+        type: "improvement",
+        text: "Upgraded build tooling (pnpm 11.3.0, ESLint 10, Vitest 4.1.7, Playwright 1.60, tsx 4.22.3) and pinned the React version in the ESLint config.",
+      },
+      {
+        type: "fix",
+        text: "Added explicit Buffer type annotations to socket data handlers in the TCP proxy tests so the suite passes under stricter TypeScript settings.",
+      },
+    ],
+  },
+  {
+    version: "1.0.0",
     date: "2026-05-08",
     highlight: true,
-    title: "UmlautAdaptarrEX 2.0: First public alpha",
+    title: "UmlautAdaptarrEX 1.0: First public release",
     description:
       "Full rewrite of the .NET predecessor on Next.js + Fastify + Prisma with a web UI, Prowlarr integration and multi-language support.",
     items: [

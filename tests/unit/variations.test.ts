@@ -31,6 +31,14 @@ describe("generateVariations (TV)", () => {
     expect(generateVariations(null, "tv")).toEqual([]);
     expect(generateVariations("", "tv")).toEqual([]);
   });
+
+  it("does not strip an article prefix from a longer word (BUG-022 regression guard)", () => {
+    // "Theory of Everything" starts with the letters "The" but the article
+    // regex requires a trailing space, so it must not collapse to "ory of …".
+    const v = generateVariations("Theory of Everything", "tv");
+    expect(v).toContain("Theory of Everything");
+    expect(v.some((x) => x.startsWith("ory "))).toBe(false);
+  });
 });
 
 describe("buildSearchItem (TV)", () => {
