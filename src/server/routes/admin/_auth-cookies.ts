@@ -1,14 +1,14 @@
 import type { FastifyRequest } from "fastify";
 
-// In production we hard-enforce `Secure` regardless of the observed
-// request protocol: a mis-configured trustProxy / non-HTTPS health probe
-// would otherwise mint a non-Secure cookie, and a single subsequent
-// plaintext request could leak it. In development we still honor
-// req.protocol so the cookie works on `http://localhost`.
-const IS_PROD = process.env.NODE_ENV === "production";
-
+// We mark cookies `Secure` exactly when the request itself arrived over
+// HTTPS. Self-hosted deployments routinely run plaintext on a LAN
+// (see the no-`__Host-`-prefix note in `src/lib/auth/session.ts`), and
+// a hard `Secure` flag there would make the browser silently drop the
+// cookie on the next request, surfacing as an instant "Session expired"
+// directly after login. Operators terminating TLS upstream should set
+// TRUST_PROXY so Fastify reads `X-Forwarded-Proto` and `req.protocol`
+// reflects the original scheme.
 function deriveSecure(req: FastifyRequest): boolean {
-  if (IS_PROD) return true;
   return req.protocol === "https";
 }
 
