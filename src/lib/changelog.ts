@@ -23,6 +23,31 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.1.1",
+    date: "2026-05-25",
+    title: "1.1.1: Lidarr/Readarr sync fix",
+    description:
+      "Restores the Lidarr and Readarr sync against libraries that contain albums or books with identical titles across different artists/authors, and lets Lidarr/Readarr-only setups sync without a title provider configured.",
+    items: [
+      {
+        type: "fix",
+        text: "Lidarr and Readarr sync no longer crashes with a unique-constraint error when the library has albums or books sharing a title across different artists or authors (Greatest Hits, Live, Best Of, Self-Titled, …). The cache key now combines artist and album (Lidarr) or book and author (Readarr) so identical titles from different artists/authors can no longer collide.",
+      },
+      {
+        type: "fix",
+        text: 'Music and book searches via the legacy indexer route now find the cached library row again. Previously the lookup was effectively dead because Prowlarr sends "artist album" / "book author" as the query, but the row was stored under just the album/book title.',
+      },
+      {
+        type: "fix",
+        text: "Setups with only Lidarr and/or Readarr instances enabled can now sync without a title provider configured. Sonarr/Radarr still require a provider as before.",
+      },
+      {
+        type: "improvement",
+        text: "Sync persistence is hardened against duplicate items in a single fetch: duplicates are dropped with a warning instead of aborting a 50-item chunk transaction.",
+      },
+    ],
+  },
+  {
     version: "1.1.0",
     date: "2026-05-25",
     title: "1.1.0: Hardening, sync performance & maintenance release",
@@ -157,9 +182,7 @@ export function latestChangelog(): ChangelogEntry | null {
  * stored value is stale), only the latest entry is returned to avoid
  * dumping the entire history.
  */
-export function unseenSince(
-  lastSeenVersion: string | null | undefined,
-): ChangelogEntry[] {
+export function unseenSince(lastSeenVersion: string | null | undefined): ChangelogEntry[] {
   if (!lastSeenVersion) return [];
   const idx = CHANGELOG.findIndex((e) => e.version === lastSeenVersion);
   if (idx === -1) {

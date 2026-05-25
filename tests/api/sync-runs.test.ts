@@ -1,14 +1,6 @@
 import "./_setup/db";
 
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FastifyInstance } from "fastify";
 
 // Stub the arr-builder so the background sync work doesn't try to hit Sonarr
@@ -22,12 +14,7 @@ vi.mock("@/arr", () => ({
 
 import { buildTestApp } from "./_setup/app";
 import { cleanDb, ensureTestDb } from "./_setup/db";
-import {
-  authCookies,
-  login,
-  seedAdminUser,
-  sessionCookieOnly,
-} from "./_setup/auth-helpers";
+import { authCookies, login, seedAdminUser, sessionCookieOnly } from "./_setup/auth-helpers";
 import { getAppState } from "@/server/state";
 
 let app: FastifyInstance;
@@ -76,10 +63,14 @@ async function seedEnabledInstance(
 }
 
 describe("POST /api/admin/sync", () => {
-  it("returns 409 no_provider when no Setting row exists", async () => {
+  it("returns 409 no_provider when a Sonarr instance is enabled but no Setting row exists", async () => {
     await getAppState().reloadSettings();
     expect(getAppState().provider).toBeNull();
 
+    // Seed a sonarr instance so the provider gate is meaningful: Lidarr-only
+    // setups skip the gate (they don't consult a provider), so the no_provider
+    // outcome only fires when at least one sonarr/radarr instance is present.
+    await seedEnabledInstance("sonarr");
     await seedAdminUser();
     const session = await login(app);
     const r = await app.inject({
@@ -89,6 +80,22 @@ describe("POST /api/admin/sync", () => {
     });
     expect(r.statusCode).toBe(409);
     expect(r.json()).toMatchObject({ error: "no_provider" });
+  });
+
+  it("starts the sync for Lidarr-only setups even without a configured Setting row", async () => {
+    await getAppState().reloadSettings();
+    expect(getAppState().provider).toBeNull();
+
+    await seedEnabledInstance("lidarr", "L1");
+    await seedAdminUser();
+    const session = await login(app);
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/admin/sync",
+      ...authCookies(session),
+    });
+    expect(r.statusCode).toBe(202);
+    expect(r.json()).toMatchObject({ ok: true, instanceCount: 1 });
   });
 
   it("returns 409 no_instances when there are no enabled instances", async () => {

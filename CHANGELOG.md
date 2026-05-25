@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.1.1 — 2026-05-25
+
+### Fixes
+
+- **Lidarr/Readarr sync no longer crashes on duplicate album/book titles:** Library rows are now keyed by `normalize("{artist} {album}")` for Lidarr and `normalize("{book} {author}")` for Readarr instead of just the album/book title. Previously libraries with multiple albums or books sharing a title across artists/authors ("Greatest Hits", "Live", "Best Of", "Self-Titled", …) collided on the SearchItem unique constraint and aborted the sync with Prisma `P2002`. As a side effect the legacy `/api?t=search&cat=3000…` `getByExternalId` lookup now actually resolves, because Prowlarr's `?q=Artist Album` query normalizes to the same key the row was stored under.
+- **Sync dedup defense-in-depth:** `persistAndReindex` now deduplicates items by externalId before writing, so a stray duplicate in the upstream payload no longer aborts a 50-item chunk transaction. Duplicates are counted and warned in the log; `SyncRun.itemsCount` reflects the deduped count.
+- **Scheduler provider gate:** `POST /api/admin/sync` and the scheduled tick no longer return `no_provider` for Lidarr/Readarr-only setups. The gate now only blocks when at least one Sonarr/Radarr instance is enabled, because only those two consult a title provider during sync.
+
+### Upgrade notes
+
+No manual resync required. On the next sync (automatic or via "Sync now" in the dashboard) the stale rows with old externalIds are removed
+
 ## 1.1.0 — 2026-05-25
 
 ### Providers & Settings

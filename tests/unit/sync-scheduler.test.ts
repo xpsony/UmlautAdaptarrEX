@@ -63,10 +63,31 @@ afterEach(() => {
 });
 
 describe("SyncScheduler.runNow", () => {
-  it("returns no_provider when no title provider is configured", async () => {
+  it("returns no_provider when a Sonarr/Radarr instance is enabled but no title provider is configured", async () => {
     mockState.provider = null;
+    mockArr.findMany.mockResolvedValueOnce([{ id: "inst-sonarr", enabled: true, type: "sonarr" }]);
     const sched = new SyncScheduler({ logger: makeLogger() as never });
     expect(await sched.runNow()).toEqual({ status: "no_provider" });
+  });
+
+  it("proceeds without a provider when only Lidarr/Readarr instances are enabled", async () => {
+    mockState.provider = null;
+    mockArr.findMany.mockResolvedValueOnce([
+      { id: "inst-lidarr", enabled: true, type: "lidarr" },
+      { id: "inst-readarr", enabled: true, type: "readarr" },
+    ]);
+    mockSyncRun.create
+      .mockResolvedValueOnce({ id: "run-l" })
+      .mockResolvedValueOnce({ id: "run-r" });
+    mockRunSync.mockResolvedValue({ totalItems: 0, perInstance: [] });
+
+    const sched = new SyncScheduler({ logger: makeLogger() as never });
+    const out = await sched.runNow();
+    expect(out).toEqual({
+      status: "started",
+      runIds: ["run-l", "run-r"],
+      instanceCount: 2,
+    });
   });
 
   it("returns no_instances when no enabled instances exist", async () => {
@@ -100,9 +121,7 @@ describe("SyncScheduler.runNow", () => {
   });
 
   it("filters by instanceId when provided", async () => {
-    mockArr.findMany.mockResolvedValueOnce([
-      { id: "inst-only", enabled: true },
-    ]);
+    mockArr.findMany.mockResolvedValueOnce([{ id: "inst-only", enabled: true }]);
     mockSyncRun.create.mockResolvedValueOnce({ id: "run-1" });
     mockRunSync.mockResolvedValue({ totalItems: 0, perInstance: [] });
 
