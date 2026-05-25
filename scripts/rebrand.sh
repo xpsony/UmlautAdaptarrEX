@@ -44,7 +44,6 @@ cd "$(dirname "$0")/.."
 
 FILES=(
   "README.md"
-  "unraid/umlautadaptarrex.xml"
   "docker-compose.release.yml"
   ".github/workflows/release.yml"
   "src/app/(admin)/about/page.tsx"

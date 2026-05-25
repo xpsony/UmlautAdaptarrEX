@@ -168,37 +168,46 @@ The `data/` volume is preserved.
 
 ### Variant 3: Unraid Template
 
-On Unraid the image can be installed via a community template. The appdata directory is created automatically on
-first container start and is chowned by the entrypoint to `PUID:PGID` (default `99:100`, which is `nobody:users`,
-the Unraid default). No prior `chown` is needed.
+The Unraid community template lives in a separate repository:
+[xpsony/UmlautAdaptarrEX-Unraid-Template](https://github.com/xpsony/UmlautAdaptarrEX-Unraid-Template).
+Submission to the Community Applications (CA) store is pending; once
+listed, installation works directly from CA without entering a template URL.
 
-**Installation via the template URL:**
+Installation instructions, template URL, and field defaults (ports, PUID/PGID, appdata path) are
+documented in the template repo's README.
 
-1. In the Unraid web interface, switch to the **Docker** tab and click **Add Container** at the bottom.
-2. In the **Template** field, enter the following URL and press Enter:
+### Variant 4: Bare metal / without Docker
 
-   ```
-   https://raw.githubusercontent.com/xpsony/UmlautAdaptarrEX/main/unraid/umlautadaptarrex.xml
-   ```
+Works on any Linux or macOS host with Node `>= 24` and `pnpm 11.3.0`. The supervisor in
+[`start.mjs`](start.mjs) handles migration, Fastify (port 5005 + TCP proxy 5006) and Next.js (port
+5007); no reverse proxy is required.
 
-3. The template is loaded. Review or adjust the following fields:
+```sh
+git clone https://github.com/xpsony/UmlautAdaptarrEX.git
+cd UmlautAdaptarrEX
+pnpm install --frozen-lockfile
+pnpm prod      # build:prod -> prisma migrate deploy -> start:prod
+```
 
-   | Field                  | Default                              | Note                                                                |
-   | ---------------------- | ------------------------------------ | ------------------------------------------------------------------- |
-   | **Web UI Port**        | `5007`                               | Browser port for the Next.js UI.                                    |
-   | **API Port**           | `5005`                               | Target URL for the \*arrs (`http://<unraid-ip>:5005/<apiKey>/...`). |
-   | **Indexer Proxy Port** | `5006`                               | TCP proxy for Prowlarr (HTTP CONNECT).                              |
-   | **App Data**           | `/mnt/user/appdata/umlautadaptarrex` | Persistent SQLite DB. **DO NOT** delete.                            |
-   | **PUID** / **PGID**    | `99` / `100`                         | Unraid default (`nobody:users`). Only change if needed.             |
-   | **TZ**                 | `Europe/Berlin`                      | IANA time zone.                                                     |
-   | **LOG_LEVEL**          | `info`                               | Optional, under _Show advanced_.                                    |
+The individual steps as separate scripts (e.g. for CI):
 
-4. Click **Apply**. Unraid pulls `lexfi/umlautadaptarrex:latest` and starts the container.
-5. Click the container icon on the Docker tab and pick **WebUI**, or open `http://<unraid-ip>:5007` directly in your
-   browser. The setup wizard takes over the rest of the configuration.
+| Script               | What it does                                                                    |
+| -------------------- | ------------------------------------------------------------------------------- |
+| `pnpm build:prod`    | Builds Next.js (standalone) + Fastify bundle (tsup) with `NODE_ENV=production`. |
+| `pnpm prisma:deploy` | Applies migrations idempotently to the SQLite DB.                               |
+| `pnpm start:prod`    | Starts the supervisor (migrate -> Fastify -> Next.js child) with prod env.      |
 
-**Update:** on the Docker tab, click the container and choose **Force Update**, or run **Check for Updates** at the
-bottom for all containers.
+Persistence: the `data/` directory (SQLite) stays in the repo working tree. For "survives a reboot",
+a systemd unit ships under [`deploy/umlautadaptarrex.service`](deploy/umlautadaptarrex.service),
+including examples for user, `WorkingDirectory` and hardening (`ProtectSystem`, `ReadWritePaths`).
+Short version of the install:
+
+```sh
+sudo cp deploy/umlautadaptarrex.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now umlautadaptarrex
+journalctl -u umlautadaptarrex -f
+```
 
 ## Ports
 

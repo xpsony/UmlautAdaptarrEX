@@ -1,0 +1,46 @@
+# systemd unit for UmlautAdaptarrEX (bare-metal deployment, no Docker).
+#
+# Install:
+#   1. Build once on the host:
+#        pnpm install --frozen-lockfile
+#        pnpm build:prod
+#   2. Copy this file to /etc/systemd/system/umlautadaptarrex.service
+#      and adjust User, Group, WorkingDirectory, and the pnpm path.
+#   3. systemctl daemon-reload
+#      systemctl enable --now umlautadaptarrex
+#
+# Logs: journalctl -u umlautadaptarrex -f
+
+[Unit]
+Description=UmlautAdaptarrEX (Sonarr/Radarr Umlaut proxy)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=umlautadaptarrex
+Group=umlautadaptarrex
+WorkingDirectory=/opt/umlautadaptarrex
+Environment=NODE_ENV=production
+Environment=PORT=5005
+Environment=WEB_PORT=5007
+Environment=DATABASE_URL=file:/opt/umlautadaptarrex/data/umlautadaptarrex.db
+
+# Use the absolute path to pnpm (find with `which pnpm`).
+# Alternatively: ExecStart=/usr/bin/node start.mjs (avoids the pnpm wrapper).
+ExecStart=/usr/local/bin/pnpm start:prod
+
+Restart=on-failure
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=20
+
+# Hardening (loosen if you hit permission issues).
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/opt/umlautadaptarrex/data
+
+[Install]
+WantedBy=multi-user.target

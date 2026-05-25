@@ -17,18 +17,24 @@ The upstream defaults baked into the source tree are:
 
 ## What can change at runtime vs build-time vs source
 
-| Surface                                                               | Mechanism                                                                   | Files touched                                                                                                                             |
-| --------------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Docker Hub image pushed by CI                                         | GitHub repository variable `DOCKERHUB_IMAGE`                                | [.github/workflows/release.yml](../.github/workflows/release.yml#L24-L31)                                                                 |
-| Docker image pulled by `docker compose -f docker-compose.release.yml` | Shell env var `UMLAUTADAPTARREX_IMAGE` (or `.env` next to the compose file) | [docker-compose.release.yml](../docker-compose.release.yml#L21)                                                                           |
-| GitHub URL shown on the Web UI "About" page                           | Build-time env vars `NEXT_PUBLIC_GITHUB_OWNER` / `NEXT_PUBLIC_GITHUB_REPO`  | [src/app/(admin)/about/page.tsx](<../src/app/(admin)/about/page.tsx#L15-L22>)                                                             |
-| README install instructions, Unraid template, in-tree defaults        | `scripts/rebrand.sh` (one-shot find/replace)                                | [README.md](../README.md), [unraid/umlautadaptarrex.xml](../unraid/umlautadaptarrex.xml), the three files above (their fallback defaults) |
+| Surface                                                               | Mechanism                                                                   | Files touched                                                                 |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Docker Hub image pushed by CI                                         | GitHub repository variable `DOCKERHUB_IMAGE`                                | [.github/workflows/release.yml](../.github/workflows/release.yml#L24-L31)     |
+| Docker image pulled by `docker compose -f docker-compose.release.yml` | Shell env var `UMLAUTADAPTARREX_IMAGE` (or `.env` next to the compose file) | [docker-compose.release.yml](../docker-compose.release.yml#L21)               |
+| GitHub URL shown on the Web UI "About" page                           | Build-time env vars `NEXT_PUBLIC_GITHUB_OWNER` / `NEXT_PUBLIC_GITHUB_REPO`  | [src/app/(admin)/about/page.tsx](<../src/app/(admin)/about/page.tsx#L15-L22>) |
+| README install instructions, in-tree defaults                         | `scripts/rebrand.sh` (one-shot find/replace)                                | [README.md](../README.md), the three files above (their fallback defaults)    |
 
 The runtime mechanisms let you stand up CI, a Docker pull and the Web UI
 under a new identity **without editing a single source file**. The
-`rebrand.sh` script is for the static surfaces (README, Unraid template)
-and for baking new defaults into the committed source so the runtime
-fallbacks also match the fork.
+`rebrand.sh` script is for the static surface (README) and for baking
+new defaults into the committed source so the runtime fallbacks also
+match the fork.
+
+The Unraid Community Application template lives in a separate
+repository ([xpsony/UmlautAdaptarrEX-Unraid-Template](https://github.com/xpsony/UmlautAdaptarrEX-Unraid-Template))
+and is not rebranded by `rebrand.sh`. Forks that want to publish an
+Unraid template under their own namespace should fork the template repo
+and adjust it there.
 
 ## `scripts/rebrand.sh`
 
@@ -50,7 +56,6 @@ The script rewrites every hard-coded occurrence of the upstream defaults
 in these files:
 
 - `README.md`
-- `unraid/umlautadaptarrex.xml`
 - `docker-compose.release.yml` (fallback default of `UMLAUTADAPTARREX_IMAGE`)
 - `.github/workflows/release.yml` (fallback default of `vars.DOCKERHUB_IMAGE`)
 - `src/app/(admin)/about/page.tsx` (fallbacks of `NEXT_PUBLIC_GITHUB_OWNER` / `NEXT_PUBLIC_GITHUB_REPO`)
