@@ -1,0 +1,154 @@
+name: Dev image
+
+on:
+  push:
+    branches: [dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dev-image-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Same image as release.yml; only the tags differ.
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ vars.DOCKERHUB_IMAGE || 'lexfi/umlautadaptarrex' }}
+
+jobs:
+  quality:
+    uses: ./.github/workflows/verify.yml
+
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    needs: quality
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Prepare platform pair
+        id: prep
+        shell: bash
+        run: |
+          platform="${{ matrix.platform }}"
+          echo "pair=${platform//\//-}" >> "$GITHUB_OUTPUT"
+
+      - name: Compute short SHA
+        id: sha
+        shell: bash
+        run: |
+          echo "short=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          pull: true
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            APP_VERSION=dev-${{ steps.sha.outputs.short }}
+          labels: |
+            org.opencontainers.image.title=UmlautAdaptarrEX
+            org.opencontainers.image.description=Umlaut/German-title proxy for Sonarr/Radarr/Lidarr/Readarr
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.url=https://hub.docker.com/r/${{ env.IMAGE_NAME }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=dev-${{ steps.sha.outputs.short }}
+            org.opencontainers.image.licenses=MIT
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+          cache-from: |
+            type=gha,scope=dev-${{ steps.prep.outputs.pair }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-buildcache-${{ steps.prep.outputs.pair }}
+          cache-to: |
+            type=gha,mode=max,scope=dev-${{ steps.prep.outputs.pair }}
+            type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev-buildcache-${{ steps.prep.outputs.pair }},mode=max
+
+      - name: Export digest
+        shell: bash
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ steps.prep.outputs.pair }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: Merge multi-arch manifest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v8
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Compute short SHA
+        id: sha
+        shell: bash
+        run: |
+          echo "short=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+
+      - name: Compute image tag args
+        id: tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          short="${{ steps.sha.outputs.short }}"
+          args=(-t "${base}:dev" -t "${base}:dev-${short}")
+          echo "args=${args[*]}" >> "$GITHUB_OUTPUT"
+
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create ${{ steps.tags.outputs.args }} \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:dev
