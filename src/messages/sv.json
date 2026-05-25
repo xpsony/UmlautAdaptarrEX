@@ -443,6 +443,8 @@
       "apiKeyHintStored": "En nyckel är sparad. Ange den igen endast om du ändrar den, lämna tom för att behålla den befintliga.",
       "statusConfigured": "Ansluten till:",
       "statusEmpty": "Ingen Prowlarr-anslutning konfigurerad ännu.",
+      "replace": "Ersätt",
+      "cancelReplace": "Avbryt",
       "test": "Testa anslutning",
       "testOk": "Anslutning OK, {count, plural, =0 {inga appar identifierade} one {# app identifierad} other {# appar identifierade}}.",
       "openProwlarrSettings": "Öppna Prowlarr API-inställningar",

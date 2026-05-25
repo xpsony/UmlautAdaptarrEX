@@ -443,6 +443,8 @@
       "apiKeyHintStored": "A key is stored. Re-enter it here only when changing it, leave empty to keep the existing one.",
       "statusConfigured": "Connected to:",
       "statusEmpty": "No Prowlarr connection configured yet.",
+      "replace": "Replace",
+      "cancelReplace": "Cancel",
       "test": "Test connection",
       "testOk": "Connection OK, {count, plural, =0 {no apps detected} one {# app detected} other {# apps detected}}.",
       "openProwlarrSettings": "Open Prowlarr API settings",

@@ -50,12 +50,18 @@ async function postProwlarrTest(
   req: FastifyRequest,
   reply: FastifyReply,
 ): Promise<unknown> {
-  const data = parseOrReply(req.body, ProwlarrCredsSchema, reply);
-  if (!data) return;
+  // Accept either an explicit { host, apiKey } body (used while the operator
+  // is typing new credentials) or `{ useStored: true }` to test the
+  // currently-persisted connection without re-entering the key. Mirrors the
+  // preview route below so the stored-state Test button works without
+  // shipping the key back to the browser.
+  const body = (req.body as Record<string, unknown> | undefined) ?? {};
+  const creds = await resolveProwlarrCreds(body, reply);
+  if (!creds) return;
   const ua = getAppState().settings.userAgent;
   const result = await fetchProwlarrApplications(
-    data.host,
-    data.apiKey,
+    creds.host,
+    creds.apiKey,
     ua,
     req.log,
   );

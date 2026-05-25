@@ -443,6 +443,8 @@
       "apiKeyHintStored": "Ein Key ist hinterlegt. Nur erneut eingeben, wenn er geändert werden soll, sonst leer lassen.",
       "statusConfigured": "Verbunden mit:",
       "statusEmpty": "Noch keine Prowlarr-Verbindung hinterlegt.",
+      "replace": "Ersetzen",
+      "cancelReplace": "Abbrechen",
       "test": "Verbindung testen",
       "testOk": "Verbindung OK, {count, plural, =0 {keine Apps erkannt} one {# App erkannt} other {# Apps erkannt}}.",
       "openProwlarrSettings": "Prowlarr-API-Einstellungen öffnen",

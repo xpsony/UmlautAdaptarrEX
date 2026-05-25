@@ -3,13 +3,16 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
+  Check,
   CheckCircle2,
   CloudUpload,
   Download,
   ExternalLink,
   Loader2,
+  Pencil,
   Plug,
   Unplug,
+  X,
   XCircle,
 } from "lucide-react";
 import { ProwlarrInstallProxyDialog } from "@/components/instances/prowlarr-install-proxy-dialog";
@@ -24,6 +27,7 @@ import {
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RevealableInput } from "@/components/ui/revealable-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { useProwlarrConfig } from "../_lib/use-prowlarr-config";
@@ -35,6 +39,11 @@ export function ProwlarrSection() {
 
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [installOpen, setInstallOpen] = useState(false);
+
+  // Stored mode: render the "Connected to ..." badge plus a Replace button.
+  // Editing mode: render the host/apiKey inputs plus a Cancel button (only
+  // when there is a stored config to fall back to).
+  const showStored = w.isConfigured && !w.editing;
 
   return (
     <Card>
@@ -48,83 +57,109 @@ export function ProwlarrSection() {
       <CardContent className="space-y-4">
         {w.config.isLoading ? (
           <Skeleton className="h-24 w-full" />
-        ) : (
+        ) : showStored ? (
           <>
-            {w.isConfigured ? (
-              <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs">
-                <span className="font-medium text-foreground">
+            <div className="flex items-center gap-2">
+              <div
+                className="flex h-9 flex-1 items-center gap-2 rounded-md border border-input bg-muted/50 px-3 text-sm"
+                role="status"
+              >
+                <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-muted-foreground">
                   {t("statusConfigured")}
                 </span>
-                <span className="ml-2 font-mono text-muted-foreground">
+                <span className="font-mono text-foreground">
                   {w.config.data?.host}
                 </span>
               </div>
-            ) : (
-              <div className="rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-                {t("statusEmpty")}
+              <Button type="button" variant="outline" onClick={w.beginEdit}>
+                <Pencil className="h-4 w-4" />
+                {t("replace")}
+              </Button>
+            </div>
+            {w.testResult ? (
+              <div
+                className={cn(
+                  "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
+                  w.testResult.ok
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                    : "border-destructive/40 bg-destructive/10 text-destructive",
+                )}
+              >
+                {w.testResult.ok ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <XCircle className="h-4 w-4" />
+                )}
+                <span>{w.testResult.message}</span>
               </div>
-            )}
-
-            <form
-              id="prowlarr-form"
-              onSubmit={handleSubmit((d) => w.saveMut.mutate(d))}
-              className="space-y-4"
-            >
-              <div className="space-y-2">
-                <Label htmlFor="prowlarr-host">{t("host")}</Label>
-                <Input
-                  id="prowlarr-host"
-                  placeholder={t("hostPlaceholder")}
-                  {...register("host")}
-                />
-                {formState.errors.host ? (
-                  <p className="text-xs text-destructive">
-                    {formState.errors.host.message}
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="prowlarr-apikey">{t("apiKey")}</Label>
-                <Input
-                  id="prowlarr-apikey"
-                  type="password"
-                  autoComplete="off"
-                  placeholder={
-                    w.isConfigured
-                      ? t("apiKeyPlaceholderStored")
-                      : t("apiKeyPlaceholder")
-                  }
-                  {...register("apiKey")}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {w.isConfigured ? t("apiKeyHintStored") : t("apiKeyHint")}
-                </p>
-                {formState.errors.apiKey ? (
-                  <p className="text-xs text-destructive">
-                    {formState.errors.apiKey.message}
-                  </p>
-                ) : null}
-              </div>
-
-              {w.testResult ? (
-                <div
-                  className={cn(
-                    "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
-                    w.testResult.ok
-                      ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                      : "border-destructive/40 bg-destructive/10 text-destructive",
-                  )}
-                >
-                  {w.testResult.ok ? (
-                    <CheckCircle2 className="h-4 w-4" />
-                  ) : (
-                    <XCircle className="h-4 w-4" />
-                  )}
-                  <span>{w.testResult.message}</span>
-                </div>
-              ) : null}
-            </form>
+            ) : null}
           </>
+        ) : (
+          <form
+            id="prowlarr-form"
+            onSubmit={handleSubmit((d) => w.saveMut.mutate(d))}
+            className="space-y-4"
+          >
+            <div className="space-y-2">
+              <Label htmlFor="prowlarr-host">{t("host")}</Label>
+              <Input
+                id="prowlarr-host"
+                placeholder={t("hostPlaceholder")}
+                {...register("host")}
+              />
+              {formState.errors.host ? (
+                <p className="text-xs text-destructive">
+                  {formState.errors.host.message}
+                </p>
+              ) : null}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="prowlarr-apikey">{t("apiKey")}</Label>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <RevealableInput
+                    id="prowlarr-apikey"
+                    autoComplete="off"
+                    placeholder={t("apiKeyPlaceholder")}
+                    showLabel={t("apiKey")}
+                    hideLabel={t("apiKey")}
+                    {...register("apiKey")}
+                  />
+                </div>
+                {w.isConfigured ? (
+                  <Button type="button" variant="ghost" onClick={w.cancelEdit}>
+                    <X className="h-4 w-4" />
+                    {t("cancelReplace")}
+                  </Button>
+                ) : null}
+              </div>
+              <p className="text-xs text-muted-foreground">{t("apiKeyHint")}</p>
+              {formState.errors.apiKey ? (
+                <p className="text-xs text-destructive">
+                  {formState.errors.apiKey.message}
+                </p>
+              ) : null}
+            </div>
+
+            {w.testResult ? (
+              <div
+                className={cn(
+                  "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
+                  w.testResult.ok
+                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                    : "border-destructive/40 bg-destructive/10 text-destructive",
+                )}
+              >
+                {w.testResult.ok ? (
+                  <CheckCircle2 className="h-4 w-4" />
+                ) : (
+                  <XCircle className="h-4 w-4" />
+                )}
+                <span>{w.testResult.message}</span>
+              </div>
+            ) : null}
+          </form>
         )}
       </CardContent>
       <CardContent className="flex flex-wrap items-center justify-between gap-2 border-t pt-4">
@@ -132,8 +167,20 @@ export function ProwlarrSection() {
           <Button
             type="button"
             variant="outline"
-            onClick={handleSubmit((d) => w.test(d))}
-            disabled={w.testing || w.saveMut.isPending || !w.canSubmit}
+            // Editing: submit the form so RHF validates host/apiKey before the
+            // round-trip. Stored: bypass the form and ask the server to use
+            // the persisted credentials (useStored:true), since the operator
+            // hasn't typed anything.
+            onClick={
+              w.editing
+                ? handleSubmit((d) => w.test(d))
+                : () => void w.test(null)
+            }
+            disabled={
+              w.testing ||
+              w.saveMut.isPending ||
+              (w.editing ? !w.canSubmit : !w.isConfigured)
+            }
           >
             {w.testing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -183,14 +230,16 @@ export function ProwlarrSection() {
             </Button>
           ) : null}
         </div>
-        <Button type="submit" form="prowlarr-form" disabled={!w.canSubmit}>
-          {w.saveMut.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Download className="h-4 w-4" />
-          )}
-          {t("save")}
-        </Button>
+        {w.editing ? (
+          <Button type="submit" form="prowlarr-form" disabled={!w.canSubmit}>
+            {w.saveMut.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="h-4 w-4" />
+            )}
+            {t("save")}
+          </Button>
+        ) : null}
       </CardContent>
 
       <ConfirmDialog
