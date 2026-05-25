@@ -28,8 +28,10 @@ test-results/
 .DS_Store
 Thumbs.db
 
-# Editor
-.vscode/
+# Editor: keep workspace config (.vscode/) in version control;
+# local overrides live in .vscode/settings.local.json (gitignored below).
+.vscode/*.local.json
+.vscode/.history/
 .idea/
 *.swp
 *.swo

@@ -1,0 +1,165 @@
+{
+  // Editor: Prettier als Default-Formatter, Format on Save, ESLint Fix on Save.
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.formatOnPaste": false,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "never"
+  },
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  "editor.rulers": [100],
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+
+  // Files: LF, trim trailing whitespace, final newline.
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.trimFinalNewlines": true,
+  "files.associations": {
+    "*.css": "tailwindcss",
+    ".env*": "dotenv",
+    "*.prisma": "prisma"
+  },
+
+  // Hide noise from explorer / search / file watchers.
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/dist": true,
+    "**/.pnpm-store": true,
+    "**/coverage": true,
+    "**/playwright-report": true,
+    "**/test-results": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/.next": true,
+    "**/dist": true,
+    "**/.pnpm-store": true,
+    "**/old_code": true,
+    "**/coverage": true,
+    "**/playwright-report": true,
+    "**/test-results": true,
+    "**/pnpm-lock.yaml": true,
+    "**/data/**": true
+  },
+  "files.watcherExclude": {
+    "**/.next/**": true,
+    "**/dist/**": true,
+    "**/node_modules/**": true,
+    "**/.pnpm-store/**": true,
+    "**/data/**": true,
+    "**/old_code/**": true
+  },
+
+  // TypeScript: use the workspace SDK (TS 6) so VS Code matches `pnpm typecheck`.
+  "js/ts.tsdk.path": "node_modules/typescript/lib",
+  "js/ts.tsdk.promptToUseWorkspaceVersion": true,
+  "js/ts.preferences.importModuleSpecifier": "non-relative",
+  "js/ts.preferences.preferTypeOnlyAutoImports": true,
+  "js/ts.updateImportsOnFileMove.enabled": "always",
+  "js/ts.suggest.autoImports": true,
+  "js/ts.tsserver.experimental.enableProjectDiagnostics": false,
+
+  // ESLint: flat config, fix on save, run across the workspace.
+  "eslint.useFlatConfig": true,
+  "eslint.run": "onType",
+  "eslint.format.enable": false,
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+
+  // Prettier: pick up .prettierrc + .prettierignore from workspace root.
+  "prettier.requireConfig": true,
+  "prettier.useEditorConfig": true,
+
+  // Per-language formatter pinning (so JSON/YAML/MD also use Prettier).
+  "[typescript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[typescriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[javascript]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[javascriptreact]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[json]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[jsonc]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[yaml]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[markdown]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[css]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[tailwindcss]": { "editor.defaultFormatter": "esbenp.prettier-vscode" },
+  "[prisma]": { "editor.defaultFormatter": "Prisma.prisma" },
+
+  // Tailwind v4: recognise globals.css + cn()/cva() helpers.
+  "tailwindCSS.experimental.configFile": "src/app/globals.css",
+  "tailwindCSS.includeLanguages": {
+    "typescript": "javascript",
+    "typescriptreact": "javascript"
+  },
+  "tailwindCSS.experimental.classRegex": [
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cn\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cx\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["clsx\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["tw`([^`]*)`", "([^`]*)"]
+  ],
+  "tailwindCSS.classAttributes": ["class", "className", "classList", "ngClass"],
+
+  // Vitest extension: pick up the vitest.config.ts at the root.
+  "vitest.enable": true,
+  "vitest.commandLine": "pnpm vitest",
+
+  // Spell checker: keep noise low, allow German + project jargon.
+  "cSpell.language": "en,de-de",
+  "cSpell.words": [
+    "Adaptarr",
+    "argon",
+    "concurrently",
+    "csrf",
+    "Datenbank",
+    "fastify",
+    "Indexer",
+    "Lidarr",
+    "Newznab",
+    "pino",
+    "pnpm",
+    "Prowlarr",
+    "Radarr",
+    "Readarr",
+    "shadcn",
+    "Sonarr",
+    "TMDB",
+    "Torznab",
+    "tsup",
+    "TVDB",
+    "Umlaut",
+    "Umlautadaptarr",
+    "umlautadaptarrex",
+    "vitest"
+  ],
+  "cSpell.enabledFileTypes": {
+    "*": false,
+    "markdown": true,
+    "plaintext": true,
+    "json": true,
+    "jsonc": true,
+    "yaml": true
+  },
+
+  // Misc QoL.
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.patterns": {
+    "package.json": "package-lock.json, pnpm-lock.yaml, pnpm-workspace.yaml, .npmrc, .pnpmfile.cjs",
+    "tsconfig.json": "tsconfig.*.json, next-env.d.ts",
+    ".env": ".env.*",
+    "README.md": "README.*.md, CHANGELOG.md, LICENSE*",
+    "next.config.ts": "next.config.*, postcss.config.*, tailwind.config.*",
+    "eslint.config.mjs": ".prettierrc*, .prettierignore, .editorconfig",
+    "prisma.config.ts": "prisma.config.*"
+  },
+  "git.autofetch": true,
+  "git.confirmSync": false,
+  "npm.packageManager": "pnpm",
+  "terminal.integrated.scrollback": 10000
+}
