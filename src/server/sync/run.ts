@@ -3,11 +3,7 @@ import { buildArrClient } from "@/arr";
 import { isMaskedSecret } from "@/lib/secrets";
 import type { ArrType, ProviderId } from "@/schemas/instance";
 import type { AppLogger } from "@/server/logging/logger";
-import {
-  type AppState,
-  type CachedSearchItem,
-  getAppState,
-} from "@/server/state";
+import { type AppState, type CachedSearchItem, getAppState } from "@/server/state";
 import type { MediaType } from "@/domain/variations/generate";
 import type { TitleProvider } from "@/providers/types";
 import { requiredLanguages } from "@/providers";
@@ -121,10 +117,7 @@ export async function cancelStaleRuns(logger: AppLogger): Promise<number> {
     },
   });
   if (result.count > 0) {
-    logger.warn(
-      { count: result.count },
-      "marked stale running sync runs as cancelled on boot",
-    );
+    logger.warn({ count: result.count }, "marked stale running sync runs as cancelled on boot");
   }
   return result.count;
 }
@@ -179,6 +172,8 @@ interface PersistChangeStats {
   removed: number;
   germanTitleChanged: number;
   expectedTitleChanged: number;
+  /** Rows that survived dedup and were actually persisted. */
+  persistedCount: number;
 }
 
 // Per-instance cap on per-item INFO logs to keep the log stream readable
@@ -199,9 +194,7 @@ async function persistAndReindex(
   state: AppState,
   instanceId: string,
   instanceName: string,
-  items: Awaited<
-    ReturnType<ReturnType<typeof buildArrClient>["fetchAllItems"]>
-  >,
+  items: Awaited<ReturnType<ReturnType<typeof buildArrClient>["fetchAllItems"]>>,
   logger: AppLogger,
 ): Promise<PersistChangeStats> {
   const existing = await prisma.searchItem.findMany({
@@ -215,6 +208,22 @@ async function persistAndReindex(
     },
   });
   const existingMap = new Map(existing.map((e) => [e.externalId, e]));
+  const itemsByExternalId = new Map<string, (typeof items)[number]>();
+  let droppedDuplicates = 0;
+  for (const item of items) {
+    if (itemsByExternalId.has(item.externalId)) {
+      droppedDuplicates += 1;
+      continue;
+    }
+    itemsByExternalId.set(item.externalId, item);
+  }
+  if (droppedDuplicates > 0) {
+    logger.warn(
+      { instance: instanceName, droppedDuplicates, total: items.length },
+      "sync: dropped duplicate externalIds before persist",
+    );
+  }
+  const deduped = Array.from(itemsByExternalId.values());
   const seenExternalIds = new Set<string>();
   const stats: PersistChangeStats = {
     created: 0,
@@ -222,6 +231,7 @@ async function persistAndReindex(
     removed: 0,
     germanTitleChanged: 0,
     expectedTitleChanged: 0,
+    persistedCount: deduped.length,
   };
   let perItemLogged = 0;
   const logChange = (event: Record<string, unknown>, msg: string): void => {
@@ -236,8 +246,8 @@ async function persistAndReindex(
     }
   };
 
-  for (let i = 0; i < items.length; i += PERSIST_CHUNK_SIZE) {
-    const chunk = items.slice(i, i + PERSIST_CHUNK_SIZE);
+  for (let i = 0; i < deduped.length; i += PERSIST_CHUNK_SIZE) {
+    const chunk = deduped.slice(i, i + PERSIST_CHUNK_SIZE);
     await prisma.$transaction(async (tx) => {
       for (const item of chunk) {
         seenExternalIds.add(item.externalId);
@@ -260,8 +270,7 @@ async function persistAndReindex(
         if (prior) {
           await tx.searchItem.update({ where: { id: prior.id }, data });
           stats.updated += 1;
-          const germanChanged =
-            (prior.germanTitle ?? null) !== (item.germanTitle ?? null);
+          const germanChanged = (prior.germanTitle ?? null) !== (item.germanTitle ?? null);
           const expectedChanged = prior.expectedTitle !== item.expectedTitle;
           if (germanChanged) stats.germanTitleChanged += 1;
           if (expectedChanged) stats.expectedTitleChanged += 1;
@@ -355,8 +364,7 @@ async function syncOneInstance(
   // Lidarr/Readarr don't need a TitleProvider — their fetchAllItems paths
   // ignore it anyway. Sonarr/Radarr without an order = config error, so we
   // fail loudly instead of silently running through.
-  const needsProvider =
-    instance.type === "sonarr" || instance.type === "radarr";
+  const needsProvider = instance.type === "sonarr" || instance.type === "radarr";
   const provider = order ? state.providerForOrder(order) : null;
 
   if (needsProvider && !provider) {
@@ -371,10 +379,7 @@ async function syncOneInstance(
     );
   }
   if (isMaskedSecret(instance.apiKey)) {
-    logger.warn(
-      { instance: instance.name, type: instance.type },
-      "sync skipped: masked api key",
-    );
+    logger.warn({ instance: instance.name, type: instance.type }, "sync skipped: masked api key");
     return markRunFailed(
       prepared,
       "API key is only the Prowlarr mask (********). Set the real key on the instance.",
@@ -385,10 +390,7 @@ async function syncOneInstance(
     return await fetchAndPersist(prepared, state, provider, order, logger);
   } catch (err) {
     const message = describeError(err);
-    logger.error(
-      { instance: instance.name, type: instance.type, err },
-      "sync error",
-    );
+    logger.error({ instance: instance.name, type: instance.type, err }, "sync error");
     return markRunFailed(prepared, message);
   }
 }
@@ -444,8 +446,7 @@ async function fetchAndPersist(
       count: items.length,
       withGermanTitle,
       withoutGermanTitle: items.length - withGermanTitle,
-      missingGermanSample:
-        missingGermanSample.length > 0 ? missingGermanSample : undefined,
+      missingGermanSample: missingGermanSample.length > 0 ? missingGermanSample : undefined,
       pcjonesItems: providerStats.pcjonesItems,
       tmdbItems: providerStats.tmdbItems,
       tvdbItems: providerStats.tvdbItems,
@@ -453,13 +454,7 @@ async function fetchAndPersist(
     "sync fetched items",
   );
 
-  const changeStats = await persistAndReindex(
-    state,
-    instance.id,
-    instance.name,
-    items,
-    logger,
-  );
+  const changeStats = await persistAndReindex(state, instance.id, instance.name, items, logger);
   logger.info(
     {
       instance: instance.name,
@@ -469,10 +464,11 @@ async function fetchAndPersist(
       removed: changeStats.removed,
       germanTitleChanged: changeStats.germanTitleChanged,
       expectedTitleChanged: changeStats.expectedTitleChanged,
+      persistedCount: changeStats.persistedCount,
     },
     "sync persisted",
   );
-  return markRunSucceeded(prepared, items.length, providerStats);
+  return markRunSucceeded(prepared, changeStats.persistedCount, providerStats);
 }
 
 export async function runSync(opts: RunSyncOptions): Promise<SyncResult> {

@@ -1,8 +1,5 @@
 import { getLidarrTitleForExternalId } from "@/domain/normalization/index";
-import {
-  buildSearchItem,
-  type SearchItemDerived,
-} from "@/domain/variations/index";
+import { buildSearchItem, type SearchItemDerived } from "@/domain/variations/index";
 import { ArrClient, type ArrClientOptions } from "./base";
 
 interface LidarrArtist {
@@ -30,7 +27,7 @@ export class LidarrClient extends ArrClient {
       map: (artist, album) =>
         buildSearchItem({
           arrId: artist.id,
-          externalId: getLidarrTitleForExternalId(album.title),
+          externalId: getLidarrTitleForExternalId(`${artist.artistName} ${album.title}`),
           title: album.title,
           expectedTitle: album.title,
           expectedAuthor: artist.artistName,

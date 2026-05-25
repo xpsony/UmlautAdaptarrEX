@@ -53,9 +53,7 @@ describe("LidarrClient.fetchAllItems", () => {
           { id: 11, artistId: 1, title: "Album Two" },
         ]),
       )
-      .mockResolvedValueOnce(
-        jsonResponse([{ id: 20, artistId: 2, title: "Solo" }]),
-      );
+      .mockResolvedValueOnce(jsonResponse([{ id: 20, artistId: 2, title: "Solo" }]));
 
     const client = new LidarrClient({
       instanceId: "i",
@@ -67,11 +65,37 @@ describe("LidarrClient.fetchAllItems", () => {
 
     const items = await client.fetchAllItems();
     expect(items).toHaveLength(3);
-    expect(items.map((i) => i.title).sort()).toEqual([
-      "Album One",
-      "Album Two",
-      "Solo",
-    ]);
+    expect(items.map((i) => i.title).sort()).toEqual(["Album One", "Album Two", "Solo"]);
     expect(items.every((i) => i.mediaType === "audio")).toBe(true);
+  });
+
+  it("derives externalId from '{artist} {album}' so same-titled albums across artists do not collide", async () => {
+    // Matches LidarrClient.cs in the .NET predecessor:
+    //   var expectedTitle = $"{artistName} {albumTitle}";
+    //   var externalId   = expectedTitle.GetLidarrTitleForExternalId();
+    requestMock
+      .mockResolvedValueOnce(
+        jsonResponse([
+          { id: 1, artistName: "Queen" },
+          { id: 2, artistName: "Eagles" },
+        ]),
+      )
+      .mockResolvedValueOnce(jsonResponse([{ id: 10, artistId: 1, title: "Greatest Hits" }]))
+      .mockResolvedValueOnce(jsonResponse([{ id: 20, artistId: 2, title: "Greatest Hits" }]));
+
+    const client = new LidarrClient({
+      instanceId: "i",
+      instanceName: "n",
+      host: "http://lidarr.local",
+      apiKey: "k",
+      userAgent: "UA",
+    });
+
+    const items = await client.fetchAllItems();
+    expect(items).toHaveLength(2);
+    const externalIds = items.map((i) => i.externalId);
+    expect(new Set(externalIds).size).toBe(2);
+    expect(externalIds).toContain("Queen Greatest Hits");
+    expect(externalIds).toContain("Eagles Greatest Hits");
   });
 });

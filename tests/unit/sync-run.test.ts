@@ -123,9 +123,7 @@ afterEach(() => {
 describe("runSync TMDB preflight", () => {
   it("aborts every prepared run when non-DE plugin is enabled but no TMDB key is set", async () => {
     mockState.tmdbAvailable = false;
-    mockState.languagePack.activePlugins = [
-      { id: "swedish-umlauts", language: "sv" },
-    ];
+    mockState.languagePack.activePlugins = [{ id: "swedish-umlauts", language: "sv" }];
 
     const result = await runSync({
       logger: makeLogger() as never,
@@ -141,14 +139,10 @@ describe("runSync TMDB preflight", () => {
 
   it("does not abort when only the DE plugin is active", async () => {
     mockState.tmdbAvailable = false;
-    mockState.languagePack.activePlugins = [
-      { id: "german-umlauts", language: "de" },
-    ];
+    mockState.languagePack.activePlugins = [{ id: "german-umlauts", language: "de" }];
     mockState.providerForOrder.mockReturnValueOnce({ name: "stub" });
     mockBuild.mockReturnValueOnce({ fetchAllItems: async () => [] });
-    mockPrisma.searchItem.findMany
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+    mockPrisma.searchItem.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     mockPrisma.$transaction.mockImplementationOnce(
       async (cb: (tx: typeof mockPrisma) => Promise<void>) => {
         await cb(mockPrisma);
@@ -203,24 +197,22 @@ describe("runSync per-instance handling", () => {
         },
       ],
     });
-    mockPrisma.searchItem.findMany
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        {
-          id: "row1",
-          arrInstanceId: "inst-sonarr",
-          arrId: 1,
-          externalId: "t1",
-          title: "A",
-          expectedTitle: "A",
-          expectedAuthor: null,
-          germanTitle: "Ä",
-          mediaType: "tv",
-          titleSearchVariations: '["A"]',
-          titleMatchVariations: '["A"]',
-          authorMatchVariations: "[]",
-        },
-      ]);
+    mockPrisma.searchItem.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        id: "row1",
+        arrInstanceId: "inst-sonarr",
+        arrId: 1,
+        externalId: "t1",
+        title: "A",
+        expectedTitle: "A",
+        expectedAuthor: null,
+        germanTitle: "Ä",
+        mediaType: "tv",
+        titleSearchVariations: '["A"]',
+        titleMatchVariations: '["A"]',
+        authorMatchVariations: "[]",
+      },
+    ]);
     mockPrisma.$transaction.mockImplementationOnce(
       async (cb: (tx: typeof mockPrisma) => Promise<void>) => {
         await cb(mockPrisma);
@@ -259,9 +251,7 @@ describe("runSync provider-order parsing", () => {
   it("treats invalid CSV provider order as null and still succeeds for lidarr", async () => {
     // lidarr does not need a provider; an unparseable order is irrelevant.
     mockBuild.mockReturnValueOnce({ fetchAllItems: async () => [] });
-    mockPrisma.searchItem.findMany
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([]);
+    mockPrisma.searchItem.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     mockPrisma.$transaction.mockImplementationOnce(
       async (cb: (tx: typeof mockPrisma) => Promise<void>) => {
         await cb(mockPrisma);
@@ -270,10 +260,76 @@ describe("runSync provider-order parsing", () => {
 
     const result = await runSync({
       logger: makeLogger() as never,
-      preparedRuns: [
-        makePrepared("lidarr", { providerOrder: "garbage,not-real" }),
-      ],
+      preparedRuns: [makePrepared("lidarr", { providerOrder: "garbage,not-real" })],
     });
     expect(result.perInstance[0]?.error).toBeUndefined();
+  });
+});
+
+describe("runSync persistAndReindex dedup", () => {
+  it("drops items with duplicate externalId before persisting so a stray collision does not crash the chunk", async () => {
+    // Two items with the same externalId would violate
+    // @@unique([arrInstanceId, externalId]) inside one transaction. The
+    // dedup keeps only the first occurrence.
+    mockBuild.mockReturnValueOnce({
+      fetchAllItems: async () => [
+        {
+          arrId: 1,
+          externalId: "dup",
+          title: "A",
+          expectedTitle: "A",
+          expectedAuthor: "Artist X",
+          germanTitle: null,
+          mediaType: "audio",
+          titleSearchVariations: ["A"],
+          titleMatchVariations: ["A"],
+          authorMatchVariations: [],
+          aliases: null,
+        },
+        {
+          arrId: 2,
+          externalId: "dup",
+          title: "A",
+          expectedTitle: "A",
+          expectedAuthor: "Artist Y",
+          germanTitle: null,
+          mediaType: "audio",
+          titleSearchVariations: ["A"],
+          titleMatchVariations: ["A"],
+          authorMatchVariations: [],
+          aliases: null,
+        },
+      ],
+    });
+    mockPrisma.searchItem.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    let createCalls = 0;
+    mockPrisma.$transaction.mockImplementationOnce(
+      async (cb: (tx: typeof mockPrisma) => Promise<void>) => {
+        const tx = {
+          ...mockPrisma,
+          searchItem: {
+            ...mockPrisma.searchItem,
+            create: vi.fn(() => {
+              createCalls += 1;
+              return Promise.resolve({});
+            }),
+            update: vi.fn().mockResolvedValue({}),
+          },
+        };
+        await cb(tx as unknown as typeof mockPrisma);
+      },
+    );
+
+    const result = await runSync({
+      logger: makeLogger() as never,
+      preparedRuns: [makePrepared("lidarr")],
+    });
+
+    expect(result.perInstance[0]?.error).toBeUndefined();
+    // Even though fetchAllItems returned 2 entries with the same externalId,
+    // only one create runs because the second was dropped as a duplicate.
+    expect(createCalls).toBe(1);
+    // count reflects the deduped size, not the raw payload.
+    expect(result.perInstance[0]?.count).toBe(1);
   });
 });

@@ -1,8 +1,5 @@
 import { getReadarrTitleForExternalId } from "@/domain/normalization/index";
-import {
-  buildSearchItem,
-  type SearchItemDerived,
-} from "@/domain/variations/index";
+import { buildSearchItem, type SearchItemDerived } from "@/domain/variations/index";
 import { ArrClient, type ArrClientOptions } from "./base";
 
 interface ReadarrAuthor {
@@ -43,7 +40,7 @@ export class ReadarrClient extends ArrClient {
         const cleaned = cleanBookTitle(book.title, author.authorName);
         return buildSearchItem({
           arrId: author.id,
-          externalId: getReadarrTitleForExternalId(cleaned),
+          externalId: getReadarrTitleForExternalId(`${cleaned} ${author.authorName}`),
           title: cleaned,
           expectedTitle: cleaned,
           expectedAuthor: author.authorName,

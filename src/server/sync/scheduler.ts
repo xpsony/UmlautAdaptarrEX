@@ -75,16 +75,18 @@ export class SyncScheduler {
       return { status: "already_running" };
     }
     const state = getAppState();
-    if (!state.provider) {
-      this.opts.logger.warn("sync skipped: no title provider configured");
-      return { status: "no_provider" };
-    }
 
     const where = instanceId ? { id: instanceId, enabled: true } : { enabled: true };
     const instances = await prisma.arrInstance.findMany({ where });
     if (instances.length === 0) {
       this.opts.logger.info("sync skipped: no enabled instances");
       return { status: "no_instances" };
+    }
+
+    const needsProvider = instances.some((i) => i.type === "sonarr" || i.type === "radarr");
+    if (needsProvider && !state.provider) {
+      this.opts.logger.warn("sync skipped: no title provider configured");
+      return { status: "no_provider" };
     }
 
     const prepared = await Promise.all(
@@ -132,14 +134,15 @@ export class SyncScheduler {
       return;
     }
     const state = getAppState();
-    if (!state.provider) {
-      this.opts.logger.warn("scheduled sync skipped: no provider configured");
-      return;
-    }
     const instances = await prisma.arrInstance.findMany({
       where: { enabled: true },
     });
     if (instances.length === 0) return;
+    const needsProvider = instances.some((i) => i.type === "sonarr" || i.type === "radarr");
+    if (needsProvider && !state.provider) {
+      this.opts.logger.warn("scheduled sync skipped: no provider configured");
+      return;
+    }
 
     const prepared = await Promise.all(
       instances.map(async (inst) => {
