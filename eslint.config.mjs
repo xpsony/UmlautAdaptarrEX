@@ -1,6 +1,7 @@
 import next from "eslint-config-next";
+import tseslint from "typescript-eslint";
 
-export default [
+export default tseslint.config(
   ...next,
   {
     settings: { react: { version: "19" } },
@@ -12,10 +13,19 @@ export default [
       "node_modules/**",
       "old_code/**",
       "data/**",
+      "src/generated/**",
     ],
   },
   {
+    // Typed linting: enable the project service so type-aware rules
+    // (no-floating-promises et al.) can read tsconfig.json automatically.
     files: ["**/*.ts", "**/*.tsx"],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     rules: {
       // Catch dead imports/vars; allow `_`-prefixed names as intentional.
       "@typescript-eslint/no-unused-vars": [
@@ -38,6 +48,27 @@ export default [
       // Replace the base rule with the TS-aware variant so it understands
       // overloads and type-only declarations.
       "no-unused-vars": "off",
+
+      // Type-aware async-correctness rules. These need the project service
+      // (above) and catch the bugs typecheck misses: forgotten awaits, async
+      // handlers passed to APIs that ignore the returned promise, etc.
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/await-thenable": "error",
+      "@typescript-eslint/no-misused-promises": [
+        "error",
+        { checksVoidReturn: { attributes: false } },
+      ],
+      // `require-await` is too noisy in this codebase: Fastify plugins,
+      // provider interface methods, and net.Socket handlers must be `async`
+      // to satisfy their declared signatures even when they don't await.
+    },
+  },
+  {
+    // Tests routinely chain expect/await patterns where floating-promises
+    // produces false positives. Keep the type-aware safety net off here.
+    files: ["tests/**/*.ts", "tests/**/*.tsx"],
+    rules: {
+      "@typescript-eslint/no-floating-promises": "off",
     },
   },
   {
@@ -72,8 +103,7 @@ export default [
           patterns: [
             {
               group: ["../*", "../../*", "../../../*"],
-              message:
-                "Use the @/* alias for cross-directory imports outside src/domain.",
+              message: "Use the @/* alias for cross-directory imports outside src/domain.",
             },
           ],
         },
@@ -87,4 +117,4 @@ export default [
       "no-console": ["warn", { allow: ["warn", "error"] }],
     },
   },
-];
+);
