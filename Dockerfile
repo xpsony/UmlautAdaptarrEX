@@ -78,5 +78,5 @@ COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 EXPOSE 5005 5006 5007
 VOLUME ["/data"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD wget --spider -q "http://127.0.0.1:${PORT}/api/health" || exit 1
+  CMD wget -qO- "http://127.0.0.1:${PORT}/api/health" >/dev/null || exit 1
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh", "node", "start.mjs"]
