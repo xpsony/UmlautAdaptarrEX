@@ -65,7 +65,7 @@
     "clsx": "^2.1.1",
     "fast-xml-parser": "^5.8.0",
     "fastify": "^5.8.5",
-    "lru-cache": "^11.5.0",
+    "lru-cache": "^11.5.1",
     "lucide-react": "^1.16.0",
     "moviedb-promise": "^4.0.8",
     "nanoid": "^5.1.11",
