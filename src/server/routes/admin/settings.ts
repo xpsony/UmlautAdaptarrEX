@@ -12,6 +12,7 @@ import { requiredLanguages } from "@/providers";
 import type { ProviderId } from "@/schemas/instance";
 import { pickMissingCandidates } from "@/server/title-cache/recheck";
 import { isMaskedSecret, maskSecret } from "@/lib/secrets";
+import { resolveProxyPortEnv } from "@/lib/ports";
 import { parseOrReply } from "./_helpers";
 
 const TmdbTestSchema = z.object({
@@ -68,8 +69,11 @@ async function getSettings(): Promise<unknown> {
   // schema treats `••••••••` as "leave alone" so a round-trip save keeps
   // the stored secret. `appApiKey` and `proxyPassword` stay in cleartext
   // because the operator must actively copy them into Sonarr/Prowlarr.
+  const envProxyPort = resolveProxyPortEnv();
   return {
     ...rest,
+    proxyPort: envProxyPort ?? rest.proxyPort,
+    proxyPortEnvManaged: envProxyPort !== null,
     tmdbApiKey: maskSecret(tmdbApiKey),
     tvdbApiKey: maskSecret(tvdbApiKey),
     tvdbPin: maskSecret(tvdbPin),
@@ -80,12 +84,17 @@ async function getSettings(): Promise<unknown> {
   };
 }
 
-async function putSettings(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function putSettings(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const data = parseOrReply(req.body, SettingsUpdateSchema, reply);
   if (!data) return;
+  const envProxyPort = resolveProxyPortEnv();
+  // The proxy port is pinned by UMLAUTADAPTARREX_PROXY_PORT, so a DB write would
+  // never take effect (the env override wins at boot). Reject the edit with a
+  // stable code instead of silently dropping it. Defense-in-depth: the UI also
+  // disables the field.
+  if (data.proxyPort !== undefined && envProxyPort !== null) {
+    return reply.code(409).send({ error: "proxy-port-env-managed" });
+  }
   const previousMode = getAppState().settings.operationMode;
   const cleaned = stripUndefined(data);
   const updated = await prisma.setting.update({
@@ -126,6 +135,8 @@ async function putSettings(
   } = updated as typeof updated & { csrfSecret?: string | null };
   return {
     ...rest,
+    proxyPort: envProxyPort ?? rest.proxyPort,
+    proxyPortEnvManaged: envProxyPort !== null,
     tmdbApiKey: maskSecret(tmdbApiKey),
     tvdbApiKey: maskSecret(tvdbApiKey),
     tvdbPin: maskSecret(tvdbPin),
@@ -136,10 +147,7 @@ async function putSettings(
   };
 }
 
-async function postTestTmdbKey(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function postTestTmdbKey(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const data = parseOrReply(req.body ?? {}, TmdbTestSchema, reply);
   if (!data) return;
   const raw = data.apiKey?.trim() ?? "";
@@ -156,10 +164,7 @@ async function postTestTmdbKey(
   return probeTmdbKey(key);
 }
 
-async function postTestTvdbKey(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function postTestTvdbKey(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const data = parseOrReply(req.body ?? {}, TvdbTestSchema, reply);
   if (!data) return;
   const rawKey = data.apiKey?.trim() ?? "";
@@ -177,19 +182,14 @@ async function postTestTvdbKey(
   return probeTvdbKey(key, pin || null);
 }
 
-async function postRegenerateApiKey(
-  req: FastifyRequest,
-): Promise<{ appApiKey: string }> {
+async function postRegenerateApiKey(req: FastifyRequest): Promise<{ appApiKey: string }> {
   const apiKey = nanoid(32);
   const updated = await prisma.setting.update({
     where: { id: 1 },
     data: { appApiKey: apiKey },
   });
   await getAppState().reloadSettings();
-  req.log.warn(
-    { userId: req.session?.userId ?? null, ip: req.ip },
-    "app API key regenerated",
-  );
+  req.log.warn({ userId: req.session?.userId ?? null, ip: req.ip }, "app API key regenerated");
   return { appApiKey: updated.appApiKey };
 }
 
@@ -202,10 +202,7 @@ async function postRegenerateProxyPassword(
     data: { proxyPassword },
   });
   await getAppState().reloadSettings();
-  req.log.warn(
-    { userId: req.session?.userId ?? null, ip: req.ip },
-    "proxy password regenerated",
-  );
+  req.log.warn({ userId: req.session?.userId ?? null, ip: req.ip }, "proxy password regenerated");
   return { proxyPassword: updated.proxyPassword };
 }
 
@@ -321,11 +318,7 @@ export async function settingsRoutes(app: FastifyInstance): Promise<void> {
   app.post("/api/admin/settings/test-tmdb-key", auth, postTestTmdbKey);
   app.post("/api/admin/settings/test-tvdb-key", auth, postTestTvdbKey);
   app.post("/api/admin/settings/regenerate-apikey", auth, postRegenerateApiKey);
-  app.post(
-    "/api/admin/settings/regenerate-proxy-password",
-    auth,
-    postRegenerateProxyPassword,
-  );
+  app.post("/api/admin/settings/regenerate-proxy-password", auth, postRegenerateProxyPassword);
   app.get("/api/admin/title-cache", auth, getTitleCacheStats);
   app.delete("/api/admin/title-cache", auth, deleteTitleCache);
   app.post("/api/admin/title-cache/recheck-missing", auth, postRecheckMissing);

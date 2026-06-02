@@ -1,11 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import {
-  isProwlarrConfigured,
-  loadSetting,
-  type SettingRow,
-} from "@/lib/setting-helpers";
+import { isProwlarrConfigured, loadSetting, type SettingRow } from "@/lib/setting-helpers";
 import { storeApiKey } from "@/server/prowlarr-key-vault";
 import { SetupSchema } from "@/schemas/auth";
 import { probeTmdbKey } from "@/providers/tmdb";
@@ -31,6 +27,7 @@ import {
 } from "@/server/prowlarr-helpers";
 import { parseOrReply } from "./_helpers";
 import { handleSetupSubmit } from "./_setup-handler";
+import { resolveProxyPortEnv } from "@/lib/ports";
 
 const DEFAULT_PROXY_PORT = 5006;
 const DEFAULT_PROXY_USERNAME = "UmlautAdaptarr";
@@ -81,9 +78,10 @@ async function gateSetupOpen(
 async function getSetupStatus(): Promise<{
   setupComplete: boolean;
   prowlarrConfig: { host: string | null; configured: boolean };
-  proxyDefaults: { port: number; username: string };
+  proxyDefaults: { port: number; username: string; portEnvManaged: boolean };
 }> {
   const setting = await loadSetting();
+  const envProxyPort = resolveProxyPortEnv();
   return {
     setupComplete: setting?.setupComplete ?? false,
     // Wizard pre-fills the persisted Prowlarr host without leaking the API key.
@@ -93,8 +91,9 @@ async function getSetupStatus(): Promise<{
       configured: isProwlarrConfigured(setting),
     },
     proxyDefaults: {
-      port: setting?.proxyPort ?? DEFAULT_PROXY_PORT,
+      port: envProxyPort ?? setting?.proxyPort ?? DEFAULT_PROXY_PORT,
       username: setting?.proxyUsername ?? DEFAULT_PROXY_USERNAME,
+      portEnvManaged: envProxyPort !== null,
     },
   };
 }
@@ -110,22 +109,14 @@ async function resolveProwlarrCreds(
   return data ? { host: data.host, apiKey: data.apiKey } : null;
 }
 
-async function postProwlarrPreview(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function postProwlarrPreview(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const gate = await gateSetupOpen(reply);
   if (gate.gated) return;
   const body = (req.body as Record<string, unknown> | undefined) ?? {};
   const creds = await resolveProwlarrCreds(body, reply);
   if (!creds) return;
   const ua = getAppState().settings.userAgent;
-  const result = await fetchProwlarrApplications(
-    creds.host,
-    creds.apiKey,
-    ua,
-    req.log,
-  );
+  const result = await fetchProwlarrApplications(creds.host, creds.apiKey, ua, req.log);
   if (!result.ok) {
     return replyProwlarrUpstreamError(reply, result, "fetch_failed");
   }
@@ -145,16 +136,11 @@ async function postProwlarrPreview(
   // the setup endpoint resolves the tokens back at submission time. Apps
   // whose key was already empty/masked stay empty so the UI's
   // "needs-manual-entry" path keeps working.
-  const safeApps = result.apps.map((a) =>
-    a.apiKey ? { ...a, apiKey: storeApiKey(a.apiKey) } : a,
-  );
+  const safeApps = result.apps.map((a) => (a.apiKey ? { ...a, apiKey: storeApiKey(a.apiKey) } : a));
   return { apps: safeApps, skipped: result.skipped };
 }
 
-async function deleteProwlarr(
-  _req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function deleteProwlarr(_req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const gate = await gateSetupOpen(reply);
   if (gate.gated) return;
   // No Setting row yet: nothing to clear, the wizard hasn't persisted any
@@ -185,10 +171,7 @@ async function getPlugins(): Promise<PluginListEntry[]> {
   }));
 }
 
-async function postTestTmdbKey(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function postTestTmdbKey(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const gate = await gateSetupOpen(reply, { code: 409 });
   if (gate.gated) return;
   const data = parseOrReply(
@@ -200,10 +183,7 @@ async function postTestTmdbKey(
   return probeTmdbKey(data.apiKey);
 }
 
-async function postTestTvdbKey(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function postTestTvdbKey(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const gate = await gateSetupOpen(reply, { code: 409 });
   if (gate.gated) return;
   const data = parseOrReply(
@@ -218,21 +198,13 @@ async function postTestTvdbKey(
   return probeTvdbKey(data.apiKey, data.pin ?? null);
 }
 
-async function postProwlarrTest(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function postProwlarrTest(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const gate = await gateSetupOpen(reply);
   if (gate.gated) return;
   const data = parseOrReply(req.body, ProwlarrCredsSchema, reply);
   if (!data) return;
   const ua = getAppState().settings.userAgent;
-  const result = await fetchProwlarrApplications(
-    data.host,
-    data.apiKey,
-    ua,
-    req.log,
-  );
+  const result = await fetchProwlarrApplications(data.host, data.apiKey, ua, req.log);
   if (!result.ok) {
     return { ok: false, status: result.status ?? 0, error: result.error };
   }
@@ -256,10 +228,7 @@ function defaultProxyHost(prowlarrHost: string): string {
   }
 }
 
-async function getInstallProxyPreview(
-  _req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function getInstallProxyPreview(_req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const gate = await gateSetupOpen(reply);
   if (gate.gated) return;
   const setting = gate.setting;
@@ -270,17 +239,13 @@ async function getInstallProxyPreview(
     });
   }
   const ua = getAppState().settings.userAgent;
-  const probe = await findExistingUmlautProxy(
-    setting.prowlarrHost,
-    setting.prowlarrApiKey,
-    ua,
-  );
+  const probe = await findExistingUmlautProxy(setting.prowlarrHost, setting.prowlarrApiKey, ua);
   if (!probe.ok) {
     return replyProwlarrUpstreamError(reply, probe, "fetch_failed");
   }
   return {
     defaultHost: defaultProxyHost(setting.prowlarrHost),
-    port: setting.proxyPort,
+    port: resolveProxyPortEnv() ?? setting.proxyPort,
     username: setting.proxyUsername || DEFAULT_PROXY_USERNAME,
     name: PROWLARR_PROXY_NAME,
     tagLabel: PROWLARR_PROXY_TAG_LABEL,
@@ -288,10 +253,7 @@ async function getInstallProxyPreview(
   };
 }
 
-async function postInstancesTest(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function postInstancesTest(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const gate = await gateSetupOpen(reply);
   if (gate.gated) return;
   const data = parseOrReply(req.body, TestConnectionSchema, reply);
@@ -318,10 +280,7 @@ async function postInstancesTest(
   return testConnection(data.type, data.host, data.apiKey, ua, req.log);
 }
 
-async function postSetup(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<void> {
+async function postSetup(req: FastifyRequest, reply: FastifyReply): Promise<void> {
   const gate = await gateSetupOpen(reply, { code: 409 });
   if (gate.gated) return;
   const data = parseOrReply(req.body, SetupSchema, reply);
@@ -339,11 +298,7 @@ export async function setupRoutes(app: FastifyInstance): Promise<void> {
   app.post("/api/auth/test-tmdb-key", rateLimited, postTestTmdbKey);
   app.post("/api/auth/test-tvdb-key", rateLimited, postTestTvdbKey);
   app.post("/api/auth/prowlarr/test", rateLimited, postProwlarrTest);
-  app.get(
-    "/api/auth/prowlarr/install-proxy/preview",
-    rateLimited,
-    getInstallProxyPreview,
-  );
+  app.get("/api/auth/prowlarr/install-proxy/preview", rateLimited, getInstallProxyPreview);
   app.post("/api/auth/instances/test", rateLimited, postInstancesTest);
   app.post("/api/auth/setup", rateLimited, postSetup);
 }
