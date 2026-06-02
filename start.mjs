@@ -19,7 +19,7 @@
 // restart button can succeed.
 
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { cpSync, existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -85,25 +85,44 @@ if (process.env[SUPERVISOR_ENV] !== "1") {
 
   const runPrismaMigrate = () =>
     new Promise((resolve, reject) => {
-      const proc = spawn(
-        "node",
-        ["./node_modules/prisma/build/index.js", "migrate", "deploy"],
-        { cwd: __dirname, stdio: "inherit" },
-      );
+      const proc = spawn("node", ["./node_modules/prisma/build/index.js", "migrate", "deploy"], {
+        cwd: __dirname,
+        stdio: "inherit",
+      });
       proc.on("exit", (code) => {
         if (code === 0) resolve();
-        else
-          reject(new Error(`prisma migrate deploy exited with code ${code}`));
+        else reject(new Error(`prisma migrate deploy exited with code ${code}`));
       });
     });
 
-  const startNext = () => {
-    const candidate = path.join(__dirname, "server.js");
-    if (!existsSync(candidate)) {
-      throw new Error(`Next.js standalone server not found at ${candidate}`);
+
+  const resolveNextStandalone = () => {
+    const rootServer = path.join(__dirname, "server.js");
+    if (existsSync(rootServer)) return { server: rootServer, dir: __dirname };
+
+    const standaloneDir = path.join(__dirname, ".next", "standalone");
+    const standaloneServer = path.join(standaloneDir, "server.js");
+    if (!existsSync(standaloneServer)) {
+      throw new Error(
+        `Next.js standalone server not found. Looked for ${rootServer} (Docker ` +
+          `layout) and ${standaloneServer} (bare-metal layout). ` +
+          `Run \`pnpm build:prod\` first.`,
+      );
     }
+
+    for (const [src, dest] of [
+      [path.join(__dirname, ".next", "static"), path.join(standaloneDir, ".next", "static")],
+      [path.join(__dirname, "public"), path.join(standaloneDir, "public")],
+    ]) {
+      if (existsSync(src)) cpSync(src, dest, { recursive: true });
+    }
+    return { server: standaloneServer, dir: standaloneDir };
+  };
+
+  const startNext = () => {
+    const { server: candidate, dir: nextCwd } = resolveNextStandalone();
     nextProc = spawn(process.execPath, [candidate], {
-      cwd: __dirname,
+      cwd: nextCwd,
       env: {
         ...process.env,
         PORT: String(WEB_PORT),
@@ -114,9 +133,7 @@ if (process.env[SUPERVISOR_ENV] !== "1") {
     });
     nextProc.on("exit", (code, signal) => {
       if (shuttingDown) return;
-      console.error(
-        `[supervisor] Next.js exited unexpectedly: code=${code} signal=${signal}`,
-      );
+      console.error(`[supervisor] Next.js exited unexpectedly: code=${code} signal=${signal}`);
       void shutdown(1);
     });
   };
@@ -154,10 +171,7 @@ if (process.env[SUPERVISOR_ENV] !== "1") {
   // direct `process.exit(75)` would leave the Next.js subprocess orphaned
   // and holding port 5007, so the respawn would fail with EADDRINUSE and
   // the supervisor would propagate the failure as exit 1 (= container dies).
-  process.on(
-    "umlautadaptarrex:restart",
-    () => void shutdown(RESTART_EXIT_CODE),
-  );
+  process.on("umlautadaptarrex:restart", () => void shutdown(RESTART_EXIT_CODE));
 
   process.on("SIGTERM", () => void shutdown(0));
   process.on("SIGINT", () => void shutdown(0));
