@@ -40,6 +40,7 @@ import { ensureCsrfSecret, getCsrfSecret } from "@/lib/auth/csrf";
 import { SessionRetentionScheduler } from "./auth/session-retention";
 import { parseTrustProxy } from "./trust-proxy";
 import { applySecurityHeaders } from "./security-headers";
+import { resolveLegacyApiPort } from "@/lib/ports";
 
 export interface BootOptions {
   port: number;
@@ -120,30 +121,20 @@ export async function bootServer(opts: BootOptions): Promise<{
   });
 
   const legacyHandlers = {
-    caps: (
-      req: Parameters<typeof handleCaps>[0],
-      reply: Parameters<typeof handleCaps>[1],
-    ) => handleCaps(req, reply, { fetcher }),
-    search: (
-      req: Parameters<typeof handleSearch>[0],
-      reply: Parameters<typeof handleSearch>[1],
-    ) => handleSearch(req, reply, { type: "search" }, { fetcher }),
+    caps: (req: Parameters<typeof handleCaps>[0], reply: Parameters<typeof handleCaps>[1]) =>
+      handleCaps(req, reply, { fetcher }),
+    search: (req: Parameters<typeof handleSearch>[0], reply: Parameters<typeof handleSearch>[1]) =>
+      handleSearch(req, reply, { type: "search" }, { fetcher }),
     tvsearch: (
       req: Parameters<typeof handleSearch>[0],
       reply: Parameters<typeof handleSearch>[1],
     ) => handleSearch(req, reply, { type: "tvsearch" }, { fetcher }),
-    movie: (
-      req: Parameters<typeof handleSearch>[0],
-      reply: Parameters<typeof handleSearch>[1],
-    ) => handleSearch(req, reply, { type: "movie" }, { fetcher }),
-    music: (
-      req: Parameters<typeof handleSearch>[0],
-      reply: Parameters<typeof handleSearch>[1],
-    ) => handleSearch(req, reply, { type: "music" }, { fetcher }),
-    book: (
-      req: Parameters<typeof handleSearch>[0],
-      reply: Parameters<typeof handleSearch>[1],
-    ) => handleSearch(req, reply, { type: "book" }, { fetcher }),
+    movie: (req: Parameters<typeof handleSearch>[0], reply: Parameters<typeof handleSearch>[1]) =>
+      handleSearch(req, reply, { type: "movie" }, { fetcher }),
+    music: (req: Parameters<typeof handleSearch>[0], reply: Parameters<typeof handleSearch>[1]) =>
+      handleSearch(req, reply, { type: "music" }, { fetcher }),
+    book: (req: Parameters<typeof handleSearch>[0], reply: Parameters<typeof handleSearch>[1]) =>
+      handleSearch(req, reply, { type: "book" }, { fetcher }),
   };
 
   app.get("/api/health", async (_req, reply) => {
@@ -165,15 +156,11 @@ export async function bootServer(opts: BootOptions): Promise<{
       await reply
         .code(503)
         .header("content-type", "text/plain; charset=utf-8")
-        .send(
-          "Index Legacy Api wurde deaktiviert, bitte Einstellungen anpassen",
-        );
+        .send("Index Legacy Api wurde deaktiviert, bitte Einstellungen anpassen");
       return;
     }
     const t = (req.query as { t?: string }).t;
-    const handler = t
-      ? legacyHandlers[t as keyof typeof legacyHandlers]
-      : undefined;
+    const handler = t ? legacyHandlers[t as keyof typeof legacyHandlers] : undefined;
     if (!handler) {
       await reply.code(404).send({ error: "Not found" });
       return;
@@ -264,58 +251,51 @@ export async function bootServer(opts: BootOptions): Promise<{
 }
 
 function installErrorHandlers(app: FastifyInstance, logger: AppLogger): void {
-  app.setErrorHandler(
-    (err: FastifyError, req: FastifyRequest, reply: FastifyReply) => {
-      const status =
-        typeof err.statusCode === "number" && err.statusCode >= 400
-          ? err.statusCode
-          : 500;
-      const ctx = {
-        reqId: req.id,
-        method: req.method,
-        // Legacy routes use `/<appApiKey>/<host>/api?…`. Strip the leading
-        // key segment + any `apikey=` query value before the URL hits the
-        // log so a malformed request can't leak the operator's appApiKey.
-        url: redactApiKey(req.url),
-        ip: req.ip,
-        status,
-        err,
-      };
-      if (status >= 500) {
-        req.log.error(ctx, "request failed");
-      } else {
-        req.log.warn(ctx, "request rejected");
-      }
-      // Suppress duplicate logging from the onResponse hook.
-      (req as FastifyRequest & { _loggedError?: boolean })._loggedError = true;
-      if (reply.sent) return;
-      if (err.validation) {
-        void reply.code(400).send({
-          error: "validation",
-          issues: err.validation,
-          message: err.message,
-        });
-        return;
-      }
-      // `@fastify/csrf-protection` raises FST_CSRF_MISSING_SECRET when the
-      // signed `_csrf` cookie is gone or its signature no longer matches
-      // (e.g. the server's csrfSecret rotated, browser dropped the cookie).
-      // Translate both CSRF codes into the SPA-known `csrf-invalid` shape so
-      // `isSessionLost` triggers a clean redirect to /login instead of
-      // surfacing the raw "Missing csrf secret" string in a toast.
-      if (
-        err.code === "FST_CSRF_MISSING_SECRET" ||
-        err.code === "FST_CSRF_INVALID_TOKEN"
-      ) {
-        void reply.code(403).send({ error: "csrf-invalid" });
-        return;
-      }
-      void reply.code(status).send({
-        error: status >= 500 ? "internal" : "request_error",
-        message: status >= 500 ? "Internal server error" : err.message,
+  app.setErrorHandler((err: FastifyError, req: FastifyRequest, reply: FastifyReply) => {
+    const status =
+      typeof err.statusCode === "number" && err.statusCode >= 400 ? err.statusCode : 500;
+    const ctx = {
+      reqId: req.id,
+      method: req.method,
+      // Legacy routes use `/<appApiKey>/<host>/api?…`. Strip the leading
+      // key segment + any `apikey=` query value before the URL hits the
+      // log so a malformed request can't leak the operator's appApiKey.
+      url: redactApiKey(req.url),
+      ip: req.ip,
+      status,
+      err,
+    };
+    if (status >= 500) {
+      req.log.error(ctx, "request failed");
+    } else {
+      req.log.warn(ctx, "request rejected");
+    }
+    // Suppress duplicate logging from the onResponse hook.
+    (req as FastifyRequest & { _loggedError?: boolean })._loggedError = true;
+    if (reply.sent) return;
+    if (err.validation) {
+      void reply.code(400).send({
+        error: "validation",
+        issues: err.validation,
+        message: err.message,
       });
-    },
-  );
+      return;
+    }
+    // `@fastify/csrf-protection` raises FST_CSRF_MISSING_SECRET when the
+    // signed `_csrf` cookie is gone or its signature no longer matches
+    // (e.g. the server's csrfSecret rotated, browser dropped the cookie).
+    // Translate both CSRF codes into the SPA-known `csrf-invalid` shape so
+    // `isSessionLost` triggers a clean redirect to /login instead of
+    // surfacing the raw "Missing csrf secret" string in a toast.
+    if (err.code === "FST_CSRF_MISSING_SECRET" || err.code === "FST_CSRF_INVALID_TOKEN") {
+      void reply.code(403).send({ error: "csrf-invalid" });
+      return;
+    }
+    void reply.code(status).send({
+      error: status >= 500 ? "internal" : "request_error",
+      message: status >= 500 ? "Internal server error" : err.message,
+    });
+  });
 
   app.setNotFoundHandler((req: FastifyRequest, reply: FastifyReply) => {
     req.log.debug(
@@ -339,43 +319,38 @@ function installErrorHandlers(app: FastifyInstance, logger: AppLogger): void {
 function installRequestTiming(app: FastifyInstance, _logger: AppLogger): void {
   const SLOW_REQUEST_MS = 5_000;
   app.addHook("onRequest", async (req: FastifyRequest) => {
-    (req as FastifyRequest & { _startNs?: bigint })._startNs =
-      process.hrtime.bigint();
+    (req as FastifyRequest & { _startNs?: bigint })._startNs = process.hrtime.bigint();
   });
-  app.addHook(
-    "onResponse",
-    async (req: FastifyRequest, reply: FastifyReply) => {
-      const startNs = (req as FastifyRequest & { _startNs?: bigint })._startNs;
-      if (startNs === undefined) return;
-      const durationMs = Number(process.hrtime.bigint() - startNs) / 1_000_000;
-      const status = reply.statusCode;
-      const slow = durationMs >= SLOW_REQUEST_MS;
-      const errored = status >= 400;
-      // Skip fast successes — admin UI polls every 5s and would flood the log.
-      if (!slow && !errored) return;
-      const alreadyLogged = (req as FastifyRequest & { _loggedError?: boolean })
-        ._loggedError;
-      if (errored && alreadyLogged) return;
-      const ctx = {
-        reqId: req.id,
-        method: req.method,
-        url: redactApiKey(req.url),
-        status,
-        durationMs,
-      };
-      if (status >= 500) {
-        req.log.error(ctx, "request errored");
-      } else if (status >= 400) {
-        req.log.warn(ctx, "request rejected");
-      } else {
-        req.log.warn(ctx, "slow request");
-      }
-    },
-  );
+  app.addHook("onResponse", async (req: FastifyRequest, reply: FastifyReply) => {
+    const startNs = (req as FastifyRequest & { _startNs?: bigint })._startNs;
+    if (startNs === undefined) return;
+    const durationMs = Number(process.hrtime.bigint() - startNs) / 1_000_000;
+    const status = reply.statusCode;
+    const slow = durationMs >= SLOW_REQUEST_MS;
+    const errored = status >= 400;
+    // Skip fast successes — admin UI polls every 5s and would flood the log.
+    if (!slow && !errored) return;
+    const alreadyLogged = (req as FastifyRequest & { _loggedError?: boolean })._loggedError;
+    if (errored && alreadyLogged) return;
+    const ctx = {
+      reqId: req.id,
+      method: req.method,
+      url: redactApiKey(req.url),
+      status,
+      durationMs,
+    };
+    if (status >= 500) {
+      req.log.error(ctx, "request errored");
+    } else if (status >= 400) {
+      req.log.warn(ctx, "request rejected");
+    } else {
+      req.log.warn(ctx, "slow request");
+    }
+  });
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const port = parseInt(process.env.PORT ?? "5005", 10);
+  const port = resolveLegacyApiPort();
   bootServer({ port }).catch((err) => {
     console.error("[boot] fatal error:", err);
     process.exit(1);

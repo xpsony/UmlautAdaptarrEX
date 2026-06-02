@@ -25,8 +25,31 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const PORT = parseInt(process.env.PORT ?? "5005", 10);
-const WEB_PORT = parseInt(process.env.WEB_PORT ?? "5007", 10);
+// Port precedence mirrors src/lib/ports.ts (single source of truth). This
+// supervisor is plain .mjs and runs before the TS build is importable, so the
+// logic is duplicated here. Branded UMLAUTADAPTARREX_* names win over the
+// legacy PORT / WEB_PORT names; an empty value is treated as unset; both fall
+// back to the historical defaults. A present-but-invalid value throws so a
+// misconfiguration fails fast. Only plain decimal-digit strings are accepted
+// (rejects hex like "0x1F90" and float literals like "5005.0").
+const resolvePort = (candidates, fallback) => {
+  for (const value of candidates) {
+    if (value === undefined || value.trim() === "") continue;
+    const trimmed = value.trim();
+    if (!/^\d+$/.test(trimmed)) {
+      throw new Error(`invalid port "${value}" (expected integer 1024-65535)`);
+    }
+    const n = Number(trimmed);
+    if (n < 1024 || n > 65535) {
+      throw new Error(`invalid port "${value}" (expected integer 1024-65535)`);
+    }
+    return n;
+  }
+  return fallback;
+};
+
+const PORT = resolvePort([process.env.UMLAUTADAPTARREX_LEGACYAPI_PORT, process.env.PORT], 5005);
+const WEB_PORT = resolvePort([process.env.UMLAUTADAPTARREX_WEBUI_PORT, process.env.WEB_PORT], 5007);
 
 const RESTART_EXIT_CODE = 75;
 const SUPERVISOR_ENV = "UMLAUTADAPTARREX_SUPERVISED";
@@ -94,7 +117,6 @@ if (process.env[SUPERVISOR_ENV] !== "1") {
         else reject(new Error(`prisma migrate deploy exited with code ${code}`));
       });
     });
-
 
   const resolveNextStandalone = () => {
     const rootServer = path.join(__dirname, "server.js");
