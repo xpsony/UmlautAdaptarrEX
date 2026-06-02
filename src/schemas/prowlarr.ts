@@ -64,3 +64,43 @@ export interface InstallProxyResponse {
   id: number;
   tagId: number;
 }
+
+// --- Indexer patching -------------------------------------------------------
+
+// A single Prowlarr indexer as shown in the patch dialog. Carries no secrets:
+// indexer-level API keys / cookies live in `fields` on the raw object and are
+// never mapped into this view.
+export interface ProwlarrIndexerView {
+  id: number;
+  name: string;
+  enable: boolean;
+  protocol: string; // "torrent" | "usenet" | "unknown"
+  currentBaseUrl: string | null;
+  isPatched: boolean;
+  patchable: boolean;
+  reason?: string; // set when patchable === false, e.g. "no_base_url"
+}
+
+export interface ProwlarrIndexersResponse {
+  indexers: ProwlarrIndexerView[];
+  tagLabel: string;
+}
+
+// `selectedIds` is the DESIRED final selection (toggle semantics): indexers in
+// the set are patched, indexers not in the set are un-patched. Capped to keep
+// a malformed payload from fanning out into unbounded Prowlarr PUTs.
+export const PatchIndexersSchema = z.object({
+  selectedIds: z.array(z.number().int().nonnegative()).max(1000),
+});
+export type PatchIndexersInput = z.infer<typeof PatchIndexersSchema>;
+
+export interface PatchIndexerResult {
+  id: number;
+  name: string;
+  action: "patched" | "unpatched" | "unchanged" | "failed" | "skipped";
+  error?: string;
+}
+
+export interface PatchIndexersResponse {
+  results: PatchIndexerResult[];
+}

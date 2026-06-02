@@ -42,18 +42,21 @@ vi.mock("@/server/state", () => ({
   getAppState: () => mockState,
 }));
 
-const { mockFetchApps, mockFindExisting, mockInstallProxy } = vi.hoisted(
-  () => ({
+const { mockFetchApps, mockFindExisting, mockInstallProxy, mockFetchIndexers, mockReconcile } =
+  vi.hoisted(() => ({
     mockFetchApps: vi.fn(),
     mockFindExisting: vi.fn(),
     mockInstallProxy: vi.fn(),
-  }),
-);
+    mockFetchIndexers: vi.fn(),
+    mockReconcile: vi.fn(),
+  }));
 
 vi.mock("@/arr/prowlarr", () => ({
   fetchProwlarrApplications: mockFetchApps,
   findExistingUmlautProxy: mockFindExisting,
   installUmlautProxy: mockInstallProxy,
+  fetchProwlarrIndexers: mockFetchIndexers,
+  reconcileIndexerPatches: mockReconcile,
   PROWLARR_PROXY_NAME: "UmlautAdaptarr",
   PROWLARR_PROXY_TAG_LABEL: "umlaut-adaptarr",
 }));
@@ -71,6 +74,8 @@ beforeEach(async () => {
   mockFetchApps.mockReset();
   mockFindExisting.mockReset();
   mockInstallProxy.mockReset();
+  mockFetchIndexers.mockReset();
+  mockReconcile.mockReset();
   mockState.settings.proxyPassword = "P";
 
   app = Fastify({ logger: false });
@@ -385,5 +390,88 @@ describe("install-proxy", () => {
       id: 7,
       tagId: 3,
     });
+  });
+});
+
+describe("GET /api/admin/instances/prowlarr/indexers", () => {
+  it("returns the mapped indexers when creds are stored", async () => {
+    mockSetting.findUnique.mockResolvedValue({
+      id: 1,
+      prowlarrHost: "https://prowlarr.test",
+      prowlarrApiKey: "key12345",
+    });
+    mockFetchIndexers.mockResolvedValue({
+      ok: true,
+      indexers: [
+        {
+          id: 1,
+          name: "Demo",
+          enable: true,
+          protocol: "torrent",
+          currentBaseUrl: "https://demo.test",
+          isPatched: false,
+          patchable: true,
+        },
+      ],
+    });
+    const res = await app.inject({
+      method: "GET",
+      url: "/api/admin/instances/prowlarr/indexers",
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.indexers).toHaveLength(1);
+    expect(body.tagLabel).toBe("umlaut-adaptarr");
+  });
+
+  it("409s when no creds are stored", async () => {
+    mockSetting.findUnique.mockResolvedValue(null);
+    const res = await app.inject({
+      method: "GET",
+      url: "/api/admin/instances/prowlarr/indexers",
+    });
+    expect(res.statusCode).toBe(409);
+  });
+});
+
+describe("POST /api/admin/instances/prowlarr/indexers/patch", () => {
+  it("reconciles the selection and returns per-indexer results", async () => {
+    mockSetting.findUnique.mockResolvedValue({
+      id: 1,
+      prowlarrHost: "https://prowlarr.test",
+      prowlarrApiKey: "key12345",
+    });
+    mockReconcile.mockResolvedValue({
+      ok: true,
+      results: [{ id: 1, name: "Demo", action: "patched" }],
+    });
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/admin/instances/prowlarr/indexers/patch",
+      payload: { selectedIds: [1] },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().results[0].action).toBe("patched");
+    expect(mockReconcile).toHaveBeenCalledWith(
+      "https://prowlarr.test",
+      "key12345",
+      "UA",
+      [1],
+      expect.anything(),
+    );
+  });
+
+  it("rejects a malformed payload", async () => {
+    mockSetting.findUnique.mockResolvedValue({
+      id: 1,
+      prowlarrHost: "https://prowlarr.test",
+      prowlarrApiKey: "key12345",
+    });
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/admin/instances/prowlarr/indexers/patch",
+      payload: { selectedIds: "nope" },
+    });
+    expect(res.statusCode).toBeGreaterThanOrEqual(400);
   });
 });

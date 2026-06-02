@@ -144,7 +144,10 @@
     "errors": {
       "validation": "Bitte überprüfe deine Eingabe.",
       "alreadyExists": "Setup wurde bereits abgeschlossen."
-    }
+    },
+    "patchStepTitle": "Indexer patchen",
+    "patchStepSkip": "Überspringen",
+    "patchIndexersDone": "Indexer wurden gepatcht."
   },
   "login": {
     "title": "Anmelden",
@@ -489,7 +492,28 @@
       "installSubmit": "Installieren",
       "installCreated": "Proxy in Prowlarr angelegt.",
       "installUpdated": "Bestehender Proxy in Prowlarr überschrieben.",
-      "installFailed": "Installation in Prowlarr fehlgeschlagen: {error}"
+      "installFailed": "Installation in Prowlarr fehlgeschlagen: {error}",
+      "patchIndexers": "Indexer patchen",
+      "patchTitle": "Prowlarr-Indexer patchen",
+      "patchDescription": "Wähle die Indexer aus, die für UmlautAdaptarrEX gepatcht werden sollen.",
+      "patchWhyTitle": "Warum ist das nötig?",
+      "patchWhyBody": "Prowlarr spricht Indexer standardmäßig über https:// an. Dadurch läuft die Anfrage als verschlüsselter Tunnel durch den Proxy und der Titel kann nicht umgeschrieben werden. Das Patchen stellt die Indexer-Adresse in Prowlarr auf http:// um, damit die Anfrage als Klartext durch den lokalen Proxy läuft und die Umlaut-Varianten eingesetzt werden können.",
+      "patchSafeTitle": "Kein Sicherheitsrisiko",
+      "patchSafeBody": "Das http:// betrifft nur den lokalen Weg von Prowlarr zum UmlautAdaptarrEX-Proxy (in der Regel localhost bzw. dein eigenes Netz). Die Verbindung zum Indexer im Internet bleibt immer https://, das ist im Code fest verdrahtet. Es verlässt also kein unverschlüsselter Datenverkehr dein System.",
+      "patchMore": "Mehr dazu",
+      "patchSelectAll": "Alle auswählen",
+      "patchColName": "Indexer",
+      "patchColStatus": "Status",
+      "patchStatusPatched": "gepatcht",
+      "patchStatusUnpatched": "nicht gepatcht",
+      "patchNotPatchable": "Keine editierbare Basis-URL — kann nicht gepatcht werden.",
+      "patchApply": "Anwenden",
+      "patchApplying": "Wird angewendet…",
+      "patchEmpty": "Keine Indexer in Prowlarr gefunden.",
+      "patchLoadFailed": "Indexer konnten nicht geladen werden: {error}",
+      "patchResult": "{patched} gepatcht, {unpatched} zurückgesetzt, {unchanged} unverändert, {skipped} übersprungen, {failed} fehlgeschlagen.",
+      "patchResultFailedDetail": "Fehlgeschlagen: {names}",
+      "patchRetry": "Erneut versuchen"
     }
   },
   "history": {

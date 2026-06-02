@@ -144,7 +144,10 @@
     "errors": {
       "validation": "Please check your input.",
       "alreadyExists": "Setup is already complete."
-    }
+    },
+    "patchStepTitle": "Patch indexers",
+    "patchStepSkip": "Skip",
+    "patchIndexersDone": "Indexers patched."
   },
   "login": {
     "title": "Sign in",
@@ -489,7 +492,28 @@
       "installSubmit": "Install",
       "installCreated": "Proxy created in Prowlarr.",
       "installUpdated": "Existing proxy in Prowlarr overwritten.",
-      "installFailed": "Install in Prowlarr failed: {error}"
+      "installFailed": "Install in Prowlarr failed: {error}",
+      "patchIndexers": "Patch indexers",
+      "patchTitle": "Patch Prowlarr indexers",
+      "patchDescription": "Select the indexers that should be patched for UmlautAdaptarrEX.",
+      "patchWhyTitle": "Why is this needed?",
+      "patchWhyBody": "By default Prowlarr talks to indexers over https://. That sends the request through the proxy as an encrypted tunnel, so the title cannot be rewritten. Patching switches the indexer address in Prowlarr to http:// so the request flows through the local proxy as plain text and the umlaut variations can be applied.",
+      "patchSafeTitle": "Not a security risk",
+      "patchSafeBody": "The http:// only affects the local hop from Prowlarr to the UmlautAdaptarrEX proxy (usually localhost or your own network). The connection to the indexer on the internet always stays https://, hard-wired in the code. So no unencrypted traffic leaves your system.",
+      "patchMore": "Learn more",
+      "patchSelectAll": "Select all",
+      "patchColName": "Indexer",
+      "patchColStatus": "Status",
+      "patchStatusPatched": "patched",
+      "patchStatusUnpatched": "not patched",
+      "patchNotPatchable": "No editable base URL — cannot be patched.",
+      "patchApply": "Apply",
+      "patchApplying": "Applying…",
+      "patchEmpty": "No indexers found in Prowlarr.",
+      "patchLoadFailed": "Failed to load indexers: {error}",
+      "patchResult": "{patched} patched, {unpatched} reset, {unchanged} unchanged, {skipped} skipped, {failed} failed.",
+      "patchResultFailedDetail": "Failed: {names}",
+      "patchRetry": "Retry"
     }
   },
   "history": {

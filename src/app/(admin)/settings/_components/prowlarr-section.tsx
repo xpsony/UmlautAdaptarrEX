@@ -12,18 +12,14 @@ import {
   Pencil,
   Plug,
   Unplug,
+  Wrench,
   X,
   XCircle,
 } from "lucide-react";
+import { ProwlarrIndexerPatchDialog } from "@/components/instances/prowlarr-indexer-patch-dialog";
 import { ProwlarrInstallProxyDialog } from "@/components/instances/prowlarr-install-proxy-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +35,7 @@ export function ProwlarrSection() {
 
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
   const [installOpen, setInstallOpen] = useState(false);
+  const [patchOpen, setPatchOpen] = useState(false);
 
   // Stored mode: render the "Connected to ..." badge plus a Replace button.
   // Editing mode: render the host/apiKey inputs plus a Cancel button (only
@@ -65,12 +62,8 @@ export function ProwlarrSection() {
                 role="status"
               >
                 <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-muted-foreground">
-                  {t("statusConfigured")}
-                </span>
-                <span className="font-mono text-foreground">
-                  {w.config.data?.host}
-                </span>
+                <span className="text-muted-foreground">{t("statusConfigured")}</span>
+                <span className="font-mono text-foreground">{w.config.data?.host}</span>
               </div>
               <Button type="button" variant="outline" onClick={w.beginEdit}>
                 <Pencil className="h-4 w-4" />
@@ -103,15 +96,9 @@ export function ProwlarrSection() {
           >
             <div className="space-y-2">
               <Label htmlFor="prowlarr-host">{t("host")}</Label>
-              <Input
-                id="prowlarr-host"
-                placeholder={t("hostPlaceholder")}
-                {...register("host")}
-              />
+              <Input id="prowlarr-host" placeholder={t("hostPlaceholder")} {...register("host")} />
               {formState.errors.host ? (
-                <p className="text-xs text-destructive">
-                  {formState.errors.host.message}
-                </p>
+                <p className="text-xs text-destructive">{formState.errors.host.message}</p>
               ) : null}
             </div>
             <div className="space-y-2">
@@ -136,9 +123,7 @@ export function ProwlarrSection() {
               </div>
               <p className="text-xs text-muted-foreground">{t("apiKeyHint")}</p>
               {formState.errors.apiKey ? (
-                <p className="text-xs text-destructive">
-                  {formState.errors.apiKey.message}
-                </p>
+                <p className="text-xs text-destructive">{formState.errors.apiKey.message}</p>
               ) : null}
             </div>
 
@@ -171,15 +156,9 @@ export function ProwlarrSection() {
             // round-trip. Stored: bypass the form and ask the server to use
             // the persisted credentials (useStored:true), since the operator
             // hasn't typed anything.
-            onClick={
-              w.editing
-                ? handleSubmit((d) => w.test(d))
-                : () => void w.test(null)
-            }
+            onClick={w.editing ? handleSubmit((d) => w.test(d)) : () => void w.test(null)}
             disabled={
-              w.testing ||
-              w.saveMut.isPending ||
-              (w.editing ? !w.canSubmit : !w.isConfigured)
+              w.testing || w.saveMut.isPending || (w.editing ? !w.canSubmit : !w.isConfigured)
             }
           >
             {w.testing ? (
@@ -190,12 +169,7 @@ export function ProwlarrSection() {
             {t("test")}
           </Button>
           {w.hostValue.trim().length > 0 ? (
-            <Button
-              asChild
-              type="button"
-              variant="outline"
-              title={t("openProwlarrSettings")}
-            >
+            <Button asChild type="button" variant="outline" title={t("openProwlarrSettings")}>
               <a
                 href={`${w.hostValue.replace(/\/+$/, "")}/settings/general`}
                 target="_blank"
@@ -208,13 +182,15 @@ export function ProwlarrSection() {
             </Button>
           ) : null}
           {w.isConfigured ? (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setInstallOpen(true)}
-            >
+            <Button type="button" variant="outline" onClick={() => setInstallOpen(true)}>
               <CloudUpload className="h-4 w-4" />
               {t("installProxy")}
+            </Button>
+          ) : null}
+          {w.isConfigured ? (
+            <Button type="button" variant="outline" onClick={() => setPatchOpen(true)}>
+              <Wrench className="h-4 w-4" />
+              {t("patchIndexers")}
             </Button>
           ) : null}
           {w.isConfigured ? (
@@ -258,10 +234,9 @@ export function ProwlarrSection() {
         }
       />
 
-      <ProwlarrInstallProxyDialog
-        open={installOpen}
-        onOpenChange={setInstallOpen}
-      />
+      <ProwlarrInstallProxyDialog open={installOpen} onOpenChange={setInstallOpen} />
+
+      <ProwlarrIndexerPatchDialog open={patchOpen} onOpenChange={setPatchOpen} />
     </Card>
   );
 }
