@@ -70,6 +70,7 @@ imported.
 | <img src="public/arr/lidarr.svg" height="16" alt="" align="top" />&nbsp; Lidarr support                                                 |   ✓    |
 | <img src="public/arr/readarr.svg" height="16" alt="" align="top" />&nbsp; Readarr support                                               |   ✓    |
 | <img src="public/arr/prowlarr.svg" height="16" alt="" align="top" />&nbsp; Prowlarr & NZB Hydra support                                 |   ✓    |
+| **Prowlarr indexer-patch dialog**: select indexers, auto-tag them & switch from `https` to `http`                                       |   ✓    |
 | Newznab (Usenet) & Torznab (Torrent) support                                                                                            |   ✓    |
 | Multiple instances per \*arr type (e.g. 2× Sonarr)                                                                                      |   ✓    |
 | Detection of releases with German title & TVDB alias                                                                                    |   ✓    |
@@ -321,6 +322,15 @@ Recommended method, because there is no speed loss with multiple indexers.
    - Add tag `umlautadaptarrex`
    - **Change the URL scheme from `https` to `http`**, only then can UmlautAdaptarrEX intercept the requests
      locally. Outgoing requests to the indexer remain `https`, of course.
+
+   **The indexer-patch dialog is faster:** instead of touching each indexer in Prowlarr by hand,
+   UmlautAdaptarrEX lists your Prowlarr indexers and performs both steps (set the tag + `https`→`http`)
+   for the indexers you select. The dialog is part of the setup wizard and is available any time under
+   **Settings → Prowlarr → "Patch indexers"**. "Select all" is the default; de-selecting an
+   already-patched indexer reverts both the tag and the scheme. The dialog also explains why the switch
+   is needed and that the connection to the indexer on the internet stays `https` (no unencrypted
+   traffic leaves your system).
+
 4. Run **Test All Indexers**. If any `https` URLs remain, a warning appears in the live logs.
 
 ## Configuration without Prowlarr proxy

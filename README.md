@@ -71,6 +71,7 @@ importiert werden.
 | <img src="public/arr/lidarr.svg" height="16" alt="" align="top" />&nbsp; Lidarr Support                                                |   ✓    |
 | <img src="public/arr/readarr.svg" height="16" alt="" align="top" />&nbsp; Readarr Support                                              |   ✓    |
 | <img src="public/arr/prowlarr.svg" height="16" alt="" align="top" />&nbsp; Prowlarr & NZB Hydra Support                                |   ✓    |
+| **Prowlarr-Indexer-Patch-Dialog**: Indexer auswählen, automatisch taggen & von `https` auf `http` umstellen                            |   ✓    |
 | Newznab (Usenet) & Torznab (Torrent) Support                                                                                           |   ✓    |
 | Mehrere Instanzen je \*arr-Typ (z. B. 2× Sonarr)                                                                                       |   ✓    |
 | Erkennung von Releases mit deutschem Titel & TVDB-Alias                                                                                |   ✓    |
@@ -325,6 +326,15 @@ Empfohlene Methode, da bei mehreren Indexern kein Geschwindigkeitsverlust entste
    - Tag `umlautadaptarrex` hinzufügen
    - **URL-Schema von `https` auf `http` ändern**, nur so kann UmlautAdaptarrEX die Anfragen lokal abfangen.
      Ausgehende Anfragen an den Indexer bleiben natürlich `https`.
+
+   **Schneller geht es über den Indexer-Patch-Dialog:** Statt jeden Indexer in Prowlarr von Hand
+   anzufassen, listet UmlautAdaptarrEX deine Prowlarr-Indexer auf und übernimmt beide Schritte (Tag
+   setzen + `https`→`http`) für die ausgewählten Indexer. Der Dialog ist Teil des Setup-Wizards und
+   jederzeit unter **Settings → Prowlarr → „Indexer patchen"** erreichbar. „Alle auswählen" ist
+   Default; das Abwählen eines bereits gepatchten Indexers setzt Tag und Schema wieder zurück. Der
+   Dialog erklärt außerdem, warum die Umstellung nötig ist und dass die Verbindung zum Indexer im
+   Internet weiterhin `https` bleibt (es verlässt kein unverschlüsselter Datenverkehr dein System).
+
 4. **Test All Indexers** ausführen. Bei verbliebenen `https`-URLs erscheint eine Warnung in den Live-Logs.
 
 ## Konfiguration ohne Prowlarr-Proxy
