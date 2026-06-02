@@ -9,7 +9,7 @@ const HISTORY_TAKE = 1000;
 // Owns the live log buffer: loads persisted history, opens a WebSocket to
 // /ws/logs, and prepends incoming batches up to a 1000-item ring buffer.
 // Pause-state lives behind a ref so flipping it doesn't tear down the socket.
-export function useLogStream() {
+export function useLogStream(apiPort: number) {
   const [items, setItems] = useState<LogItem[]>([]);
   const [paused, setPaused] = useState(false);
   const [connected, setConnected] = useState(false);
@@ -43,13 +43,12 @@ export function useLogStream() {
 
   useEffect(() => {
     const proto = location.protocol === "https:" ? "wss:" : "ws:";
-    // Default architecture exposes Fastify on port 5005 alongside Next on 5007
-    // (see start.mjs), so the browser opens a cross-origin WS to the same
-    // hostname on :5005. For reverse-proxy setups that fold everything onto
-    // a single origin, set NEXT_PUBLIC_API_HOST to the public host (e.g.
+    // Default architecture exposes Fastify alongside Next (see start.mjs), so
+    // the browser opens a cross-origin WS to the same hostname on the resolved
+    // legacy-API port. For reverse-proxy setups that fold everything onto a
+    // single origin, set NEXT_PUBLIC_API_HOST to the public host (e.g.
     // "umlautadaptarr.example.com") and route /ws/logs through to Fastify.
-    const apiHost =
-      process.env.NEXT_PUBLIC_API_HOST ?? `${location.hostname}:5005`;
+    const apiHost = process.env.NEXT_PUBLIC_API_HOST ?? `${location.hostname}:${apiPort}`;
     const url = `${proto}//${apiHost}/ws/logs`;
     const ws = new WebSocket(url);
     ws.onopen = () => setConnected(true);
@@ -69,7 +68,7 @@ export function useLogStream() {
       }
     };
     return () => ws.close();
-  }, []);
+  }, [apiPort]);
 
   function clear(): void {
     setItems([]);

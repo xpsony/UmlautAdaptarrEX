@@ -16,18 +16,14 @@ import {
 } from "@/components/ui/select";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
-import {
-  downloadJsonl,
-  formatTimestamp,
-  parseContext,
-} from "./_lib/log-format";
+import { downloadJsonl, formatTimestamp, parseContext } from "./_lib/log-format";
 import { useLogStream } from "./_lib/use-log-stream";
 
 const LEVELS = ["all", "info", "warn", "error", "debug"] as const;
 
-export function LogsClient() {
+export function LogsClient({ apiPort }: { apiPort: number }) {
   const t = useTranslations("logs");
-  const stream = useLogStream();
+  const stream = useLogStream(apiPort);
   const [filter, setFilter] = useState("");
   const [level, setLevel] = useState<(typeof LEVELS)[number]>("all");
 
@@ -36,10 +32,7 @@ export function LogsClient() {
     return stream.items.filter((i) => {
       if (level !== "all" && i.level !== level) return false;
       if (!f) return true;
-      return (
-        i.message.toLowerCase().includes(f) ||
-        (i.context ?? "").toLowerCase().includes(f)
-      );
+      return i.message.toLowerCase().includes(f) || (i.context ?? "").toLowerCase().includes(f);
     });
   }, [stream.items, filter, level]);
 
@@ -47,9 +40,7 @@ export function LogsClient() {
     <div className="space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {t("title")}
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
         <div className="-mx-1 flex flex-wrap items-center gap-2 px-1">
@@ -61,9 +52,7 @@ export function LogsClient() {
             <span
               className={cn(
                 "h-1.5 w-1.5 rounded-full",
-                stream.connected
-                  ? "bg-emerald-500 animate-pulse"
-                  : "bg-muted-foreground",
+                stream.connected ? "animate-pulse bg-emerald-500" : "bg-muted-foreground",
               )}
             />
             {stream.connected ? t("live") : t("noConnection")}
@@ -74,14 +63,8 @@ export function LogsClient() {
             onClick={() => stream.setPaused((p) => !p)}
             aria-label={stream.paused ? t("resume") : t("pause")}
           >
-            {stream.paused ? (
-              <Play className="h-4 w-4" />
-            ) : (
-              <Pause className="h-4 w-4" />
-            )}
-            <span className="hidden sm:inline">
-              {stream.paused ? t("resume") : t("pause")}
-            </span>
+            {stream.paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+            <span className="hidden sm:inline">{stream.paused ? t("resume") : t("pause")}</span>
           </Button>
           <Button
             size="sm"
@@ -93,12 +76,7 @@ export function LogsClient() {
             <Download className="h-4 w-4" />
             <span className="hidden sm:inline">{t("download")}</span>
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={stream.clear}
-            aria-label={t("clear")}
-          >
+          <Button size="sm" variant="ghost" onClick={stream.clear} aria-label={t("clear")}>
             <Trash2 className="h-4 w-4" />
             <span className="hidden sm:inline">{t("clear")}</span>
           </Button>
@@ -107,29 +85,26 @@ export function LogsClient() {
 
       <Card>
         <CardHeader className="flex flex-col gap-3 border-b sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-          <div className="relative flex-1 max-w-md">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative max-w-md flex-1">
+            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               placeholder={t("search")}
-              className="pl-9 pr-9"
+              className="pr-9 pl-9"
             />
             {filter ? (
               <button
                 type="button"
                 onClick={() => setFilter("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-1 text-muted-foreground hover:text-foreground"
+                className="absolute top-1/2 right-2 -translate-y-1/2 rounded-sm p-1 text-muted-foreground hover:text-foreground"
                 aria-label={t("clearFilter")}
               >
                 <X className="h-3.5 w-3.5" />
               </button>
             ) : null}
           </div>
-          <Select
-            value={level}
-            onValueChange={(v) => setLevel(v as typeof level)}
-          >
+          <Select value={level} onValueChange={(v) => setLevel(v as typeof level)}>
             <SelectTrigger className="w-[140px]">
               <SelectValue />
             </SelectTrigger>
@@ -150,9 +125,7 @@ export function LogsClient() {
           ) : null}
           {filtered.length === 0 ? (
             <EmptyState
-              title={
-                stream.loadingHistory ? t("loadingHistory") : t("emptyTitle")
-              }
+              title={stream.loadingHistory ? t("loadingHistory") : t("emptyTitle")}
               description={
                 stream.loadingHistory
                   ? t("loadingHistoryHint")
@@ -162,7 +135,7 @@ export function LogsClient() {
               }
             />
           ) : (
-            <div className="scrollbar-thin max-h-[70vh] overflow-y-auto font-mono text-xs">
+            <div className="max-h-[70vh] scrollbar-thin overflow-y-auto font-mono text-xs">
               {filtered.map((item, idx) => {
                 const ctx = parseContext(item.context);
                 return (
@@ -175,7 +148,7 @@ export function LogsClient() {
                     </span>
                     <span
                       className={cn(
-                        "shrink-0 w-12 font-semibold uppercase",
+                        "w-12 shrink-0 font-semibold uppercase",
                         item.level === "error" || item.level === "fatal"
                           ? "text-destructive"
                           : item.level === "warn"
@@ -187,9 +160,7 @@ export function LogsClient() {
                     >
                       {item.level}
                     </span>
-                    <span className="break-words font-medium">
-                      {item.message}
-                    </span>
+                    <span className="font-medium break-words">{item.message}</span>
                     {ctx.length > 0 ? (
                       <span className="flex flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground">
                         {ctx.map(([k, v]) => (

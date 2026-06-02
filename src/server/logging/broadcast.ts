@@ -2,6 +2,7 @@ import { type WebSocket, WebSocketServer } from "ws";
 import type { IncomingMessage, Server as HttpServer } from "node:http";
 import { SESSION_COOKIE } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
+import { resolveWebUiPort } from "@/lib/ports";
 
 interface LogPayload {
   level: string;
@@ -41,7 +42,7 @@ function parseSessionCookie(req: IncomingMessage): string | null {
 //     origin.host === request.host.
 //  2. Dual-port (default architecture, UI on WEB_PORT, Fastify on this port) —
 //     same hostname, origin.port === WEB_PORT (default 5007).
-function isOriginAllowed(req: IncomingMessage): boolean {
+export function isOriginAllowed(req: IncomingMessage): boolean {
   const origin = req.headers.origin;
   if (!origin) return true;
   const host = req.headers.host;
@@ -51,8 +52,12 @@ function isOriginAllowed(req: IncomingMessage): boolean {
     if (originUrl.host === host) return true;
     const requestUrl = new URL(`http://${host}`);
     if (originUrl.hostname !== requestUrl.hostname) return false;
-    const webPort = process.env.WEB_PORT ?? "5007";
-    return originUrl.port === webPort;
+    // Accept the configured Web UI port (UMLAUTADAPTARREX_WEBUI_PORT ?? WEB_PORT
+    // ?? 5007). A WS handshake omits an explicit :80/:443, so an empty
+    // origin.port means the default port for the scheme.
+    const webPort = String(resolveWebUiPort());
+    const originPort = originUrl.port || (originUrl.protocol === "https:" ? "443" : "80");
+    return originPort === webPort;
   } catch {
     return false;
   }
@@ -115,9 +120,7 @@ export class LogBroadcaster {
 
       // 1. Origin-Check (CSWSH guard) — synchronous, free.
       if (!isOriginAllowed(req)) {
-        socket.write(
-          "HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
-        );
+        socket.write("HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
         socket.destroy();
         return;
       }
