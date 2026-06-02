@@ -23,6 +23,23 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.1",
+    date: "2026-06-02",
+    title: "1.2.1: Configurable service ports via environment variables",
+    description:
+      "You can now set all three service ports before the first start through environment variables, so Docker users can avoid host port clashes without editing the app. No database changes.",
+    items: [
+      {
+        type: "feature",
+        text: "New environment variables UMLAUTADAPTARREX_LEGACYAPI_PORT (Fastify API + legacy indexer API + log stream, default 5005), UMLAUTADAPTARREX_WEBUI_PORT (Web UI, default 5007) and UMLAUTADAPTARREX_PROXY_PORT (Prowlarr indexer proxy, default 5006). The compose files and .env.example pick these up so a single value moves both the container bind port and the published host port. The existing PORT and WEB_PORT variables keep working as fallbacks.",
+      },
+      {
+        type: "improvement",
+        text: "When UMLAUTADAPTARREX_PROXY_PORT is set it overrides the stored proxy port at every start, and the proxy-port field under Settings, Advanced is shown read-only with a hint so the value cannot drift out of sync. The live-log view and the proxy URL advertised to Prowlarr both follow the configured ports automatically.",
+      },
+    ],
+  },
+  {
     version: "1.2.0",
     date: "2026-06-02",
     title: "1.2.0: Prowlarr indexer patching, dependency refresh & Docker healthcheck fix",
