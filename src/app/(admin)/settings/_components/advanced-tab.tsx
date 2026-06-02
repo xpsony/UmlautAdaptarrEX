@@ -4,13 +4,7 @@ import { useTranslations } from "next-intl";
 import { Controller } from "react-hook-form";
 import { Settings as SettingsIcon } from "lucide-react";
 import type { SettingsUpdate } from "@/schemas/settings";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldHint } from "@/components/ui/field-hint";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,23 +12,21 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { SaveBar } from "./save-bar";
 import { TitleCacheSection } from "./title-cache-section";
-import type { SettingsForm } from "../_lib/settings-types";
+import type { SettingsForm, SettingsRow } from "../_lib/settings-types";
 
 interface AdvancedTabProps {
   form: SettingsForm;
+  data: SettingsRow | undefined;
   onSave: (data: SettingsUpdate) => void;
   saving: boolean;
 }
 
-export function AdvancedTab({ form, onSave, saving }: AdvancedTabProps) {
+export function AdvancedTab({ form, data, onSave, saving }: AdvancedTabProps) {
   const t = useTranslations("settings");
+  const proxyPortEnvManaged = data?.proxyPortEnvManaged === true;
   return (
     <div className="space-y-6">
-      <form
-        id="advanced-form"
-        onSubmit={form.handleSubmit(onSave)}
-        className="space-y-6"
-      >
+      <form id="advanced-form" onSubmit={form.handleSubmit(onSave)} className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -53,13 +45,17 @@ export function AdvancedTab({ form, onSave, saving }: AdvancedTabProps) {
                 <Input
                   id="proxyPort"
                   type="number"
-                  {...form.register("proxyPort", { valueAsNumber: true })}
+                  {...form.register("proxyPort", {
+                    valueAsNumber: true,
+                    disabled: proxyPortEnvManaged,
+                  })}
                 />
+                {proxyPortEnvManaged ? (
+                  <p className="text-xs text-muted-foreground">{t("proxyPortEnvManagedHint")}</p>
+                ) : null}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cacheDurationMinutes">
-                  {t("cacheDurationMinutes")}
-                </Label>
+                <Label htmlFor="cacheDurationMinutes">{t("cacheDurationMinutes")}</Label>
                 <Input
                   id="cacheDurationMinutes"
                   type="number"
@@ -70,9 +66,7 @@ export function AdvancedTab({ form, onSave, saving }: AdvancedTabProps) {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
-                  <Label htmlFor="logRetentionDays">
-                    {t("logRetentionDays")}
-                  </Label>
+                  <Label htmlFor="logRetentionDays">{t("logRetentionDays")}</Label>
                   <FieldHint text={t("logRetentionDaysHint")} />
                 </div>
                 <Input
@@ -87,9 +81,7 @@ export function AdvancedTab({ form, onSave, saving }: AdvancedTabProps) {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
-                  <Label htmlFor="indexerTimeoutSeconds">
-                    {t("indexerTimeoutSeconds")}
-                  </Label>
+                  <Label htmlFor="indexerTimeoutSeconds">{t("indexerTimeoutSeconds")}</Label>
                   <FieldHint text={t("indexerTimeoutSecondsHint")} />
                 </div>
                 <Input
@@ -104,9 +96,7 @@ export function AdvancedTab({ form, onSave, saving }: AdvancedTabProps) {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
-                  <Label htmlFor="indexerRateLimitMs">
-                    {t("indexerRateLimitMs")}
-                  </Label>
+                  <Label htmlFor="indexerRateLimitMs">{t("indexerRateLimitMs")}</Label>
                   <FieldHint text={t("indexerRateLimitMsHint")} />
                 </div>
                 <Controller
@@ -127,9 +117,7 @@ export function AdvancedTab({ form, onSave, saving }: AdvancedTabProps) {
                         />
                         <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums">
                           <span>0 ms</span>
-                          <span className="font-medium text-foreground">
-                            {current} ms
-                          </span>
+                          <span className="font-medium text-foreground">{current} ms</span>
                           <span>60000 ms</span>
                         </div>
                       </div>
@@ -144,10 +132,7 @@ export function AdvancedTab({ form, onSave, saving }: AdvancedTabProps) {
             </div>
             <div className="flex items-center justify-between gap-4 rounded-md border p-3">
               <div className="flex items-center gap-1.5">
-                <Label
-                  htmlFor="blockPrivateInstanceHosts"
-                  className="text-sm font-medium"
-                >
+                <Label htmlFor="blockPrivateInstanceHosts" className="text-sm font-medium">
                   {t("blockPrivateInstanceHosts")}
                 </Label>
                 <FieldHint text={t("blockPrivateInstanceHostsHint")} />
@@ -168,11 +153,7 @@ export function AdvancedTab({ form, onSave, saving }: AdvancedTabProps) {
           </CardContent>
         </Card>
 
-        <SaveBar
-          form="advanced-form"
-          pending={saving}
-          dirty={form.formState.isDirty}
-        />
+        <SaveBar form="advanced-form" pending={saving} dirty={form.formState.isDirty} />
       </form>
 
       <TitleCacheSection />

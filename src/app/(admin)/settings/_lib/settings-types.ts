@@ -5,16 +5,15 @@ import type { OperationMode } from "@/components/operation-mode-picker";
 
 export type SettingsFormInput = z.input<typeof SettingsUpdateSchema>;
 
-export type SettingsForm = UseFormReturn<
-  SettingsFormInput,
-  unknown,
-  SettingsUpdate
->;
+export type SettingsForm = UseFormReturn<SettingsFormInput, unknown, SettingsUpdate>;
 
 export interface SettingsRow extends SettingsUpdate {
   appApiKey: string;
   proxyUsername: string;
   proxyPassword: string;
+  // True when UMLAUTADAPTARREX_PROXY_PORT pins the port; the UI shows the
+  // effective value read-only because a save would not take effect.
+  proxyPortEnvManaged?: boolean;
   // Server-only "is the secret stored?" booleans. Returned alongside the
   // masked key fields so the UI can render a stored-state badge without
   // having access to the cleartext value.
@@ -48,13 +47,7 @@ export type TmdbTestResult =
   | { ok: true; sample: { id: number; title: string } }
   | {
       ok: false;
-      code:
-        | "missing"
-        | "v4_token"
-        | "invalid_format"
-        | "unauthorized"
-        | "network"
-        | "unknown";
+      code: "missing" | "v4_token" | "invalid_format" | "unauthorized" | "network" | "unknown";
       detail?: string;
     };
 

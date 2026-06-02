@@ -93,7 +93,12 @@ export function SettingsClient() {
         </TabsContent>
 
         <TabsContent value="advanced" className="space-y-6">
-          <AdvancedTab form={form} onSave={onSave} saving={saveMut.isPending} />
+          <AdvancedTab
+            form={form}
+            data={settings.data}
+            onSave={onSave}
+            saving={saveMut.isPending}
+          />
         </TabsContent>
       </Tabs>
     </div>

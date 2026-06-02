@@ -11,7 +11,7 @@ import { SetupClient } from "./setup-client";
 const FALLBACK_STATUS: SetupStatus = {
   setupComplete: false,
   prowlarrConfig: { host: null, configured: false },
-  proxyDefaults: { port: 5006, username: "UmlautAdaptarr" },
+  proxyDefaults: { port: 5006, username: "UmlautAdaptarr", portEnvManaged: false },
 };
 
 async function fetchSetupStatus(): Promise<SetupStatus | null> {

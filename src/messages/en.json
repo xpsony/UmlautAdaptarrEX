@@ -366,6 +366,7 @@
     "regenerateConfirm": "The current key will stop working immediately. Update Prowlarr and your *arrs with the new key.",
     "proxyPort": "HTTP-Proxy port",
     "proxyPortHint": "Takes effect after a server restart.",
+    "proxyPortEnvManagedHint": "Set via the UMLAUTADAPTARREX_PROXY_PORT environment variable; change it there, not here.",
     "proxyAuth": {
       "title": "HTTP-Proxy credentials",
       "hint": "Basic-Auth credentials Prowlarr (and other indexers) must use when connecting to the HTTP-Proxy on this port. Configure the same username and password in Prowlarr → Indexers → Proxy.",
