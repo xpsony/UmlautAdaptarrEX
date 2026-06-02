@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.2.1 — 2026-06-02
+
+Lets you set all three service ports through environment variables before the first start, so Docker users can avoid host port clashes without editing the app. No schema changes.
+
+### Features
+
+- **Configurable service ports:** New environment variables `UMLAUTADAPTARREX_LEGACYAPI_PORT` (Fastify API + legacy indexer API + log stream, default `5005`), `UMLAUTADAPTARREX_WEBUI_PORT` (Web UI, default `5007`) and `UMLAUTADAPTARREX_PROXY_PORT` (Prowlarr indexer proxy, default `5006`). The compose files and `.env.example` pick these up, so a single value moves both the container bind port and the published host port. The existing `PORT` and `WEB_PORT` variables keep working as fallbacks.
+
+### Improvements
+
+- **Env-managed proxy port:** When `UMLAUTADAPTARREX_PROXY_PORT` is set it overrides the stored proxy port at every start, and the proxy-port field under Settings → Advanced is shown read-only with a hint so the value cannot drift out of sync. The live-log view and the proxy URL advertised to Prowlarr both follow the configured ports automatically.
+
 ## 1.2.0 — 2026-06-02
 
 Adds the Prowlarr indexer-patch dialog, plus a dependency refresh and a Docker healthcheck fix. No schema changes.
