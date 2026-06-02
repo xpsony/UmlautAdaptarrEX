@@ -366,6 +366,7 @@
     "regenerateConfirm": "Der bisherige Key wird sofort ungültig. Aktualisiere Prowlarr und deine *arrs mit dem neuen Key.",
     "proxyPort": "HTTP-Proxy-Port",
     "proxyPortHint": "Wird erst nach Server-Neustart wirksam.",
+    "proxyPortEnvManagedHint": "Über die Umgebungsvariable UMLAUTADAPTARREX_PROXY_PORT gesetzt, bitte dort ändern, nicht hier.",
     "proxyAuth": {
       "title": "HTTP-Proxy-Zugangsdaten",
       "hint": "Basic-Auth-Zugang, mit dem Prowlarr (und andere Indexer-Clients) sich am HTTP-Proxy anmelden müssen. Trage denselben Benutzer + dasselbe Passwort in Prowlarr → Indexers → Proxy ein.",

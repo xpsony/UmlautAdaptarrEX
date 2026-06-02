@@ -4,7 +4,7 @@ import type { OperationMode as OperationModeValue } from "@/components/operation
 export interface SetupStatus {
   setupComplete: boolean;
   prowlarrConfig: { host: string | null; configured: boolean };
-  proxyDefaults: { port: number; username: string };
+  proxyDefaults: { port: number; username: string; portEnvManaged: boolean };
 }
 
 export type TmdbTestResult =
