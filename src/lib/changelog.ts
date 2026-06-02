@@ -23,6 +23,31 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.0",
+    date: "2026-06-02",
+    title: "1.2.0: Prowlarr indexer patching, dependency refresh & Docker healthcheck fix",
+    description:
+      "Adds a dialog to patch your Prowlarr indexers for UmlautAdaptarrEX, plus a dependency refresh and a container healthcheck fix. No database changes.",
+    items: [
+      {
+        type: "feature",
+        text: 'New Prowlarr indexer-patch dialog: lists your Prowlarr indexers and lets you select which ones to patch for UmlautAdaptarrEX. Patching tags the indexer with "umlautadaptarrex" and switches its Prowlarr base URL from https:// to http:// so requests flow through the local proxy and titles get rewritten; de-selecting reverts both. Available in the setup wizard and any time under Settings → Prowlarr. The dialog explains why the switch is needed and that the connection to the indexer itself stays HTTPS, so no unencrypted traffic leaves your system.',
+      },
+      {
+        type: "improvement",
+        text: "Refreshed all dependencies to their latest versions, including next-intl, react-hook-form, lucide-react and the build tooling (ESLint, Vitest, Vite, tsx, concurrently). Typecheck, lint, the full test suite and the production build all pass on the updated versions.",
+      },
+      {
+        type: "fix",
+        text: "Fixed the Docker container healthcheck so it reliably probes /api/health and discards the response body instead of depending on wget's --spider mode, which behaves inconsistently across some BusyBox builds.",
+      },
+      {
+        type: "fix",
+        text: "Running the app without Docker (pnpm prod) now starts correctly: the supervisor finds the Next.js standalone server on bare-metal installs and assembles its static assets next to it on boot, so no manual copy step is needed.",
+      },
+    ],
+  },
+  {
     version: "1.1.1",
     date: "2026-05-25",
     title: "1.1.1: Lidarr/Readarr sync fix",

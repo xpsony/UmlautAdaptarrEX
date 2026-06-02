@@ -1,5 +1,32 @@
 # Changelog
 
+## 1.2.0 — 2026-06-02
+
+Adds the Prowlarr indexer-patch dialog, plus a dependency refresh and a Docker healthcheck fix. No schema changes.
+
+### Features
+
+- **Prowlarr indexer patching:** A new dialog lists your Prowlarr indexers and lets you select which ones to patch for UmlautAdaptarrEX. Patching tags the indexer with `umlautadaptarrex` and switches its Prowlarr base URL from `https://` to `http://` so requests flow through the local proxy and titles get rewritten; de-selecting reverts both. Available in the setup wizard and any time under Settings, Prowlarr. The dialog explains why the switch is needed and that the connection to the indexer itself stays HTTPS (no unencrypted traffic leaves your system).
+
+### Fixes
+
+- **Bare-metal start without Docker:** `pnpm prod` (and `pnpm build:prod && pnpm start:prod`) now boots correctly on a host without Docker. The supervisor finds the Next.js standalone server on bare-metal installs and assembles its `.next/static` and `public` assets next to it on boot, so no manual copy step is needed.
+
+### Build & Tooling
+
+- **Docker healthcheck:** Switched the container healthcheck from `wget --spider` to `wget -qO- … >/dev/null` back.
+
+### Dependency Updates
+
+- `concurrently` `9.2.1` → `10.0.1` (major; affects only the `dev` script)
+- `next-intl` `4.12.0` → `4.13.0`
+- `lucide-react` `1.16.0` → `1.17.0`
+- `react-hook-form` `7.76.1` → `7.77.0`
+- `lru-cache` `11.5.0` → `11.5.1`
+- `eslint` `10.4.0` → `10.4.1`, `typescript-eslint` `8.59.4` → `8.60.0`
+- `vite` `8.0.14` → `8.0.16`, `vitest` / `@vitest/coverage-v8` `4.1.7` → `4.1.8`
+- `tsx` `4.22.3` → `4.22.4`
+
 ## 1.1.1 — 2026-05-25
 
 ### Fixes

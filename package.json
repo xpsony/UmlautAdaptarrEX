@@ -1,6 +1,6 @@
 {
   "name": "umlautadaptarrex",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "description": "Umlaut/German-title proxy for Sonarr/Radarr/Lidarr/Readarr",
