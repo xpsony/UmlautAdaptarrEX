@@ -69,9 +69,9 @@ import { settingsRoutes } from "@/server/routes/admin/settings";
 let app: FastifyInstance;
 
 beforeEach(async () => {
+  delete process.env.UMLAUTADAPTARREX_PROXY_PORT;
   for (const m of [mockSetting.findUnique, mockSetting.update]) m.mockReset();
-  for (const m of [mockCache.count, mockCache.deleteMany, mockCache.findMany])
-    m.mockReset();
+  for (const m of [mockCache.count, mockCache.deleteMany, mockCache.findMany]) m.mockReset();
   mockProbeTmdb.mockReset();
   mockProbeTvdb.mockReset();
   mockState.reloadSettings.mockReset();
@@ -86,6 +86,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   await app.close();
+  delete process.env.UMLAUTADAPTARREX_PROXY_PORT;
 });
 
 describe("GET /api/admin/settings", () => {
@@ -122,6 +123,61 @@ describe("GET /api/admin/settings", () => {
     expect(body.tmdbConfigured).toBe(true);
     expect(body.tvdbApiKey).toBeNull();
     expect(body.tvdbConfigured).toBe(false);
+  });
+
+  it("reports proxyPortEnvManaged=false and the DB port by default", async () => {
+    mockSetting.findUnique.mockResolvedValueOnce({
+      id: 1,
+      appApiKey: "k",
+      proxyPort: 5006,
+      proxyUsername: "u",
+      proxyPassword: "p",
+      cacheDurationMinutes: 12,
+      titleApiHost: "https://x",
+      tmdbApiKey: null,
+      tvdbApiKey: null,
+      tvdbPin: null,
+      userAgent: "UA",
+      setupComplete: true,
+      prowlarrHost: null,
+      prowlarrApiKey: null,
+      logRetentionDays: 3,
+      indexerRateLimitMs: 500,
+      operationMode: "proxy",
+      blockPrivateInstanceHosts: false,
+    });
+    const r = await app.inject({ method: "GET", url: "/api/admin/settings" });
+    const body = r.json() as Record<string, unknown>;
+    expect(body.proxyPort).toBe(5006);
+    expect(body.proxyPortEnvManaged).toBe(false);
+  });
+
+  it("reports the env port and proxyPortEnvManaged=true when set", async () => {
+    process.env.UMLAUTADAPTARREX_PROXY_PORT = "6006";
+    mockSetting.findUnique.mockResolvedValueOnce({
+      id: 1,
+      appApiKey: "k",
+      proxyPort: 5006,
+      proxyUsername: "u",
+      proxyPassword: "p",
+      cacheDurationMinutes: 12,
+      titleApiHost: "https://x",
+      tmdbApiKey: null,
+      tvdbApiKey: null,
+      tvdbPin: null,
+      userAgent: "UA",
+      setupComplete: true,
+      prowlarrHost: null,
+      prowlarrApiKey: null,
+      logRetentionDays: 3,
+      indexerRateLimitMs: 500,
+      operationMode: "proxy",
+      blockPrivateInstanceHosts: false,
+    });
+    const r = await app.inject({ method: "GET", url: "/api/admin/settings" });
+    const body = r.json() as Record<string, unknown>;
+    expect(body.proxyPort).toBe(6006);
+    expect(body.proxyPortEnvManaged).toBe(true);
   });
 
   it("returns null when the setting row does not exist", async () => {
@@ -235,6 +291,18 @@ describe("PUT /api/admin/settings", () => {
     expect(call.data).not.toHaveProperty("tvdbApiKey");
     expect(call.data).not.toHaveProperty("tvdbPin");
   });
+
+  it("rejects a proxyPort change when the port is env-managed", async () => {
+    process.env.UMLAUTADAPTARREX_PROXY_PORT = "6006";
+    const r = await app.inject({
+      method: "PUT",
+      url: "/api/admin/settings",
+      payload: { proxyPort: 7000 },
+    });
+    expect(r.statusCode).toBe(409);
+    expect((r.json() as { error?: string }).error).toBe("proxy-port-env-managed");
+    expect(mockSetting.update).not.toHaveBeenCalled();
+  });
 });
 
 describe("POST /api/admin/settings/test-tmdb-key", () => {
@@ -314,10 +382,7 @@ describe("POST /api/admin/settings/regenerate-proxy-password", () => {
 
 describe("title-cache routes", () => {
   it("GET returns total/positive/negative counts", async () => {
-    mockCache.count
-      .mockResolvedValueOnce(10)
-      .mockResolvedValueOnce(7)
-      .mockResolvedValueOnce(2);
+    mockCache.count.mockResolvedValueOnce(10).mockResolvedValueOnce(7).mockResolvedValueOnce(2);
     const r = await app.inject({
       method: "GET",
       url: "/api/admin/title-cache",
@@ -353,18 +418,12 @@ describe("title-cache routes", () => {
     mockCache.deleteMany.mockResolvedValueOnce({ count: 2 });
 
     const tvProvider = {
-      fetchBulk: vi
-        .fn()
-        .mockResolvedValueOnce(
-          new Map([["1", { titlesByLang: { de: "Hit" } }]]),
-        ),
+      fetchBulk: vi.fn().mockResolvedValueOnce(new Map([["1", { titlesByLang: { de: "Hit" } }]])),
     };
     const movieProvider = {
       fetchBulk: vi.fn().mockResolvedValueOnce(new Map()),
     };
-    mockState.providerForOrder
-      .mockReturnValueOnce(tvProvider)
-      .mockReturnValueOnce(movieProvider);
+    mockState.providerForOrder.mockReturnValueOnce(tvProvider).mockReturnValueOnce(movieProvider);
 
     const r = await app.inject({
       method: "POST",

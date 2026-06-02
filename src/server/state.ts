@@ -2,11 +2,7 @@ import { LRUCache } from "lru-cache";
 import type { Logger } from "pino";
 import { prisma } from "@/lib/db";
 import { loadSetting, type SettingRow } from "@/lib/setting-helpers";
-import {
-  CompositeTitleProvider,
-  DbCachedTitleProvider,
-  looksLikeTmdbV4Token,
-} from "@/providers";
+import { CompositeTitleProvider, DbCachedTitleProvider, looksLikeTmdbV4Token } from "@/providers";
 import type { TitleProvider } from "@/providers/types";
 import type { MediaType } from "@/domain/variations/generate";
 import type { RewriteSearchItem } from "@/domain/xml/rewrite";
@@ -24,6 +20,7 @@ import {
   setActiveLanguagePack,
 } from "@/domain/plugins";
 import { loadActivePlugins, seedPlugins } from "@/server/plugins/seed";
+import { resolveProxyPortEnv } from "@/lib/ports";
 
 const RELEASE_YEAR_RE = /(?<![A-Za-z0-9])(19|20)\d{2}(?![A-Za-z0-9])/g;
 
@@ -123,10 +120,7 @@ const NO_SETTINGS: AppSettings = {
 //   - Settings snapshot, invalidated via `reloadSettings()`
 //   - TitleProvider rebuilt on settings update
 export class AppState {
-  readonly indexerCache: LRUCache<
-    string,
-    { body: Buffer; contentType: string; status: number }
-  >;
+  readonly indexerCache: LRUCache<string, { body: Buffer; contentType: string; status: number }>;
   private byExternalId = new Map<string, CachedSearchItem>(); // `${type}:${externalId}`
   private byTitlePrefix = new Map<string, CachedSearchItem[]>(); // `${type}:${prefix5}`
   // Per-instance match options (year-matching toggle + tolerance). Loaded
@@ -227,6 +221,17 @@ export class AppState {
     this._tvdbAvailable = false;
   }
 
+  // The env var UMLAUTADAPTARREX_PROXY_PORT wins over the persisted DB value at
+  // every boot (it is treated as a bind port, like the Fastify/Web UI ports).
+  // Applied centrally here so the proxy listener, the URL advertised to
+  // Prowlarr, and the Settings UI all observe one effective value.
+  private applyProxyPortEnvOverride(): void {
+    const envPort = resolveProxyPortEnv();
+    if (envPort !== null) {
+      this._settings = { ...this._settings, proxyPort: envPort };
+    }
+  }
+
   // moviedb-promise (v4) supports only TMDB v3 API keys (32-char hex). Old
   // installs may still have a v4 Read Access Token (JWT 'eyJ…') saved in
   // Settings: refusing them up-front avoids loud per-request 401s.
@@ -264,9 +269,7 @@ export class AppState {
       indexerTimeoutSeconds: row.indexerTimeoutSeconds,
       // Defensive parse: SQLite TEXT column without CHECK; an invalid value
       // falls back cleanly to the recommended default "proxy".
-      operationMode: OperationModeSchema.catch("proxy").parse(
-        row.operationMode,
-      ),
+      operationMode: OperationModeSchema.catch("proxy").parse(row.operationMode),
       blockPrivateInstanceHosts: row.blockPrivateInstanceHosts,
       pausedUntil: row.pausedUntil,
     };
@@ -287,12 +290,14 @@ export class AppState {
     const row = await loadSetting();
     if (!row) {
       this.resetToDefaults();
+      this.applyProxyPortEnvOverride();
       return;
     }
     const tmdbKeyForProvider = this.resolveTmdbKey(row.tmdbApiKey);
     this._tmdbAvailable = !!tmdbKeyForProvider && tmdbKeyForProvider.length > 0;
     this._tvdbAvailable = !!row.tvdbApiKey && row.tvdbApiKey.length > 0;
     this._settings = this.toSettingsSnapshot(row);
+    this.applyProxyPortEnvOverride();
     // Composite builders are lazily cached per order signature in
     // `providerForOrder`; the reload only needs to rewire the singleton
     // clients, so we clear the cache map.
@@ -370,13 +375,9 @@ export class AppState {
         germanTitle: row.germanTitle,
         mediaType: row.mediaType as MediaType,
         year: row.year,
-        titleSearchVariations: JSON.parse(
-          row.titleSearchVariations,
-        ) as string[],
+        titleSearchVariations: JSON.parse(row.titleSearchVariations) as string[],
         titleMatchVariations: JSON.parse(row.titleMatchVariations) as string[],
-        authorMatchVariations: JSON.parse(
-          row.authorMatchVariations,
-        ) as string[],
+        authorMatchVariations: JSON.parse(row.authorMatchVariations) as string[],
       };
       this.indexItem(item);
     }
@@ -408,10 +409,7 @@ export class AppState {
     }
   }
 
-  getByExternalId(
-    type: MediaType,
-    externalId: string,
-  ): CachedSearchItem | null {
+  getByExternalId(type: MediaType, externalId: string): CachedSearchItem | null {
     return this.byExternalId.get(`${type}:${externalId}`) ?? null;
   }
 
@@ -419,10 +417,7 @@ export class AppState {
   // mentioned in the release title (or when the gate doesn't apply). The
   // gate only kicks in when the candidate item has a known year AND the
   // release names at least one year AND the instance has year-matching on.
-  private passesYearGate(
-    item: CachedSearchItem,
-    releaseYears: number[],
-  ): boolean {
+  private passesYearGate(item: CachedSearchItem, releaseYears: number[]): boolean {
     if (item.year == null || releaseYears.length === 0) return true;
     const opts = this.getInstanceOptions(item.arrInstanceId);
     if (!opts.enableYearMatching) return true;
@@ -449,11 +444,7 @@ export class AppState {
       if (variationNorm.length <= minLen) continue;
       if (variationNorm.length <= bestLen) continue;
       if (!norm.startsWith(variationNorm)) continue;
-      const endIdx = mapNormalizedLengthToOriginal(
-        cleanTitle,
-        variationNorm.length,
-        pack,
-      );
+      const endIdx = mapNormalizedLengthToOriginal(cleanTitle, variationNorm.length, pack);
       const nextChar = cleanTitle[endIdx];
       if (nextChar !== undefined && /[A-Za-z0-9]/.test(nextChar)) continue;
       bestLen = variationNorm.length;
@@ -479,13 +470,7 @@ export class AppState {
     let bestLen = 0;
     for (const item of bucket) {
       if (!this.passesYearGate(item, releaseYears)) continue;
-      const matchLen = this.bestVariationMatchLen(
-        item,
-        cleanTitle,
-        norm,
-        pack,
-        bestLen,
-      );
+      const matchLen = this.bestVariationMatchLen(item, cleanTitle, norm, pack, bestLen);
       if (matchLen > bestLen) {
         bestLen = matchLen;
         best = item;
@@ -505,9 +490,7 @@ export class AppState {
       year: item.year,
       // null disables the year check at the matching layer; otherwise the
       // configured tolerance is forwarded as +/-N around `year`.
-      yearMatchingTolerance: opts.enableYearMatching
-        ? opts.yearMatchingTolerance
-        : null,
+      yearMatchingTolerance: opts.enableYearMatching ? opts.yearMatchingTolerance : null,
     };
   }
 }

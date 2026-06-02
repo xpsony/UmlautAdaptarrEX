@@ -28,13 +28,12 @@ vi.mock("@/server/state", () => ({
   getAppState: () => mockState,
 }));
 
-const { mockProbeTmdb, mockTestConnection, mockFetchApps, mockFindExisting } =
-  vi.hoisted(() => ({
-    mockProbeTmdb: vi.fn(),
-    mockTestConnection: vi.fn(),
-    mockFetchApps: vi.fn(),
-    mockFindExisting: vi.fn(),
-  }));
+const { mockProbeTmdb, mockTestConnection, mockFetchApps, mockFindExisting } = vi.hoisted(() => ({
+  mockProbeTmdb: vi.fn(),
+  mockTestConnection: vi.fn(),
+  mockFetchApps: vi.fn(),
+  mockFindExisting: vi.fn(),
+}));
 
 vi.mock("@/providers/tmdb", () => ({
   probeTmdbKey: mockProbeTmdb,
@@ -65,6 +64,7 @@ import { setupRoutes } from "@/server/routes/admin/setup";
 let app: FastifyInstance;
 
 beforeEach(async () => {
+  delete process.env.UMLAUTADAPTARREX_PROXY_PORT;
   mockSetting.findUnique.mockReset();
   mockSetting.update.mockReset();
   mockSetting.upsert.mockReset();
@@ -81,6 +81,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  delete process.env.UMLAUTADAPTARREX_PROXY_PORT;
   await app.close();
 });
 
@@ -117,6 +118,45 @@ describe("GET /api/auth/setup-status", () => {
     };
     expect(body.prowlarrConfig.host).toBe("http://prowlarr");
     expect(body.prowlarrConfig.configured).toBe(true);
+  });
+
+  it("reports the env proxy port and portEnvManaged=true when set", async () => {
+    process.env.UMLAUTADAPTARREX_PROXY_PORT = "6006";
+    mockSetting.findUnique.mockResolvedValueOnce({
+      setupComplete: false,
+      prowlarrHost: null,
+      prowlarrApiKey: null,
+      proxyPort: 5006,
+      proxyUsername: "U",
+    });
+    const r = await app.inject({
+      method: "GET",
+      url: "/api/auth/setup-status",
+    });
+    const body = r.json() as {
+      proxyDefaults: { port: number; portEnvManaged: boolean };
+    };
+    expect(body.proxyDefaults.port).toBe(6006);
+    expect(body.proxyDefaults.portEnvManaged).toBe(true);
+  });
+
+  it("reports portEnvManaged=false when the env var is unset", async () => {
+    mockSetting.findUnique.mockResolvedValueOnce({
+      setupComplete: false,
+      prowlarrHost: null,
+      prowlarrApiKey: null,
+      proxyPort: 5006,
+      proxyUsername: "U",
+    });
+    const r = await app.inject({
+      method: "GET",
+      url: "/api/auth/setup-status",
+    });
+    const body = r.json() as {
+      proxyDefaults: { port: number; portEnvManaged: boolean };
+    };
+    expect(body.proxyDefaults.port).toBe(5006);
+    expect(body.proxyDefaults.portEnvManaged).toBe(false);
   });
 });
 

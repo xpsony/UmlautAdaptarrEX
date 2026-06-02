@@ -2,11 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/db";
 import { hashPassword } from "@/lib/auth/password";
-import {
-  createSession,
-  SESSION_COOKIE,
-  SESSION_TTL_MS,
-} from "@/lib/auth/session";
+import { createSession, SESSION_COOKIE, SESSION_TTL_MS } from "@/lib/auth/session";
 import { CSRF_COOKIE } from "@/lib/auth/csrf";
 import { loadSetting } from "@/lib/setting-helpers";
 import { isVaultToken, resolveVaultToken } from "@/server/prowlarr-key-vault";
@@ -15,6 +11,7 @@ import { InstallProxySchema } from "@/schemas/prowlarr";
 import { installUmlautProxy } from "@/arr/prowlarr";
 import { getAppState } from "@/server/state";
 import { getPlugin } from "@/domain/plugins";
+import { resolveProxyPortEnv } from "@/lib/ports";
 import { parseOrReply } from "./_helpers";
 import { arrayToCsv } from "./instances-crud";
 import { csrfCookieOptions, sessionCookieOptions } from "./_auth-cookies";
@@ -30,18 +27,13 @@ interface ProxyInstallOutcome {
 // Validate that no enabled non-DE plugin slips through without a TMDB key.
 // Without this guard the wizard would silently produce empty variations.
 // Returns true if validation passed, false if a 422 response was already sent.
-function validateTmdbForPlugins(
-  data: SetupInput,
-  reply: FastifyReply,
-): boolean {
+function validateTmdbForPlugins(data: SetupInput, reply: FastifyReply): boolean {
   const tmdbProvided = !!data.tmdbApiKey?.trim();
   if (!data.plugins?.length || tmdbProvided) return true;
   const blocked = data.plugins
     .filter((p) => p.enabled)
     .map((p) => getPlugin(p.id))
-    .filter(
-      (p): p is NonNullable<typeof p> => p !== undefined && p.language !== "de",
-    );
+    .filter((p): p is NonNullable<typeof p> => p !== undefined && p.language !== "de");
   if (blocked.length === 0) return true;
   reply.code(422).send({
     error: "tmdb_required",
@@ -52,10 +44,7 @@ function validateTmdbForPlugins(
   return false;
 }
 
-async function persistInitialSettings(
-  data: SetupInput,
-  apiKey: string,
-): Promise<void> {
+async function persistInitialSettings(data: SetupInput, apiKey: string): Promise<void> {
   // Wizard default = "proxy" (recommended). Anyone who doesn't pick a mode
   // in setup (e.g. older SDK clients) gets the recommended value. The DB
   // default "both" only applies to migrations *without* a fresh setup run,
@@ -80,17 +69,13 @@ async function persistInitialSettings(
   });
 }
 
-async function persistPluginSelections(
-  plugins: PluginSelection[],
-): Promise<void> {
+async function persistPluginSelections(plugins: PluginSelection[]): Promise<void> {
   // Reject unknown plugin ids loudly: a silent `continue` lets the operator
   // think their selection was saved when in reality the wizard threw it
   // away (typo, removed plugin, future-revision shape, …).
   const unknown = plugins.filter((p) => !getPlugin(p.id)).map((p) => p.id);
   if (unknown.length > 0) {
-    throw new Error(
-      `Unknown plugin id(s) in setup payload: ${unknown.join(", ")}`,
-    );
+    throw new Error(`Unknown plugin id(s) in setup payload: ${unknown.join(", ")}`);
   }
   for (const p of plugins) {
     await prisma.plugin.upsert({
@@ -117,8 +102,7 @@ async function importProwlarrInstances(
       if (!real) {
         reply.code(409).send({
           error: "stale_preview",
-          message:
-            "Prowlarr application keys have expired. Reload the preview and re-submit.",
+          message: "Prowlarr application keys have expired. Reload the preview and re-submit.",
         });
         return { aborted: true };
       }
@@ -161,7 +145,7 @@ async function maybeInstallProxyInProwlarr(
       prowlarrHost: stored.prowlarrHost,
       prowlarrApiKey: stored.prowlarrApiKey,
       host: data.installProxyInProwlarr.host,
-      port: stored.proxyPort,
+      port: resolveProxyPortEnv() ?? stored.proxyPort,
       username: data.proxyUsername,
       password: data.proxyPassword,
       userAgent: getAppState().settings.userAgent,
@@ -171,16 +155,8 @@ async function maybeInstallProxyInProwlarr(
   return result.ok ? { ok: true } : { ok: false, error: result.error };
 }
 
-function setSessionCookies(
-  reply: FastifyReply,
-  req: FastifyRequest,
-  sessionId: string,
-): string {
-  reply.setCookie(
-    SESSION_COOKIE,
-    sessionId,
-    sessionCookieOptions(req, SESSION_TTL_MS),
-  );
+function setSessionCookies(reply: FastifyReply, req: FastifyRequest, sessionId: string): string {
+  reply.setCookie(SESSION_COOKIE, sessionId, sessionCookieOptions(req, SESSION_TTL_MS));
   // `reply.generateCsrf()` sets the signed httpOnly `_csrf` secret cookie
   // and returns the JS-readable token. The token is duplicated into
   // `ua-csrf` (non-httpOnly) so the SPA can keep copying it into the
@@ -210,9 +186,7 @@ export async function handleSetupSubmit(
   // (nothing persisted, clean 400) and gives the SPA a chance to show a
   // useful error.
   if (data.plugins?.length) {
-    const unknown = data.plugins
-      .filter((p) => !getPlugin(p.id))
-      .map((p) => p.id);
+    const unknown = data.plugins.filter((p) => !getPlugin(p.id)).map((p) => p.id);
     if (unknown.length > 0) {
       reply.code(400).send({ error: "unknown-plugin", ids: unknown });
       return;
