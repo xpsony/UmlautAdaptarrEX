@@ -136,6 +136,8 @@ der jeweiligen Compose-Datei).
 
 2. Web-UI öffnen: [http://localhost:5007](http://localhost:5007).
 
+Ports anpassen: siehe Abschnitt „Ports" und `.env.example`.
+
 Logs verfolgen: `docker compose -f docker-compose.release.yml logs -f umlautadaptarrex` (bzw. ohne `-f
 docker-compose.release.yml` beim lokalen Build). Stop: `docker compose ... down`.
 Update vom Docker Hub: `docker compose -f docker-compose.release.yml pull && docker compose -f
@@ -220,6 +222,16 @@ journalctl -u umlautadaptarrex -f
 | 5005 | Fastify        | Public API, Legacy-Routen (`/<apiKey>/<host>/api`), WebSocket-Logs (`/ws/logs`) |
 | 5006 | TCP HTTP-Proxy | Prowlarr-Indexer-Proxy mit HTTPS-CONNECT-Tunneling                              |
 | 5007 | Next.js        | Web-UI                                                                          |
+
+Die Ports lassen sich per Umgebungsvariable setzen (Priorität: gebrandete Variable > Legacy-Variable / DB > Default):
+
+| Port | Umgebungsvariable                 | Fallback                 |
+| ---- | --------------------------------- | ------------------------ |
+| 5005 | `UMLAUTADAPTARREX_LEGACYAPI_PORT` | `PORT`                   |
+| 5006 | `UMLAUTADAPTARREX_PROXY_PORT`     | `Setting.proxyPort` (DB) |
+| 5007 | `UMLAUTADAPTARREX_WEBUI_PORT`     | `WEB_PORT`               |
+
+`UMLAUTADAPTARREX_PROXY_PORT` überschreibt den in der Datenbank gespeicherten Wert bei jedem Start; ist die Variable gesetzt, wird das Proxy-Port-Feld unter Einstellungen → Erweitert schreibgeschützt angezeigt. Jede Variable setzt sowohl den Container-internen Bind-Port als auch den veröffentlichten Host-Port (das Compose-Mapping nutzt auf beiden Seiten denselben Wert). Vorlage siehe `.env.example`.
 
 Die `data/`-DB wird in den Container gemountet und enthält die gesamte Konfiguration.
 

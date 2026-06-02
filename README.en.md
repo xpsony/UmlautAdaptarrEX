@@ -218,6 +218,16 @@ journalctl -u umlautadaptarrex -f
 | 5006 | TCP HTTP proxy | Prowlarr indexer proxy with HTTPS CONNECT tunneling                             |
 | 5007 | Next.js        | Web UI                                                                          |
 
+Ports can be set via environment variables (precedence: branded variable > legacy variable / DB > default):
+
+| Port | Environment variable              | Fallback                 |
+| ---- | --------------------------------- | ------------------------ |
+| 5005 | `UMLAUTADAPTARREX_LEGACYAPI_PORT` | `PORT`                   |
+| 5006 | `UMLAUTADAPTARREX_PROXY_PORT`     | `Setting.proxyPort` (DB) |
+| 5007 | `UMLAUTADAPTARREX_WEBUI_PORT`     | `WEB_PORT`               |
+
+`UMLAUTADAPTARREX_PROXY_PORT` overrides the value stored in the database at every start; when set, the proxy-port field under Settings → Advanced is shown read-only. Each variable sets both the in-container bind port and the published host port (the compose mapping uses the same value on both sides). See `.env.example` for a template.
+
 The `data/` DB is mounted into the container and contains the entire configuration.
 
 ## Architecture

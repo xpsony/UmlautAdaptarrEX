@@ -49,8 +49,13 @@ ARG APP_VERSION
 ENV APP_VERSION=$APP_VERSION
 ENV NODE_ENV=production
 ENV DATABASE_URL=file:/data/umlautadaptarrex.db
+# Legacy port vars kept as fallbacks; the branded names are the documented,
+# user-facing knobs (override at runtime via compose / `docker run -e`).
 ENV PORT=5005
 ENV WEB_PORT=5007
+ENV UMLAUTADAPTARREX_LEGACYAPI_PORT=5005
+ENV UMLAUTADAPTARREX_WEBUI_PORT=5007
+ENV UMLAUTADAPTARREX_PROXY_PORT=5006
 
 
 # Server runtime: prod-only deps + generated Prisma client (slim).
@@ -78,5 +83,5 @@ COPY --chmod=755 docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 EXPOSE 5005 5006 5007
 VOLUME ["/data"]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-  CMD wget -qO- "http://127.0.0.1:${PORT}/api/health" >/dev/null || exit 1
+  CMD wget -qO- "http://127.0.0.1:${UMLAUTADAPTARREX_LEGACYAPI_PORT:-${PORT:-5005}}/api/health" >/dev/null || exit 1
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh", "node", "start.mjs"]

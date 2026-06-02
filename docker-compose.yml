@@ -5,15 +5,21 @@ services:
     container_name: umlautadaptarrex
     restart: unless-stopped
     ports:
-      - "5005:5005"  # Fastify API + WebSocket logs (URL the *arrs / Prowlarr point at)
-      - "5006:5006"  # TCP HTTP indexer proxy
-      - "5007:5007"  # Web UI (Next.js)
+      # Host and container side share the same variable so a remap moves both.
+      - "${UMLAUTADAPTARREX_LEGACYAPI_PORT:-5005}:${UMLAUTADAPTARREX_LEGACYAPI_PORT:-5005}"  # Fastify API + WS logs (URL the *arrs / Prowlarr point at)
+      - "${UMLAUTADAPTARREX_PROXY_PORT:-5006}:${UMLAUTADAPTARREX_PROXY_PORT:-5006}"  # TCP HTTP indexer proxy
+      - "${UMLAUTADAPTARREX_WEBUI_PORT:-5007}:${UMLAUTADAPTARREX_WEBUI_PORT:-5007}"  # Web UI (Next.js)
     volumes:
       # The entrypoint chowns /data to PUID:PGID on every start, so no manual
       # `chown` is needed before first run.
       - ./data:/data
     environment:
       - TZ=Europe/Berlin
+      # Service ports. Set these (e.g. in a .env file next to this compose
+      # file) to run on non-default ports. See .env.example.
+      - UMLAUTADAPTARREX_LEGACYAPI_PORT=${UMLAUTADAPTARREX_LEGACYAPI_PORT:-5005}
+      - UMLAUTADAPTARREX_WEBUI_PORT=${UMLAUTADAPTARREX_WEBUI_PORT:-5007}
+      - UMLAUTADAPTARREX_PROXY_PORT=${UMLAUTADAPTARREX_PROXY_PORT:-5006}
       # Override the runtime UID/GID if you want files in ./data to be owned
       # by your host user instead of the default 1000:1000.
       # - PUID=1000
