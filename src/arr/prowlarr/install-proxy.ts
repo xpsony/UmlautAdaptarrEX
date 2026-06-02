@@ -1,8 +1,4 @@
-import {
-  type CompatLogger,
-  type ProwlarrCallResult,
-  prowlarrRequest,
-} from "./_client";
+import { type CompatLogger, type ProwlarrCallResult, prowlarrRequest } from "./_client";
 
 export const PROWLARR_PROXY_NAME = "UmlautAdaptarrEX";
 export const PROWLARR_PROXY_TAG_LABEL = "umlautadaptarrex";
@@ -47,16 +43,14 @@ export type InstallProxyResult =
   | { ok: true; action: "created" | "updated"; id: number; tagId: number }
   | { ok: false; status?: number; error: string };
 
-interface StepContext {
+export interface StepContext {
   base: string;
   apiKey: string;
   ua: string;
   log: CompatLogger | undefined;
 }
 
-async function ensureProxyTag(
-  ctx: StepContext,
-): Promise<ProwlarrCallResult<number>> {
+export async function ensureProxyTag(ctx: StepContext): Promise<ProwlarrCallResult<number>> {
   const tagsRes = await prowlarrRequest<ProwlarrTag[]>(
     `${ctx.base}/api/v1/tag`,
     ctx.apiKey,
@@ -69,9 +63,7 @@ async function ensureProxyTag(
   if (!tagsRes.ok) return tagsRes;
   if (Array.isArray(tagsRes.data)) {
     const existing = tagsRes.data.find(
-      (t) =>
-        typeof t?.label === "string" &&
-        t.label.toLowerCase() === PROWLARR_PROXY_TAG_LABEL,
+      (t) => typeof t?.label === "string" && t.label.toLowerCase() === PROWLARR_PROXY_TAG_LABEL,
     );
     if (existing && typeof existing.id === "number") {
       return { ok: true, status: tagsRes.status, data: existing.id };
@@ -118,9 +110,7 @@ async function getHttpProxySchema(
     return { ok: false, status: schemaRes.status, error: "schema_not_array" };
   }
   const httpSchema = schemaRes.data.find(
-    (s) =>
-      typeof s?.implementation === "string" &&
-      s.implementation.toLowerCase() === "http",
+    (s) => typeof s?.implementation === "string" && s.implementation.toLowerCase() === "http",
   );
   if (!httpSchema) {
     return {
@@ -151,8 +141,7 @@ async function findProxyByName(
   }
   const found = listRes.data.find(
     (p) =>
-      typeof p?.name === "string" &&
-      p.name.toLowerCase() === PROWLARR_PROXY_NAME.toLowerCase(),
+      typeof p?.name === "string" && p.name.toLowerCase() === PROWLARR_PROXY_NAME.toLowerCase(),
   );
   return { ok: true, status: listRes.status, data: found ?? null };
 }
@@ -183,9 +172,7 @@ function buildProxyPayload(
     tags: [tagId],
     onHealthIssue: schema.onHealthIssue ?? "None",
     includeHealthWarnings:
-      typeof schema.includeHealthWarnings === "boolean"
-        ? schema.includeHealthWarnings
-        : false,
+      typeof schema.includeHealthWarnings === "boolean" ? schema.includeHealthWarnings : false,
   };
 }
 
@@ -264,8 +251,7 @@ export async function findExistingUmlautProxy(
   userAgent = "UmlautAdaptarr/2.0",
   logger?: CompatLogger,
 ): Promise<
-  | { ok: true; existing: { id: number } | null }
-  | { ok: false; status?: number; error: string }
+  { ok: true; existing: { id: number } | null } | { ok: false; status?: number; error: string }
 > {
   const log = logger?.child({
     component: "prowlarr-install-preview",

@@ -4,15 +4,18 @@ import { isProwlarrConfigured, loadSetting } from "@/lib/setting-helpers";
 import type { z } from "zod";
 import {
   InstallProxySchema,
+  PatchIndexersSchema,
   ProwlarrCredsSchema,
   ProwlarrImportSchema,
 } from "@/schemas/prowlarr";
 import {
   fetchProwlarrApplications,
+  fetchProwlarrIndexers,
   findExistingUmlautProxy,
   installUmlautProxy,
   PROWLARR_PROXY_NAME,
   PROWLARR_PROXY_TAG_LABEL,
+  reconcileIndexerPatches,
 } from "@/arr/prowlarr";
 import { requireAuth } from "@/server/auth/middleware";
 import { getAppState } from "@/server/state";
@@ -21,18 +24,12 @@ import {
   persistProwlarrCreds,
   replyProwlarrUpstreamError,
 } from "@/server/prowlarr-helpers";
-import {
-  isVaultToken,
-  resolveVaultToken,
-  storeApiKey,
-} from "@/server/prowlarr-key-vault";
+import { isVaultToken, resolveVaultToken, storeApiKey } from "@/server/prowlarr-key-vault";
 import { parseOrReply } from "./_helpers";
 import { arrayToCsv } from "./instances-crud";
 import { describeError } from "@/lib/error-format";
 
-type ImportSelection = z.infer<
-  typeof ProwlarrImportSchema
->["selections"][number];
+type ImportSelection = z.infer<typeof ProwlarrImportSchema>["selections"][number];
 type ImportError = { name: string; type: string; message: string };
 
 async function getProwlarrConfig(): Promise<{
@@ -46,10 +43,7 @@ async function getProwlarrConfig(): Promise<{
   };
 }
 
-async function postProwlarrTest(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function postProwlarrTest(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   // Accept either an explicit { host, apiKey } body (used while the operator
   // is typing new credentials) or `{ useStored: true }` to test the
   // currently-persisted connection without re-entering the key. Mirrors the
@@ -59,12 +53,7 @@ async function postProwlarrTest(
   const creds = await resolveProwlarrCreds(body, reply);
   if (!creds) return;
   const ua = getAppState().settings.userAgent;
-  const result = await fetchProwlarrApplications(
-    creds.host,
-    creds.apiKey,
-    ua,
-    req.log,
-  );
+  const result = await fetchProwlarrApplications(creds.host, creds.apiKey, ua, req.log);
   if (!result.ok) {
     return { ok: false, status: result.status ?? 0, error: result.error };
   }
@@ -77,27 +66,15 @@ async function postProwlarrTest(
 
 // Always verify before persisting, broken creds would surface later as a
 // confusing 401 during import.
-async function putProwlarrConfig(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function putProwlarrConfig(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const data = parseOrReply(req.body, ProwlarrCredsSchema, reply);
   if (!data) return;
   const ua = getAppState().settings.userAgent;
-  const result = await fetchProwlarrApplications(
-    data.host,
-    data.apiKey,
-    ua,
-    req.log,
-  );
+  const result = await fetchProwlarrApplications(data.host, data.apiKey, ua, req.log);
   if (!result.ok) {
     return replyProwlarrUpstreamError(reply, result, "fetch_failed");
   }
-  await persistProwlarrCreds(
-    data.host,
-    data.apiKey,
-    getAppState().settings.appApiKey || "",
-  );
+  await persistProwlarrCreds(data.host, data.apiKey, getAppState().settings.appApiKey || "");
   return {
     ok: true,
     host: data.host,
@@ -126,35 +103,21 @@ async function resolveProwlarrCreds(
   return data ? { host: data.host, apiKey: data.apiKey } : null;
 }
 
-async function postProwlarrPreview(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function postProwlarrPreview(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const body = (req.body as Record<string, unknown> | undefined) ?? {};
   const creds = await resolveProwlarrCreds(body, reply);
   if (!creds) return;
   const ua = getAppState().settings.userAgent;
-  const result = await fetchProwlarrApplications(
-    creds.host,
-    creds.apiKey,
-    ua,
-    req.log,
-  );
+  const result = await fetchProwlarrApplications(creds.host, creds.apiKey, ua, req.log);
   if (!result.ok) {
     return replyProwlarrUpstreamError(reply, result, "fetch_failed");
   }
-  await persistProwlarrCreds(
-    creds.host,
-    creds.apiKey,
-    getAppState().settings.appApiKey || "",
-  );
+  await persistProwlarrCreds(creds.host, creds.apiKey, getAppState().settings.appApiKey || "");
   // Replace each downstream-app's real API key with an opaque vault token
   // before the response leaves the server, identical to the setup-wizard
   // preview path. The follow-up import resolves the token back without
   // ever shipping the cleartext key to the browser.
-  const safeApps = result.apps.map((a) =>
-    a.apiKey ? { ...a, apiKey: storeApiKey(a.apiKey) } : a,
-  );
+  const safeApps = result.apps.map((a) => (a.apiKey ? { ...a, apiKey: storeApiKey(a.apiKey) } : a));
   return { apps: safeApps, skipped: result.skipped };
 }
 
@@ -166,9 +129,7 @@ async function postProwlarrPreview(
 // If the incoming apiKey is a vault token (the preview endpoint replaces
 // real keys with opaque tokens), resolve it back. Stale tokens throw and
 // the caller logs the per-item failure.
-async function upsertImportSelection(
-  sel: ImportSelection,
-): Promise<"created" | "updated"> {
+async function upsertImportSelection(sel: ImportSelection): Promise<"created" | "updated"> {
   let resolvedKey = sel.apiKey;
   if (isVaultToken(resolvedKey)) {
     const real = resolveVaultToken(resolvedKey);
@@ -196,10 +157,7 @@ async function upsertImportSelection(
   return existing ? "updated" : "created";
 }
 
-async function postProwlarrImport(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function postProwlarrImport(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const data = parseOrReply(req.body, ProwlarrImportSchema, reply);
   if (!data) return;
   let created = 0;
@@ -225,10 +183,7 @@ async function postProwlarrImport(
   return { created, updated, errors };
 }
 
-async function getInstallProxyPreview(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function getInstallProxyPreview(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const creds = await loadStoredProwlarrCreds(reply);
   if (!creds) return;
   const state = getAppState();
@@ -241,8 +196,7 @@ async function getInstallProxyPreview(
   if (!probe.ok) {
     return replyProwlarrUpstreamError(reply, probe, "fetch_failed");
   }
-  const defaultHost =
-    (req.hostname && req.hostname.split(":")[0]) || "localhost";
+  const defaultHost = (req.hostname && req.hostname.split(":")[0]) || "localhost";
   return {
     defaultHost,
     port: state.settings.proxyPort,
@@ -254,10 +208,7 @@ async function getInstallProxyPreview(
   };
 }
 
-async function postInstallProxy(
-  req: FastifyRequest,
-  reply: FastifyReply,
-): Promise<unknown> {
+async function postInstallProxy(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
   const data = parseOrReply(req.body, InstallProxySchema, reply);
   if (!data) return;
   const creds = await loadStoredProwlarrCreds(reply);
@@ -293,27 +244,47 @@ async function postInstallProxy(
   };
 }
 
+async function getProwlarrIndexers(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
+  const creds = await loadStoredProwlarrCreds(reply);
+  if (!creds) return;
+  const ua = getAppState().settings.userAgent;
+  const result = await fetchProwlarrIndexers(creds.host, creds.apiKey, ua, req.log);
+  if (!result.ok) {
+    return replyProwlarrUpstreamError(reply, result, "fetch_failed");
+  }
+  return { indexers: result.indexers, tagLabel: PROWLARR_PROXY_TAG_LABEL };
+}
+
+async function postPatchIndexers(req: FastifyRequest, reply: FastifyReply): Promise<unknown> {
+  const data = parseOrReply(req.body, PatchIndexersSchema, reply);
+  if (!data) return;
+  const creds = await loadStoredProwlarrCreds(reply);
+  if (!creds) return;
+  const ua = getAppState().settings.userAgent;
+  const result = await reconcileIndexerPatches(
+    creds.host,
+    creds.apiKey,
+    ua,
+    data.selectedIds,
+    req.log,
+  );
+  if (!result.ok) {
+    return replyProwlarrUpstreamError(reply, result, "patch_failed");
+  }
+  return { results: result.results };
+}
+
 export async function prowlarrAdminRoutes(app: FastifyInstance): Promise<void> {
   const auth = { preHandler: requireAuth } as const;
 
   app.get("/api/admin/instances/prowlarr/config", auth, getProwlarrConfig);
   app.post("/api/admin/instances/prowlarr/test", auth, postProwlarrTest);
   app.put("/api/admin/instances/prowlarr/config", auth, putProwlarrConfig);
-  app.delete(
-    "/api/admin/instances/prowlarr/config",
-    auth,
-    deleteProwlarrConfig,
-  );
+  app.delete("/api/admin/instances/prowlarr/config", auth, deleteProwlarrConfig);
   app.post("/api/admin/instances/prowlarr/preview", auth, postProwlarrPreview);
   app.post("/api/admin/instances/prowlarr/import", auth, postProwlarrImport);
-  app.get(
-    "/api/admin/instances/prowlarr/install-proxy/preview",
-    auth,
-    getInstallProxyPreview,
-  );
-  app.post(
-    "/api/admin/instances/prowlarr/install-proxy",
-    auth,
-    postInstallProxy,
-  );
+  app.get("/api/admin/instances/prowlarr/install-proxy/preview", auth, getInstallProxyPreview);
+  app.post("/api/admin/instances/prowlarr/install-proxy", auth, postInstallProxy);
+  app.get("/api/admin/instances/prowlarr/indexers", auth, getProwlarrIndexers);
+  app.post("/api/admin/instances/prowlarr/indexers/patch", auth, postPatchIndexers);
 }

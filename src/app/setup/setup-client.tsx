@@ -6,6 +6,7 @@ import { PluginsStep } from "./_components/plugins-step";
 import { ProwlarrConnectStep } from "./_components/prowlarr-connect-step";
 import { ProwlarrImportStep } from "./_components/prowlarr-import-step";
 import { ProwlarrInstallStep } from "./_components/prowlarr-install-step";
+import { ProwlarrPatchIndexersStep } from "./_components/prowlarr-patch-indexers-step";
 import { ProxyStep } from "./_components/proxy-step";
 import { Stepper } from "./_components/stepper";
 import { SyncStep } from "./_components/sync-step";
@@ -92,11 +93,7 @@ export function SetupClient({ initialStatus }: { initialStatus: SetupStatus }) {
             prowlarrConnected={w.prowlarrConnected}
             isSubmitting={w.isSubmitting}
             onSubmit={w.onProxySubmit}
-            onBack={() =>
-              w.setStep(
-                w.prowlarrConnected ? "prowlarr-import" : "prowlarr-connect",
-              )
-            }
+            onBack={() => w.setStep(w.prowlarrConnected ? "prowlarr-import" : "prowlarr-connect")}
             onRegeneratePassword={w.regenerateProxyPassword}
           />
         ) : null}
@@ -111,6 +108,19 @@ export function SetupClient({ initialStatus }: { initialStatus: SetupStatus }) {
             onBack={() => w.setStep("proxy")}
             onSkip={w.skipInstallProxy}
             onSubmit={w.submitInstallProxy}
+          />
+        ) : null}
+
+        {w.step === "prowlarr-patch-indexers" ? (
+          <ProwlarrPatchIndexersStep
+            indexers={w.patchIndexers}
+            selectedIds={w.patchSelectedIds}
+            loading={w.patchLoading}
+            submitting={w.patchSubmitting}
+            onToggle={w.togglePatchIndexer}
+            onToggleAll={w.togglePatchAll}
+            onSkip={w.skipPatchIndexers}
+            onSubmit={w.submitPatchIndexers}
           />
         ) : null}
 

@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { type SetupInput } from "@/schemas/auth";
 import type {
+  ProwlarrIndexerView,
   ProwlarrParsedApp,
   ProwlarrPreviewResult,
   ProwlarrSkippedApp,
@@ -47,23 +48,23 @@ export function useSetupWizard(initialStatus: SetupStatus) {
   const [operationMode, setOperationMode] = useState<OperationMode>("proxy");
 
   const [pluginList, setPluginList] = useState<PluginListEntry[] | null>(null);
-  const [pluginEnabled, setPluginEnabled] = useState<Map<string, boolean>>(
-    new Map(),
-  );
+  const [pluginEnabled, setPluginEnabled] = useState<Map<string, boolean>>(new Map());
 
   const [prowlarrConnected, setProwlarrConnected] = useState(false);
   const [prowlarrApps, setProwlarrApps] = useState<ProwlarrParsedApp[]>([]);
-  const [prowlarrSkippedApps, setProwlarrSkippedApps] = useState<
-    ProwlarrSkippedApp[]
-  >([]);
+  const [prowlarrSkippedApps, setProwlarrSkippedApps] = useState<ProwlarrSkippedApp[]>([]);
   const [selectedAppIds, setSelectedAppIds] = useState<Set<number>>(new Set());
   const [appRows, setAppRows] = useState<Map<number, AppRowState>>(new Map());
 
   const [proxyValues, setProxyValues] = useState<ProxyFormInput | null>(null);
 
-  const [installPreview, setInstallPreview] =
-    useState<InstallProxyPreview | null>(null);
+  const [installPreview, setInstallPreview] = useState<InstallProxyPreview | null>(null);
   const [installHost, setInstallHost] = useState<string>("");
+
+  const [patchIndexers, setPatchIndexers] = useState<ProwlarrIndexerView[]>([]);
+  const [patchSelectedIds, setPatchSelectedIds] = useState<Set<number>>(new Set());
+  const [patchLoading, setPatchLoading] = useState(false);
+  const [patchSubmitting, setPatchSubmitting] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -72,20 +73,17 @@ export function useSetupWizard(initialStatus: SetupStatus) {
   const [importedInstancesCount, setImportedInstancesCount] = useState(0);
   const [syncSubmitting, setSyncSubmitting] = useState(false);
 
-  const [tmdbTestResult, setTmdbTestResult] = useState<TmdbTestResult | null>(
-    null,
-  );
+  const [tmdbTestResult, setTmdbTestResult] = useState<TmdbTestResult | null>(null);
   const [tmdbTesting, setTmdbTesting] = useState(false);
 
-  const [tvdbTestResult, setTvdbTestResult] = useState<TvdbTestResult | null>(
-    null,
-  );
+  const [tvdbTestResult, setTvdbTestResult] = useState<TvdbTestResult | null>(null);
   const [tvdbTesting, setTvdbTesting] = useState(false);
 
   const [previewLoading, setPreviewLoading] = useState(false);
   const [prowlarrTesting, setProwlarrTesting] = useState(false);
-  const [prowlarrTestResult, setProwlarrTestResult] =
-    useState<ProwlarrConnectionTestResult | null>(null);
+  const [prowlarrTestResult, setProwlarrTestResult] = useState<ProwlarrConnectionTestResult | null>(
+    null,
+  );
 
   // Forms ------------------------------------------------------------------
 
@@ -108,8 +106,7 @@ export function useSetupWizard(initialStatus: SetupStatus) {
     },
   });
 
-  const prowlarrHostValue =
-    useWatch({ control: prowlarrForm.control, name: "host" }) ?? "";
+  const prowlarrHostValue = useWatch({ control: prowlarrForm.control, name: "host" }) ?? "";
 
   const initialProxyPassword = useMemo(() => generatePassword(), []);
   const proxyForm = useForm<ProxyFormInput>({
@@ -241,8 +238,7 @@ export function useSetupWizard(initialStatus: SetupStatus) {
       } else {
         setProwlarrTestResult({
           ok: false,
-          message:
-            res.status === 401 ? tProw("authFailed") : (res.error ?? "unknown"),
+          message: res.status === 401 ? tProw("authFailed") : (res.error ?? "unknown"),
         });
       }
     } catch (err) {
@@ -258,13 +254,10 @@ export function useSetupWizard(initialStatus: SetupStatus) {
   const onProwlarrSubmit = prowlarrForm.handleSubmit(async (values) => {
     setPreviewLoading(true);
     try {
-      const result = await apiFetch<ProwlarrPreviewResult>(
-        "/api/auth/prowlarr/preview",
-        {
-          method: "POST",
-          body: JSON.stringify({ host: values.host, apiKey: values.apiKey }),
-        },
-      );
+      const result = await apiFetch<ProwlarrPreviewResult>("/api/auth/prowlarr/preview", {
+        method: "POST",
+        body: JSON.stringify({ host: values.host, apiKey: values.apiKey }),
+      });
       setProwlarrConnected(true);
       setProwlarrApps(result.apps);
       setProwlarrSkippedApps(result.skipped);
@@ -430,9 +423,7 @@ export function useSetupWizard(initialStatus: SetupStatus) {
 
   const loadInstallPreview = async () => {
     try {
-      const res = await apiFetch<InstallProxyPreview>(
-        "/api/auth/prowlarr/install-proxy/preview",
-      );
+      const res = await apiFetch<InstallProxyPreview>("/api/auth/prowlarr/install-proxy/preview");
       setInstallPreview(res);
       setInstallHost(res.defaultHost);
     } catch (err) {
@@ -458,6 +449,62 @@ export function useSetupWizard(initialStatus: SetupStatus) {
     }
     await finalSubmit({ admin, proxy: proxyValues, install: { host } });
   };
+
+  // Patch-indexers step (runs AFTER finalSubmit, so the proxy + tag exist and
+  // the session cookie is set — hence the /api/admin endpoints).
+  const loadPatchIndexers = async () => {
+    setPatchLoading(true);
+    try {
+      const res = await apiFetch<{ indexers: ProwlarrIndexerView[] }>(
+        "/api/admin/instances/prowlarr/indexers",
+      );
+      setPatchIndexers(res.indexers);
+      // "Select all" default: pre-select every patchable indexer.
+      setPatchSelectedIds(new Set(res.indexers.filter((i) => i.patchable).map((i) => i.id)));
+    } catch (err) {
+      toast.error(tProw("fetchFailed", { error: describeError(err) }));
+    } finally {
+      setPatchLoading(false);
+    }
+  };
+
+  const togglePatchIndexer = (id: number) => {
+    setPatchSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const togglePatchAll = (checked: boolean) => {
+    setPatchSelectedIds(
+      checked ? new Set(patchIndexers.filter((i) => i.patchable).map((i) => i.id)) : new Set(),
+    );
+  };
+
+  const finishAfterPatch = () => {
+    if (importedInstancesCount > 0) setStep("sync");
+    else router.push("/dashboard");
+  };
+
+  const submitPatchIndexers = async () => {
+    setPatchSubmitting(true);
+    try {
+      await apiFetch("/api/admin/instances/prowlarr/indexers/patch", {
+        method: "POST",
+        body: JSON.stringify({ selectedIds: Array.from(patchSelectedIds) }),
+      });
+      toast.success(t("patchIndexersDone"));
+    } catch (err) {
+      toast.error(tProw("fetchFailed", { error: describeError(err) }));
+    } finally {
+      setPatchSubmitting(false);
+      finishAfterPatch();
+    }
+  };
+
+  const skipPatchIndexers = () => finishAfterPatch();
 
   // Prowlarr-import "Next" handler when no proxy step follows.
   const advanceFromProwlarrImport = () => {
@@ -512,16 +559,20 @@ export function useSetupWizard(initialStatus: SetupStatus) {
         body: JSON.stringify(payload),
       });
       if (result.proxyInstall && !result.proxyInstall.ok) {
-        toast.warning(
-          t("installProxyFailed", { error: result.proxyInstall.error ?? "" }),
-        );
+        toast.warning(t("installProxyFailed", { error: result.proxyInstall.error ?? "" }));
       } else if (result.proxyInstall?.ok) {
         toast.success(t("installProxyOk"));
       }
       const importedCount = selections.length;
       setImportedInstancesCount(importedCount);
       setIsSubmitting(false);
-      if (importedCount > 0) {
+      // The proxy/tag now exist and we have a session: offer the indexer
+      // patch step before the optional sync step, but only when a proxy was
+      // actually installed and Prowlarr is connected.
+      if (result.proxyInstall?.ok && prowlarrConnected) {
+        setStep("prowlarr-patch-indexers");
+        void loadPatchIndexers();
+      } else if (importedCount > 0) {
         setStep("sync");
       } else {
         router.push("/dashboard");
@@ -538,10 +589,10 @@ export function useSetupWizard(initialStatus: SetupStatus) {
   const startSyncAndFinish = async () => {
     setSyncSubmitting(true);
     try {
-      await apiFetch<{ ok: boolean; runIds: string[]; instanceCount: number }>(
-        "/api/admin/sync",
-        { method: "POST", body: JSON.stringify({}) },
-      );
+      await apiFetch<{ ok: boolean; runIds: string[]; instanceCount: number }>("/api/admin/sync", {
+        method: "POST",
+        body: JSON.stringify({}),
+      });
       toast.success(t("syncQueued"));
     } catch (err) {
       toast.error(t("syncStartFailed", { error: describeError(err) }));
@@ -574,6 +625,10 @@ export function useSetupWizard(initialStatus: SetupStatus) {
     }
     if (prowlarrConnected && proxyEnabled) {
       labels.push({ key: "prowlarr-install", label: t("step5Title") });
+      labels.push({
+        key: "prowlarr-patch-indexers",
+        label: t("patchStepTitle"),
+      });
     }
     if (importedInstancesCount > 0 || step === "sync") {
       labels.push({ key: "sync", label: t("syncStepTitle") });
@@ -649,6 +704,15 @@ export function useSetupWizard(initialStatus: SetupStatus) {
     proxyValues,
     skipInstallProxy,
     submitInstallProxy,
+    // prowlarr patch indexers
+    patchIndexers,
+    patchSelectedIds,
+    patchLoading,
+    patchSubmitting,
+    togglePatchIndexer,
+    togglePatchAll,
+    submitPatchIndexers,
+    skipPatchIndexers,
     // sync
     importedInstancesCount,
     syncSubmitting,

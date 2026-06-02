@@ -11,13 +11,7 @@ export type TmdbTestResult =
   | { ok: true; sample: { id: number; title: string } }
   | {
       ok: false;
-      code:
-        | "missing"
-        | "v4_token"
-        | "invalid_format"
-        | "unauthorized"
-        | "network"
-        | "unknown";
+      code: "missing" | "v4_token" | "invalid_format" | "unauthorized" | "network" | "unknown";
       detail?: string;
     };
 
@@ -83,6 +77,7 @@ export type Step =
   | "prowlarr-import"
   | "proxy"
   | "prowlarr-install"
+  | "prowlarr-patch-indexers"
   | "sync";
 
 export type OperationMode = OperationModeValue;
@@ -94,22 +89,17 @@ export interface AppRowState {
   version?: string | undefined;
 }
 
-const PASSWORD_ALPHABET =
-  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+const PASSWORD_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
 export function generatePassword(length = 24): string {
   if (typeof crypto === "undefined" || !crypto.getRandomValues) {
     let s = "";
     for (let i = 0; i < length; i++) {
-      s +=
-        PASSWORD_ALPHABET[Math.floor(Math.random() * PASSWORD_ALPHABET.length)];
+      s += PASSWORD_ALPHABET[Math.floor(Math.random() * PASSWORD_ALPHABET.length)];
     }
     return s;
   }
   const bytes = new Uint8Array(length);
   crypto.getRandomValues(bytes);
-  return Array.from(
-    bytes,
-    (b) => PASSWORD_ALPHABET[b % PASSWORD_ALPHABET.length],
-  ).join("");
+  return Array.from(bytes, (b) => PASSWORD_ALPHABET[b % PASSWORD_ALPHABET.length]).join("");
 }

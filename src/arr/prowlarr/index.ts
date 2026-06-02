@@ -12,3 +12,11 @@ export {
   type InstallProxyParams,
   type InstallProxyResult,
 } from "./install-proxy";
+
+export {
+  fetchProwlarrIndexers,
+  reconcileIndexerPatches,
+  type FetchIndexersResult,
+  type ReconcileResult,
+  type RawProwlarrIndexer,
+} from "./indexers";
