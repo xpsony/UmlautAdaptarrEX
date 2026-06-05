@@ -312,7 +312,7 @@ Key points:
 
 - **5006** is the only port Prowlarr talks to directly (HTTP proxy with Basic auth, default user `UmlautAdaptarr`).
 - **5005** carries both the admin API and the legacy route `/<apiKey>/<host>/api` for direct mode.
-- **5007** is only the UI; it talks internally to 5005 (Next.js rewrites in `next.config.ts`).
+- **5007** is only the UI; it reverse-proxies `/api/*` to 5005 at runtime (`src/proxy.ts`).
 
 ## Configuration in Prowlarr (recommended)
 

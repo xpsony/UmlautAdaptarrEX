@@ -9,8 +9,8 @@ import { LOCALE_COOKIE } from "@/lib/i18n-config";
  * Why not derive from the request `host` header? In production behind a
  * reverse proxy that header is attacker-controlled — using it for an outgoing
  * fetch is a host-header SSRF foothold. Resolve from `API_UPSTREAM` instead,
- * with the in-process Fastify default; this matches what `next.config.ts`
- * already uses for the `/api/admin`, `/api/auth` rewrites.
+ * with the in-process Fastify default; this matches what `src/proxy.ts`
+ * uses to reverse-proxy the `/api/admin`, `/api/auth`, `/api/health` paths.
  */
 export function getApiUpstream(): string {
   return process.env.API_UPSTREAM ?? "http://127.0.0.1:5005";
