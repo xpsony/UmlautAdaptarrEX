@@ -39,6 +39,32 @@ export function AdvancedTab({ form, data, onSave, saving }: AdvancedTabProps) {
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
+                  <Label htmlFor="legacyApiPort">{t("legacyApiPort")}</Label>
+                  <FieldHint text={t("legacyApiPortHint")} />
+                </div>
+                <Input
+                  id="legacyApiPort"
+                  type="number"
+                  value={data?.legacyApiPort ?? 5005}
+                  readOnly
+                  disabled
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="webUiPort">{t("webUiPort")}</Label>
+                  <FieldHint text={t("webUiPortHint")} />
+                </div>
+                <Input
+                  id="webUiPort"
+                  type="number"
+                  value={data?.webUiPort ?? 5007}
+                  readOnly
+                  disabled
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
                   <Label htmlFor="proxyPort">{t("proxyPort")}</Label>
                   <FieldHint text={t("proxyPortHint")} />
                 </div>

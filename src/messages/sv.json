@@ -361,8 +361,13 @@
     "regenerateTitle": "Generera ny API-nyckel?",
     "regenerated": "API-nyckeln är genererad på nytt.",
     "regenerateConfirm": "Den nuvarande nyckeln slutar fungera omedelbart. Uppdatera Prowlarr och dina *arrs med den nya nyckeln.",
+    "legacyApiPort": "API-port",
+    "legacyApiPortHint": "Aktuell port för Fastify-API:t (API, äldre indexer-rutter, loggström). Anges via miljövariabeln UMLAUTADAPTARREX_LEGACYAPI_PORT; aktiveras efter en omstart av servern.",
+    "webUiPort": "Webbgränssnittsport",
+    "webUiPortHint": "Aktuell port för webbgränssnittet. Anges via miljövariabeln UMLAUTADAPTARREX_WEBUI_PORT; aktiveras efter en omstart av servern.",
     "proxyPort": "HTTP-proxy-port",
     "proxyPortHint": "Aktiveras efter en omstart av servern.",
+    "proxyPortEnvManagedHint": "Anges via miljövariabeln UMLAUTADAPTARREX_PROXY_PORT; ändra den där, inte här.",
     "proxyAuth": {
       "title": "Autentiseringsuppgifter för HTTP-proxy",
       "hint": "Basic-Auth-uppgifter som Prowlarr (och andra indexers) måste använda när de ansluter till HTTP-proxyn på denna port. Ange samma användarnamn och lösenord i Prowlarr → Indexers → Proxy.",
