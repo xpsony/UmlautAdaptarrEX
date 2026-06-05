@@ -1,11 +1,10 @@
 // Single source of truth for resolving the three service ports from the
 // environment. Reads `process.env` at call time (not module load) so tests can
-// vary the environment. The branded `UMLAUTADAPTARREX_*` names take precedence
-// over the historical `PORT` / `WEB_PORT` names; both fall back to the legacy
-// defaults.
+// vary the environment. Only the branded `UMLAUTADAPTARREX_*` names are read;
+// an unset value falls back to the default port.
 //
 // NOTE: `start.mjs` (the plain-.mjs supervisor) mirrors the LEGACYAPI / WEBUI
-// precedence inline because it runs before the TS build is importable. Keep the
+// resolution inline because it runs before the TS build is importable. Keep the
 // two in sync.
 
 const MIN_PORT = 1024;
@@ -36,17 +35,12 @@ function parsePort(raw: string | undefined, varName: string): number | null {
 export function resolveLegacyApiPort(): number {
   return (
     parsePort(process.env.UMLAUTADAPTARREX_LEGACYAPI_PORT, "UMLAUTADAPTARREX_LEGACYAPI_PORT") ??
-    parsePort(process.env.PORT, "PORT") ??
     5005
   );
 }
 
 export function resolveWebUiPort(): number {
-  return (
-    parsePort(process.env.UMLAUTADAPTARREX_WEBUI_PORT, "UMLAUTADAPTARREX_WEBUI_PORT") ??
-    parsePort(process.env.WEB_PORT, "WEB_PORT") ??
-    5007
-  );
+  return parsePort(process.env.UMLAUTADAPTARREX_WEBUI_PORT, "UMLAUTADAPTARREX_WEBUI_PORT") ?? 5007;
 }
 
 // Null means "no env override"; callers fall back to the persisted DB value.

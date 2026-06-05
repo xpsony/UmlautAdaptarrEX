@@ -223,13 +223,13 @@ journalctl -u umlautadaptarrex -f
 | 5006 | TCP HTTP-Proxy | Prowlarr-Indexer-Proxy mit HTTPS-CONNECT-Tunneling                              |
 | 5007 | Next.js        | Web-UI                                                                          |
 
-Die Ports lassen sich per Umgebungsvariable setzen (Priorität: gebrandete Variable > Legacy-Variable / DB > Default):
+Die Ports lassen sich per Umgebungsvariable setzen (Priorität: gebrandete Variable > DB > Default):
 
 | Port | Umgebungsvariable                 | Fallback                 |
 | ---- | --------------------------------- | ------------------------ |
-| 5005 | `UMLAUTADAPTARREX_LEGACYAPI_PORT` | `PORT`                   |
+| 5005 | `UMLAUTADAPTARREX_LEGACYAPI_PORT` | `5005`                   |
 | 5006 | `UMLAUTADAPTARREX_PROXY_PORT`     | `Setting.proxyPort` (DB) |
-| 5007 | `UMLAUTADAPTARREX_WEBUI_PORT`     | `WEB_PORT`               |
+| 5007 | `UMLAUTADAPTARREX_WEBUI_PORT`     | `5007`                   |
 
 `UMLAUTADAPTARREX_PROXY_PORT` überschreibt den in der Datenbank gespeicherten Wert bei jedem Start; ist die Variable gesetzt, wird das Proxy-Port-Feld unter Einstellungen → Erweitert schreibgeschützt angezeigt. Jede Variable setzt sowohl den Container-internen Bind-Port als auch den veröffentlichten Host-Port (das Compose-Mapping nutzt auf beiden Seiten denselben Wert). Vorlage siehe `.env.example`.
 
