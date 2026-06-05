@@ -24,22 +24,20 @@
 
 # UmlautAdaptarrEX
 
-> **Dies ist noch eine frühe Beta Version**
+> **Hinweis zum Reifegrad**
 >
-> Von Prinzip sollte alles mehr oder weniger funktionieren.
+> Dies ist keine frühe Beta-Version mehr. Im Prinzip sollte alles mehr oder weniger funktionieren.
 >
 > **Information zu Radarr:**
 >
 > - TMDB / TVDB Key wird benötigt damit Radarr funktioniert
 > - TMDB / TVDB Key wird benötigt damit Plugins funktionieren
 >
-> **Was wurde noch nicht getestet:**
+> **Folgende Dinge müssen noch mehr getestet werden:**
 >
-> - Legacy Modus
-> - Die Plugins
-> - Readarr
-> - Lidarr
-> - Französische / Schwedische Sprache
+> - Legacy API (aktuell wird überlegt, ob dieser Modus entfernt wird)
+> - Die Sprach-Plugins Französisch und Schwedisch
+> - Das Proxmox-Community-Skript ist noch nicht getestet und befindet sich aktuell in Entwicklung
 >
 > Sollte ein Release nicht korrekt benannt werden bzw. Bugs auftreten, bitte erstmal PM an mich.
 >
@@ -174,10 +172,10 @@ erneut ausführen. Das `data/`-Volume bleibt dabei erhalten.
 
 ### Variante 3: Unraid Template
 
-Für Unraid gibt es ein Community-Template in einem separaten Repository:
-[xpsony/UmlautAdaptarrEX-Unraid-Template](https://github.com/xpsony/UmlautAdaptarrEX-Unraid-Template).
-Aufnahme in den Community-Applications-Store (CA) ist beantragt, danach ist die Installation
-direkt aus CA möglich, ohne Template-URL.
+Das Unraid-Template für UmlautAdaptarrEX ist jetzt offiziell im Community-Applications-Store (CA)
+verfügbar: In Unraid unter **Apps** einfach nach „UmlautAdaptarrEX" suchen und direkt installieren,
+ohne Template-URL. Das Template wird im separaten Repository
+[xpsony/UmlautAdaptarrEX-Unraid-Template](https://github.com/xpsony/UmlautAdaptarrEX-Unraid-Template) gepflegt.
 
 Installationsanleitung, Template-URL und Feld-Defaults (Ports, PUID/PGID, Appdata-Pfad) stehen
 im README des Template-Repos.
