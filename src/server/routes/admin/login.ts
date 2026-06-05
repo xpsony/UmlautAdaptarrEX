@@ -10,6 +10,7 @@ import {
 } from "@/lib/auth/session";
 import { CSRF_COOKIE } from "@/lib/auth/csrf";
 import { requireAuth } from "@/server/auth/middleware";
+import { latestChangelog } from "@/lib/changelog";
 import { LoginSchema } from "@/schemas/auth";
 import { parseOrReply } from "./_helpers";
 import { csrfCookieOptions, sessionCookieOptions } from "./_auth-cookies";
@@ -65,10 +66,7 @@ export async function loginRoutes(app: FastifyInstance): Promise<void> {
 
       const ok = await verifyPassword(user.passwordHash, data.password);
       if (!ok) {
-        req.log.warn(
-          { username: user.username, ip: req.ip },
-          "login rejected: bad password",
-        );
+        req.log.warn({ username: user.username, ip: req.ip }, "login rejected: bad password");
         return reply.code(401).send({ error: "invalid-credentials" });
       }
 
@@ -76,18 +74,11 @@ export async function loginRoutes(app: FastifyInstance): Promise<void> {
       // mint a fresh ID. Defeats session-fixation attacks where a leaked
       // pre-auth cookie could otherwise stay valid for the full TTL.
       const session = await rotateSessionForUser(user.id);
-      reply.setCookie(
-        SESSION_COOKIE,
-        session.id,
-        sessionCookieOptions(req, SESSION_TTL_MS),
-      );
+      reply.setCookie(SESSION_COOKIE, session.id, sessionCookieOptions(req, SESSION_TTL_MS));
       const csrf = reply.generateCsrf();
       reply.setCookie(CSRF_COOKIE, csrf, csrfCookieOptions(req));
 
-      req.log.info(
-        { username: user.username, userId: user.id, ip: req.ip },
-        "login ok",
-      );
+      req.log.info({ username: user.username, userId: user.id, ip: req.ip }, "login ok");
       return { ok: true, csrf };
     },
   );
@@ -96,34 +87,53 @@ export async function loginRoutes(app: FastifyInstance): Promise<void> {
   // CSRF token (via `requireAuth`) so a malicious cross-site can't force a
   // logout. Stale-cookie clients hit 401, they are effectively "logged out"
   // already, so no UX regression.
-  app.post(
-    "/api/auth/logout",
-    { preHandler: requireAuth },
+  app.post("/api/auth/logout", { preHandler: requireAuth }, async (req, reply) => {
+    const sid = req.cookies[SESSION_COOKIE];
+    if (sid) await revokeSession(sid);
+    reply.clearCookie(SESSION_COOKIE, { path: "/" });
+    reply.clearCookie(CSRF_COOKIE, { path: "/" });
+    // The plugin's secret cookie. Clearing it forces the next login to
+    // start a fresh CSRF chain rather than reusing a stale secret.
+    reply.clearCookie("_csrf", { path: "/" });
+    req.log.info({ userId: req.session?.userId ?? null, ip: req.ip }, "logout");
+    return { ok: true };
+  });
+
+  app.get(
+    "/api/auth/me",
+    {
+      // Light per-IP cap. The UI polls this on every page load, so it must
+      // stay generous, but an unauthenticated caller shouldn't be able to
+      // hammer the session lookup / DB read unbounded.
+      config: { rateLimit: { max: 60, timeWindow: "1 minute", keyGenerator: (req) => req.ip } },
+    },
     async (req, reply) => {
       const sid = req.cookies[SESSION_COOKIE];
-      if (sid) await revokeSession(sid);
-      reply.clearCookie(SESSION_COOKIE, { path: "/" });
-      reply.clearCookie(CSRF_COOKIE, { path: "/" });
-      // The plugin's secret cookie. Clearing it forces the next login to
-      // start a fresh CSRF chain rather than reusing a stale secret.
-      reply.clearCookie("_csrf", { path: "/" });
-      req.log.info(
-        { userId: req.session?.userId ?? null, ip: req.ip },
-        "logout",
-      );
-      return { ok: true };
+      if (!sid) return reply.code(401).send({ error: "unauthorized" });
+      const session = await getSession(sid);
+      if (!session) return reply.code(401).send({ error: "unauthorized" });
+      const user = await prisma.adminUser.findUnique({
+        where: { id: session.userId },
+      });
+      if (!user) return reply.code(401).send({ error: "unauthorized" });
+      return {
+        id: user.id,
+        username: user.username,
+        lastSeenChangelog: user.lastSeenChangelog,
+      };
     },
   );
 
-  app.get("/api/auth/me", async (req, reply) => {
-    const sid = req.cookies[SESSION_COOKIE];
-    if (!sid) return reply.code(401).send({ error: "unauthorized" });
-    const session = await getSession(sid);
-    if (!session) return reply.code(401).send({ error: "unauthorized" });
-    const user = await prisma.adminUser.findUnique({
-      where: { id: session.userId },
+  // Acknowledge the changelog: marks the current user as having seen up to the
+  // newest entry, so the once-per-user popup never shows again until a newer
+  // release ships. The version is server-determined (always the latest) so the
+  // client cannot spoof a future version it hasn't actually been shown.
+  app.post("/api/auth/changelog/seen", { preHandler: requireAuth }, async (req) => {
+    const version = latestChangelog()?.version ?? null;
+    await prisma.adminUser.update({
+      where: { id: req.session!.userId },
+      data: { lastSeenChangelog: version },
     });
-    if (!user) return reply.code(401).send({ error: "unauthorized" });
-    return { id: user.id, username: user.username };
+    return { lastSeenChangelog: version };
   });
 }

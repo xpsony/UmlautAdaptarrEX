@@ -15,7 +15,7 @@ import {
   PROWLARR_PROXY_TAG_LABEL,
 } from "@/arr/prowlarr";
 import { testConnection } from "@/arr/test-connection";
-import { urlIsPrivate } from "@/server/security/ssrf";
+import { privateHostsAllowedForArrInstance, urlIsPrivate } from "@/server/security/ssrf";
 import { isLoopbackRequest } from "@/server/routes/legacy/util";
 import { getAppState } from "@/server/state";
 import { BUILTIN_PLUGINS } from "@/domain/plugins";
@@ -260,11 +260,19 @@ async function postInstancesTest(req: FastifyRequest, reply: FastifyReply): Prom
   if (!data) return;
   // Pre-setup SSRF hardening: while there's no admin user yet anyone on
   // the network can hit this endpoint and use it as an internal-host
-  // probe. We still allow loopback callers (the operator setting up from
-  // the same machine, which is the canonical deployment shape) but
-  // refuse private/LAN targets when the caller comes from elsewhere.
+  // probe. This guard is tied to the same SSRF-strict toggle as the
+  // post-setup path (`blockPrivateInstanceHosts`, also honoring the
+  // UA_BLOCK_PRIVATE_INSTANCE_HOSTS / UA_ALLOW_PRIVATE_INSTANCE_HOSTS env
+  // overrides). It defaults to OFF because self-hosted installs reach
+  // Sonarr/Radarr on the same LAN or Docker network — and behind Docker's
+  // NAT the operator's own browser arrives as a non-loopback gateway IP,
+  // so a loopback-only check would block the canonical setup flow. Cloud /
+  // multi-tenant operators that enable strict mode get the pre-auth probe
+  // protection back: loopback callers are still allowed, private/LAN
+  // targets from anyone else are refused.
+  const strict = !privateHostsAllowedForArrInstance();
   const fromLoopback = isLoopbackRequest(req);
-  if (!fromLoopback && urlIsPrivate(data.host)) {
+  if (strict && !fromLoopback && urlIsPrivate(data.host)) {
     req.log.warn(
       { host: data.host, ip: req.ip },
       "setup: pre-setup test refused — non-loopback caller probing a private host",

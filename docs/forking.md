@@ -123,6 +123,11 @@ these instead of running the script:
   in the About page and the README that should stay regardless of the
   fork ([README.md](../README.md), [src/app/(admin)/about/page.tsx](<../src/app/(admin)/about/page.tsx>)).
 - Docker Hub credentials, container names, network ports, volume paths.
+- The Proxmox community scripts under `proxmox/community-scripts/` — the
+  installer hard-codes `xpsony/UmlautAdaptarrEX` raw-GitHub URLs (the
+  one-line `curl` command, the install script, and the JSON/README). A fork
+  that wants its own LXC installer must edit those occurrences by hand;
+  `rebrand.sh` does not sweep that directory.
 
 ## Docker Hub casing
 

@@ -262,6 +262,49 @@ describe("POST /api/auth/instances/test", () => {
     expect(r.statusCode).toBe(200);
     expect(mockTestConnection).toHaveBeenCalledOnce();
   });
+
+  it("allows a non-loopback caller to probe a private host when SSRF-strict is off (default)", async () => {
+    // Default deployment shape: behind Docker NAT the operator's browser
+    // arrives as a non-loopback gateway IP; with strict mode off (the
+    // default) the LAN target must still be reachable during setup.
+    mockSetting.findUnique.mockResolvedValueOnce({ setupComplete: false });
+    mockTestConnection.mockResolvedValueOnce({ ok: true, version: "4.0" });
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/auth/instances/test",
+      remoteAddress: "192.168.178.20",
+      payload: {
+        type: "sonarr",
+        host: "http://192.168.178.95:8989",
+        apiKey: "k",
+      },
+    });
+    expect(r.statusCode).toBe(200);
+    expect(mockTestConnection).toHaveBeenCalledOnce();
+  });
+
+  it("refuses a non-loopback caller probing a private host when SSRF-strict is on", async () => {
+    const settings = mockState.settings as Record<string, unknown>;
+    settings.blockPrivateInstanceHosts = true;
+    try {
+      mockSetting.findUnique.mockResolvedValueOnce({ setupComplete: false });
+      const r = await app.inject({
+        method: "POST",
+        url: "/api/auth/instances/test",
+        remoteAddress: "192.168.178.20",
+        payload: {
+          type: "sonarr",
+          host: "http://192.168.178.95:8989",
+          apiKey: "k",
+        },
+      });
+      expect(r.statusCode).toBe(403);
+      expect(r.json().code).toBe("private_host_blocked");
+      expect(mockTestConnection).not.toHaveBeenCalled();
+    } finally {
+      delete settings.blockPrivateInstanceHosts;
+    }
+  });
 });
 
 describe("DELETE /api/auth/prowlarr", () => {

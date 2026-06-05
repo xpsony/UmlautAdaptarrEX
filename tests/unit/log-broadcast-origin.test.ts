@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { IncomingMessage } from "node:http";
 import { isOriginAllowed } from "@/server/logging/broadcast";
 
-const KEYS = ["UMLAUTADAPTARREX_WEBUI_PORT", "WEB_PORT"] as const;
+const KEYS = ["UMLAUTADAPTARREX_WEBUI_PORT"] as const;
 
 function clearEnv(): void {
   for (const k of KEYS) delete process.env[k];

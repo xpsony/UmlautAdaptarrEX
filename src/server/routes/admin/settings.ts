@@ -12,7 +12,7 @@ import { requiredLanguages } from "@/providers";
 import type { ProviderId } from "@/schemas/instance";
 import { pickMissingCandidates } from "@/server/title-cache/recheck";
 import { isMaskedSecret, maskSecret } from "@/lib/secrets";
-import { resolveProxyPortEnv } from "@/lib/ports";
+import { resolveLegacyApiPort, resolveProxyPortEnv, resolveWebUiPort } from "@/lib/ports";
 import { parseOrReply } from "./_helpers";
 
 const TmdbTestSchema = z.object({
@@ -74,6 +74,11 @@ async function getSettings(): Promise<unknown> {
     ...rest,
     proxyPort: envProxyPort ?? rest.proxyPort,
     proxyPortEnvManaged: envProxyPort !== null,
+    // Read-only informational ports: resolved from env var or default, never
+    // stored in the DB. The UI surfaces them so operators can see the actual
+    // bound ports without inspecting the environment.
+    legacyApiPort: resolveLegacyApiPort(),
+    webUiPort: resolveWebUiPort(),
     tmdbApiKey: maskSecret(tmdbApiKey),
     tvdbApiKey: maskSecret(tvdbApiKey),
     tvdbPin: maskSecret(tvdbPin),
@@ -137,6 +142,11 @@ async function putSettings(req: FastifyRequest, reply: FastifyReply): Promise<un
     ...rest,
     proxyPort: envProxyPort ?? rest.proxyPort,
     proxyPortEnvManaged: envProxyPort !== null,
+    // Read-only informational ports: resolved from env var or default, never
+    // stored in the DB. The UI surfaces them so operators can see the actual
+    // bound ports without inspecting the environment.
+    legacyApiPort: resolveLegacyApiPort(),
+    webUiPort: resolveWebUiPort(),
     tmdbApiKey: maskSecret(tmdbApiKey),
     tvdbApiKey: maskSecret(tvdbApiKey),
     tvdbPin: maskSecret(tvdbPin),

@@ -361,8 +361,13 @@
     "regenerateTitle": "Regénérer la clé API ?",
     "regenerated": "Clé API regénérée.",
     "regenerateConfirm": "La clé actuelle cessera immédiatement de fonctionner. Mettez à jour Prowlarr et vos *arrs avec la nouvelle clé.",
+    "legacyApiPort": "Port de l'API",
+    "legacyApiPortHint": "Port actuel de l'API Fastify (API, routes d'indexer héritées, flux de journaux). Défini via la variable d'environnement UMLAUTADAPTARREX_LEGACYAPI_PORT ; effectif après un redémarrage du serveur.",
+    "webUiPort": "Port de l'interface web",
+    "webUiPortHint": "Port actuel de l'interface web. Défini via la variable d'environnement UMLAUTADAPTARREX_WEBUI_PORT ; effectif après un redémarrage du serveur.",
     "proxyPort": "Port du proxy HTTP",
     "proxyPortHint": "Effectif après un redémarrage du serveur.",
+    "proxyPortEnvManagedHint": "Défini via la variable d'environnement UMLAUTADAPTARREX_PROXY_PORT ; modifiez-le là-bas, pas ici.",
     "proxyAuth": {
       "title": "Identifiants du proxy HTTP",
       "hint": "Identifiants Basic-Auth que Prowlarr (et les autres indexers) doivent utiliser pour se connecter au proxy HTTP sur ce port. Configurez les mêmes nom d'utilisateur et mot de passe dans Prowlarr → Indexers → Proxy.",

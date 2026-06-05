@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.2.2 — 2026-06-05
+
+Adds a Proxmox LXC community-script, surfaces the actual service ports in the UI, and fixes API proxying plus the setup flow behind Docker NAT. Includes one additive database migration (`AdminUser.lastSeenChangelog`), applied automatically on start.
+
+### Features
+
+- **Proxmox LXC community-script installer:** A one-line command creates an LXC container on Proxmox VE, installs UmlautAdaptarrEX and prompts for the service ports during setup. The installer is self-hosted from this fork. Still in development and not yet fully tested, see the README before using it.
+- **Service ports in the UI:** Settings → Advanced now shows the active Fastify API port and Web UI port read-only alongside the editable proxy port, so the bound ports are visible without inspecting the environment.
+
+### Improvements
+
+- **Changelog shown once per user:** The what's-new dialog tracks its seen-state per admin account in the database (`AdminUser.lastSeenChangelog`) instead of per browser. Each user sees it exactly once and, after confirming, it stays dismissed across browsers and devices until a newer release ships.
+- **Branded port variables only:** Service ports are now read only from `UMLAUTADAPTARREX_LEGACYAPI_PORT` / `UMLAUTADAPTARREX_WEBUI_PORT` / `UMLAUTADAPTARREX_PROXY_PORT`. The legacy `PORT` and `WEB_PORT` fallbacks (still accepted in 1.2.1) have been removed; the compose files and `.env.example` already use the branded names.
+
+### Fixes
+
+- **Runtime API proxying:** The Web UI now reverse-proxies `/api/*` at runtime instead of baking the API port into the standalone build. A custom `UMLAUTADAPTARREX_LEGACYAPI_PORT` no longer left `/api/health` and the \*Arr icons failing with `ECONNREFUSED`, and static `/arr/*.svg` icons are no longer redirected to `/setup` during the wizard.
+- **Setup behind Docker NAT:** The pre-setup instance test (`/api/auth/instances/test`) no longer hard-blocks private/LAN targets by default; it follows the SSRF-strict toggle (`Setting.blockPrivateInstanceHosts`, default off). Connecting to Sonarr/Radarr on the same LAN now succeeds out of the box during the wizard, while strict mode restores loopback-only behaviour for cloud / multi-tenant operators.
+
+### Security & maintenance
+
+- **Auth-surface hardening:** `/api/auth/me` is now rate-limited per IP (60 / min)
+- **Dependencies updated:** All pnpm packages bumped to their latest patch/minor releases — Next.js `16.2.7`, React / React-DOM `19.2.7`, `@tanstack/react-query` `5.101.0`, plus dev tooling (`eslint-config-next`, `typescript-eslint`, `concurrently`, `@types/react`). No behaviour changes; `pnpm audit` reports no known vulnerabilities.
+
+### Upgrade notes
+
+The new `AdminUser.lastSeenChangelog` column is applied automatically by `prisma migrate deploy` on start. If you relied on the `PORT` or `WEB_PORT` environment variables, switch to `UMLAUTADAPTARREX_LEGACYAPI_PORT` / `UMLAUTADAPTARREX_WEBUI_PORT`.
+
 ## 1.2.1 — 2026-06-02
 
 Lets you set all three service ports through environment variables before the first start, so Docker users can avoid host port clashes without editing the app. No schema changes.

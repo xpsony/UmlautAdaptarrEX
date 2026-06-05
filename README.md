@@ -24,22 +24,20 @@
 
 # UmlautAdaptarrEX
 
-> **Dies ist noch eine frühe Beta Version**
+> **Hinweis zum Reifegrad**
 >
-> Von Prinzip sollte alles mehr oder weniger funktionieren.
+> Dies ist keine frühe Beta-Version mehr. Im Prinzip sollte alles mehr oder weniger funktionieren.
 >
 > **Information zu Radarr:**
 >
 > - TMDB / TVDB Key wird benötigt damit Radarr funktioniert
 > - TMDB / TVDB Key wird benötigt damit Plugins funktionieren
 >
-> **Was wurde noch nicht getestet:**
+> **Folgende Dinge müssen noch mehr getestet werden:**
 >
-> - Legacy Modus
-> - Die Plugins
-> - Readarr
-> - Lidarr
-> - Französische / Schwedische Sprache
+> - Legacy API (aktuell wird überlegt, ob dieser Modus entfernt wird)
+> - Die Sprach-Plugins Französisch und Schwedisch
+> - Das Proxmox-Community-Skript ist noch nicht getestet und befindet sich aktuell in Entwicklung
 >
 > Sollte ein Release nicht korrekt benannt werden bzw. Bugs auftreten, bitte erstmal PM an mich.
 >
@@ -174,10 +172,10 @@ erneut ausführen. Das `data/`-Volume bleibt dabei erhalten.
 
 ### Variante 3: Unraid Template
 
-Für Unraid gibt es ein Community-Template in einem separaten Repository:
-[xpsony/UmlautAdaptarrEX-Unraid-Template](https://github.com/xpsony/UmlautAdaptarrEX-Unraid-Template).
-Aufnahme in den Community-Applications-Store (CA) ist beantragt, danach ist die Installation
-direkt aus CA möglich, ohne Template-URL.
+Das Unraid-Template für UmlautAdaptarrEX ist jetzt offiziell im Community-Applications-Store (CA)
+verfügbar: In Unraid unter **Apps** einfach nach „UmlautAdaptarrEX" suchen und direkt installieren,
+ohne Template-URL. Das Template wird im separaten Repository
+[xpsony/UmlautAdaptarrEX-Unraid-Template](https://github.com/xpsony/UmlautAdaptarrEX-Unraid-Template) gepflegt.
 
 Installationsanleitung, Template-URL und Feld-Defaults (Ports, PUID/PGID, Appdata-Pfad) stehen
 im README des Template-Repos.
@@ -215,6 +213,38 @@ sudo systemctl enable --now umlautadaptarrex
 journalctl -u umlautadaptarrex -f
 ```
 
+### Variante 5: Proxmox VE (LXC, Community-Script)
+
+> **In Entwicklung / noch nicht getestet.** Das Skript folgt dem
+> [community-scripts](https://community-scripts.org/docs/ct/readme)-Format (ProxmoxVED), ist aber noch
+> nicht im Upstream-Repo und noch nicht ausgiebig getestet. Verwende es bewusst und prüfe das Ergebnis.
+
+Ein einzeiliger Befehl, direkt in der **Shell des Proxmox-VE-Hosts** ausgeführt, legt einen LXC-Container
+an und installiert UmlautAdaptarrEX darin (self-hosted aus diesem Fork, kein ProxmoxVED-Clone nötig):
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/xpsony/UmlautAdaptarrEX/main/proxmox/community-scripts/ct/umlautadaptarrex.sh)"
+```
+
+Was das Skript tut:
+
+- Legt einen Debian-13-LXC an (2 vCPU, 2048 MB RAM für den Build, 6 GB Disk).
+- Installiert Node.js 26 + pnpm (via corepack), holt das neueste Release von `xpsony/UmlautAdaptarrEX`
+  und führt `pnpm build:prod` + `pnpm prisma:deploy` aus.
+- Fragt während der Installation die drei Service-Ports ab (vorbelegt mit den Defaults, Enter übernimmt):
+  - **5007** — Web-UI + Setup-Wizard (`http://<IP>:5007/setup`)
+  - **5005** — Public API + Indexer-Routen für die \*arrs
+  - **5006** — Prowlarr-TCP-Proxy (Basic-Auth, wird im Setup gesetzt)
+- Startet die App als systemd-Dienst (`umlautadaptarrex`). Die SQLite-DB liegt unter
+  `/opt/umlautadaptarrex/data/` und bleibt über Updates erhalten.
+
+Nach dem Lauf das Setup im Browser öffnen: `http://<Container-IP>:5007/setup`.
+
+Ports später ändern: `/opt/umlautadaptarrex/.env` bearbeiten (`UMLAUTADAPTARREX_WEBUI_PORT` /
+`_LEGACYAPI_PORT` / `_PROXY_PORT`) und `systemctl restart umlautadaptarrex`. Ein LXC hat eine eigene IP,
+es gibt also kein Host-seitiges Port-Mapping. Details und Wartungshinweise stehen in
+[`proxmox/community-scripts/README.md`](proxmox/community-scripts/README.md).
+
 ## Ports
 
 | Port | Dienst         | Zweck                                                                           |
@@ -223,13 +253,13 @@ journalctl -u umlautadaptarrex -f
 | 5006 | TCP HTTP-Proxy | Prowlarr-Indexer-Proxy mit HTTPS-CONNECT-Tunneling                              |
 | 5007 | Next.js        | Web-UI                                                                          |
 
-Die Ports lassen sich per Umgebungsvariable setzen (Priorität: gebrandete Variable > Legacy-Variable / DB > Default):
+Die Ports lassen sich per Umgebungsvariable setzen (Priorität: gebrandete Variable > DB > Default):
 
 | Port | Umgebungsvariable                 | Fallback                 |
 | ---- | --------------------------------- | ------------------------ |
-| 5005 | `UMLAUTADAPTARREX_LEGACYAPI_PORT` | `PORT`                   |
+| 5005 | `UMLAUTADAPTARREX_LEGACYAPI_PORT` | `5005`                   |
 | 5006 | `UMLAUTADAPTARREX_PROXY_PORT`     | `Setting.proxyPort` (DB) |
-| 5007 | `UMLAUTADAPTARREX_WEBUI_PORT`     | `WEB_PORT`               |
+| 5007 | `UMLAUTADAPTARREX_WEBUI_PORT`     | `5007`                   |
 
 `UMLAUTADAPTARREX_PROXY_PORT` überschreibt den in der Datenbank gespeicherten Wert bei jedem Start; ist die Variable gesetzt, wird das Proxy-Port-Feld unter Einstellungen → Erweitert schreibgeschützt angezeigt. Jede Variable setzt sowohl den Container-internen Bind-Port als auch den veröffentlichten Host-Port (das Compose-Mapping nutzt auf beiden Seiten denselben Wert). Vorlage siehe `.env.example`.
 
@@ -317,7 +347,7 @@ Kernpunkte:
 
 - **5006** ist der einzige Port, den Prowlarr direkt anspricht (HTTP-Proxy mit Basic-Auth, Default-User `UmlautAdaptarr`).
 - **5005** trägt sowohl die Admin-API als auch die Legacy-Route `/<apiKey>/<host>/api` für den Direktmodus.
-- **5007** ist nur die UI; sie redet intern mit 5005 (Next.js-Rewrites in `next.config.ts`).
+- **5007** ist nur die UI; sie reverse-proxyt `/api/*` zur Laufzeit an 5005 (`src/proxy.ts`).
 
 ## Konfiguration in Prowlarr (empfohlen)
 

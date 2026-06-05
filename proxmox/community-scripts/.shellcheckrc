@@ -1,0 +1,4 @@
+# Mirrors community-scripts/ProxmoxVE .shellcheckrc so these scripts pass the
+# same lint gate as the upstream repo. The helper library (build.func) is sourced
+# at runtime, so its functions and variables are unknown to shellcheck.
+disable=SC2034,SC1091,SC2155,SC2086,SC2317,SC2181,SC2164

@@ -4,13 +4,15 @@ import csrfProtection from "@fastify/csrf-protection";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/server/auth/middleware", () => ({
-  requireAuth: async () => {
-    /* no-op for unit tests */
+  // Mirror the real middleware's contract: a valid request gets `req.session`
+  // populated. The acknowledge endpoint reads `req.session.userId`.
+  requireAuth: async (req: { session?: { id: string; userId: string } }) => {
+    req.session = { id: "session", userId: "u1" };
   },
 }));
 
 const { mockAdminUser } = vi.hoisted(() => ({
-  mockAdminUser: { findUnique: vi.fn() },
+  mockAdminUser: { findUnique: vi.fn(), update: vi.fn() },
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -48,11 +50,13 @@ vi.mock("@/lib/auth/session", async (importOriginal) => {
 });
 
 import { loginRoutes } from "@/server/routes/admin/login";
+import { latestChangelog } from "@/lib/changelog";
 
 let app: FastifyInstance;
 
 beforeEach(async () => {
   mockAdminUser.findUnique.mockReset();
+  mockAdminUser.update.mockReset();
   mockVerify.mockReset();
   mockDummyVerify.mockReset();
   mockSession.create.mockReset();
@@ -191,6 +195,7 @@ describe("GET /api/auth/me", () => {
     mockAdminUser.findUnique.mockResolvedValueOnce({
       id: "u1",
       username: "admin",
+      lastSeenChangelog: "1.2.1",
     });
     const r = await app.inject({
       method: "GET",
@@ -198,7 +203,11 @@ describe("GET /api/auth/me", () => {
       cookies: { uaSession: "good" },
     });
     expect(r.statusCode).toBe(200);
-    expect(r.json()).toEqual({ id: "u1", username: "admin" });
+    expect(r.json()).toEqual({
+      id: "u1",
+      username: "admin",
+      lastSeenChangelog: "1.2.1",
+    });
   });
 
   it("returns 401 when the user record is gone", async () => {
@@ -210,5 +219,23 @@ describe("GET /api/auth/me", () => {
       cookies: { uaSession: "good" },
     });
     expect(r.statusCode).toBe(401);
+  });
+});
+
+describe("POST /api/auth/changelog/seen", () => {
+  it("marks the current user as having seen the latest changelog", async () => {
+    mockAdminUser.update.mockResolvedValueOnce({});
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/auth/changelog/seen",
+      cookies: { uaSession: "good" },
+    });
+    expect(r.statusCode).toBe(200);
+    // Server pins the version to the newest entry, ignoring any client input.
+    expect(mockAdminUser.update).toHaveBeenCalledWith({
+      where: { id: "u1" },
+      data: { lastSeenChangelog: latestChangelog()?.version },
+    });
+    expect(r.json()).toEqual({ lastSeenChangelog: latestChangelog()?.version });
   });
 });

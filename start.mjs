@@ -25,13 +25,13 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Port precedence mirrors src/lib/ports.ts (single source of truth). This
+// Port resolution mirrors src/lib/ports.ts (single source of truth). This
 // supervisor is plain .mjs and runs before the TS build is importable, so the
-// logic is duplicated here. Branded UMLAUTADAPTARREX_* names win over the
-// legacy PORT / WEB_PORT names; an empty value is treated as unset; both fall
-// back to the historical defaults. A present-but-invalid value throws so a
-// misconfiguration fails fast. Only plain decimal-digit strings are accepted
-// (rejects hex like "0x1F90" and float literals like "5005.0").
+// logic is duplicated here. Only the branded UMLAUTADAPTARREX_* names are read;
+// an empty value is treated as unset and falls back to the default. A
+// present-but-invalid value throws so a misconfiguration fails fast. Only plain
+// decimal-digit strings are accepted (rejects hex like "0x1F90" and float
+// literals like "5005.0").
 const resolvePort = (candidates, fallback) => {
   for (const value of candidates) {
     if (value === undefined || value.trim() === "") continue;
@@ -48,8 +48,8 @@ const resolvePort = (candidates, fallback) => {
   return fallback;
 };
 
-const PORT = resolvePort([process.env.UMLAUTADAPTARREX_LEGACYAPI_PORT, process.env.PORT], 5005);
-const WEB_PORT = resolvePort([process.env.UMLAUTADAPTARREX_WEBUI_PORT, process.env.WEB_PORT], 5007);
+const PORT = resolvePort([process.env.UMLAUTADAPTARREX_LEGACYAPI_PORT], 5005);
+const WEB_PORT = resolvePort([process.env.UMLAUTADAPTARREX_WEBUI_PORT], 5007);
 
 const RESTART_EXIT_CODE = 75;
 const SUPERVISOR_ENV = "UMLAUTADAPTARREX_SUPERVISED";

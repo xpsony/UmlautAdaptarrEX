@@ -14,6 +14,10 @@ export interface SettingsRow extends SettingsUpdate {
   // True when UMLAUTADAPTARREX_PROXY_PORT pins the port; the UI shows the
   // effective value read-only because a save would not take effect.
   proxyPortEnvManaged?: boolean;
+  // Resolved (env var or default) Fastify API and Web UI ports. Display-only:
+  // they are not stored in the DB and only change via env var + restart.
+  legacyApiPort?: number;
+  webUiPort?: number;
   // Server-only "is the secret stored?" booleans. Returned alongside the
   // masked key fields so the UI can render a stored-state badge without
   // having access to the cleartext value.

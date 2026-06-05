@@ -5,8 +5,11 @@ WebSocket log stream. All paths below come straight from
 [src/server/index.ts](../src/server/index.ts) and the route modules in
 [src/server/routes/](../src/server/routes/).
 
-The Web UI on port `5007` proxies `/api/admin/*`, `/api/auth/*`, and `/api/health` to Fastify via
-[next.config.ts](../next.config.ts), so all admin endpoints below are also reachable through the UI's origin.
+The Web UI on port `5007` reverse-proxies `/api/*` to Fastify at runtime via
+[src/proxy.ts](../src/proxy.ts) (reading the API port from `API_UPSTREAM`), so all admin endpoints below
+are also reachable through the UI's origin. This used to be `next.config.ts` rewrites, but
+`output: "standalone"` bakes rewrite destinations in at build time and ignored a runtime-configured port,
+so the proxy moved into the Node.js runtime.
 
 The release-renaming pipeline behind the legacy XML routes is documented separately in
 [docs/renaming.md](renaming.md).

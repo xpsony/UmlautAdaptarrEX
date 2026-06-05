@@ -5,8 +5,6 @@ const KEYS = [
   "UMLAUTADAPTARREX_LEGACYAPI_PORT",
   "UMLAUTADAPTARREX_WEBUI_PORT",
   "UMLAUTADAPTARREX_PROXY_PORT",
-  "PORT",
-  "WEB_PORT",
 ] as const;
 
 function clearEnv(): void {
@@ -21,21 +19,14 @@ describe("resolveLegacyApiPort", () => {
     expect(resolveLegacyApiPort()).toBe(5005);
   });
 
-  it("falls back to the legacy PORT var", () => {
-    process.env.PORT = "6005";
-    expect(resolveLegacyApiPort()).toBe(6005);
-  });
-
-  it("prefers the branded var over PORT", () => {
-    process.env.PORT = "6005";
+  it("uses the branded var when set", () => {
     process.env.UMLAUTADAPTARREX_LEGACYAPI_PORT = "7005";
     expect(resolveLegacyApiPort()).toBe(7005);
   });
 
-  it("treats an empty branded var as unset and falls through", () => {
+  it("treats an empty branded var as unset and falls back to the default", () => {
     process.env.UMLAUTADAPTARREX_LEGACYAPI_PORT = "";
-    process.env.PORT = "6005";
-    expect(resolveLegacyApiPort()).toBe(6005);
+    expect(resolveLegacyApiPort()).toBe(5005);
   });
 
   it("throws on a non-numeric value", () => {
@@ -59,25 +50,18 @@ describe("resolveWebUiPort", () => {
     expect(resolveWebUiPort()).toBe(5007);
   });
 
-  it("prefers the branded var over WEB_PORT", () => {
-    process.env.WEB_PORT = "6007";
+  it("uses the branded var when set", () => {
     process.env.UMLAUTADAPTARREX_WEBUI_PORT = "7007";
     expect(resolveWebUiPort()).toBe(7007);
   });
 
-  it("falls back to the legacy WEB_PORT var", () => {
-    process.env.WEB_PORT = "6007";
-    expect(resolveWebUiPort()).toBe(6007);
-  });
-
-  it("treats an empty branded var as unset and falls through to WEB_PORT", () => {
+  it("treats an empty branded var as unset and falls back to the default", () => {
     process.env.UMLAUTADAPTARREX_WEBUI_PORT = "";
-    process.env.WEB_PORT = "6007";
-    expect(resolveWebUiPort()).toBe(6007);
+    expect(resolveWebUiPort()).toBe(5007);
   });
 
-  it("throws on an invalid WEB_PORT", () => {
-    process.env.WEB_PORT = "abc";
+  it("throws on an invalid branded var", () => {
+    process.env.UMLAUTADAPTARREX_WEBUI_PORT = "abc";
     expect(() => resolveWebUiPort()).toThrow();
   });
 });

@@ -1,14 +1,6 @@
 import "./_setup/db";
 
-import {
-  afterAll,
-  afterEach,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-} from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { hashPassword } from "@/lib/auth/password";
 import { buildTestApp, readSetCookie } from "./_setup/app";
@@ -245,6 +237,11 @@ describe("GET /api/auth/me", () => {
       cookies: { uaSession: session.sessionCookie },
     });
     expect(r.statusCode).toBe(200);
-    expect(r.json()).toEqual({ id: user.id, username: "admin" });
+    // A freshly seeded admin has never acknowledged the changelog.
+    expect(r.json()).toEqual({
+      id: user.id,
+      username: "admin",
+      lastSeenChangelog: null,
+    });
   });
 });

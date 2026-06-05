@@ -23,6 +23,47 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.2",
+    date: "2026-06-05",
+    title: "1.2.2: Proxmox LXC installer, ports in the UI & setup fixes",
+    description:
+      "Adds a one-line Proxmox LXC installer, surfaces the actual service ports in the UI, and fixes API proxying and the setup flow behind Docker NAT. No manual migration needed beyond applying the new database migration on start.",
+    items: [
+      {
+        type: "feature",
+        text: "New Proxmox VE community-script installer: a one-line command creates an LXC container, installs UmlautAdaptarrEX and prompts for the service ports during setup. Still in development and not yet fully tested, see the README before using it.",
+      },
+      {
+        type: "feature",
+        text: "Settings → Advanced now shows the active Fastify API port and Web UI port read-only alongside the editable proxy port, so you can see the actually bound ports without inspecting the environment.",
+      },
+      {
+        type: "improvement",
+        text: "The what's-new dialog is now tracked per admin account in the database instead of per browser. Each user sees it exactly once and, after confirming, it stays dismissed across browsers and devices until a newer release ships.",
+      },
+      {
+        type: "improvement",
+        text: "Service ports are now read only from the branded UMLAUTADAPTARREX_LEGACYAPI_PORT / UMLAUTADAPTARREX_WEBUI_PORT / UMLAUTADAPTARREX_PROXY_PORT variables. The legacy PORT and WEB_PORT fallbacks (still accepted in 1.2.1) have been removed; the compose files and .env.example already use the branded names.",
+      },
+      {
+        type: "fix",
+        text: "The Web UI now reverse-proxies /api/* at runtime instead of baking the API port into the build. A custom UMLAUTADAPTARREX_LEGACYAPI_PORT no longer left /api/health and the *Arr icons failing with ECONNREFUSED, and the *Arr icons are no longer redirected to /setup during the wizard.",
+      },
+      {
+        type: "fix",
+        text: "First-run setup behind Docker NAT works again: the pre-setup instance test no longer hard-blocks private/LAN targets by default but follows the SSRF-strict toggle, so connecting to Sonarr/Radarr on the same LAN succeeds out of the box (strict mode still restores loopback-only for cloud or multi-tenant operators).",
+      },
+      {
+        type: "improvement",
+        text: "Security hardening: the /api/auth/me session check is now rate-limited per IP",
+      },
+      {
+        type: "improvement",
+        text: "Dependencies updated to their latest patch/minor releases (Next.js 16.2.7, React 19.2.7, TanStack Query 5.101, plus dev tooling). No behaviour changes; pnpm audit reports no known vulnerabilities.",
+      },
+    ],
+  },
+  {
     version: "1.2.1",
     date: "2026-06-02",
     title: "1.2.1: Configurable service ports via environment variables",

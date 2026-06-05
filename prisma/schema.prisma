@@ -16,6 +16,10 @@ model AdminUser {
   username     String    @unique
   passwordHash String
   createdAt    DateTime  @default(now())
+  // Version of the most recent changelog entry this user has acknowledged.
+  // Null means "never acknowledged" (treated as a fresh install, no popup).
+  // Drives the once-per-user changelog dialog server-side.
+  lastSeenChangelog String?
   sessions     Session[]
 }
 

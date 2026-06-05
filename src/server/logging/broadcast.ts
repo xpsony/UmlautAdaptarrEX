@@ -40,8 +40,8 @@ function parseSessionCookie(req: IncomingMessage): string | null {
 // Two valid topologies:
 //  1. Single-origin (reverse proxy folds UI + API onto one host:port) —
 //     origin.host === request.host.
-//  2. Dual-port (default architecture, UI on WEB_PORT, Fastify on this port) —
-//     same hostname, origin.port === WEB_PORT (default 5007).
+//  2. Dual-port (default architecture, UI on the Web UI port, Fastify on this
+//     port) — same hostname, origin.port === the Web UI port (default 5007).
 export function isOriginAllowed(req: IncomingMessage): boolean {
   const origin = req.headers.origin;
   if (!origin) return true;
@@ -52,9 +52,9 @@ export function isOriginAllowed(req: IncomingMessage): boolean {
     if (originUrl.host === host) return true;
     const requestUrl = new URL(`http://${host}`);
     if (originUrl.hostname !== requestUrl.hostname) return false;
-    // Accept the configured Web UI port (UMLAUTADAPTARREX_WEBUI_PORT ?? WEB_PORT
-    // ?? 5007). A WS handshake omits an explicit :80/:443, so an empty
-    // origin.port means the default port for the scheme.
+    // Accept the configured Web UI port (UMLAUTADAPTARREX_WEBUI_PORT ?? 5007).
+    // A WS handshake omits an explicit :80/:443, so an empty origin.port means
+    // the default port for the scheme.
     const webPort = String(resolveWebUiPort());
     const originPort = originUrl.port || (originUrl.protocol === "https:" ? "443" : "80");
     return originPort === webPort;

@@ -1,0 +1,47 @@
+{
+  "name": "UmlautAdaptarrEX",
+  "slug": "umlautadaptarrex",
+  "categories": [14],
+  "date_created": "2026-06-02",
+  "type": "ct",
+  "updateable": true,
+  "privileged": false,
+  "has_arm": false,
+  "interface_port": 5007,
+  "documentation": "https://github.com/xpsony/UmlautAdaptarrEX",
+  "website": "https://github.com/xpsony/UmlautAdaptarrEX",
+  "logo": null,
+  "description": "UmlautAdaptarrEX presents itself to the *arrs as an indexer, sits between the *arrs and the real indexers, and corrects both searches and results so releases with umlauts or German titles are reliably found, downloaded and imported.",
+  "install_methods": [
+    {
+      "type": "default",
+      "script": "ct/umlautadaptarrex.sh",
+      "config_path": "/opt/umlautadaptarrex/.env",
+      "resources": {
+        "cpu": 2,
+        "ram": 2048,
+        "hdd": 6,
+        "os": "Debian",
+        "version": "13"
+      }
+    }
+  ],
+  "default_credentials": {
+    "username": null,
+    "password": null
+  },
+  "notes": [
+    {
+      "text": "Complete configuration via the web setup wizard at http://<IP>:5007/setup on first access.",
+      "type": "info"
+    },
+    {
+      "text": "Ports: 5007 = web UI + setup, 5005 = public API + indexer routes for the *arrs, 5006 = Prowlarr TCP proxy (requires basic auth set during setup).",
+      "type": "info"
+    },
+    {
+      "text": "RAM is set to 2048 MB to cover the in-container build; runtime needs only ~512 MB, so you may lower it to 1024 MB after the first successful build.",
+      "type": "warning"
+    }
+  ]
+}
