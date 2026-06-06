@@ -114,10 +114,19 @@ Es liegen zwei Compose-Dateien im Repository:
 | `docker-compose.yml`         | Lokaler Build (`build: .`)                   | Du hast das Repository geklont und willst aus dem Quellcode bauen. |
 | `docker-compose.release.yml` | `lexfi/umlautadaptarrex:latest` (Docker Hub) | Schnellster Weg, kein Repo-Checkout nötig.                         |
 
-Hinweis: das Image korrigiert die Rechte des `/data`-Volumes beim Start automatisch (Default
-`PUID=1000`, `PGID=1000`). Ein manueller `chown` ist nicht mehr nötig. Wer Files unter `./data` mit
-einem anderen Host-User besitzen möchte, setzt `PUID`/`PGID` als Env-Variablen (siehe Kommentare in
-der jeweiligen Compose-Datei).
+Hinweis: läuft der Container als root (Standard), korrigiert das Image die Rechte des `/data`-Volumes
+beim Start automatisch (Default `PUID=1000`, `PGID=1000`). Ein manueller `chown` ist nicht mehr nötig.
+root wird dabei **ausschließlich** für diesen einmaligen `chown` benötigt: der Entrypoint legt die
+Rechte zurecht und wechselt dann via `gosu` auf `PUID:PGID`. Der eigentliche App-Prozess
+(`node start.mjs`) läuft also nie als root. Wer Files unter `./data` mit einem anderen Host-User
+besitzen möchte, setzt `PUID`/`PGID` als Env-Variablen (siehe Kommentare in der jeweiligen
+Compose-Datei).
+
+Unprivilegierter Betrieb: das Image kann auch direkt als Nicht-root-User gestartet werden
+(`docker run --user 1000:1000`, ein `user:`-Eintrag in der Compose-Datei, Kubernetes `runAsUser` oder
+das `run_as`-Feld der TrueNAS-App). In diesem Fall überspringt der Entrypoint `chown`/`gosu` und läuft
+direkt unter der vorgegebenen UID/GID, ganz ohne `CHOWN`/`SETUID`/`SETGID`-Capabilities. Voraussetzung:
+das `/data`-Volume gehört dieser UID/GID bereits (manuell `chown` oder via TrueNAS-ACL).
 
 1. Container starten. Entweder mit Image vom Docker Hub:
 
@@ -164,7 +173,8 @@ Entrypoint auf `PUID:PGID` (Default `1000:1000`) gesetzt. Ein manueller `chown` 
 Optional als zusätzliche `-e`-Flags:
 
 - `PUID=1000` / `PGID=1000` (UID und GID, mit denen der App-Prozess läuft. Files unter `./data`
-  bekommen diese Owner-IDs).
+  bekommen diese Owner-IDs). Greift nur, wenn der Container als root startet; bei `--user` werden
+  `PUID`/`PGID` ignoriert und die App läuft direkt unter der angegebenen UID/GID.
 - `LOG_LEVEL=info` (Pino-Level: `trace`, `debug`, `info`, `warn`, `error`, `fatal`).
 
 Update: `docker pull lexfi/umlautadaptarrex:latest && docker rm -f umlautadaptarrex` und Befehl oben

@@ -10,8 +10,10 @@ services:
       - "${UMLAUTADAPTARREX_PROXY_PORT:-5006}:${UMLAUTADAPTARREX_PROXY_PORT:-5006}"  # TCP HTTP indexer proxy
       - "${UMLAUTADAPTARREX_WEBUI_PORT:-5007}:${UMLAUTADAPTARREX_WEBUI_PORT:-5007}"  # Web UI (Next.js)
     volumes:
-      # The entrypoint chowns /data to PUID:PGID on every start, so no manual
-      # `chown` is needed before first run.
+      # When the container runs as root (the default here), the entrypoint
+      # chowns /data to PUID:PGID on every start, so no manual `chown` is
+      # needed before first run. If you start it unprivileged (e.g. add a
+      # top-level `user: "1000:1000"`), pre-own ./data yourself instead.
       - ./data:/data
     environment:
       - TZ=Europe/Berlin

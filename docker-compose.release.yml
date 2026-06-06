@@ -8,8 +8,10 @@
 #   docker compose -f docker-compose.release.yml pull
 #   docker compose -f docker-compose.release.yml up -d
 #
-# The entrypoint chowns /data to PUID:PGID on every start, so no manual
-# `chown` is needed before first run.
+# When the container runs as root (the default), the entrypoint chowns /data
+# to PUID:PGID on every start, so no manual `chown` is needed before first run.
+# If you start it unprivileged (e.g. add a top-level `user: "1000:1000"`),
+# pre-own ./data yourself instead.
 #
 # Forks: override the image by exporting UMLAUTADAPTARREX_IMAGE before
 # running `docker compose`, or by setting it in a `.env` file next to this

@@ -112,9 +112,18 @@ The repository contains two compose files:
 | `docker-compose.yml`         | Local build (`build: .`)                     | You cloned the repository and want to build from source. |
 | `docker-compose.release.yml` | `lexfi/umlautadaptarrex:latest` (Docker Hub) | Fastest way, no repo checkout needed.                    |
 
-Note: the image fixes permissions on the `/data` volume automatically at startup (default
-`PUID=1000`, `PGID=1000`). A manual `chown` is no longer needed. If you want files under `./data` to be owned by a
-different host user, set `PUID`/`PGID` as env variables (see comments in the respective compose file).
+Note: when the container runs as root (the default), the image fixes permissions on the `/data` volume
+automatically at startup (default `PUID=1000`, `PGID=1000`). A manual `chown` is no longer needed. root
+is used **only** for this one-time `chown`: the entrypoint fixes ownership and then switches to
+`PUID:PGID` via `gosu`, so the application process (`node start.mjs`) never runs as root. If you want
+files under `./data` to be owned by a different host user, set `PUID`/`PGID` as env variables (see
+comments in the respective compose file).
+
+Unprivileged operation: the image can also be started directly as a non-root user
+(`docker run --user 1000:1000`, a `user:` entry in the compose file, Kubernetes `runAsUser`, or the
+TrueNAS app's `run_as` field). In that case the entrypoint skips `chown`/`gosu` and runs directly under
+the given UID/GID, with no need for `CHOWN`/`SETUID`/`SETGID` capabilities. Prerequisite: the `/data`
+volume is already owned by that UID/GID (chown it manually or via the TrueNAS ACL).
 
 1. Start the container. Either with the image from Docker Hub:
 
@@ -159,7 +168,8 @@ to `PUID:PGID` (default `1000:1000`). A manual `chown` is not needed.
 Optional additional `-e` flags:
 
 - `PUID=1000` / `PGID=1000` (UID and GID under which the app process runs. Files under `./data` will be owned by
-  these IDs).
+  these IDs). Only takes effect when the container starts as root; with `--user`, `PUID`/`PGID` are
+  ignored and the app runs directly under the given UID/GID.
 - `LOG_LEVEL=info` (Pino level: `trace`, `debug`, `info`, `warn`, `error`, `fatal`).
 
 Update: `docker pull lexfi/umlautadaptarrex:latest && docker rm -f umlautadaptarrex` and re-run the command above.
