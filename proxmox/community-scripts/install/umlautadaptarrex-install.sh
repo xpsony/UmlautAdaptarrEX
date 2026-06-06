@@ -23,10 +23,9 @@ msg_ok "Installed Dependencies"
 
 NODE_VERSION="26" setup_nodejs
 
-msg_info "Enabling pnpm"
-export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
-$STD corepack enable
-msg_ok "Enabled pnpm"
+msg_info "Installing pnpm"
+$STD npm install -g pnpm@11.3.0
+msg_ok "Installed pnpm"
 
 fetch_and_deploy_gh_release "umlautadaptarrex" "xpsony/UmlautAdaptarrEX" "tarball"
 
