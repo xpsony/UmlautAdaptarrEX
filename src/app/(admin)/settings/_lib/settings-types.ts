@@ -65,4 +65,9 @@ export type TvdbTestResult =
 
 export interface OperationModeResponse {
   operationMode?: OperationMode;
+  // Resolved service ports (env override > DB/default) from /api/admin/settings,
+  // shown in the mode picker and restart hints so the copy matches the actual
+  // listeners.
+  legacyApiPort?: number;
+  proxyPort?: number;
 }

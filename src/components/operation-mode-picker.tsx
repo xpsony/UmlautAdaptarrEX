@@ -4,11 +4,7 @@ import { useTranslations } from "next-intl";
 import * as RadioGroup from "@radix-ui/react-radio-group";
 import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 
 export type OperationMode = "proxy" | "legacy" | "both";
@@ -16,6 +12,12 @@ export type OperationMode = "proxy" | "legacy" | "both";
 interface OperationModePickerProps {
   value: OperationMode;
   onChange: (next: OperationMode) => void;
+  // Resolved service ports (env override > default), shown in the mode
+  // descriptions so the copy matches the actual listeners. Both callers pass
+  // the values they resolved server-side; the literal fallbacks here keep the
+  // picker self-contained if a caller omits them.
+  legacyApiPort?: number;
+  proxyPort?: number;
 }
 
 // Picker shared by the setup wizard (`src/app/setup/page.tsx`) and the
@@ -24,8 +26,11 @@ interface OperationModePickerProps {
 export function OperationModePicker({
   value,
   onChange,
+  legacyApiPort = 5005,
+  proxyPort = 5006,
 }: OperationModePickerProps) {
   const t = useTranslations("setup");
+  const ports = { legacyApiPort, proxyPort };
   return (
     <RadioGroup.Root
       value={value}
@@ -36,20 +41,20 @@ export function OperationModePicker({
       <ModeOption
         value="proxy"
         label={t("modeProxyLabel")}
-        description={t("modeProxyDescription")}
+        description={t("modeProxyDescription", ports)}
         details={t("modeProxyDetails")}
         recommended
       />
       <ModeOption
         value="legacy"
         label={t("modeLegacyLabel")}
-        description={t("modeLegacyDescription")}
-        details={t("modeLegacyDetails")}
+        description={t("modeLegacyDescription", ports)}
+        details={t("modeLegacyDetails", ports)}
       />
       <ModeOption
         value="both"
         label={t("modeBothLabel")}
-        description={t("modeBothDescription")}
+        description={t("modeBothDescription", ports)}
         details={t("modeBothDetails")}
         warning={t("modeBothWarning")}
       />
@@ -83,7 +88,7 @@ function ModeOption({
               "group w-full rounded-md border p-4 text-left transition-colors",
               "border-border bg-card hover:bg-accent/40",
               "data-[state=checked]:border-primary data-[state=checked]:bg-primary/5 data-[state=checked]:ring-1 data-[state=checked]:ring-primary",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+              "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none",
             )}
           >
             <div className="flex items-start justify-between gap-3">
@@ -91,10 +96,7 @@ function ModeOption({
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{label}</span>
                   {recommended ? (
-                    <Badge
-                      variant="secondary"
-                      className="text-[10px] uppercase"
-                    >
+                    <Badge variant="secondary" className="text-[10px] uppercase">
                       {t("modeRecommendedBadge")}
                     </Badge>
                   ) : null}
@@ -118,11 +120,7 @@ function ModeOption({
           </RadioGroup.Item>
         </div>
       </HoverCardTrigger>
-      <HoverCardContent
-        side="right"
-        align="start"
-        className="text-xs leading-relaxed"
-      >
+      <HoverCardContent side="right" align="start" className="text-xs leading-relaxed">
         <p className="mb-1 font-medium">{label}</p>
         <p className="text-muted-foreground">{details}</p>
       </HoverCardContent>

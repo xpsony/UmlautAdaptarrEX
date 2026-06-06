@@ -38,6 +38,8 @@ export function SetupClient({ initialStatus }: { initialStatus: SetupStatus }) {
           <ModeStep
             value={w.operationMode}
             onChange={w.setOperationMode}
+            legacyApiPort={initialStatus.legacyApiPort}
+            proxyPort={initialStatus.proxyDefaults.port}
             onBack={() => w.setStep("admin")}
             onNext={() => {
               w.setStep("plugins");

@@ -57,13 +57,13 @@
     "modeHint": "Lege fest, wie UmlautAdaptarr arbeiten soll. Du kannst die Wahl jederzeit in den Einstellungen ändern.",
     "modeRecommendedBadge": "Empfohlen",
     "modeProxyLabel": "Proxy-Modus",
-    "modeProxyDescription": "Nur der HTTP-Proxy auf Port 5006 ist aktiv. Die Legacy-Indexer-API auf Port 5005 antwortet mit einem Hinweistext.",
+    "modeProxyDescription": "Nur der HTTP-Proxy auf Port {proxyPort} ist aktiv. Die Legacy-Indexer-API auf Port {legacyApiPort} antwortet mit einem Hinweistext.",
     "modeProxyDetails": "Empfohlen für neue Setups. Prowlarr verbindet sich über den HTTP-Proxy, der die Indexer-Antworten transparent umschreibt. Sonarr/Radarr brauchen keine zusätzlichen API-Keys, weil die Anpassung beim Suchen passiert.",
     "modeLegacyLabel": "Index-API (Legacy)",
-    "modeLegacyDescription": "Nur die Legacy-Indexer-API auf Port 5005 ist aktiv. Der Proxy auf Port 5006 antwortet jeder Verbindung mit einem Hinweistext.",
-    "modeLegacyDetails": "Wire-kompatibel zur .NET-Vorgängerversion. Sonarr/Radarr greifen direkt auf 5005/'<apiKey>/<host>'/api zu. Wähle diesen Modus, wenn du eine bestehende 1.x-Installation migrierst und URLs nicht ändern willst.",
+    "modeLegacyDescription": "Nur die Legacy-Indexer-API auf Port {legacyApiPort} ist aktiv. Der Proxy auf Port {proxyPort} antwortet jeder Verbindung mit einem Hinweistext.",
+    "modeLegacyDetails": "Wire-kompatibel zur .NET-Vorgängerversion. Sonarr/Radarr greifen direkt auf {legacyApiPort}/'<apiKey>/<host>'/api zu. Wähle diesen Modus, wenn du eine bestehende 1.x-Installation migrierst und URLs nicht ändern willst.",
     "modeBothLabel": "Beides",
-    "modeBothDescription": "Sowohl Proxy (5006) als auch Legacy-API (5005) sind aktiv.",
+    "modeBothDescription": "Sowohl Proxy ({proxyPort}) als auch Legacy-API ({legacyApiPort}) sind aktiv.",
     "modeBothDetails": "Beide Wege parallel anbieten. Sinnvoll nur während einer schrittweisen Migration vom Legacy-Modus zum Proxy. Im Dauerbetrieb verdoppelt das die Angriffsoberfläche, ohne Mehrwert.",
     "modeBothWarning": "Nicht empfohlen, da meist nur einer der beiden Wege gleichzeitig genutzt wird.",
     "pluginsLanguage": {
@@ -440,8 +440,8 @@
       "save": "Modus speichern",
       "saveAndRestart": "Speichern & neu starten",
       "saved": "Betriebsmodus gespeichert.",
-      "restartHint": "Hinweis: Die Legacy-API auf Port 5005 wechselt sofort. Der Listener auf Port 5006 wird erst beim nächsten Start neu aufgesetzt.",
-      "restartPending": "Modus gespeichert. Server-Neustart nötig, damit der Listener auf Port 5006 den neuen Modus übernimmt."
+      "restartHint": "Hinweis: Die Legacy-API auf Port {legacyApiPort} wechselt sofort. Der Listener auf Port {proxyPort} wird erst beim nächsten Start neu aufgesetzt.",
+      "restartPending": "Modus gespeichert. Server-Neustart nötig, damit der Listener auf Port {proxyPort} den neuen Modus übernimmt."
     },
     "restart": {
       "title": "Server neu starten",

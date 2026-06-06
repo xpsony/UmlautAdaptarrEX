@@ -57,13 +57,13 @@
     "modeHint": "Choose how UmlautAdaptarr should work. You can change this later in Settings.",
     "modeRecommendedBadge": "Recommended",
     "modeProxyLabel": "Proxy mode",
-    "modeProxyDescription": "Only the HTTP proxy on port 5006 is active. The legacy indexer API on port 5005 returns a hint message instead.",
+    "modeProxyDescription": "Only the HTTP proxy on port {proxyPort} is active. The legacy indexer API on port {legacyApiPort} returns a hint message instead.",
     "modeProxyDetails": "Recommended for new setups. Prowlarr connects through the HTTP proxy, which rewrites indexer responses transparently. Sonarr/Radarr need no extra API keys because rewriting happens at search time.",
     "modeLegacyLabel": "Index API (legacy)",
-    "modeLegacyDescription": "Only the legacy indexer API on port 5005 is active. Port 5006 returns a hint message to every connection.",
-    "modeLegacyDetails": "Wire-compatible with the .NET predecessor. Sonarr/Radarr hit 5005/'<apiKey>/<host>'/api directly. Choose this mode if you're migrating an existing 1.x install and want URLs to stay stable.",
+    "modeLegacyDescription": "Only the legacy indexer API on port {legacyApiPort} is active. Port {proxyPort} returns a hint message to every connection.",
+    "modeLegacyDetails": "Wire-compatible with the .NET predecessor. Sonarr/Radarr hit {legacyApiPort}/'<apiKey>/<host>'/api directly. Choose this mode if you're migrating an existing 1.x install and want URLs to stay stable.",
     "modeBothLabel": "Both",
-    "modeBothDescription": "Both the proxy (5006) and the legacy API (5005) are active.",
+    "modeBothDescription": "Both the proxy ({proxyPort}) and the legacy API ({legacyApiPort}) are active.",
     "modeBothDetails": "Run both paths in parallel. Only useful during a staged migration from legacy to proxy mode. In steady-state operation it doubles the attack surface for no benefit.",
     "modeBothWarning": "Not recommended — usually only one of the two paths is needed at a time.",
     "pluginsLanguage": {
@@ -440,8 +440,8 @@
       "save": "Save mode",
       "saveAndRestart": "Save & restart",
       "saved": "Operation mode saved.",
-      "restartHint": "Note: the legacy API on port 5005 switches immediately. The listener on port 5006 only re-binds on the next start.",
-      "restartPending": "Mode saved. Server restart required for the port 5006 listener to pick up the new mode."
+      "restartHint": "Note: the legacy API on port {legacyApiPort} switches immediately. The listener on port {proxyPort} only re-binds on the next start.",
+      "restartPending": "Mode saved. Server restart required for the port {proxyPort} listener to pick up the new mode."
     },
     "restart": {
       "title": "Restart server",

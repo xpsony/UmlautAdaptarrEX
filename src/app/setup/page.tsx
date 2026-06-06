@@ -12,6 +12,7 @@ const FALLBACK_STATUS: SetupStatus = {
   setupComplete: false,
   prowlarrConfig: { host: null, configured: false },
   proxyDefaults: { port: 5006, username: "UmlautAdaptarr", portEnvManaged: false },
+  legacyApiPort: 5005,
 };
 
 async function fetchSetupStatus(): Promise<SetupStatus | null> {

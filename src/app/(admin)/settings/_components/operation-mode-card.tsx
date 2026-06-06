@@ -29,6 +29,10 @@ export function OperationModeCard() {
   const stored = settings.data?.operationMode ?? "proxy";
   const value = pending ?? stored;
   const dirty = pending !== null && pending !== stored;
+  // Resolved ports (env override > DB/default) come from the settings API; the
+  // literal fallbacks match the defaults in src/lib/ports.ts.
+  const legacyApiPort = settings.data?.legacyApiPort ?? 5005;
+  const proxyPort = settings.data?.proxyPort ?? 5006;
 
   const saveMut = useMutation({
     mutationFn: (next: OperationMode) =>
@@ -52,18 +56,23 @@ export function OperationModeCard() {
         <CardDescription>{tSetup("modeHint")}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <OperationModePicker value={value} onChange={(m) => setPending(m)} />
+        <OperationModePicker
+          value={value}
+          onChange={(m) => setPending(m)}
+          legacyApiPort={legacyApiPort}
+          proxyPort={proxyPort}
+        />
         {dirty ? (
           <div className="flex items-start gap-2 rounded-md border border-amber-300/40 bg-amber-50 p-3 text-xs dark:border-amber-700/40 dark:bg-amber-950/30">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
-            <p>{t("operationMode.restartHint")}</p>
+            <p>{t("operationMode.restartHint", { legacyApiPort, proxyPort })}</p>
           </div>
         ) : null}
         {!dirty && restartRequired ? (
           <div className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-amber-300/40 bg-amber-50 p-3 text-xs dark:border-amber-700/40 dark:bg-amber-950/30">
             <div className="flex items-start gap-2">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
-              <p>{t("operationMode.restartPending")}</p>
+              <p>{t("operationMode.restartPending", { proxyPort })}</p>
             </div>
             <RestartServerButton variant="outline" size="sm" />
           </div>

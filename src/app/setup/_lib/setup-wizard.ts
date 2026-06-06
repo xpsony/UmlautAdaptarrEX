@@ -5,6 +5,9 @@ export interface SetupStatus {
   setupComplete: boolean;
   prowlarrConfig: { host: string | null; configured: boolean };
   proxyDefaults: { port: number; username: string; portEnvManaged: boolean };
+  // Resolved legacy-API port (env override > default). The proxy port lives in
+  // proxyDefaults.port; this carries the second port the mode picker displays.
+  legacyApiPort: number;
 }
 
 export type TmdbTestResult =

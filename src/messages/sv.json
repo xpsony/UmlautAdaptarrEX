@@ -57,13 +57,13 @@
     "modeHint": "Välj hur UmlautAdaptarr ska arbeta. Du kan ändra valet senare i Inställningar.",
     "modeRecommendedBadge": "Rekommenderas",
     "modeProxyLabel": "Proxy-läge",
-    "modeProxyDescription": "Endast HTTP-proxyn på port 5006 är aktiv. Det äldre indexer-API:t på port 5005 returnerar ett informationsmeddelande.",
+    "modeProxyDescription": "Endast HTTP-proxyn på port {proxyPort} är aktiv. Det äldre indexer-API:t på port {legacyApiPort} returnerar ett informationsmeddelande.",
     "modeProxyDetails": "Rekommenderas för nya installationer. Prowlarr ansluter via HTTP-proxyn, som skriver om indexer-svaren transparent. Sonarr/Radarr behöver inga extra API-nycklar eftersom omskrivningen sker vid sökning.",
     "modeLegacyLabel": "Index-API (äldre)",
-    "modeLegacyDescription": "Endast det äldre indexer-API:t på port 5005 är aktivt. Port 5006 svarar varje anslutning med ett informationsmeddelande.",
-    "modeLegacyDetails": "Wire-kompatibel med .NET-föregångaren. Sonarr/Radarr når 5005/'<apiKey>/<host>'/api direkt. Välj detta läge om du migrerar en befintlig 1.x-installation och vill att URL:erna ska förbli stabila.",
+    "modeLegacyDescription": "Endast det äldre indexer-API:t på port {legacyApiPort} är aktivt. Port {proxyPort} svarar varje anslutning med ett informationsmeddelande.",
+    "modeLegacyDetails": "Wire-kompatibel med .NET-föregångaren. Sonarr/Radarr når {legacyApiPort}/'<apiKey>/<host>'/api direkt. Välj detta läge om du migrerar en befintlig 1.x-installation och vill att URL:erna ska förbli stabila.",
     "modeBothLabel": "Båda",
-    "modeBothDescription": "Både proxy (5006) och äldre API (5005) är aktiva.",
+    "modeBothDescription": "Både proxy ({proxyPort}) och äldre API ({legacyApiPort}) är aktiva.",
     "modeBothDetails": "Kör båda vägarna parallellt. Användbart endast under en stegvis migrering från legacy- till proxyläge. I stadigt drift fördubblar det attackytan utan fördelar.",
     "modeBothWarning": "Rekommenderas inte — vanligtvis behövs bara en av de två vägarna åt gången.",
     "pluginsLanguage": {
@@ -437,8 +437,8 @@
       "save": "Spara läge",
       "saveAndRestart": "Spara & starta om",
       "saved": "Driftläge sparat.",
-      "restartHint": "Notera: det äldre API:t på port 5005 växlar omedelbart. Lyssnaren på port 5006 byggs om först vid nästa start.",
-      "restartPending": "Läge sparat. Servern måste startas om för att lyssnaren på port 5006 ska ta upp det nya läget."
+      "restartHint": "Notera: det äldre API:t på port {legacyApiPort} växlar omedelbart. Lyssnaren på port {proxyPort} byggs om först vid nästa start.",
+      "restartPending": "Läge sparat. Servern måste startas om för att lyssnaren på port {proxyPort} ska ta upp det nya läget."
     },
     "restart": {
       "title": "Starta om servern",

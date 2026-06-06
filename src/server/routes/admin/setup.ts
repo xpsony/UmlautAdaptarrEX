@@ -27,7 +27,7 @@ import {
 } from "@/server/prowlarr-helpers";
 import { parseOrReply } from "./_helpers";
 import { handleSetupSubmit } from "./_setup-handler";
-import { resolveProxyPortEnv } from "@/lib/ports";
+import { resolveLegacyApiPort, resolveProxyPortEnv } from "@/lib/ports";
 
 const DEFAULT_PROXY_PORT = 5006;
 const DEFAULT_PROXY_USERNAME = "UmlautAdaptarr";
@@ -79,6 +79,7 @@ async function getSetupStatus(): Promise<{
   setupComplete: boolean;
   prowlarrConfig: { host: string | null; configured: boolean };
   proxyDefaults: { port: number; username: string; portEnvManaged: boolean };
+  legacyApiPort: number;
 }> {
   const setting = await loadSetting();
   const envProxyPort = resolveProxyPortEnv();
@@ -95,6 +96,7 @@ async function getSetupStatus(): Promise<{
       username: setting?.proxyUsername ?? DEFAULT_PROXY_USERNAME,
       portEnvManaged: envProxyPort !== null,
     },
+    legacyApiPort: resolveLegacyApiPort(),
   };
 }
 
