@@ -36,3 +36,15 @@ old_code/
 
 # Local dev helpers
 dev/
+
+# Tests, docs and tooling — not needed by `pnpm build` (next build + tsup),
+# only bloat the build context shipped to the daemon for `COPY . .`.
+tests/
+e2e/
+docs/
+deploy/
+.devcontainer/
+.claude/
+playwright.config.ts
+vitest.config.ts
+*.md
