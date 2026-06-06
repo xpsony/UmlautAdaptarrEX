@@ -25,9 +25,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml prisma.config.ts ./
 COPY prisma ./prisma
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --frozen-lockfile
-RUN apt-get purge -y python3 make g++ \
-  && apt-get autoremove -y
-
 # ── Builder ──────────────────────────────────────────────────────────────────
 FROM deps AS builder
 ARG APP_VERSION
@@ -35,13 +32,19 @@ ENV APP_VERSION=$APP_VERSION
 COPY . .
 RUN pnpm build
 
-# ── Production-only deps: prune the builder's node_modules in place ──────────
-# `pnpm prune --prod` strips devDependencies but leaves `node_modules/.prisma`
-# (Prisma's generated client output, not a pnpm-managed package) intact, so we
-# get a single install + a single `prisma generate` instead of two of each.
-FROM builder AS prod-deps
+# ── Runtime-only deps: minimal install of just what runs in production ───────
+FROM base-builder AS runtime-deps
+WORKDIR /runtime
+COPY package.json ./root-package.json
+COPY docker/runtime-deps.names.json ./names.json
+COPY docker/runtime-deps.pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY prisma ./prisma
+COPY prisma.config.ts ./prisma.config.ts
+RUN node -e "const root=require('./root-package.json');const {packages}=require('./names.json');const all={...root.dependencies,...root.devDependencies};const deps={};for(const n of packages){if(!all[n])throw new Error('runtime-deps: \"'+n+'\" is not a dependency in the root package.json');deps[n]=all[n];}require('fs').writeFileSync('package.json',JSON.stringify({name:'umlautadaptarrex-runtime',private:true,dependencies:deps},null,2));" \
+  && rm root-package.json names.json
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
-    pnpm prune --prod
+    pnpm install --prod \
+  && pnpm exec prisma generate
 
 # ── Runtime ──────────────────────────────────────────────────────────────────
 FROM base-runtime AS runtime
@@ -58,12 +61,18 @@ ENV UMLAUTADAPTARREX_WEBUI_PORT=5007
 ENV UMLAUTADAPTARREX_PROXY_PORT=5006
 
 
-# Server runtime: prod-only deps + generated Prisma client (slim).
-COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
-
-# Next.js standalone bundle (Next traces its own subset of node_modules).
+# Next.js standalone bundle FIRST (Next traces its own subset of node_modules:
+# next, react, ...). This seeds /app/node_modules with the UI runtime, including
+# an INCOMPLETE @prisma/client stub (no generated client, no query engine).
 COPY --from=builder --chown=node:node /app/.next/standalone ./
 COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+
+# Server runtime deps SECOND, overlaid on top: better-sqlite3, argon2, the
+# prisma CLI and the COMPLETE @prisma/client (generated client + query engine).
+# Both trees use pnpm's symlink layout, so this merges symlink-over-symlink and
+# our complete @prisma/client wins over the standalone stub, while next/react
+# (absent from this minimal set) remain from the standalone bundle.
+COPY --from=runtime-deps --chown=node:node /runtime/node_modules ./node_modules
 # public/ is NOT included in the standalone bundle — must be copied separately
 # so static assets (logos, *Arr icons under /arr, /brand) are served by Next.
 COPY --from=builder --chown=node:node /app/public ./public

@@ -1,0 +1,10 @@
+# Minimal pnpm workspace config for the production-image runtime-deps stage.
+# pnpm 11 blocks lifecycle/build scripts unless explicitly allowed here; these
+# four need to compile native bindings (argon2, better-sqlite3) or fetch/place
+# the Prisma engines. Mirror the root pnpm-workspace.yaml `allowBuilds` for the
+# packages this minimal install actually pulls in.
+allowBuilds:
+  "@prisma/engines": true
+  argon2: true
+  better-sqlite3: true
+  prisma: true

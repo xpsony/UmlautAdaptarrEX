@@ -1,0 +1,24 @@
+{
+  "_comment": "AUTHORITATIVE list of package NAMES the production server needs at runtime. tsup leaves every dependency external (see tsup.config.ts), so dist/server/index.js imports these at runtime; start.mjs additionally shells out to the prisma CLI for `migrate deploy`. This list was extracted from the bare specifiers in the built dist/server/index.js (plus prisma + better-sqlite3) and deliberately EXCLUDES the UI-only stack (next, react, react-dom, @radix-ui, recharts, lucide-react, @dnd-kit, @tanstack, react-hook-form, ...) which is traced into the Next.js standalone bundle and must not be duplicated. The Dockerfile's runtime-deps stage reads this file and copies each package's VERSION from the root package.json, so `pnpm update` / Dependabot bumps flow through automatically and versions never drift. Maintenance: only edit this list when a server-side dependency import is added or removed; the container boot smoke-test fails with ERR_MODULE_NOT_FOUND if a needed package is missing here.",
+  "packages": [
+    "@fastify/cookie",
+    "@fastify/csrf-protection",
+    "@fastify/rate-limit",
+    "@prisma/adapter-better-sqlite3",
+    "@prisma/client",
+    "argon2",
+    "better-sqlite3",
+    "clsx",
+    "fast-xml-parser",
+    "fastify",
+    "lru-cache",
+    "moviedb-promise",
+    "nanoid",
+    "pino",
+    "prisma",
+    "tailwind-merge",
+    "undici",
+    "ws",
+    "zod"
+  ]
+}

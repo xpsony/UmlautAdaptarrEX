@@ -15,3 +15,88 @@ concurrency:
 jobs:
   quality:
     uses: ./.github/workflows/verify.yml
+
+  docker-smoke:
+    name: Docker image boot smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # Single-arch build loaded into the local daemon so we can actually run
+      # it. Reuses the dev-image GHA build cache read-only to stay fast.
+      - name: Build image (linux/amd64, load locally)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          load: true
+          tags: umlautadaptarrex:ci-smoke
+          build-args: |
+            APP_VERSION=ci-smoke
+          cache-from: |
+            type=gha,scope=dev-linux-amd64
+            type=gha,scope=ci-smoke
+          cache-to: type=gha,mode=max,scope=ci-smoke
+
+      # Catches the runtime-deps.names.json gotcha: the image builds fine but
+      # crashes at startup with ERR_MODULE_NOT_FOUND if a server-side dependency
+      # import is missing from docker/runtime-deps.names.json. Also asserts the
+      # Fastify API, the Next.js UI and the prisma migrate step all come up.
+      - name: Boot container and probe endpoints
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name uax-smoke \
+            -p 5005:5005 -p 5007:5007 \
+            umlautadaptarrex:ci-smoke
+
+          echo "Waiting for Fastify /api/health…"
+          ok=
+          for i in $(seq 1 45); do
+            if curl -fsS -m 3 http://127.0.0.1:5005/api/health >/dev/null 2>&1; then
+              ok=1
+              break
+            fi
+            if [ "$(docker inspect -f '{{.State.Running}}' uax-smoke 2>/dev/null)" != "true" ]; then
+              echo "::error::Container exited during startup"
+              break
+            fi
+            sleep 2
+          done
+
+          echo "----- container logs -----"
+          docker logs uax-smoke 2>&1 || true
+          echo "--------------------------"
+
+          if docker logs uax-smoke 2>&1 | grep -q "ERR_MODULE_NOT_FOUND"; then
+            echo "::error::ERR_MODULE_NOT_FOUND — a server runtime dependency is missing from docker/runtime-deps.names.json"
+            exit 1
+          fi
+
+          if [ -z "$ok" ]; then
+            echo "::error::Fastify /api/health did not become healthy in time"
+            exit 1
+          fi
+
+          echo "Fastify health:"
+          curl -fsS -m 5 http://127.0.0.1:5005/api/health
+          echo
+
+          echo "Next.js UI status:"
+          code=$(curl -fsS -m 8 -L -o /dev/null -w '%{http_code}' http://127.0.0.1:5007/)
+          echo "HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::Next.js UI did not return 200 (got $code)"
+            exit 1
+          fi
+
+          echo "Smoke test passed."
+
+      - name: Tear down
+        if: always()
+        run: docker rm -f uax-smoke 2>/dev/null || true
