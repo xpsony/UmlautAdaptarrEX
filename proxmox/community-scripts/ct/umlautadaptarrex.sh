@@ -79,7 +79,7 @@ description
 
 # Read the web UI port the user chose during install (falls back to the default).
 WEBUI_PORT=$(pct exec "$CTID" -- sh -c "grep '^UMLAUTADAPTARREX_WEBUI_PORT=' /opt/umlautadaptarrex/.env | cut -d= -f2" 2>/dev/null)
-[[ "$WEBUI_PORT" =~ ^[0-9]+$ ]] || WEBUI_PORT=5007
+[[ "$WEBUI_PORT" =~ ^[0-9]+$ ]] || WEBUI_PORT=80
 
 msg_ok "Completed Successfully!\n"
 echo -e "${CREATING}${GN}${APP} setup has been successfully initialized!${CL}"

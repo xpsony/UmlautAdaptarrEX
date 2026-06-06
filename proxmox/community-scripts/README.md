@@ -16,13 +16,13 @@ following the [community-scripts](https://community-scripts.org/docs/ct/readme)
 ## What it does
 
 - Creates a Debian 13 LXC (2 vCPU, 2048 MB RAM for the build, 6 GB disk).
-- Installs Node.js 26 + pnpm via corepack (version pinned in `package.json`), fetches the latest release of
+- Installs Node.js 26 + pnpm (version pinned in `package.json`, installed via npm), fetches the latest release of
   `xpsony/UmlautAdaptarrEX`, runs `pnpm build:prod` and `pnpm prisma:deploy`.
 - Prompts for the three service ports during install (pre-filled with the
   defaults below; press Enter to accept):
-  - **5007** — web UI + setup wizard (`http://<IP>:5007/setup`)
+  - **80** — web UI + setup wizard (`http://<IP>/setup`), the standard HTTP port
   - **5005** — public API + indexer routes for the \*arrs
-  - **5006** — Prowlarr TCP proxy (basic auth, set during setup)
+  - **8080** — Prowlarr TCP proxy (standard HTTP-proxy port; basic auth, set during setup)
 - Runs the app via systemd (`/usr/bin/node start.mjs`).
 - The SQLite DB lives at `/opt/umlautadaptarrex/data/` and is preserved across
   updates.
@@ -90,8 +90,9 @@ nano /opt/umlautadaptarrex/.env   # adjust UMLAUTADAPTARREX_WEBUI_PORT / _LEGACY
 systemctl restart umlautadaptarrex
 ```
 
-Ports must be between 1024 and 65535; an invalid value makes the service fail
-fast at boot. Because `UMLAUTADAPTARREX_PROXY_PORT` is set, the proxy-port field
+Ports must be between 1 and 65535; an invalid value makes the service fail
+fast at boot. Privileged ports below 1024 (such as the default Web UI port 80)
+work because the LXC service runs as root. Because `UMLAUTADAPTARREX_PROXY_PORT` is set, the proxy-port field
 in **Settings → Advanced** is read-only — change the proxy port here instead. An
 LXC has its own IP, so there is no host-side port mapping: these values are the
 ports the app binds inside the container.

@@ -7,7 +7,7 @@
   "updateable": true,
   "privileged": false,
   "has_arm": false,
-  "interface_port": 5007,
+  "interface_port": 80,
   "documentation": "https://github.com/xpsony/UmlautAdaptarrEX",
   "website": "https://github.com/xpsony/UmlautAdaptarrEX",
   "logo": null,
@@ -32,11 +32,11 @@
   },
   "notes": [
     {
-      "text": "Complete configuration via the web setup wizard at http://<IP>:5007/setup on first access.",
+      "text": "Complete configuration via the web setup wizard at http://<IP>/setup on first access.",
       "type": "info"
     },
     {
-      "text": "Ports: 5007 = web UI + setup, 5005 = public API + indexer routes for the *arrs, 5006 = Prowlarr TCP proxy (requires basic auth set during setup).",
+      "text": "Default ports: 80 = web UI + setup, 5005 = public API + indexer routes for the *arrs, 8080 = Prowlarr TCP proxy (requires basic auth set during setup). All three are configurable during install.",
       "type": "info"
     },
     {

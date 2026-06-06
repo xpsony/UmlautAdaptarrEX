@@ -30,25 +30,27 @@ msg_ok "Installed pnpm"
 fetch_and_deploy_gh_release "umlautadaptarrex" "xpsony/UmlautAdaptarrEX" "tarball"
 
 # Ask the user for the three service ports, pre-filled with the defaults. The app
-# reads these as env vars at boot (see src/lib/ports.ts); only ports >=1024 are
-# accepted. Setting the proxy port here pins it, making the Settings -> Advanced
-# proxy-port field read-only in the web UI. Falls back to the default on cancel
-# (e.g. a non-interactive run with no TTY).
+# reads these as env vars at boot (see src/lib/ports.ts); any port 1-65535 is
+# accepted. The defaults are the standard ports: 80 (HTTP) for the web UI and
+# 8080 (HTTP proxy) for the Prowlarr proxy. The LXC runs the service as root, so
+# binding the privileged port 80 works. Setting the proxy port here pins it,
+# making the Settings -> Advanced proxy-port field read-only in the web UI. Falls
+# back to the default on cancel (e.g. a non-interactive run with no TTY).
 prompt_port() {
   local label="$1" default="$2" __out="$3" val
   while true; do
     val=$(whiptail --backtitle "UmlautAdaptarrEX" --title "Port Configuration" \
       --inputbox "$label" 8 70 "$default" 3>&1 1>&2 2>&3) || val="$default"
-    if [[ "$val" =~ ^[0-9]+$ ]] && ((val >= 1024 && val <= 65535)); then
+    if [[ "$val" =~ ^[0-9]+$ ]] && ((val >= 1 && val <= 65535)); then
       printf -v "$__out" '%s' "$val"
       return
     fi
-    whiptail --title "Invalid Port" --msgbox "Port must be an integer between 1024 and 65535." 8 70
+    whiptail --title "Invalid Port" --msgbox "Port must be an integer between 1 and 65535." 8 70
   done
 }
-prompt_port "Web UI port (browser + setup wizard):" 5007 WEBUI_PORT
+prompt_port "Web UI port (browser + setup wizard):" 80 WEBUI_PORT
 prompt_port "API port (indexer endpoint the *arrs connect to):" 5005 LEGACYAPI_PORT
-prompt_port "Prowlarr proxy port:" 5006 PROXY_PORT
+prompt_port "Prowlarr proxy port:" 8080 PROXY_PORT
 
 msg_info "Configuring UmlautAdaptarrEX"
 mkdir -p /opt/umlautadaptarrex/data

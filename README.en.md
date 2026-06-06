@@ -218,11 +218,12 @@ sudo systemctl enable --now umlautadaptarrex
 journalctl -u umlautadaptarrex -f
 ```
 
-### Variant 5: Proxmox VE (LXC, community script)
+### Variant 6: Proxmox VE (LXC, community script)
 
-> **In development / not yet tested.** The script follows the
-> [community-scripts](https://community-scripts.org/docs/ct/readme) (ProxmoxVED) format, but is not yet
-> in the upstream repo and has not been tested extensively. Use it deliberately and verify the result.
+> **Works, but currently not accepted into the Proxmox Helper Scripts.** The script follows the
+> [community-scripts](https://community-scripts.org/docs/ct/readme) (ProxmoxVED) format and is ready to use.
+> Due to the project's current regulations it cannot be included in the official Proxmox Helper Scripts repo
+> at the moment, so it is provided self-hosted from this fork.
 
 A single command, run on the **Proxmox VE host shell**, creates an LXC container and installs
 UmlautAdaptarrEX inside it (self-hosted from this fork, no ProxmoxVED clone required):
@@ -234,7 +235,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/xpsony/UmlautAdaptarrEX/
 What the script does:
 
 - Creates a Debian 13 LXC (2 vCPU, 2048 MB RAM for the build, 6 GB disk).
-- Installs Node.js 26 + pnpm (via corepack), fetches the latest release of `xpsony/UmlautAdaptarrEX`
+- Installs Node.js 26 + pnpm (via npm), fetches the latest release of `xpsony/UmlautAdaptarrEX`
   and runs `pnpm build:prod` + `pnpm prisma:deploy`.
 - Prompts for the three service ports during install (pre-filled with the defaults, press Enter to accept):
   - **5007** — web UI + setup wizard (`http://<IP>:5007/setup`)

@@ -223,11 +223,12 @@ sudo systemctl enable --now umlautadaptarrex
 journalctl -u umlautadaptarrex -f
 ```
 
-### Variante 5: Proxmox VE (LXC, Community-Script)
+### Variante 6: Proxmox VE (LXC, Community-Script)
 
-> **In Entwicklung / noch nicht getestet.** Das Skript folgt dem
-> [community-scripts](https://community-scripts.org/docs/ct/readme)-Format (ProxmoxVED), ist aber noch
-> nicht im Upstream-Repo und noch nicht ausgiebig getestet. Verwende es bewusst und prüfe das Ergebnis.
+> **Funktioniert, wird derzeit aber nicht bei den Proxmox Helper Scripts aufgenommen.** Das Skript folgt
+> dem [community-scripts](https://community-scripts.org/docs/ct/readme)-Format (ProxmoxVED) und ist
+> einsatzbereit. Aufgrund der aktuellen Regularien des Projekts kann es derzeit nicht in das offizielle
+> Proxmox-Helper-Scripts-Repo aufgenommen werden, daher wird es self-hosted aus diesem Fork bereitgestellt.
 
 Ein einzeiliger Befehl, direkt in der **Shell des Proxmox-VE-Hosts** ausgeführt, legt einen LXC-Container
 an und installiert UmlautAdaptarrEX darin (self-hosted aus diesem Fork, kein ProxmoxVED-Clone nötig):
@@ -239,7 +240,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/xpsony/UmlautAdaptarrEX/
 Was das Skript tut:
 
 - Legt einen Debian-13-LXC an (2 vCPU, 2048 MB RAM für den Build, 6 GB Disk).
-- Installiert Node.js 26 + pnpm (via corepack), holt das neueste Release von `xpsony/UmlautAdaptarrEX`
+- Installiert Node.js 26 + pnpm (via npm), holt das neueste Release von `xpsony/UmlautAdaptarrEX`
   und führt `pnpm build:prod` + `pnpm prisma:deploy` aus.
 - Fragt während der Installation die drei Service-Ports ab (vorbelegt mit den Defaults, Enter übernimmt):
   - **5007** — Web-UI + Setup-Wizard (`http://<IP>:5007/setup`)
