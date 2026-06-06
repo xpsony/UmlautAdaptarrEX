@@ -31,11 +31,21 @@ describe("resolveLegacyApiPort", () => {
 
   it("throws on a non-numeric value", () => {
     process.env.UMLAUTADAPTARREX_LEGACYAPI_PORT = "abc";
-    expect(() => resolveLegacyApiPort()).toThrow(/integer between 1024 and 65535/);
+    expect(() => resolveLegacyApiPort()).toThrow(/integer between 1 and 65535/);
   });
 
   it("throws on an out-of-range value", () => {
+    process.env.UMLAUTADAPTARREX_LEGACYAPI_PORT = "70000";
+    expect(() => resolveLegacyApiPort()).toThrow();
+  });
+
+  it("accepts a privileged port like 80 (standard HTTP)", () => {
     process.env.UMLAUTADAPTARREX_LEGACYAPI_PORT = "80";
+    expect(resolveLegacyApiPort()).toBe(80);
+  });
+
+  it("rejects port 0", () => {
+    process.env.UMLAUTADAPTARREX_LEGACYAPI_PORT = "0";
     expect(() => resolveLegacyApiPort()).toThrow();
   });
 

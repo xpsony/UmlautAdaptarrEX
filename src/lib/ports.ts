@@ -7,7 +7,11 @@
 // resolution inline because it runs before the TS build is importable. Keep the
 // two in sync.
 
-const MIN_PORT = 1024;
+// The floor is 1 (not 1024) so deployments can bind privileged ports like 80
+// (standard HTTP) — the Proxmox LXC installer defaults the Web UI to 80. Binding
+// a port below 1024 requires the process to run as root; that is the operator's
+// responsibility (true for the Proxmox LXC and Docker, which both run as root).
+const MIN_PORT = 1;
 const MAX_PORT = 65535;
 
 // Returns the parsed port, or null when the variable is unset/empty (so the

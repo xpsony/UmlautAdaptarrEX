@@ -37,11 +37,11 @@ const resolvePort = (candidates, fallback) => {
     if (value === undefined || value.trim() === "") continue;
     const trimmed = value.trim();
     if (!/^\d+$/.test(trimmed)) {
-      throw new Error(`invalid port "${value}" (expected integer 1024-65535)`);
+      throw new Error(`invalid port "${value}" (expected integer 1-65535)`);
     }
     const n = Number(trimmed);
-    if (n < 1024 || n > 65535) {
-      throw new Error(`invalid port "${value}" (expected integer 1024-65535)`);
+    if (n < 1 || n > 65535) {
+      throw new Error(`invalid port "${value}" (expected integer 1-65535)`);
     }
     return n;
   }
