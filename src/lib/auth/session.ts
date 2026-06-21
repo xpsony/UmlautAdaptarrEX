@@ -40,19 +40,29 @@ export async function rotateSessionForUser(
   return createSession(userId);
 }
 
+// Throttle the lastUsed write so an authenticated request only updates the
+// row at most once per this window, avoiding a SQLite write on every request.
+const LAST_USED_THROTTLE_MS = 5 * 60 * 1000;
+
 export async function getSession(
   id: string,
 ): Promise<{ id: string; userId: string } | null> {
   const session = await prisma.session.findUnique({ where: { id } });
   if (!session) return null;
-  if (session.expiresAt < new Date()) {
+  const now = new Date();
+  if (session.expiresAt < now) {
     await prisma.session.delete({ where: { id } }).catch(() => {});
     return null;
   }
-  await prisma.session.update({
-    where: { id },
-    data: { lastUsed: new Date() },
-  });
+  // Only refresh lastUsed when it's stale, so a burst of requests doesn't
+  // amplify into one DB write each. A missing lastUsed is treated as stale.
+  const lastUsedMs = session.lastUsed?.getTime() ?? 0;
+  if (now.getTime() - lastUsedMs >= LAST_USED_THROTTLE_MS) {
+    await prisma.session.update({
+      where: { id },
+      data: { lastUsed: now },
+    });
+  }
   return { id: session.id, userId: session.userId };
 }
 

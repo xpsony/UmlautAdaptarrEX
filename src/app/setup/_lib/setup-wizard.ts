@@ -96,13 +96,25 @@ const PASSWORD_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0
 
 export function generatePassword(length = 24): string {
   if (typeof crypto === "undefined" || !crypto.getRandomValues) {
-    let s = "";
-    for (let i = 0; i < length; i++) {
-      s += PASSWORD_ALPHABET[Math.floor(Math.random() * PASSWORD_ALPHABET.length)];
-    }
-    return s;
+    // crypto.getRandomValues is present on Node >=24 and all modern browsers
+    // we support. Refuse to fall back to Math.random rather than silently
+    // generate a weak, predictable password.
+    throw new Error("crypto.getRandomValues is unavailable; cannot generate a secure password");
   }
-  const bytes = new Uint8Array(length);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => PASSWORD_ALPHABET[b % PASSWORD_ALPHABET.length]).join("");
+  // Rejection sampling to avoid modulo bias: 256 is not a multiple of 62, so a
+  // plain `byte % 62` over-weights the first 256 % 62 = 8 characters. Discard
+  // bytes in that uneven top band and only keep the uniform range.
+  const n = PASSWORD_ALPHABET.length;
+  const limit = Math.floor(256 / n) * n; // largest multiple of n that fits in a byte
+  const out: string[] = [];
+  const buf = new Uint8Array(length);
+  while (out.length < length) {
+    crypto.getRandomValues(buf);
+    for (const b of buf) {
+      if (b >= limit) continue;
+      out.push(PASSWORD_ALPHABET.charAt(b % n));
+      if (out.length === length) break;
+    }
+  }
+  return out.join("");
 }

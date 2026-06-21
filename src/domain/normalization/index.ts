@@ -16,9 +16,12 @@ export function stripLeadingArticle(
     input: string,
     pack: LanguagePack = getActiveLanguagePack(),
 ): string {
-    const articles =
-        pack.articles.length > 0 ? pack.articles : ["the", "an", "a"];
-    const re = new RegExp(`^(${articles.map(escapeRegex).join("|")})\\s+`, "i");
+    // Reuse the pack's precompiled (case-insensitive) article regex when the
+    // pack contributes articles; only build a regex for the default fallback
+    // list when the pack has none.
+    const re =
+        pack.articleRegex ??
+        new RegExp(`^(${["the", "an", "a"].map(escapeRegex).join("|")})\\s+`, "i");
     return input.replace(re, "");
 }
 
@@ -36,7 +39,10 @@ export function getReadarrTitleForExternalId(
     title: string,
     pack: LanguagePack = getActiveLanguagePack(),
 ): string {
-    const noArticle = title.replace(/^the\s+/i, "");
+    // Honor the active language pack's article list (German/French/...), like
+    // the sibling `getLidarrTitleForExternalId`, instead of stripping only the
+    // English "the".
+    const noArticle = stripLeadingArticle(title, pack);
     const sepReplaced = noArticle.replace(/[.\-:]/g, " ").replace(/\s+/g, " ");
     return removeAccentButKeepDiacritics(sepReplaced, pack).trim();
 }

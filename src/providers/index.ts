@@ -185,12 +185,24 @@ export class CompositeTitleProvider implements TitleProvider {
           }
         : undefined;
 
-      const partial = await provider.fetchBulk(
-        type,
-        remainingIds,
-        langsForProvider,
-        wrappedOnItem ? { onItem: wrappedOnItem } : undefined,
-      );
+      let partial: Map<string, TitlePayload>;
+      try {
+        partial = await provider.fetchBulk(
+          type,
+          remainingIds,
+          langsForProvider,
+          wrappedOnItem ? { onItem: wrappedOnItem } : undefined,
+        );
+      } catch (err) {
+        // Per-provider error isolation: a single failing provider must not
+        // abort the whole chain or discard results already merged from earlier
+        // providers. Log and move on to the next provider in user order.
+        this.log?.warn(
+          { provider: id, type, count: remainingIds.length, err },
+          "provider fetchBulk failed — skipping provider",
+        );
+        continue;
+      }
       for (const [rid, p] of partial) {
         // If the provider supports onItem, merged is already up-to-date for
         // every id it returned. Otherwise we merge here from the result map.

@@ -6,11 +6,16 @@ import type { LogItem } from "./log-format";
 
 const HISTORY_TAKE = 1000;
 
+// LogItem decorated with a client-assigned monotonic id. The server payload is
+// untouched; the id only exists to give React a stable, unique key on this
+// prepend-only list (array indices shift as new batches arrive).
+export type StreamLogItem = LogItem & { seq: number };
+
 // Owns the live log buffer: loads persisted history, opens a WebSocket to
 // /ws/logs, and prepends incoming batches up to a 1000-item ring buffer.
 // Pause-state lives behind a ref so flipping it doesn't tear down the socket.
 export function useLogStream(apiPort: number) {
-  const [items, setItems] = useState<LogItem[]>([]);
+  const [items, setItems] = useState<StreamLogItem[]>([]);
   const [paused, setPaused] = useState(false);
   const [connected, setConnected] = useState(false);
   const [dropped, setDropped] = useState(0);
@@ -21,6 +26,12 @@ export function useLogStream(apiPort: number) {
     pausedRef.current = paused;
   }, [paused]);
 
+  // Monotonic counter for client-side keys. Each ingested item gets the next
+  // value; never reused, so keys stay stable across prepends and re-renders.
+  const seqRef = useRef(0);
+  const tag = (batch: LogItem[]): StreamLogItem[] =>
+    batch.map((it) => ({ ...it, seq: seqRef.current++ }));
+
   // Load persisted logs once (within retention) so past errors are visible,
   // not only what arrives after the page mounts.
   useEffect(() => {
@@ -28,7 +39,7 @@ export function useLogStream(apiPort: number) {
     apiFetch<{ items: LogItem[] }>(`/api/admin/logs?take=${HISTORY_TAKE}`)
       .then((data) => {
         if (cancelled) return;
-        setItems(data.items);
+        setItems(tag(data.items));
       })
       .catch(() => {
         /* A DB read error is not fatal, the WS stream keeps delivering live data. */
@@ -62,7 +73,7 @@ export function useLogStream(apiPort: number) {
           dropped?: number;
         };
         if (data.dropped) setDropped((d) => d + data.dropped!);
-        setItems((prev) => [...data.items, ...prev].slice(0, HISTORY_TAKE));
+        setItems((prev) => [...tag(data.items), ...prev].slice(0, HISTORY_TAKE));
       } catch {
         /* ignore */
       }

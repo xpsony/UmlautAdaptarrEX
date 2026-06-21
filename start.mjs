@@ -105,13 +105,24 @@ if (process.env[SUPERVISOR_ENV] !== "1") {
   let nextProc = null;
   let serverInstance = null;
   let shuttingDown = false;
+  // Records that the Next.js child has actually exited. `nextProc.killed` only
+  // reflects that a signal was *delivered*, not that the process is gone, so
+  // shutdown() relies on this flag to decide whether SIGKILL is still needed.
+  let nextExited = false;
 
   const runPrismaMigrate = () =>
     new Promise((resolve, reject) => {
-      const proc = spawn("node", ["./node_modules/prisma/build/index.js", "migrate", "deploy"], {
-        cwd: __dirname,
-        stdio: "inherit",
-      });
+      const proc = spawn(
+        process.execPath,
+        ["./node_modules/prisma/build/index.js", "migrate", "deploy"],
+        {
+          cwd: __dirname,
+          stdio: "inherit",
+        },
+      );
+      // Without this the Promise never settles when the binary is missing or
+      // the spawn fails (ENOENT/EACCES), hanging boot forever.
+      proc.on("error", reject);
       proc.on("exit", (code) => {
         if (code === 0) resolve();
         else reject(new Error(`prisma migrate deploy exited with code ${code}`));
@@ -154,6 +165,9 @@ if (process.env[SUPERVISOR_ENV] !== "1") {
       stdio: ["ignore", "inherit", "inherit"],
     });
     nextProc.on("exit", (code, signal) => {
+      // Record the real exit before the shuttingDown guard so shutdown() can
+      // tell an actually-dead child from one that merely received SIGTERM.
+      nextExited = true;
       if (shuttingDown) return;
       console.error(`[supervisor] Next.js exited unexpectedly: code=${code} signal=${signal}`);
       void shutdown(1);
@@ -181,7 +195,10 @@ if (process.env[SUPERVISOR_ENV] !== "1") {
     if (nextProc && !nextProc.killed) {
       nextProc.kill("SIGTERM");
       await new Promise((r) => setTimeout(r, 2000));
-      if (!nextProc.killed) nextProc.kill("SIGKILL");
+      // Force-kill only if the child has not actually exited yet. `nextProc.killed`
+      // is already true after the SIGTERM above, so checking it here would never
+      // fire — `nextExited` reflects the real exit, avoiding an orphaned port 5007.
+      if (!nextExited) nextProc.kill("SIGKILL");
     }
     process.exit(code);
   };

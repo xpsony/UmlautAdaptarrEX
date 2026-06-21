@@ -289,11 +289,24 @@ async function postRecheckMissing(
 ): Promise<{ checked: number; recovered: number; stillMissing: number }> {
   const state = getAppState();
   const wantedLangs = requiredLanguages(state.languagePack);
-  const rows = await prisma.titleApiCache.findMany({
-    include: { translations: { select: { lang: true, title: true } } },
-  });
 
-  const candidates = pickMissingCandidates(rows, wantedLangs);
+  // Scan the cache in bounded batches via id cursor so a large library
+  // doesn't load the whole table (with translations) into memory at once.
+  const RECHECK_BATCH_SIZE = 500;
+  const candidates: ReturnType<typeof pickMissingCandidates> = [];
+  let cursorId: string | undefined;
+  for (;;) {
+    const batch = await prisma.titleApiCache.findMany({
+      take: RECHECK_BATCH_SIZE,
+      ...(cursorId ? { skip: 1, cursor: { id: cursorId } } : {}),
+      orderBy: { id: "asc" },
+      include: { translations: { select: { lang: true, title: true } } },
+    });
+    if (batch.length === 0) break;
+    candidates.push(...pickMissingCandidates(batch, wantedLangs));
+    if (batch.length < RECHECK_BATCH_SIZE) break;
+    cursorId = batch[batch.length - 1]!.id;
+  }
   if (candidates.length === 0) {
     return { checked: 0, recovered: 0, stillMissing: 0 };
   }

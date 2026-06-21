@@ -132,6 +132,8 @@ export async function probeTvdbKey(
         Authorization: `Bearer ${token}`,
         Accept: "application/json",
       },
+      bodyTimeout: 10_000,
+      headersTimeout: 10_000,
     });
     if (res.statusCode === 401) {
       return { ok: false, code: "unauthorized" };
@@ -165,6 +167,8 @@ async function tvdbLogin(apiKey: string, pin: string | null): Promise<string> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    bodyTimeout: 10_000,
+    headersTimeout: 10_000,
   });
   if (res.statusCode === 401 || res.statusCode === 403) {
     const err = new Error("TVDB rejected the API key") as Error & {
@@ -208,6 +212,10 @@ export class TvdbProvider implements TitleProvider {
   private readonly limiter = new HostRateLimiter(TVDB_MIN_INTERVAL_MS);
   private readonly log: Logger | null;
   private token: string | null = null;
+  // Single-flight login guard: when several concurrent requests need a token
+  // and none is cached, only the first triggers tvdbLogin; the rest await the
+  // same in-flight promise instead of each launching their own login.
+  private tokenPromise: Promise<string> | null = null;
   private readonly remoteIdCache = new Map<string, number | null>();
 
   constructor(private readonly opts: TvdbProviderOptions) {
@@ -425,19 +433,49 @@ export class TvdbProvider implements TitleProvider {
     }
   }
 
+  /**
+   * Return a valid JWT, logging in at most once across concurrent callers.
+   * If a token is cached we return it directly; otherwise the first caller
+   * starts the login and every concurrent caller awaits the same promise.
+   * The promise is cleared on both success and failure so a later attempt
+   * (e.g. after a 401) can re-login cleanly via this same path.
+   */
+  private async ensureToken(): Promise<string> {
+    if (this.token) return this.token;
+    if (!this.tokenPromise) {
+      this.tokenPromise = tvdbLogin(
+        this.opts.apiKey,
+        this.opts.pin ?? null,
+      ).then(
+        (token) => {
+          this.token = token;
+          this.tokenPromise = null;
+          return token;
+        },
+        (err) => {
+          // Clear the in-flight promise so the next call retries login
+          // instead of awaiting a permanently-rejected promise.
+          this.tokenPromise = null;
+          throw err;
+        },
+      );
+    }
+    return this.tokenPromise;
+  }
+
   private async authedGet<T>(path: string): Promise<T> {
     await this.limiter.wait(TVDB_HOST);
     const doRequest = async (): Promise<T> => {
-      if (!this.token) {
-        this.token = await tvdbLogin(this.opts.apiKey, this.opts.pin ?? null);
-      }
+      const token = await this.ensureToken();
       const res = await request(`${TVDB_BASE}${path}`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${this.token}`,
+          Authorization: `Bearer ${token}`,
           Accept: "application/json",
           "User-Agent": this.opts.userAgent,
         },
+        bodyTimeout: 30_000,
+        headersTimeout: 30_000,
       });
       if (res.statusCode === 401) {
         const err = new Error("TVDB token expired") as Error & {
@@ -476,8 +514,11 @@ export class TvdbProvider implements TitleProvider {
         lastErr = err;
         const status = (err as { __status?: number }).__status;
         if (status === 401 && attempt < MAX_ATTEMPTS) {
-          // Re-login on the next attempt — token may have expired.
+          // Re-login on the next attempt — token may have expired. Clear both
+          // the cached token and any in-flight login promise so the next
+          // ensureToken() starts a fresh single-flight login.
           this.token = null;
+          this.tokenPromise = null;
           continue;
         }
         throw err;

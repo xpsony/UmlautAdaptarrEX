@@ -35,15 +35,7 @@ export async function systemRoutes(app: FastifyInstance): Promise<void> {
         },
         "admin requested server restart",
       );
-      // Send the response *before* tearing down so the UI gets a 202 and
-      // can start polling /api/health. The 250ms delay lets Fastify flush
-      // the response and any Set-Cookie headers.
-      void reply.code(202).send({
-        ok: true,
-        supervised,
-        exitCode: RESTART_EXIT_CODE,
-      });
-      setTimeout(() => {
+      const teardown = (): void => {
         if (supervised) {
           // Hand off to start.mjs — its `umlautadaptarrex:restart` handler
           // runs the full shutdown (SIGTERM Next.js, close Fastify, exit 75)
@@ -59,7 +51,31 @@ export async function systemRoutes(app: FastifyInstance): Promise<void> {
           // up-front (canRestart=false) that they need to bring it back.
           process.exit(0);
         }
-      }, 250);
+      };
+
+      // Tear down only after the 202 (and any Set-Cookie headers) has actually
+      // flushed to the socket, so the UI reliably receives the response before
+      // the process goes down. Guard with `once` so the fallback timer and the
+      // socket events can't fire teardown twice.
+      let tornDown = false;
+      const runTeardownOnce = (): void => {
+        if (tornDown) return;
+        tornDown = true;
+        teardown();
+      };
+
+      // Send the response *before* tearing down so the UI gets a 202 and can
+      // start polling /api/health.
+      reply.raw.once("finish", runTeardownOnce);
+      reply.raw.once("close", runTeardownOnce);
+      void reply.code(202).send({
+        ok: true,
+        supervised,
+        exitCode: RESTART_EXIT_CODE,
+      });
+      // Fallback: if the socket never reports finish/close (e.g. a client that
+      // hangs the connection), still proceed with the restart after a delay.
+      setTimeout(runTeardownOnce, 1000);
     },
   );
 }

@@ -19,6 +19,17 @@ describe("generateVariations (TV)", () => {
     expect(v).toContain("Huette");
   });
 
+  it("strips a lowercase leading article (case-insensitive)", () => {
+    // The article regex must be case-insensitive so "die hütte" / "DIE HÜTTE"
+    // get their article stripped too, not just the title-cased form.
+    const lower = generateVariations("die hütte", "tv");
+    expect(lower).toContain("die hütte");
+    expect(lower).toContain("hütte");
+    const upper = generateVariations("DIE HÜTTE", "tv");
+    expect(upper).toContain("DIE HÜTTE");
+    expect(upper).toContain("HÜTTE");
+  });
+
   it("handles dashes (with/without/with-space)", () => {
     const v = generateVariations("Realm-of-Ravens", "tv");
     expect(v).toContain("Realm-of-Ravens");

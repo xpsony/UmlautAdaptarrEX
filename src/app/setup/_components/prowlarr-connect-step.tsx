@@ -55,6 +55,20 @@ export function ProwlarrConnectStep({
   const t = useTranslations("setup");
   const tProw = useTranslations("instances.prowlarr");
 
+  // Only treat the live field as a link target when it parses as an http(s)
+  // URL — otherwise an attacker-influenced value like "javascript:..." could
+  // become the anchor href. Falls back to plain text below.
+  const settingsHref = ((): string | null => {
+    const trimmed = hostValue.replace(/\/+$/, "");
+    try {
+      const url = new URL(trimmed);
+      if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+      return `${trimmed}/settings/general`;
+    } catch {
+      return null;
+    }
+  })();
+
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       <Card>
@@ -73,7 +87,7 @@ export function ProwlarrConnectStep({
                 className="flex-1"
                 {...form.register("host")}
               />
-              {hostValue.trim().length > 0 ? (
+              {settingsHref ? (
                 <Button
                   asChild
                   type="button"
@@ -82,7 +96,7 @@ export function ProwlarrConnectStep({
                   title={t("openProwlarrSettings")}
                 >
                   <a
-                    href={`${hostValue.replace(/\/+$/, "")}/settings/general`}
+                    href={settingsHref}
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={t("openProwlarrSettings")}
@@ -91,6 +105,13 @@ export function ProwlarrConnectStep({
                     {t("openProwlarrSettings")}
                   </a>
                 </Button>
+              ) : hostValue.trim().length > 0 ? (
+                // Host typed but not a valid http(s) URL: show the label as
+                // inert text rather than a (potentially unsafe) link.
+                <span className="flex items-center gap-2 px-3 text-xs text-muted-foreground">
+                  <ExternalLink className="h-4 w-4" />
+                  {t("openProwlarrSettings")}
+                </span>
               ) : null}
             </div>
             {form.formState.errors.host ? (

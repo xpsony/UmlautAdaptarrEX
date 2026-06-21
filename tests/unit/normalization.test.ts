@@ -86,6 +86,17 @@ describe("getCleanTitle (German pack)", () => {
       removeExtraWhitespaces(expected),
     );
   });
+
+  it("keeps a space when words are separated by tab/newline/CR", () => {
+    // Whitespace must collapse to a single space, not be deleted outright
+    // (which would glue the words: "a\tb" -> "ab").
+    expect(getCleanTitle("a\tb", germanPack)).toBe("a b");
+    expect(getCleanTitle("a\nb", germanPack)).toBe("a b");
+    expect(getCleanTitle("a\r\nb", germanPack)).toBe("a b");
+    expect(getCleanTitle("Some\tShow\nTitle", germanPack)).toBe(
+      "Some Show Title",
+    );
+  });
 });
 
 describe("normalizeForComparison (German pack)", () => {
@@ -124,5 +135,12 @@ describe("getReadarrTitleForExternalId", () => {
     expect(getReadarrTitleForExternalId("The Foo:Bar-Baz", germanPack)).toBe(
       "Foo Bar Baz",
     );
+  });
+
+  it("honors the language pack's article list (German), not just English 'the'", () => {
+    // Routed through stripLeadingArticle so German articles are stripped too,
+    // consistent with getLidarrTitleForExternalId.
+    expect(getReadarrTitleForExternalId("Der König", germanPack)).toBe("König");
+    expect(getReadarrTitleForExternalId("Die Hütte", germanPack)).toBe("Hütte");
   });
 });

@@ -29,6 +29,12 @@ const TMDB_MIN_INTERVAL_MS = 50;
 // without unbounded stacking.
 const TMDB_BULK_CONCURRENCY = 10;
 
+// Per-request timeout (ms) applied to every TMDB call via the AxiosRequestConfig
+// each moviedb-promise method accepts. Without it a stalled TCP connection can
+// hang a bulk sync indefinitely. ~15s comfortably covers TMDB's typical
+// sub-second responses while still failing fast on a dead connection.
+const TMDB_REQUEST_TIMEOUT_MS = 15_000;
+
 // TMDB API expects a v3 API key (32-char hex). v4 Read Access Tokens (JWT
 // "eyJ…") are *not* supported by `moviedb-promise` — sending one as the
 // constructor arg fails at request time. We detect by prefix here so the
@@ -69,7 +75,9 @@ export async function probeTmdbKey(apiKey: string): Promise<TmdbProbeResult> {
   if (apiKey.length < 16) return { ok: false, code: "invalid_format" };
   try {
     const client = new MovieDb(apiKey);
-    const info = await client.movieInfo(550);
+    // moviedb-promise wraps axios; each call accepts an AxiosRequestConfig as
+    // its last argument, so we set a per-request timeout to bound the probe.
+    const info = await client.movieInfo(550, { timeout: TMDB_REQUEST_TIMEOUT_MS });
     const title = info.title ?? info.original_title ?? "Sample Movie";
     return { ok: true, sample: { id: 550, title } };
   } catch (err) {
@@ -228,15 +236,16 @@ export class TmdbProvider implements TitleProvider {
     // already fetched from the other. Authorization failures still surface
     // because both endpoints reject identically with 401, but we only
     // classify the lookup as failed when BOTH halves rejected.
+    const axiosConfig = { timeout: TMDB_REQUEST_TIMEOUT_MS };
     const [tRes, aRes] =
       type === "movie"
         ? await Promise.allSettled([
-            this.client.movieTranslations(idNum),
-            this.client.movieAlternativeTitles(idNum),
+            this.client.movieTranslations(idNum, axiosConfig),
+            this.client.movieAlternativeTitles(idNum, axiosConfig),
           ])
         : await Promise.allSettled([
-            this.client.tvTranslations(idNum),
-            this.client.tvAlternativeTitles(idNum),
+            this.client.tvTranslations(idNum, axiosConfig),
+            this.client.tvAlternativeTitles(idNum, axiosConfig),
           ]);
 
     if (tRes.status === "rejected" && aRes.status === "rejected") {

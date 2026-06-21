@@ -44,6 +44,10 @@ import type {
 
 export function DashboardClient() {
   const t = useTranslations("dashboard");
+  const tCommon = useTranslations("common");
+  // "boundaries" namespace owns the generic retry label (error-boundary copy);
+  // reused here so the dashboard error affordance stays translated.
+  const tBoundaries = useTranslations("boundaries");
   const locale = useLocale();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -83,6 +87,11 @@ export function DashboardClient() {
   const summary = stats.data?.summary;
   const isProwlarrConfigured = !!prowlarrConfig.data?.configured;
 
+  // Surface a failed core fetch explicitly; otherwise an error reads as
+  // "no data" (zeroed KPIs / empty cards) and hides the real problem.
+  const hasError =
+    instances.isError || stats.isError || runs.isError;
+
   async function startSync(): Promise<void> {
     await sync.start();
     void runs.refetch();
@@ -113,6 +122,26 @@ export function DashboardClient() {
           />
         </div>
       </div>
+
+      {hasError ? (
+        <div
+          role="alert"
+          className="flex items-center justify-between gap-3 rounded-md border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm text-destructive"
+        >
+          <span>{tCommon("error")}</span>
+          <button
+            type="button"
+            className="font-medium underline underline-offset-2"
+            onClick={() => {
+              void instances.refetch();
+              void stats.refetch();
+              void runs.refetch();
+            }}
+          >
+            {tBoundaries("retry")}
+          </button>
+        </div>
+      ) : null}
 
       {sync.tracking && !confirmOpen ? (
         <SyncBackgroundProgress sync={sync} />

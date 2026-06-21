@@ -20,6 +20,9 @@ import type { Instance } from "./_lib/instances-types";
 export function InstancesClient() {
   const t = useTranslations("instances");
   const tCommon = useTranslations("common");
+  // "boundaries" namespace owns the generic retry label; reused for the
+  // list-fetch error affordance so it stays translated.
+  const tBoundaries = useTranslations("boundaries");
   const locale = useLocale();
   const qc = useQueryClient();
 
@@ -88,6 +91,18 @@ export function InstancesClient() {
             <div className="space-y-2 p-6">
               <Skeleton className="h-9 w-full" />
               <Skeleton className="h-9 w-full" />
+            </div>
+          ) : list.isError ? (
+            // A failed fetch must not masquerade as "no instances"; show a
+            // distinct error with a retry affordance instead.
+            <div
+              role="alert"
+              className="flex flex-col items-center gap-3 p-10 text-center text-sm text-destructive"
+            >
+              <span>{tCommon("error")}</span>
+              <Button variant="outline" onClick={() => void list.refetch()}>
+                {tBoundaries("retry")}
+              </Button>
             </div>
           ) : !list.data || list.data.length === 0 ? (
             <EmptyState
