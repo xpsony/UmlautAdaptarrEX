@@ -41,6 +41,16 @@ const SETUP_RATE_LIMIT = {
   max: 20,
   timeWindow: "5 minutes",
   keyGenerator: (req: FastifyRequest): string => req.ip,
+  // Exempt the trusted loopback caller. The Next.js Web UI reverse-proxies the
+  // whole API surface (and polls `setup-status` from middleware on every page
+  // render) through the co-hosted proxy, so to Fastify every UI request shares
+  // one key: 127.0.0.1. A 20/5min bucket keyed on that single IP is drained
+  // within a handful of page loads, after which `setup-status` starts returning
+  // 429 — the proxy then reads `setupComplete=false` and traps every user back
+  // in the setup wizard. (Regression: this route gained the rate limit in
+  // 1.2.4.) Direct hits to the public Fastify port that bypass the proxy are
+  // non-loopback and stay limited, so external brute-force protection is intact.
+  allowList: (req: FastifyRequest): boolean => isLoopbackRequest(req),
   onExceeded: (req: FastifyRequest): void => {
     req.log.warn(
       {

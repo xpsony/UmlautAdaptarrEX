@@ -39,10 +39,16 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
     const res = await fetch(`${API_UPSTREAM}/api/auth/setup-status`, {
       cache: "no-store",
     });
-    if (res.ok) {
-      const body = (await res.json()) as { setupComplete?: boolean };
-      setupComplete = body.setupComplete === true;
+    if (!res.ok) {
+      // Reachable but couldn't report state (e.g. transient 5xx, or a 429 if
+      // the endpoint is throttled). Treat "can't determine" the same as
+      // "unreachable" below — fail open and let the request through. The
+      // earlier behavior left setupComplete=false on any non-2xx, which turned
+      // a single hiccup into a site-wide redirect into the setup wizard.
+      return NextResponse.next();
     }
+    const body = (await res.json()) as { setupComplete?: boolean };
+    setupComplete = body.setupComplete === true;
   } catch {
     // Fastify unreachable (e.g. boot race): let the request through so the
     // user sees Next's normal error path instead of a redirect loop.
