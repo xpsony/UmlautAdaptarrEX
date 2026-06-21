@@ -27,7 +27,7 @@ import {
 } from "@/server/prowlarr-helpers";
 import { parseOrReply } from "./_helpers";
 import { handleSetupSubmit } from "./_setup-handler";
-import { resolveProxyPortEnv } from "@/lib/ports";
+import { resolveLegacyApiPort, resolveProxyPortEnv } from "@/lib/ports";
 
 const DEFAULT_PROXY_PORT = 5006;
 const DEFAULT_PROXY_USERNAME = "UmlautAdaptarr";
@@ -79,22 +79,29 @@ async function getSetupStatus(): Promise<{
   setupComplete: boolean;
   prowlarrConfig: { host: string | null; configured: boolean };
   proxyDefaults: { port: number; username: string; portEnvManaged: boolean };
+  legacyApiPort: number;
 }> {
   const setting = await loadSetting();
   const envProxyPort = resolveProxyPortEnv();
+  const setupComplete = setting?.setupComplete ?? false;
+  // Once setup is complete these prefill fields are no longer needed by the
+  // wizard, so don't leak the persisted Prowlarr host / proxy username to an
+  // unauthenticated caller. Keep the `configured` boolean and the response
+  // shape intact; emit safe placeholders for the sensitive fields.
   return {
-    setupComplete: setting?.setupComplete ?? false,
+    setupComplete,
     // Wizard pre-fills the persisted Prowlarr host without leaking the API key.
     // The server resolves the key when the UI sends `useStored: true`.
     prowlarrConfig: {
-      host: setting?.prowlarrHost ?? null,
+      host: setupComplete ? null : (setting?.prowlarrHost ?? null),
       configured: isProwlarrConfigured(setting),
     },
     proxyDefaults: {
       port: envProxyPort ?? setting?.proxyPort ?? DEFAULT_PROXY_PORT,
-      username: setting?.proxyUsername ?? DEFAULT_PROXY_USERNAME,
+      username: setupComplete ? "" : (setting?.proxyUsername ?? DEFAULT_PROXY_USERNAME),
       portEnvManaged: envProxyPort !== null,
     },
+    legacyApiPort: resolveLegacyApiPort(),
   };
 }
 
@@ -299,10 +306,10 @@ async function postSetup(req: FastifyRequest, reply: FastifyReply): Promise<void
 export async function setupRoutes(app: FastifyInstance): Promise<void> {
   const rateLimited = { config: { rateLimit: SETUP_RATE_LIMIT } } as const;
 
-  app.get("/api/auth/setup-status", getSetupStatus);
+  app.get("/api/auth/setup-status", rateLimited, getSetupStatus);
   app.post("/api/auth/prowlarr/preview", rateLimited, postProwlarrPreview);
   app.delete("/api/auth/prowlarr", rateLimited, deleteProwlarr);
-  app.get("/api/auth/plugins", getPlugins);
+  app.get("/api/auth/plugins", rateLimited, getPlugins);
   app.post("/api/auth/test-tmdb-key", rateLimited, postTestTmdbKey);
   app.post("/api/auth/test-tvdb-key", rateLimited, postTestTvdbKey);
   app.post("/api/auth/prowlarr/test", rateLimited, postProwlarrTest);

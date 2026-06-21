@@ -151,6 +151,20 @@ describe("getSession", () => {
     expect(updateArgs.where).toEqual({ id: "good" });
     expect(updateArgs.data.lastUsed).toBeInstanceOf(Date);
   });
+
+  it("skips the lastUsed write when it was refreshed recently (throttle)", async () => {
+    mockSession.findUnique.mockResolvedValueOnce({
+      id: "good",
+      userId: "user-2",
+      expiresAt: new Date(Date.now() + 60_000),
+      // Refreshed a few seconds ago — well inside the throttle window.
+      lastUsed: new Date(Date.now() - 5_000),
+    });
+
+    const result = await getSession("good");
+    expect(result).toEqual({ id: "good", userId: "user-2" });
+    expect(mockSession.update).not.toHaveBeenCalled();
+  });
 });
 
 describe("revokeSession", () => {

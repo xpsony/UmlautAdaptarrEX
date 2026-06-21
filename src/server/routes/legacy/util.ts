@@ -75,7 +75,12 @@ export function isApiKeyValid(
   opts: { fromLoopback?: boolean } = {},
 ): boolean {
   const expected = getAppState().settings.appApiKey;
-  if (!expected) return true; // legacy behavior: empty key = open access
+  // Legacy behavior (byte-compatible with the .NET predecessor and covered by
+  // an explicit unit test): an empty/unset appApiKey means "no auth configured"
+  // and grants open access. This is intentional wire-compat, NOT an oversight —
+  // changing it to fail-closed is a deliberate product decision that belongs in
+  // an explicit opt-in setting, not a silent default flip. See SECURITY notes.
+  if (!expected) return true;
   // The "_" sentinel is used by the co-hosted HTTP-proxy on :5006 when no
   // appApiKey is configured. Accept it ONLY for loopback callers — never
   // from the public network, where it would otherwise be a free auth bypass.
@@ -143,12 +148,17 @@ export async function recordRequest(
 ): Promise<void> {
   try {
     const apiKeyTail = params.apiKey.slice(-6);
+    // `domain` and `query` derive from the attacker-controllable request path,
+    // so cap both before persisting to avoid storing unbounded blobs.
+    const MAX_FIELD_LEN = 255;
+    const domain = params.domain.split("/")[0]!.slice(0, MAX_FIELD_LEN);
+    const query = params.query === null ? null : params.query.slice(0, MAX_FIELD_LEN);
     await prisma.requestHistory.create({
       data: {
         apiKey: apiKeyTail,
-        domain: params.domain.split("/")[0]!,
+        domain,
         type: params.type,
-        query: params.query,
+        query,
         externalId: params.externalId,
         status: params.status,
         durationMs: params.durationMs,

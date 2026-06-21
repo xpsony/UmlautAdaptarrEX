@@ -61,6 +61,9 @@ export function useProwlarrImport(
   const [overwriteConfirm, setOverwriteConfirm] =
     useState<OverwriteState>(emptyOverwrite);
   const [emptyReason, setEmptyReason] = useState<EmptyReason>("none");
+  // Guards the pre-submit list fetch so the submit button can't be
+  // double-clicked before importMut.isPending flips.
+  const [checking, setChecking] = useState(false);
 
   const previewMut = useMutation({
     mutationFn: () =>
@@ -125,8 +128,12 @@ export function useProwlarrImport(
   // On open: load config, then preview with stored creds.
   useEffect(() => {
     if (!open) return;
+    // Guard against the dialog closing before the fetch settles; without this
+    // we'd setState on a closed dialog (stale config / spurious stage change).
+    let ignore = false;
     apiFetch<ProwlarrConfig>(CONFIG_ENDPOINT)
       .then((c) => {
+        if (ignore) return;
         setConfig(c);
         if (c.configured) {
           previewMut.mutate();
@@ -136,10 +143,14 @@ export function useProwlarrImport(
         }
       })
       .catch(() => {
+        if (ignore) return;
         setConfig({ host: null, configured: false });
         setEmptyReason("none");
         setStage("empty");
       });
+    return () => {
+      ignore = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -243,26 +254,32 @@ export function useProwlarrImport(
   };
 
   const handleSubmit = async () => {
+    if (checking || importMut.isPending) return;
     const selections = buildSelections();
     if (!selections) return;
 
-    // Look up existing instances to surface an overwrite confirmation.
-    let existing: ExistingInstance[] = [];
+    setChecking(true);
     try {
-      existing = await apiFetch<ExistingInstance[]>("/api/admin/instances");
-    } catch {
-      /* server upserts anyway, soft fallthrough on list-load failure */
-    }
-    const existingKeys = new Set(existing.map((i) => `${i.type}:${i.name}`));
-    const overwrites = selections
-      .filter((s) => existingKeys.has(`${s.type}:${s.name}`))
-      .map((s) => ({ type: s.type, name: s.name }));
+      // Look up existing instances to surface an overwrite confirmation.
+      let existing: ExistingInstance[] = [];
+      try {
+        existing = await apiFetch<ExistingInstance[]>("/api/admin/instances");
+      } catch {
+        /* server upserts anyway, soft fallthrough on list-load failure */
+      }
+      const existingKeys = new Set(existing.map((i) => `${i.type}:${i.name}`));
+      const overwrites = selections
+        .filter((s) => existingKeys.has(`${s.type}:${s.name}`))
+        .map((s) => ({ type: s.type, name: s.name }));
 
-    if (overwrites.length > 0) {
-      setOverwriteConfirm({ open: true, overwrites, selections });
-      return;
+      if (overwrites.length > 0) {
+        setOverwriteConfirm({ open: true, overwrites, selections });
+        return;
+      }
+      importMut.mutate(selections);
+    } finally {
+      setChecking(false);
     }
-    importMut.mutate(selections);
   };
 
   const toggleApp = (id: number) => {
@@ -289,7 +306,10 @@ export function useProwlarrImport(
     preview != null &&
     preview.apps.length > 0 &&
     selectedIds.size === preview.apps.length;
-  const submitting = importMut.isPending;
+  // `checking` covers the pre-submit list fetch; folding it in keeps the
+  // submit button disabled (and spinning) across that gap, closing the
+  // double-submit window.
+  const submitting = importMut.isPending || checking;
   const isLoadingPreview = previewMut.isPending && !preview;
 
   return {

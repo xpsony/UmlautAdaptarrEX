@@ -3,14 +3,19 @@ import {parseProwlarrApplications} from "@/arr/prowlarr";
 import {isMaskedSecret} from "@/lib/secrets";
 
 describe("isMaskedSecret", () => {
-    it("recognizes asterisk and bullet masks, leaves real keys alone", () => {
+    it("recognizes the bullet/middot sentinel and Prowlarr asterisk masks, leaves real keys alone", () => {
+        expect(isMaskedSecret("••••••••")).toBe(true);
+        expect(isMaskedSecret("••••")).toBe(true);
+        expect(isMaskedSecret("········")).toBe(true);
+        // Prowlarr masks API keys with asterisks — must be detected.
         expect(isMaskedSecret("********")).toBe(true);
         expect(isMaskedSecret("****")).toBe(true);
-        expect(isMaskedSecret("••••••••")).toBe(true);
-        expect(isMaskedSecret("........")).toBe(true);
         expect(isMaskedSecret("")).toBe(false);
         expect(isMaskedSecret("abcdef1234567890")).toBe(false);
         expect(isMaskedSecret("***real***")).toBe(false);
+        // The literal dot is excluded, so a legitimate dot-containing secret is
+        // not silently dropped on a settings round-trip.
+        expect(isMaskedSecret("........")).toBe(false);
     });
 });
 

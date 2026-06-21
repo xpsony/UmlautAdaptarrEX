@@ -410,7 +410,10 @@ describe("title-cache routes", () => {
   });
 
   it("recheck-missing iterates per-type and counts recoveries", async () => {
-    mockCache.findMany.mockResolvedValueOnce([]);
+    // One non-empty batch (< batch size) so the cursor loop processes it and
+    // then stops; the row shape is irrelevant since pickMissingCandidates is
+    // mocked. A second call would return [] and end the loop.
+    mockCache.findMany.mockResolvedValueOnce([{ id: "c1" }, { id: "c2" }]);
     mockPick.mockReturnValueOnce([
       { id: "c1", externalId: "1", type: "tv" },
       { id: "c2", externalId: "2", type: "movie" },

@@ -23,6 +23,59 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.4",
+    date: "2026-06-21",
+    title: "1.2.4: Stability & hardening — providers, proxy and matching fixes",
+    description:
+      "A stability and hardening release: title-provider syncs and the supervisor no longer hang on stalled connections, the indexer proxy and the admin/setup endpoints are hardened, and several title-matching and Web UI bugs are fixed. No database changes.",
+    items: [
+      {
+        type: "fix",
+        text: "Operation-mode descriptions now show the actually-configured ports: the mode texts in the setup wizard and Settings → Operation mode no longer hard-code 5005/5006 but use the resolved ports (UMLAUTADAPTARREX_*_PORT override > stored/default). Thanks to xopez (github.com/xopez) for reporting (#30).",
+      },
+      {
+        type: "fix",
+        text: "Title-provider syncs are more reliable: TVDB, pcjones and TMDB requests now have timeouts, so a single unresponsive provider can no longer hang a sync indefinitely.",
+      },
+      {
+        type: "fix",
+        text: "A failing title provider is now skipped so the remaining providers still contribute, instead of one error aborting the whole lookup chain mid-sync.",
+      },
+      {
+        type: "improvement",
+        text: "TVDB: concurrent lookups now share a single login instead of each firing its own, removing redundant logins and a token-refresh race that could drop titles during a large sync.",
+      },
+      {
+        type: "fix",
+        text: "Title matching: titles containing tabs or line breaks are no longer collapsed into a single word, and leading articles (Der/Die/Das/The/…) are now stripped regardless of capitalization, so lowercase titles produce the same search variations. Readarr external-ID titles now strip the configured language's articles, not just English \"the\".",
+      },
+      {
+        type: "fix",
+        text: "Startup and restart are more robust: a failed database migration launch now reports an error instead of hanging the boot forever, and a Web UI process that ignores the shutdown signal is now force-stopped so the Web UI port can no longer get stuck on restart. The admin Restart now waits for its response to be sent before tearing down.",
+      },
+      {
+        type: "improvement",
+        text: "Indexer proxy hardening: the plain-HTTP relay path now only allows ports 80/443 (matching the HTTPS-CONNECT path), cleans up its sockets and adds an idle timeout — closing an SSRF / open-relay gap and a socket leak.",
+      },
+      {
+        type: "improvement",
+        text: "Security: the unauthenticated setup-status endpoint is now rate-limited and no longer discloses the Prowlarr host or proxy username once setup is complete (the API key was never exposed). The Prowlarr admin actions (preview/import/test/save) are now rate-limited too.",
+      },
+      {
+        type: "improvement",
+        text: "Lower database load on large installs: the session last-used timestamp is now updated at most once every 5 minutes instead of on every request, and \"Recheck missing titles\" scans the cache in bounded batches instead of loading the whole table into memory at once. Request-history entries also cap the stored domain/query length.",
+      },
+      {
+        type: "fix",
+        text: "Web UI: fixed a race when closing the Prowlarr-import dialog while it was still loading, a double-submit window on import, and live-log rows shifting/flickering as new lines arrive. The dashboard and instances pages now show a clear error with a retry button when a request fails, instead of looking empty.",
+      },
+      {
+        type: "improvement",
+        text: "Security: added a Content-Security-Policy header, and generated passwords now use only cryptographically-secure randomness (no weak fallback, no character bias). Secret-mask detection was tightened so a real stored secret is never mistaken for the mask, while Prowlarr's asterisk masking is still recognized.",
+      },
+    ],
+  },
+  {
     version: "1.2.3",
     date: "2026-06-06",
     title: "1.2.3: TrueNAS app & unprivileged (non-root) container startup",

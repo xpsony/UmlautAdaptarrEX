@@ -69,7 +69,11 @@ export function LogsClient({ apiPort }: { apiPort: number }) {
           <Button
             size="sm"
             variant="outline"
-            onClick={() => downloadJsonl(filtered)}
+            onClick={() =>
+              // Strip the client-only `seq` so the export mirrors the server
+              // payload (LogItem) rather than leaking our internal key.
+              downloadJsonl(filtered.map(({ seq: _seq, ...rest }) => rest))
+            }
             disabled={filtered.length === 0}
             aria-label={t("download")}
           >
@@ -136,11 +140,11 @@ export function LogsClient({ apiPort }: { apiPort: number }) {
             />
           ) : (
             <div className="max-h-[70vh] scrollbar-thin overflow-y-auto font-mono text-xs">
-              {filtered.map((item, idx) => {
+              {filtered.map((item) => {
                 const ctx = parseContext(item.context);
                 return (
                   <div
-                    key={idx}
+                    key={item.seq}
                     className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-border/60 px-4 py-1.5 hover:bg-muted/40"
                   >
                     <span className="shrink-0 text-muted-foreground tabular-nums">

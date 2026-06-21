@@ -1,5 +1,27 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "@/lib/db";
+
+// These admin routes make live outbound HTTP to a user-supplied Prowlarr host
+// and/or persist credentials, so rate-limit them per-IP the same way the
+// public setup-wizard variants are limited. The window is generous enough for
+// normal admin interaction but caps how fast the endpoints can be driven as an
+// outbound-request / credential-write amplifier.
+const PROWLARR_ADMIN_RATE_LIMIT = {
+  max: 30,
+  timeWindow: "1 minute",
+  keyGenerator: (req: FastifyRequest): string => req.ip,
+  onExceeded: (req: FastifyRequest): void => {
+    req.log.warn(
+      {
+        ip: req.ip,
+        url: req.url,
+        method: req.method,
+        ua: req.headers["user-agent"] ?? null,
+      },
+      "prowlarr admin rate-limit exceeded",
+    );
+  },
+} as const;
 import { isProwlarrConfigured, loadSetting } from "@/lib/setting-helpers";
 import type { z } from "zod";
 import {
@@ -276,15 +298,25 @@ async function postPatchIndexers(req: FastifyRequest, reply: FastifyReply): Prom
 
 export async function prowlarrAdminRoutes(app: FastifyInstance): Promise<void> {
   const auth = { preHandler: requireAuth } as const;
+  // Authenticated routes that hit an external host or persist credentials also
+  // carry a per-IP rate limit (the read-only config GET/DELETE don't need it).
+  const authRateLimited = {
+    preHandler: requireAuth,
+    config: { rateLimit: PROWLARR_ADMIN_RATE_LIMIT },
+  } as const;
 
   app.get("/api/admin/instances/prowlarr/config", auth, getProwlarrConfig);
-  app.post("/api/admin/instances/prowlarr/test", auth, postProwlarrTest);
-  app.put("/api/admin/instances/prowlarr/config", auth, putProwlarrConfig);
+  app.post("/api/admin/instances/prowlarr/test", authRateLimited, postProwlarrTest);
+  app.put("/api/admin/instances/prowlarr/config", authRateLimited, putProwlarrConfig);
   app.delete("/api/admin/instances/prowlarr/config", auth, deleteProwlarrConfig);
-  app.post("/api/admin/instances/prowlarr/preview", auth, postProwlarrPreview);
-  app.post("/api/admin/instances/prowlarr/import", auth, postProwlarrImport);
-  app.get("/api/admin/instances/prowlarr/install-proxy/preview", auth, getInstallProxyPreview);
-  app.post("/api/admin/instances/prowlarr/install-proxy", auth, postInstallProxy);
-  app.get("/api/admin/instances/prowlarr/indexers", auth, getProwlarrIndexers);
-  app.post("/api/admin/instances/prowlarr/indexers/patch", auth, postPatchIndexers);
+  app.post("/api/admin/instances/prowlarr/preview", authRateLimited, postProwlarrPreview);
+  app.post("/api/admin/instances/prowlarr/import", authRateLimited, postProwlarrImport);
+  app.get(
+    "/api/admin/instances/prowlarr/install-proxy/preview",
+    authRateLimited,
+    getInstallProxyPreview,
+  );
+  app.post("/api/admin/instances/prowlarr/install-proxy", authRateLimited, postInstallProxy);
+  app.get("/api/admin/instances/prowlarr/indexers", authRateLimited, getProwlarrIndexers);
+  app.post("/api/admin/instances/prowlarr/indexers/patch", authRateLimited, postPatchIndexers);
 }

@@ -269,6 +269,8 @@ export class PcjonesApiProvider implements TitleProvider {
             : {}),
         },
         ...(payload !== undefined ? { body: JSON.stringify(payload) } : {}),
+        bodyTimeout: 30_000,
+        headersTimeout: 30_000,
       });
       // Read as text first so we can log a body preview if JSON parsing fails
       // (host returning an HTML error page is the common case).
@@ -300,7 +302,12 @@ export class PcjonesApiProvider implements TitleProvider {
         { method, url, durationMs: Math.round(durationMs), err },
         "pcjones request failed (network/timeout)",
       );
-      throw err;
+      // Return an empty result instead of rethrowing so a single network
+      // failure is treated like an empty lookup — consistent with TMDB/TVDB,
+      // which return null/empty rather than aborting the chain. statusCode 0
+      // is below the >=400 threshold callers check, and json:null is already
+      // handled by every caller's empty-response branch.
+      return { statusCode: 0, json: null, durationMs, bytes: 0 };
     }
   }
 

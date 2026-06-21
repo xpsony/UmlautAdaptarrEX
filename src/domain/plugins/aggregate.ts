@@ -74,9 +74,12 @@ export function aggregatePlugins(
     ? new RegExp(`[a-z0-9${wordCharsEscaped}]`, "i")
     : /[a-z0-9]/i;
   const articles = Array.from(articleSet);
+  // Case-insensitive: lowercase ("die hütte") and all-caps ("DIE HÜTTE")
+  // titles must get their leading article stripped too, matching
+  // `stripLeadingArticle` which also uses the `i` flag.
   const articleRegex =
     articles.length > 0
-      ? new RegExp(`^(${articles.map(escapeRegex).join("|")}) `)
+      ? new RegExp(`^(${articles.map(escapeRegex).join("|")}) `, "i")
       : null;
   const specialCharsKeepRegex = new RegExp(
     `[^a-zA-Z0-9 ${wordCharsEscaped}\\-]+`,

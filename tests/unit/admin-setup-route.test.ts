@@ -101,7 +101,7 @@ describe("GET /api/auth/setup-status", () => {
     expect(body.proxyDefaults.port).toBe(5006);
   });
 
-  it("reflects existing prowlarr config without leaking the api key", async () => {
+  it("gates the prowlarr host and proxy username once setup is complete, never leaking the api key", async () => {
     mockSetting.findUnique.mockResolvedValueOnce({
       setupComplete: true,
       prowlarrHost: "http://prowlarr",
@@ -114,10 +114,38 @@ describe("GET /api/auth/setup-status", () => {
       url: "/api/auth/setup-status",
     });
     const body = r.json() as {
-      prowlarrConfig: { host: string; configured: boolean };
+      prowlarrConfig: { host: string | null; configured: boolean };
+      proxyDefaults: { username: string };
+    };
+    // Prefill fields are only needed during the wizard; once setup is complete
+    // this unauthenticated endpoint must not disclose internal topology.
+    expect(body.prowlarrConfig.host).toBeNull();
+    expect(body.prowlarrConfig.configured).toBe(true);
+    expect(body.proxyDefaults.username).toBe("");
+    // The api key must never be echoed, regardless of setup state.
+    expect(JSON.stringify(body)).not.toContain("secret");
+  });
+
+  it("still prefills the prowlarr host during setup (setupComplete=false)", async () => {
+    mockSetting.findUnique.mockResolvedValueOnce({
+      setupComplete: false,
+      prowlarrHost: "http://prowlarr",
+      prowlarrApiKey: "secret",
+      proxyPort: 5006,
+      proxyUsername: "U",
+    });
+    const r = await app.inject({
+      method: "GET",
+      url: "/api/auth/setup-status",
+    });
+    const body = r.json() as {
+      prowlarrConfig: { host: string | null; configured: boolean };
+      proxyDefaults: { username: string };
     };
     expect(body.prowlarrConfig.host).toBe("http://prowlarr");
     expect(body.prowlarrConfig.configured).toBe(true);
+    expect(body.proxyDefaults.username).toBe("U");
+    expect(JSON.stringify(body)).not.toContain("secret");
   });
 
   it("reports the env proxy port and portEnvManaged=true when set", async () => {

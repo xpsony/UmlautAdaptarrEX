@@ -300,8 +300,15 @@ export class HttpProxyServer {
       return;
     }
 
+    // Idle timeout for the tunnel: if neither end sends data for this long,
+    // tear both sockets down so a half-open/abandoned CONNECT can't pin the
+    // upstream socket open indefinitely. 120s is comfortably above normal
+    // request/response latency while still reclaiming dead tunnels promptly.
+    const CONNECT_IDLE_TIMEOUT_MS = 120_000;
+
     const upstream = net.connect({ host, port }, () => {
       socket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+      socket.setTimeout(CONNECT_IDLE_TIMEOUT_MS);
       upstream.pipe(socket);
       socket.pipe(upstream);
     });
@@ -310,14 +317,23 @@ export class HttpProxyServer {
         { host, port, err },
         "http-proxy CONNECT upstream error",
       );
+      // Destroy upstream too; .end()-ing only the client left the upstream
+      // socket leaked on error.
+      upstream.destroy();
       try {
         socket.end("HTTP/1.1 502 Bad Gateway\r\n\r\n");
       } catch {
         /* socket may already be closed */
       }
     });
+    // Tear the client side down if upstream closes cleanly mid-stream.
+    upstream.on("close", () => socket.destroy());
     socket.on("error", () => upstream.destroy());
     socket.on("close", () => upstream.destroy());
+    socket.on("timeout", () => {
+      socket.destroy();
+      upstream.destroy();
+    });
   }
 
   private async handleHttp(
@@ -348,6 +364,26 @@ export class HttpProxyServer {
         this.opts.logger.warn(
           { host: url.host, remoteAddress: socket.remoteAddress },
           "http-proxy HTTP rejected: private/loopback target",
+        );
+        socket.end("HTTP/1.1 403 Forbidden\r\n\r\n");
+        return;
+      }
+      // Pin to the standard web ports. Without this the HTTP path is an open
+      // relay to any public host:port (25, 465, 6667, 22, …), the same
+      // relay-abuse case the CONNECT path rules out — keep the two symmetric.
+      const targetPort = url.port
+        ? parseInt(url.port, 10)
+        : url.protocol === "https:"
+          ? 443
+          : 80;
+      if (targetPort !== 80 && targetPort !== 443) {
+        this.opts.logger.warn(
+          {
+            host: url.host,
+            port: targetPort,
+            remoteAddress: socket.remoteAddress,
+          },
+          "http-proxy HTTP rejected: non-standard port (only 80/443 allowed)",
         );
         socket.end("HTTP/1.1 403 Forbidden\r\n\r\n");
         return;

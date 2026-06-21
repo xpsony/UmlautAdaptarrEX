@@ -234,10 +234,9 @@ describe("PcjonesApiProvider.fetchBulk", () => {
     expect(out.size).toBe(0);
   });
 
-  it("propagates network errors so the caller can decide", async () => {
+  it("returns an empty map on network errors so one failing provider can't abort the composite chain", async () => {
     requestMock.mockRejectedValueOnce(new Error("ECONNREFUSED"));
-    await expect(provider().fetchBulk("tv", ["1"])).rejects.toThrow(
-      /ECONNREFUSED/,
-    );
+    const out = await provider().fetchBulk("tv", ["1"]);
+    expect(out.size).toBe(0);
   });
 });

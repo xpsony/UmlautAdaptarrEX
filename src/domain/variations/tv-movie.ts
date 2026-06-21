@@ -120,9 +120,15 @@ export function generateForTvMovie(
     }
   }
 
-  const titleMatchVariations = Array.from(
-    new Set(allMatch.map((v) => v.toLowerCase())),
-  ).map((lower) => allMatch.find((v) => v.toLowerCase() === lower)!);
+  // Dedup case-insensitively in a single pass, keeping the first occurrence's
+  // original casing. (Was O(n^2): a Set of lowercased keys re-scanned with
+  // `allMatch.find` per key.)
+  const seenLower = new Map<string, string>();
+  for (const v of allMatch) {
+    const lower = v.toLowerCase();
+    if (!seenLower.has(lower)) seenLower.set(lower, v);
+  }
+  const titleMatchVariations = Array.from(seenLower.values());
 
   return {
     titleSearchVariations: Array.from(new Set(titleSearchVariations)),

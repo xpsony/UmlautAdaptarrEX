@@ -57,13 +57,13 @@
     "modeHint": "Choisissez comment UmlautAdaptarr doit fonctionner. Vous pouvez modifier ce choix plus tard dans les Paramètres.",
     "modeRecommendedBadge": "Recommandé",
     "modeProxyLabel": "Mode proxy",
-    "modeProxyDescription": "Seul le proxy HTTP sur le port 5006 est actif. L'API d'indexation héritée sur le port 5005 renvoie un message d'information.",
+    "modeProxyDescription": "Seul le proxy HTTP sur le port {proxyPort} est actif. L'API d'indexation héritée sur le port {legacyApiPort} renvoie un message d'information.",
     "modeProxyDetails": "Recommandé pour les nouvelles installations. Prowlarr se connecte via le proxy HTTP, qui réécrit les réponses des indexers de manière transparente. Sonarr/Radarr n'ont pas besoin de clés API supplémentaires, car la réécriture se fait au moment de la recherche.",
     "modeLegacyLabel": "API d'index (héritée)",
-    "modeLegacyDescription": "Seule l'API d'indexation héritée sur le port 5005 est active. Le port 5006 répond à chaque connexion par un message d'information.",
-    "modeLegacyDetails": "Compatible bit-à-bit avec le prédécesseur .NET. Sonarr/Radarr accèdent directement à 5005/'<apiKey>/<host>'/api. Choisissez ce mode si vous migrez une installation 1.x existante et que vous voulez conserver les URLs.",
+    "modeLegacyDescription": "Seule l'API d'indexation héritée sur le port {legacyApiPort} est active. Le port {proxyPort} répond à chaque connexion par un message d'information.",
+    "modeLegacyDetails": "Compatible bit-à-bit avec le prédécesseur .NET. Sonarr/Radarr accèdent directement à {legacyApiPort}/'<apiKey>/<host>'/api. Choisissez ce mode si vous migrez une installation 1.x existante et que vous voulez conserver les URLs.",
     "modeBothLabel": "Les deux",
-    "modeBothDescription": "Le proxy (5006) et l'API héritée (5005) sont tous deux actifs.",
+    "modeBothDescription": "Le proxy ({proxyPort}) et l'API héritée ({legacyApiPort}) sont tous deux actifs.",
     "modeBothDetails": "Exécute les deux voies en parallèle. Utile uniquement durant une migration progressive du mode hérité vers le mode proxy. En régime stable, cela double la surface d'attaque sans bénéfice.",
     "modeBothWarning": "Non recommandé — généralement, un seul des deux modes est utilisé à la fois.",
     "pluginsLanguage": {
@@ -437,8 +437,8 @@
       "save": "Enregistrer le mode",
       "saveAndRestart": "Enregistrer & redémarrer",
       "saved": "Mode de fonctionnement enregistré.",
-      "restartHint": "Note : l'API héritée sur le port 5005 bascule immédiatement. L'écouteur sur le port 5006 ne se relance qu'au prochain démarrage.",
-      "restartPending": "Mode enregistré. Un redémarrage du serveur est requis pour que l'écouteur du port 5006 prenne en compte le nouveau mode."
+      "restartHint": "Note : l'API héritée sur le port {legacyApiPort} bascule immédiatement. L'écouteur sur le port {proxyPort} ne se relance qu'au prochain démarrage.",
+      "restartPending": "Mode enregistré. Un redémarrage du serveur est requis pour que l'écouteur du port {proxyPort} prenne en compte le nouveau mode."
     },
     "restart": {
       "title": "Redémarrer le serveur",

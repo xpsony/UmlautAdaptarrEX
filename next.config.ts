@@ -26,6 +26,27 @@ const config: NextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
+          {
+            // Intentionally relaxed CSP. The Next.js App Router injects inline
+            // bootstrap scripts/styles and (in dev) uses eval for HMR, so a
+            // strict nonce-based policy would break it without a nonce
+            // pipeline we don't run here. 'unsafe-inline'/'unsafe-eval' on
+            // script/style are the cost of that. The real wins are
+            // object-src 'none', base-uri 'self' and frame-ancestors 'none'
+            // (clickjacking + base-tag injection). connect-src allows ws:/wss:
+            // for the live /ws/logs stream (cross-origin to the Fastify port).
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data:",
+              "connect-src 'self' ws: wss:",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "frame-ancestors 'none'",
+            ].join("; "),
+          },
         ],
       },
     ];

@@ -1,5 +1,40 @@
 # Changelog
 
+## 1.2.4 — 2026-06-21
+
+A stability and hardening release: title-provider syncs and the supervisor no longer hang on stalled connections, the indexer proxy and the admin/setup endpoints are hardened, and several title-matching and Web UI bugs are fixed. No schema changes.
+
+### Fixes
+
+- **Operation-mode descriptions show the configured ports** ([#30](https://github.com/xpsony/UmlautAdaptarrEX/issues/30)): the operation-mode texts in the setup wizard and Settings → Operation mode hard-coded `5005`/`5006` even when the ports had been remapped via `UMLAUTADAPTARREX_LEGACYAPI_PORT` / `UMLAUTADAPTARREX_PROXY_PORT`. They now interpolate the resolved ports (env override > stored/default). Thanks to [xopez](https://github.com/xopez) for reporting.
+- **Sync no longer hangs on a stalled provider:** TVDB, pcjones and TMDB requests now carry request timeouts (`bodyTimeout`/`headersTimeout`), so a single unresponsive title provider can no longer block one of the bulk lookup slots — and therefore the whole sync — indefinitely.
+- **One bad provider no longer aborts the chain:** each provider in the configured order is now isolated; a provider that throws (e.g. pcjones on a network error) is logged and skipped so the remaining providers still contribute, instead of discarding already-merged results.
+- **Title matching:** titles containing tabs or line breaks are no longer collapsed into a single word (whitespace is normalized before stripping), and leading articles (`Der`/`Die`/`Das`/`The`/…) are now stripped case-insensitively, so lowercase or all-caps titles produce the same search variations as title-cased ones. `getReadarrTitleForExternalId` now strips the active language pack's articles instead of only the English "the".
+- **Boot & restart robustness:** `runPrismaMigrate` now attaches an `error` handler (and uses `process.execPath`), so a failed `prisma migrate deploy` launch surfaces an error instead of hanging the boot forever. The supervisor now tracks the Next.js child's real exit, so a process that ignores `SIGTERM` is actually `SIGKILL`-ed within the grace window and can no longer orphan the Web UI port on restart. The admin Restart endpoint now ties teardown to the response being flushed instead of a fixed 250 ms timer.
+
+### Improvements
+
+- **Indexer proxy hardening:** the plain-HTTP relay path now restricts targets to ports 80/443 (matching the HTTPS-CONNECT allow-list), destroys upstream/client sockets on error or clean close, and adds a 120 s idle timeout — closing an SSRF / open-relay gap and a socket leak.
+- **Reduced database load on large installs:** the per-request session `lastUsed` write is now throttled to at most once every 5 minutes (it previously wrote on every authenticated request, including the UI's polling), and "Recheck missing titles" scans the title cache in bounded id-cursor batches instead of loading the entire table (with translations) into memory at once. Request-history rows now cap the stored `domain`/`query` length.
+- **O(n) variation dedup & regex reuse** in the title-variation hot path; minor allocation cleanups.
+
+### Security & maintenance
+
+- **Auth-surface hardening:** the unauthenticated `/api/auth/setup-status` and `/api/auth/plugins` endpoints are now rate-limited, and `setup-status` no longer discloses the persisted Prowlarr host or proxy username once setup is complete (the Prowlarr API key was never exposed). The Prowlarr admin routes (preview/import/test/save) are now rate-limited.
+- **Content-Security-Policy:** a CSP header was added (`object-src 'none'`, `base-uri 'self'`, `frame-ancestors 'none'`; script/style intentionally relaxed to keep the Next.js App Router working).
+- **Password generation:** the generated proxy/admin passwords now use cryptographically-secure randomness only (no `Math.random` fallback) and rejection-sampling to remove modulo bias.
+- **Secret-mask detection** was tightened so a legitimate stored secret is no longer mistaken for the mask sentinel and silently dropped on a settings round-trip, while Prowlarr's asterisk masking is still recognized.
+
+### Web UI fixes
+
+- Closing the Prowlarr-import dialog while it is still loading no longer races a state update onto the closed dialog, and a double-submit window on import was closed.
+- The live-log list now keys on a stable client-assigned id, fixing row shifting/flicker as new lines are prepended.
+- The dashboard and instances pages now render a distinct error state with a retry action when a request fails, instead of showing zeroed widgets / an empty list. A setup-step link is only rendered for a valid `http(s)` host.
+
+### Upgrade notes
+
+No action needed — this release has no schema changes and no configuration changes.
+
 ## 1.2.3 — 2026-06-06
 
 Lets the container run fully unprivileged and ships as a TrueNAS Community app. Until now the image required root at startup; root is now used only for the one-time `/data` ownership fix and the application process never runs as root. No schema changes.
