@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- **Headless mode:** setting `UMLAUTADAPTARREX_HEADLESS=1` runs the container without the Next.js Web UI and without the self-forking supervisor — a single Node process (Fastify + TCP proxy) that uses roughly 100-130 MB less RAM. Only works for an already-configured instance (the setup wizard still runs exclusively in the Web UI); the container refuses to boot headless against an unconfigured database, with an explanatory error. When enabled, the Web UI port (default 5007) can be dropped from the compose port mapping.
+
 ## 1.2.5 — 2026-07-10
 
 A maintenance release: all dependencies and the build toolchain are refreshed, CI and the dev container move to Node 26 (the production image already ran Node 26), and an automated Docker security rebuild keeps the published `:latest` image patched with OS/base-image security updates between releases. No schema changes, no configuration changes.

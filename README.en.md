@@ -265,6 +265,30 @@ Ports can be set via environment variables (precedence: branded variable > DB > 
 
 The `data/` DB is mounted into the container and contains the entire configuration.
 
+## Headless mode (no Web UI)
+
+For lean deployments, UmlautAdaptarrEX can run without the Next.js Web UI. The
+actual functionality (Prowlarr indexer proxy, legacy API, title lookup) runs
+entirely in Fastify and is independent of the UI — the \*Arrs talk to port 5005
+directly anyway.
+
+Enable it via the `UMLAUTADAPTARREX_HEADLESS=1` environment variable. This drops
+the Next.js process **and** the self-forking supervisor layer; the container
+runs as a single Node process. That cuts RAM usage from roughly 250 MB to
+about 120–150 MB.
+
+**Important:** Headless mode only works for an **already-configured** instance.
+The setup wizard runs exclusively in the Web UI. Steps:
+
+1. Start the container **without** `UMLAUTADAPTARREX_HEADLESS` once and finish
+   the setup wizard in the Web UI.
+2. Then set `UMLAUTADAPTARREX_HEADLESS=1` and restart.
+3. To change configuration, temporarily remove the variable.
+
+If the variable is set but the instance is not yet configured, the container
+refuses to start with an explanatory message. When running headless you can drop
+the Web UI port mapping (default 5007) from your compose file.
+
 ## Architecture
 
 How UmlautAdaptarrEX sits between the \*arrs, Prowlarr and the indexers.
