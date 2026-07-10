@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.2.5 — 2026-07-10
+
+A maintenance release: all dependencies and the build toolchain are refreshed, CI and the dev container move to Node 26 (the production image already ran Node 26), and an automated Docker security rebuild keeps the published `:latest` image patched with OS/base-image security updates between releases. No schema changes, no configuration changes.
+
+### Improvements
+
+- **Automatic Docker security rebuilds:** a scheduled workflow (`.github/workflows/security-rebuild.yml`) now rebuilds the latest stable release image every 2 days with a fresh base image and OS packages (`pull` + `no-cache`), so `:latest` picks up Debian/Node security patches without waiting for a new release. It publishes `:latest` and a `:<version>-<sha>` variant; the immutable `:<version>` tag from the release build is left untouched.
+
+### Security & maintenance
+
+- **Dependency refresh:** all dependencies bumped to their latest patch/minor — pnpm `11.3.0` → `11.11.0`, Fastify `5.8.5` → `5.10.0`, Next.js `16.2.9` → `16.2.10`, recharts `3.8.1` → `3.9.2`, lucide-react `1.21.0` → `1.24.0`, undici `8.5.0` → `8.7.0`, the Radix UI set, plus dev tooling (ESLint `10.6.0`, Vitest `4.1.10`, Vite `8.1.4`, Prettier `3.9.4`, tsx `4.23.0`, typescript-eslint `8.63.0`, Playwright `1.61.1`). TypeScript stays on the 6.x line (7.0 breaks the current type-check). `pnpm audit --prod` reports no known vulnerabilities in the shipped runtime dependencies.
+- **Node 26 across the board:** CI and the dev container now run on Node 26, matching the production image; the server bundle now targets Node 24. GitHub Actions bumped (`actions/checkout` v7, `actions/cache` v6).
+- **Dependency PRs target `dev`:** Dependabot now opens against the `dev` branch instead of `main`, so updates land on the active branch and auto-merge after CI (patch/minor; majors stay manual) — removing the `main`→`dev` back-merge.
+
+### Upgrade notes
+
+No action needed — this release has no schema changes and no configuration changes.
+
 ## 1.2.4 — 2026-06-21
 
 A stability and hardening release: title-provider syncs and the supervisor no longer hang on stalled connections, the indexer proxy and the admin/setup endpoints are hardened, and several title-matching and Web UI bugs are fixed. No schema changes.
