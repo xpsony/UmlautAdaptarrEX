@@ -1,7 +1,11 @@
 version: 2
 updates:
+  # PRs open against `dev` (the active integration branch), not the default
+  # branch `main`. Updates land where development happens and ride dev->main
+  # on the next release — no back-merge from main into dev.
   - package-ecosystem: "npm"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -14,6 +18,7 @@ updates:
 
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "weekly"
       day: "monday"
@@ -26,6 +31,7 @@ updates:
 
   - package-ecosystem: "docker"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "weekly"
       day: "monday"
