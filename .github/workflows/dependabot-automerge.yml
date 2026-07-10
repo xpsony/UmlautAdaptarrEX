@@ -4,11 +4,16 @@ name: Dependabot auto-merge
 # CI checks pass. Conservative policy: patch and minor bumps merge themselves;
 # major bumps stay open for manual review.
 #
+# Dependabot targets the `dev` branch (see .github/dependabot.yml), so
+# auto-merge completes into `dev`; releases carry the updates dev->main.
+#
 # GitHub-side prerequisites (configured once in the repo settings):
 #   1. Settings → General → Pull Requests → "Allow auto-merge" enabled.
-#   2. Settings → Branches → branch protection on `main` requires the
+#   2. Settings → Branches → branch protection on `dev` requires the
 #      "Typecheck, lint, test, build" check from verify.yml. Auto-merge waits
-#      for those required checks before completing the merge.
+#      for those required checks before completing the merge. (Without a
+#      required check on `dev`, GitHub has nothing to gate on and refuses to
+#      enable auto-merge.)
 #   3. Settings → Code and automation → Actions → General → Workflow
 #      permissions: "Read and write permissions" + "Allow GitHub Actions to
 #      create and approve pull requests".

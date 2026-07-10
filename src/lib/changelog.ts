@@ -23,6 +23,28 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.2.5",
+    date: "2026-07-10",
+    title:
+      "1.2.5: Maintenance — dependency refresh & automatic security rebuilds",
+    description:
+      "A maintenance release: all dependencies and the build toolchain refreshed, CI and the dev container moved to Node 26 (the production image already ran Node 26), and the published Docker :latest image is now automatically rebuilt every 2 days to pick up OS security patches between releases. No database changes.",
+    items: [
+      {
+        type: "improvement",
+        text: "The published Docker :latest image is now automatically rebuilt every 2 days with a fresh base image and OS packages, so it picks up Debian/Node security patches without waiting for a new release.",
+      },
+      {
+        type: "improvement",
+        text: "Dependency refresh: all packages bumped to their latest patch/minor — pnpm 11.11.0, Fastify 5.10.0, Next.js 16.2.10, recharts 3.9.2, lucide-react 1.24.0, undici 8.7.0, the Radix UI set, plus dev tooling (ESLint, Vitest, Vite, Prettier, tsx, Playwright). No known vulnerabilities in the shipped runtime dependencies.",
+      },
+      {
+        type: "improvement",
+        text: "Tooling: CI and the dev container now run on Node 26 (matching the production image) and the GitHub Actions were bumped; Dependabot dependency PRs now target the dev branch and auto-merge after CI.",
+      },
+    ],
+  },
+  {
     version: "1.2.4",
     date: "2026-06-21",
     title: "1.2.4: Stability & hardening — providers, proxy and matching fixes",

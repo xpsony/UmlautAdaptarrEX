@@ -2,7 +2,7 @@
 
 - Read [CLAUDE.md](../CLAUDE.md) before changing the project. It captures the architecture, ports, and gotchas.
 - The HTTP API surface is documented in [docs/api.md](../docs/api.md). Update it when you add or remove a route.
-- Package manager is **pnpm** (11.3.0, pinned). Node `>=24 <25`. Never replace `pnpm-lock.yaml` with npm/yarn output.
+- Package manager is **pnpm** (11.11.0, pinned). Node `>=24` (CI, Docker image and devcontainer run Node 26). Never replace `pnpm-lock.yaml` with npm/yarn output.
 - Validate non-trivial changes with `pnpm typecheck && pnpm lint && pnpm test`.
 - Prisma owns the SQLite DB at `data/umlautadaptarrex.db`. Schema changes go through `pnpm prisma:migrate` only,
   never by hand-editing files under `prisma/migrations/` (a PreToolUse hook blocks this for agents).

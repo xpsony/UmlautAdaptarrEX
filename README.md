@@ -24,15 +24,6 @@
 
 # UmlautAdaptarrEX
 
-> **Folgende Dinge müssen noch mehr getestet werden:**
->
-> - Legacy API (aktuell wird überlegt, ob dieser Modus entfernt wird)
-> - Die Sprach-Plugins Französisch und Schwedisch
->
-> Sollte ein Release nicht korrekt benannt werden bzw. Bugs auftreten, bitte erstmal PM an mich.
->
-> ---
->
 > **AI Disclaimer:** Das Projekt wurde mit Hilfe von AI erstellt, jedoch nicht "gevibt coded". Ich bin seit über 11 Jahren Software Entwickler und Security hat einen hohen Stellenwert.
 
 Vollständiger Rewrite des ursprünglichen .NET-Tools auf **Next.js + Fastify + Prisma + SQLite**.
@@ -195,7 +186,7 @@ Die App wird von [xopez](https://github.com/xopez) gepflegt, vielen Dank dafür.
 
 ### Variante 5: Bare-Metal / ohne Docker
 
-Funktioniert auf jedem Linux- oder macOS-Host mit Node `>= 24` und `pnpm 11.3.0`. Der Supervisor in
+Funktioniert auf jedem Linux- oder macOS-Host mit Node `>= 24` und `pnpm 11.11.0`. Der Supervisor in
 [`start.mjs`](start.mjs) übernimmt Migration, Fastify (Port 5005 + TCP-Proxy 5006) und Next.js (Port
 5007), ein Reverse-Proxy ist nicht nötig.
 
@@ -431,7 +422,7 @@ Für eine reproduzierbare Dev-Umgebung kannst du den enthaltenen Devcontainer nu
 2. `Dev Containers: Reopen in Container` ausführen.
 3. Nach dem Container-Start: `pnpm dev`.
 
-Der Container enthält Node 24 (Dev) bzw. Node 26 (Produktions-Image) + pnpm 11.3.0, leitet die Ports `5005/5006/5007` weiter und setzt empfohlene VS Code
+Der Container enthält Node 26 (Dev und Produktions-Image) + pnpm 11.11.0, leitet die Ports `5005/5006/5007` weiter und setzt empfohlene VS Code
 Extensions/Settings für TypeScript, Next.js, Prisma, Tailwind, ESLint/Prettier, Vitest und Playwright.
 Nach `pnpm dev` erreichst du die UI über Port `5007` und die API über Port `5005` (direkt oder über VS Code Port
 Forwarding). Der TCP-Proxy ist auf Port `5006` erreichbar.
