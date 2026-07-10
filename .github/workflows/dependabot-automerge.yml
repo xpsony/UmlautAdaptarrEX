@@ -1,22 +1,27 @@
 name: Dependabot auto-merge
 
-# Automatically approve and enable auto-merge for Dependabot PRs once required
-# CI checks pass. Conservative policy: patch and minor bumps merge themselves;
-# major bumps stay open for manual review.
+# Automatically enable auto-merge for Dependabot PRs once required CI checks
+# pass. Conservative policy: patch and minor bumps merge themselves; major
+# bumps stay open for manual review.
 #
 # Dependabot targets the `dev` branch (see .github/dependabot.yml), so
 # auto-merge completes into `dev`; releases carry the updates dev->main.
 #
+# No PR approval is recorded — auto-merge waits purely on the required status
+# check. This sidesteps the "GitHub Actions is not permitted to approve pull
+# requests" restriction, which blocks the GITHUB_TOKEN from approving PRs.
+#
 # GitHub-side prerequisites (configured once in the repo settings):
 #   1. Settings → General → Pull Requests → "Allow auto-merge" enabled.
 #   2. Settings → Branches → branch protection on `dev` requires the
-#      "Typecheck, lint, test, build" check from verify.yml. Auto-merge waits
-#      for those required checks before completing the merge. (Without a
-#      required check on `dev`, GitHub has nothing to gate on and refuses to
-#      enable auto-merge.)
+#      "Typecheck, lint, test, build" check from verify.yml and does NOT
+#      require a PR approval. Auto-merge then completes as soon as that check
+#      is green. (Without a required check on `dev`, GitHub has nothing to
+#      gate on and refuses to enable auto-merge.)
 #   3. Settings → Code and automation → Actions → General → Workflow
-#      permissions: "Read and write permissions" + "Allow GitHub Actions to
-#      create and approve pull requests".
+#      permissions: "Read and write permissions" (so the token can enable
+#      auto-merge). "Allow GitHub Actions to create and approve pull requests"
+#      is NOT needed — this workflow never approves.
 
 on:
   pull_request:
@@ -36,13 +41,6 @@ jobs:
         uses: dependabot/fetch-metadata@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Approve PR
-        if: steps.meta.outputs.update-type != 'version-update:semver-major'
-        run: gh pr review --approve "$PR_URL"
-        env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Enable auto-merge for patch and minor updates
         if: steps.meta.outputs.update-type != 'version-update:semver-major'
