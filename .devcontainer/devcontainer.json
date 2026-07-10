@@ -3,10 +3,15 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "26"
+    }
+  },
   "remoteUser": "node",
   "containerEnv": {
     "NEXT_TELEMETRY_DISABLED": "1",
-    "PNPM_VERSION": "11.3.0"
+    "PNPM_VERSION": "11.11.0"
   },
   "mounts": [
     "type=volume,source=umlautadaptarrex-pnpm-store,target=/home/node/.local/share/pnpm/store"

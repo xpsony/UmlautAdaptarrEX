@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.7
+# syntax=docker/dockerfile:1
 
 # ── Minimal runtime base ─────────────────────────────────────────────────────
 FROM node:26-bookworm-slim AS base-runtime
@@ -10,7 +10,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 
 # ── Builder base ─────────────────────────────────────────────────────────────
 FROM base-runtime AS base-builder
-RUN npm install -g pnpm@11.3.0 \
+RUN npm install -g pnpm@11.11.0 \
   && pnpm config set store-dir /pnpm/store
 
 # ── Full install (incl. devDeps for next build / tsup / prisma generate) ─────

@@ -190,7 +190,7 @@ The app is maintained by [xopez](https://github.com/xopez), many thanks for that
 
 ### Variant 5: Bare metal / without Docker
 
-Works on any Linux or macOS host with Node `>= 24` and `pnpm 11.3.0`. The supervisor in
+Works on any Linux or macOS host with Node `>= 24` and `pnpm 11.11.0`. The supervisor in
 [`start.mjs`](start.mjs) handles migration, Fastify (port 5005 + TCP proxy 5006) and Next.js (port
 5007); no reverse proxy is required.
 
@@ -426,7 +426,7 @@ For a reproducible dev environment, you can use the included devcontainer:
 2. Run `Dev Containers: Reopen in Container`.
 3. After the container has started: `pnpm dev`.
 
-The container ships Node 24 (dev) resp. Node 26 (production image) + pnpm 11.3.0, forwards ports `5005/5006/5007` and sets recommended VS Code
+The container ships Node 26 (dev and production image) + pnpm 11.11.0, forwards ports `5005/5006/5007` and sets recommended VS Code
 extensions/settings for TypeScript, Next.js, Prisma, Tailwind, ESLint/Prettier, Vitest and Playwright.
 After `pnpm dev` you reach the UI on port `5007` and the API on port `5005` (directly or via VS Code port
 forwarding). The TCP proxy is reachable on port `5006`.
