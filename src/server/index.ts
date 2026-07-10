@@ -40,7 +40,7 @@ import { ensureCsrfSecret, getCsrfSecret } from "@/lib/auth/csrf";
 import { SessionRetentionScheduler } from "./auth/session-retention";
 import { parseTrustProxy } from "./trust-proxy";
 import { applySecurityHeaders } from "./security-headers";
-import { resolveLegacyApiPort } from "@/lib/ports";
+import { resolveHeadless, resolveLegacyApiPort } from "@/lib/ports";
 
 export interface BootOptions {
   port: number;
@@ -56,6 +56,23 @@ export async function bootServer(opts: BootOptions): Promise<{
   state.setLogger(logger);
 
   await state.reloadSettings();
+
+  // Headless mode has no Web UI, so the first-run setup wizard cannot be run
+  // from inside the container. Refuse to boot against an unconfigured DB rather
+  // than come up half-configured. The `code` marker lets start.mjs print just
+  // this message (no stack trace). Operators complete setup once with the UI
+  // enabled, then switch to headless.
+  if (resolveHeadless() && !state.settings.setupComplete) {
+    throw Object.assign(
+      new Error(
+        "UMLAUTADAPTARREX_HEADLESS is set but setup is not complete. Start once " +
+          "without UMLAUTADAPTARREX_HEADLESS, finish the setup wizard in the Web " +
+          "UI, then re-enable headless mode.",
+      ),
+      { code: "HEADLESS_SETUP_INCOMPLETE" },
+    );
+  }
+
   await ensureCsrfSecret();
   // One-shot backfill for existing installations: when setup is already
   // complete but proxy credentials are still empty (migration from the old
