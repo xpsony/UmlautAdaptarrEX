@@ -1,0 +1,201 @@
+name: Security rebuild
+
+# Periodically rebuilds the latest STABLE release image so it picks up OS /
+# base-image security patches without a code change. A rebuild of a fixed
+# commit can only refresh OS layers — npm dependencies are pinned by
+# pnpm-lock.yaml and reach the image via the normal release cycle (Dependabot
+# merges into `dev`, then dev->main->release). Pushes `:latest` and an
+# immutable-per-release `:<version>-<sha>` variant; the plain `:<version>` tag
+# from release.yml is left untouched.
+#
+# Scheduled workflows only fire from the default branch (`main`), so this file
+# must reach `main` (via dev->main) for the cron trigger to activate.
+
+on:
+  schedule:
+    # Every 2 days at 04:00 UTC (~06:00 Europe/Berlin). The day-of-month step
+    # resets at month boundaries, which is fine for a security-patch cadence.
+    - cron: "0 4 */2 * *"
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Release tag to rebuild (default: latest stable release)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-rebuild
+  cancel-in-progress: false
+
+env:
+  # Same public Docker Hub image as release.yml / dev-image.yml; only the tags
+  # differ. Forks override the DOCKERHUB_IMAGE repository variable.
+  REGISTRY: docker.io
+  IMAGE_NAME: ${{ vars.DOCKERHUB_IMAGE || 'lexfi/umlautadaptarrex' }}
+
+jobs:
+  prepare:
+    name: Resolve latest stable release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      tag: ${{ steps.rel.outputs.tag }}
+      sha: ${{ steps.rel.outputs.sha }}
+      sha_full: ${{ steps.rel.outputs.sha_full }}
+    steps:
+      - name: Resolve release tag + commit
+        id: rel
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_TAG: ${{ github.event.inputs.release_tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          # `releases/latest` is the newest published, non-draft,
+          # non-prerelease release — exactly the stable line `:latest` tracks.
+          if [ -n "${INPUT_TAG:-}" ]; then
+            tag="$INPUT_TAG"
+          else
+            tag=$(gh api "repos/${{ github.repository }}/releases/latest" --jq '.tag_name')
+          fi
+          if [ -z "$tag" ] || [ "$tag" = "null" ]; then
+            echo "::error::Could not resolve a stable release tag to rebuild"
+            exit 1
+          fi
+          sha=$(gh api "repos/${{ github.repository }}/commits/${tag}" --jq '.sha')
+          {
+            echo "tag=${tag}"
+            echo "sha=${sha:0:7}"
+            echo "sha_full=${sha}"
+          } >> "$GITHUB_OUTPUT"
+          echo "Rebuilding release ${tag} @ ${sha:0:7}"
+
+  build:
+    name: Build ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Prepare platform pair
+        id: prep
+        shell: bash
+        run: |
+          platform="${{ matrix.platform }}"
+          echo "pair=${platform//\//-}" >> "$GITHUB_OUTPUT"
+
+      - name: Check out release tag
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push by digest (fresh base image, no cache)
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile
+          # `pull: true` fetches the newest node:26-bookworm-slim; `no-cache`
+          # forces every RUN layer to re-run so apt-get pulls current security
+          # updates instead of reusing a stale cached layer. That is the whole
+          # point of this workflow, so build cache is intentionally omitted.
+          pull: true
+          no-cache: true
+          platforms: ${{ matrix.platform }}
+          build-args: |
+            APP_VERSION=${{ needs.prepare.outputs.tag }}-${{ needs.prepare.outputs.sha }}
+          labels: |
+            org.opencontainers.image.title=UmlautAdaptarrEX
+            org.opencontainers.image.description=Umlaut/German-title proxy for Sonarr/Radarr/Lidarr/Readarr
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.url=https://hub.docker.com/r/${{ env.IMAGE_NAME }}
+            org.opencontainers.image.revision=${{ needs.prepare.outputs.sha_full }}
+            org.opencontainers.image.version=${{ needs.prepare.outputs.tag }}
+            org.opencontainers.image.licenses=MIT
+          # Push by content digest only; the merge job assembles the
+          # multi-arch manifest with the actual tags.
+          outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
+
+      - name: Export digest
+        shell: bash
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+
+      - name: Upload digest
+        uses: actions/upload-artifact@v7
+        with:
+          name: digests-${{ steps.prep.outputs.pair }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    name: Merge multi-arch manifest
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [prepare, build]
+    steps:
+      - name: Download digests
+        uses: actions/download-artifact@v8
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Compute image tag args
+        id: tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          tag="${{ needs.prepare.outputs.tag }}"
+          sha="${{ needs.prepare.outputs.sha }}"
+          # `:latest` = rolling stable line (moved forward with OS patches);
+          # `:<version>-<sha>` = the security-patched build of that release.
+          args=(-t "${base}:latest" -t "${base}:${tag}-${sha}")
+          echo "args=${args[*]}" >> "$GITHUB_OUTPUT"
+
+      - name: Create manifest list and push
+        working-directory: /tmp/digests
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker buildx imagetools create ${{ steps.tags.outputs.args }} \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+
+      - name: Inspect image
+        run: |
+          docker buildx imagetools inspect \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
