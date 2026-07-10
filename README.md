@@ -24,15 +24,6 @@
 
 # UmlautAdaptarrEX
 
-> **Folgende Dinge müssen noch mehr getestet werden:**
->
-> - Legacy API (aktuell wird überlegt, ob dieser Modus entfernt wird)
-> - Die Sprach-Plugins Französisch und Schwedisch
->
-> Sollte ein Release nicht korrekt benannt werden bzw. Bugs auftreten, bitte erstmal PM an mich.
->
-> ---
->
 > **AI Disclaimer:** Das Projekt wurde mit Hilfe von AI erstellt, jedoch nicht "gevibt coded". Ich bin seit über 11 Jahren Software Entwickler und Security hat einen hohen Stellenwert.
 
 Vollständiger Rewrite des ursprünglichen .NET-Tools auf **Next.js + Fastify + Prisma + SQLite**.

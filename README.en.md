@@ -24,15 +24,6 @@
 
 # UmlautAdaptarrEX
 
-> **The following still needs more testing:**
->
-> - Legacy API (removal of this mode is currently under consideration)
-> - The French and Swedish language plugins
->
-> If a release is not named correctly or bugs occur, please send me a PM first.
->
-> ---
->
 > **AI Disclaimer:** This project was built with the help of AI, but not "vibe coded". I have been a software developer for over 11 years and security is a high priority.
 
 Full rewrite of the original .NET tool on **Next.js + Fastify + Prisma + SQLite**.
