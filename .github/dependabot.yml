@@ -11,6 +11,11 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Europe/Berlin"
+    # Wait 3 days after a release before proposing it, so Dependabot never
+    # opens a PR for a version that the pnpm minimumReleaseAge policy would
+    # then reject in CI (ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION).
+    cooldown:
+      default-days: 3
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
@@ -24,6 +29,8 @@ updates:
       day: "monday"
       time: "06:15"
       timezone: "Europe/Berlin"
+    cooldown:
+      default-days: 3
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
@@ -37,6 +44,8 @@ updates:
       day: "monday"
       time: "06:30"
       timezone: "Europe/Berlin"
+    cooldown:
+      default-days: 3
     open-pull-requests-limit: 10
     labels:
       - "dependencies"
