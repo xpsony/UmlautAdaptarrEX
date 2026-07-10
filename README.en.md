@@ -274,8 +274,11 @@ directly anyway.
 
 Enable it via the `UMLAUTADAPTARREX_HEADLESS=1` environment variable. This drops
 the Next.js process **and** the self-forking supervisor layer; the container
-runs as a single Node process. That cuts RAM usage from roughly 250 MB to
-about 120–150 MB.
+runs as a single Node process. In this project's measurements (minimal config) a
+container dropped from ~160 MiB — and over 200 MiB while the Web UI is open — to
+~115 MiB headless, roughly **a third / ~50–90 MB** less. The Fastify core
+process remains the main consumer; the saving is essentially the removed Web UI
+process, and the exact amount depends on your configuration.
 
 **Important:** Headless mode only works for an **already-configured** instance.
 The setup wizard runs exclusively in the Web UI. Steps:

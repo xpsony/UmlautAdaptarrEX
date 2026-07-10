@@ -279,8 +279,13 @@ Titel-Lookup) läuft vollständig in Fastify und ist von der UI unabhängig — 
 
 Aktivierung über die Umgebungsvariable `UMLAUTADAPTARREX_HEADLESS=1`. Dann
 entfällt der Next.js-Prozess **und** die selbst-forkende Supervisor-Schicht;
-der Container läuft in einem einzigen Node-Prozess. Das senkt den
-RAM-Verbrauch von ca. 250 MB auf ca. 120–150 MB.
+der Container läuft in einem einzigen Node-Prozess. In Messungen dieses
+Projekts (minimale Konfiguration) sank der Container-Verbrauch von ca. 160 MiB
+— und über 200 MiB, während die Web-UI geöffnet ist — auf ca. 115 MiB im
+Headless-Betrieb, also grob **ein Drittel bzw. ~50–90 MB** weniger. Der
+Fastify-/Core-Prozess bleibt der Hauptverbraucher; eingespart wird im
+Wesentlichen der wegfallende Web-UI-Prozess. Der genaue Betrag hängt von deiner
+Konfiguration ab.
 
 **Wichtig:** Der Headless-Modus funktioniert nur für eine **bereits
 eingerichtete** Instanz. Der Einrichtungs-Assistent läuft ausschließlich in der
