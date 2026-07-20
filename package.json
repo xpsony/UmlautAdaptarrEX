@@ -92,7 +92,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^4.1.10",
-    "autoprefixer": "^10.5.2",
+    "autoprefixer": "^10.5.4",
     "concurrently": "^10.0.3",
     "cross-env": "^10.1.0",
     "eslint": "^10.6.0",
