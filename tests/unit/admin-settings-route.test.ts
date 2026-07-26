@@ -303,6 +303,25 @@ describe("PUT /api/admin/settings", () => {
     expect((r.json() as { error?: string }).error).toBe("proxy-port-env-managed");
     expect(mockSetting.update).not.toHaveBeenCalled();
   });
+
+  it("accepts a settings update when proxyPort in payload matches envProxyPort", async () => {
+    process.env.UMLAUTADAPTARREX_PROXY_PORT = "6006";
+    mockSetting.update.mockResolvedValueOnce({
+      id: 1,
+      logRetentionDays: 30,
+    });
+    const r = await app.inject({
+      method: "PUT",
+      url: "/api/admin/settings",
+      payload: { proxyPort: 6006, logRetentionDays: 30 },
+    });
+    expect(r.statusCode).toBe(200);
+    const call = mockSetting.update.mock.calls[0]?.[0] as {
+      data: Record<string, unknown>;
+    };
+    expect(call.data).not.toHaveProperty("proxyPort");
+    expect(call.data).toMatchObject({ logRetentionDays: 30 });
+  });
 });
 
 describe("POST /api/admin/settings/test-tmdb-key", () => {

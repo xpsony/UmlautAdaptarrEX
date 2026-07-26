@@ -98,7 +98,11 @@ async function putSettings(req: FastifyRequest, reply: FastifyReply): Promise<un
   // stable code instead of silently dropping it. Defense-in-depth: the UI also
   // disables the field.
   if (data.proxyPort !== undefined && envProxyPort !== null) {
-    return reply.code(409).send({ error: "proxy-port-env-managed" });
+    if (data.proxyPort === envProxyPort) {
+      delete data.proxyPort;
+    } else {
+      return reply.code(409).send({ error: "proxy-port-env-managed" });
+    }
   }
   const previousMode = getAppState().settings.operationMode;
   const cleaned = stripUndefined(data);

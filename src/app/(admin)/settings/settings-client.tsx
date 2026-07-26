@@ -47,7 +47,13 @@ export function SettingsClient() {
     onError: () => toast.error(tCommon("error")),
   });
 
-  const onSave = (data: SettingsUpdate) => saveMut.mutate(data);
+  const onSave = (data: SettingsUpdate) => {
+    const payload = { ...data };
+    if (settings.data?.proxyPortEnvManaged) {
+      delete payload.proxyPort;
+    }
+    saveMut.mutate(payload);
+  };
 
   return (
     <div className="space-y-6">
