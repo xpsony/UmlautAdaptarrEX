@@ -114,6 +114,20 @@ export function renameForMoviesAndTv(
       if (matchedNormalized >= targetCount) break;
     }
 
+    // When the variation matched without trailing punctuation (e.g. variation
+    // "Doctor Who 2005" against original "Doctor Who (2005) - S08E08..."),
+    // targetCount is reached on the last alphanumeric character ('5'), leaving
+    // trailing closing punctuation like ')' unconsumed. Advance endIdx over any
+    // trailing non-alphanumeric, non-separator characters so they don't leak
+    // into the suffix.
+    while (
+      endIdx < originalTitle.length &&
+      !ALPHANUMERIC_RE.test(originalTitle[endIdx]!) &&
+      !/[._ -]/.test(originalTitle[endIdx]!)
+    ) {
+      endIdx++;
+    }
+
     // Token-boundary check: a normalized prefix-match isn't enough; the
     // variation must end on a real token boundary in the *original* string.
     // Otherwise variation "Mike Renko 2" (norm "mikerenko2") matches the

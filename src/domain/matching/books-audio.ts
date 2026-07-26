@@ -112,6 +112,13 @@ export function renameForBooksAndAudio(
   if (!author.found || !title.found) return { rewrittenTitle: null };
 
   let endPos = Math.max(author.endOriginal, title.endOriginal);
+  while (
+    endPos < originalTitle.length &&
+    !/[A-Za-z0-9]/.test(originalTitle[endPos]!) &&
+    !TRAILING_DELIMS.includes(originalTitle[endPos]!)
+  ) {
+    endPos++;
+  }
   if (
     endPos < originalTitle.length &&
     TRAILING_DELIMS.includes(originalTitle[endPos]!)

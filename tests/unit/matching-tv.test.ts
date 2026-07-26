@@ -264,4 +264,26 @@ describe("renameForMoviesAndTv", () => {
     );
     expect(result.rewrittenTitle).not.toBeNull();
   });
+
+  it("skips trailing closing parentheses when variation without parentheses matches release title with parentheses", () => {
+    // Regression test: when searchItem has expectedTitle "Chronicles of Time (2005)"
+    // and variation "Chronicles of Time 2005" matches "Chronicles of Time (2005) - S08E08...",
+    // targetCount reached on '5' used to leave trailing ')' in the suffix,
+    // producing "Chronicles of Time (2005) ) - S08E08...".
+    const item = {
+      expectedTitle: "Chronicles of Time (2005)",
+      year: 2005,
+      titleMatchVariations: [
+        "Chronicles of Time (2005)",
+        "Chronicles of Time 2005",
+      ],
+    };
+    const result = renameForMoviesAndTv(
+      "Chronicles of Time (2005) - S08E08 - Mystery on the Stellar Express - Bluray-720p",
+      item,
+    );
+    expect(result.rewrittenTitle).toBe(
+      "Chronicles of Time (2005) - S08E08 - Mystery on the Stellar Express - Bluray-720p",
+    );
+  });
 });
