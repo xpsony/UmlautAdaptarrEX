@@ -13,7 +13,11 @@ import { requireAuth } from "@/server/auth/middleware";
 import { latestChangelog } from "@/lib/changelog";
 import { LoginSchema } from "@/schemas/auth";
 import { parseOrReply } from "./_helpers";
-import { csrfCookieOptions, sessionCookieOptions } from "./_auth-cookies";
+import {
+  csrfCookieOptions,
+  secretCsrfCookieOptions,
+  sessionCookieOptions,
+} from "./_auth-cookies";
 
 export async function loginRoutes(app: FastifyInstance): Promise<void> {
   app.post(
@@ -75,8 +79,8 @@ export async function loginRoutes(app: FastifyInstance): Promise<void> {
       // pre-auth cookie could otherwise stay valid for the full TTL.
       const session = await rotateSessionForUser(user.id);
       reply.setCookie(SESSION_COOKIE, session.id, sessionCookieOptions(req, SESSION_TTL_MS));
-      const csrf = reply.generateCsrf();
-      reply.setCookie(CSRF_COOKIE, csrf, csrfCookieOptions(req));
+      const csrf = reply.generateCsrf(secretCsrfCookieOptions(req, SESSION_TTL_MS));
+      reply.setCookie(CSRF_COOKIE, csrf, csrfCookieOptions(req, SESSION_TTL_MS));
 
       req.log.info({ username: user.username, userId: user.id, ip: req.ip }, "login ok");
       return { ok: true, csrf };

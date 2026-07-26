@@ -14,7 +14,11 @@ import { getPlugin } from "@/domain/plugins";
 import { resolveProxyPortEnv } from "@/lib/ports";
 import { parseOrReply } from "./_helpers";
 import { arrayToCsv } from "./instances-crud";
-import { csrfCookieOptions, sessionCookieOptions } from "./_auth-cookies";
+import {
+  csrfCookieOptions,
+  secretCsrfCookieOptions,
+  sessionCookieOptions,
+} from "./_auth-cookies";
 
 type ProwlarrInstance = NonNullable<SetupInput["prowlarrInstances"]>[number];
 type PluginSelection = NonNullable<SetupInput["plugins"]>[number];
@@ -161,8 +165,8 @@ function setSessionCookies(reply: FastifyReply, req: FastifyRequest, sessionId: 
   // and returns the JS-readable token. The token is duplicated into
   // `ua-csrf` (non-httpOnly) so the SPA can keep copying it into the
   // x-csrf-token header without a client-side refactor.
-  const csrf = reply.generateCsrf();
-  reply.setCookie(CSRF_COOKIE, csrf, csrfCookieOptions(req));
+  const csrf = reply.generateCsrf(secretCsrfCookieOptions(req, SESSION_TTL_MS));
+  reply.setCookie(CSRF_COOKIE, csrf, csrfCookieOptions(req, SESSION_TTL_MS));
   return csrf;
 }
 

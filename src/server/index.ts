@@ -125,6 +125,7 @@ export async function bootServer(opts: BootOptions): Promise<{
   // sameSite=lax already blocks.
   await app.register(csrfProtection, {
     sessionPlugin: "@fastify/cookie",
+    logLevel: "debug",
     getToken: (req) => {
       const h = req.headers["x-csrf-token"];
       return Array.isArray(h) ? h[0] : h;
@@ -134,6 +135,7 @@ export async function bootServer(opts: BootOptions): Promise<{
       sameSite: "lax",
       httpOnly: true,
       signed: true,
+      maxAge: Math.floor(SESSION_TTL_MS / 1000),
     },
   });
 
@@ -282,8 +284,15 @@ function installErrorHandlers(app: FastifyInstance, logger: AppLogger): void {
       status,
       err,
     };
+    const isCsrfError =
+      err.code === "FST_CSRF_MISSING_SECRET" || err.code === "FST_CSRF_INVALID_TOKEN";
     if (status >= 500) {
       req.log.error(ctx, "request failed");
+    } else if (isCsrfError) {
+      req.log.debug(
+        { reqId: req.id, method: req.method, url: redactApiKey(req.url), ip: req.ip, code: err.code },
+        "auth rejected: invalid CSRF token",
+      );
     } else {
       req.log.warn(ctx, "request rejected");
     }
@@ -304,7 +313,7 @@ function installErrorHandlers(app: FastifyInstance, logger: AppLogger): void {
     // Translate both CSRF codes into the SPA-known `csrf-invalid` shape so
     // `isSessionLost` triggers a clean redirect to /login instead of
     // surfacing the raw "Missing csrf secret" string in a toast.
-    if (err.code === "FST_CSRF_MISSING_SECRET" || err.code === "FST_CSRF_INVALID_TOKEN") {
+    if (isCsrfError) {
       void reply.code(403).send({ error: "csrf-invalid" });
       return;
     }

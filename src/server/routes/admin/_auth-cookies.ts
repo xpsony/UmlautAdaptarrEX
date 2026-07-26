@@ -1,4 +1,5 @@
 import type { FastifyRequest } from "fastify";
+import { SESSION_TTL_MS } from "@/lib/auth/session";
 
 // We mark cookies `Secure` exactly when the request itself arrived over
 // HTTPS. Self-hosted deployments routinely run plaintext on a LAN
@@ -14,7 +15,7 @@ function deriveSecure(req: FastifyRequest): boolean {
 
 export const sessionCookieOptions = (
   req: FastifyRequest,
-  maxAgeMs: number,
+  maxAgeMs: number = SESSION_TTL_MS,
 ) => ({
   httpOnly: true,
   sameSite: "lax" as const,
@@ -23,9 +24,25 @@ export const sessionCookieOptions = (
   maxAge: Math.floor(maxAgeMs / 1000),
 });
 
-export const csrfCookieOptions = (req: FastifyRequest) => ({
+export const csrfCookieOptions = (
+  req: FastifyRequest,
+  maxAgeMs: number = SESSION_TTL_MS,
+) => ({
   httpOnly: false,
   sameSite: "lax" as const,
   secure: deriveSecure(req),
   path: "/",
+  maxAge: Math.floor(maxAgeMs / 1000),
+});
+
+export const secretCsrfCookieOptions = (
+  req: FastifyRequest,
+  maxAgeMs: number = SESSION_TTL_MS,
+) => ({
+  httpOnly: true,
+  sameSite: "lax" as const,
+  secure: deriveSecure(req),
+  path: "/",
+  signed: true,
+  maxAge: Math.floor(maxAgeMs / 1000),
 });
