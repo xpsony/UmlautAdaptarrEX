@@ -17,6 +17,16 @@ updates:
     cooldown:
       default-days: 3
     open-pull-requests-limit: 10
+    ignore:
+      # better-sqlite3 has no direct importer — @prisma/adapter-better-sqlite3
+      # is the only consumer and pins ^12.6.0. Bumping the root dependency to
+      # 13.x therefore does not upgrade anything the app runs: pnpm keeps a 12.x
+      # copy for the adapter and installs 13.x as a second, unused copy whose
+      # implicit node-gyp step (13.x ships binding.gyp but dropped the
+      # prebuild-install script) breaks the toolchain-free runtime-deps image
+      # stage. Drop this ignore once the adapter's range includes 13.x.
+      - dependency-name: "better-sqlite3"
+        update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
       - "pnpm"

@@ -1,7 +1,13 @@
 # syntax=docker/dockerfile:1
 
 # ── Minimal runtime base ─────────────────────────────────────────────────────
-FROM node:26-bookworm-slim AS base-runtime
+# Trixie (glibc 2.41), not bookworm (2.36): better-sqlite3 >= 13 bundles its
+# linux prebuilds and the arm64 one is linked against GLIBC_2.38, so it fails to
+# dlopen on bookworm. Compiling from source is not an escape hatch — the
+# package's binding.gyp turns the build into a no-op whenever a prebuild file is
+# present, and lib/binding.js loads prebuilds/ before build/Release. Don't move
+# this back to bookworm without also pinning better-sqlite3 to 12.x.
+FROM node:26-trixie-slim AS base-runtime
 WORKDIR /app
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
@@ -38,13 +44,20 @@ WORKDIR /runtime
 COPY package.json ./root-package.json
 COPY docker/runtime-deps.names.json ./names.json
 COPY docker/runtime-deps.pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY docker/verify-native-deps.mjs ./verify-native-deps.mjs
 COPY prisma ./prisma
 COPY prisma.config.ts ./prisma.config.ts
 RUN node -e "const root=require('./root-package.json');const {packages}=require('./names.json');const all={...root.dependencies,...root.devDependencies};const deps={};for(const n of packages){if(!all[n])throw new Error('runtime-deps: \"'+n+'\" is not a dependency in the root package.json');deps[n]=all[n];}require('fs').writeFileSync('package.json',JSON.stringify({name:'umlautadaptarrex-runtime',private:true,dependencies:deps},null,2));" \
   && rm root-package.json names.json
+# No C++/Python toolchain in this stage on purpose: argon2 and better-sqlite3
+# arrive prebuilt (see docker/runtime-deps.pnpm-workspace.yaml). The verify step
+# then proves every native binding in the tree actually loads and runs, so a
+# missing or glibc-incompatible prebuild fails the build here rather than
+# crashing a released container on its first DB query.
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
     pnpm install --prod \
-  && pnpm exec prisma generate
+  && pnpm exec prisma generate \
+  && node verify-native-deps.mjs
 
 # ── Runtime ──────────────────────────────────────────────────────────────────
 FROM base-runtime AS runtime

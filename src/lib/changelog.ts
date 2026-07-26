@@ -43,7 +43,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "improvement",
-        text: "Dependency refresh: the whole stack bumped to current — Prisma 7.9, Next.js 16.2.11, React 19.2.8, argon2 0.45.1, nanoid 6, better-sqlite3 13, undici 8.9, recharts 3.10, lucide-react 1.26, next-intl 4.13.4, plus the Radix UI set and the dev tooling (ESLint 10.8, Prettier 3.9.6, Playwright 1.62). Dependabot now waits 3 days before proposing a freshly-published release.",
+        text: "Dependency refresh: the whole stack bumped to current — Prisma 7.9, Next.js 16.2.11, React 19.2.8, argon2 0.45.1, nanoid 6, undici 8.9, recharts 3.10, lucide-react 1.26, next-intl 4.13.4, plus the Radix UI set and the dev tooling (ESLint 10.8, Prettier 3.9.6, Playwright 1.62). Dependabot now waits 3 days before proposing a freshly-published release.",
       },
     ],
   },

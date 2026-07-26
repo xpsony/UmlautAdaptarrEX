@@ -115,7 +115,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          # `pull: true` fetches the newest node:26-bookworm-slim; `no-cache`
+          # `pull: true` fetches the newest node:26-trixie-slim; `no-cache`
           # forces every RUN layer to re-run so apt-get pulls current security
           # updates instead of reusing a stale cached layer. That is the whole
           # point of this workflow, so build cache is intentionally omitted.

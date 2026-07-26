@@ -1,8 +1,24 @@
 # Minimal pnpm workspace config for the production-image runtime-deps stage.
 # pnpm 11 blocks lifecycle/build scripts unless explicitly allowed here; these
-# four need to compile native bindings (argon2, better-sqlite3) or fetch/place
-# the Prisma engines. Mirror the root pnpm-workspace.yaml `allowBuilds` for the
+# four need to fetch native bindings (argon2, better-sqlite3) or fetch/place the
+# Prisma engines. Mirror the root pnpm-workspace.yaml `allowBuilds` for the
 # packages this minimal install actually pulls in.
+#
+# None of them compile: this stage deliberately carries no C++/Python toolchain
+# (unlike `deps`), so every native binding here must arrive prebuilt.
+#   - argon2 runs `node-gyp-build`, which picks the prebuild bundled in its
+#     tarball (prebuilds/<platform>-<arch>/).
+#   - better-sqlite3 12.x runs `prebuild-install`, which downloads a prebuilt
+#     binary into build/Release. Keep the root dependency inside the range
+#     @prisma/adapter-better-sqlite3 declares (^12.6.0): the adapter is the only
+#     consumer, and a root bump to 13.x installs a SECOND copy whose implicit
+#     node-gyp step (13.x ships binding.gyp but no install script) needs Python
+#     and fails this stage. See .github/dependabot.yml for the guard.
+#   - @prisma/engines / prisma only place the query-engine binaries (plain node).
+#
+# docker/verify-native-deps.mjs asserts every installed copy really loads, so a
+# missing or ABI/glibc-incompatible binding fails the build instead of the
+# container at boot.
 allowBuilds:
   "@prisma/engines": true
   argon2: true
