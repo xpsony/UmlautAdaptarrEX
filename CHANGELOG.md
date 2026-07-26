@@ -1,16 +1,26 @@
 # Changelog
 
-## 1.3.0 — 2026-07-11
+## 1.3.0 — 2026-07-26
 
-Adds an optional headless mode for lean, UI-less deployments. Headless is opt-in and off by default, so existing installs are unaffected. No schema changes.
+Adds an optional headless mode for lean, UI-less deployments, fixes two rename/settings bugs, and refreshes the whole dependency stack. Headless is opt-in and off by default, so existing installs are unaffected. No schema changes, no configuration changes.
 
 ### Features
 
 - **Headless mode:** setting `UMLAUTADAPTARREX_HEADLESS=1` runs the container without the Next.js Web UI and without the self-forking supervisor — a single Node process (Fastify + TCP proxy). In this project's Docker tests a minimally-configured container dropped from ~160 MiB (over 200 MiB with the Web UI open) to ~115 MiB headless, roughly a third / ~50-90 MB less depending on config. Only works for an already-configured instance (the setup wizard still runs exclusively in the Web UI); the container refuses to boot headless against an unconfigured database, with an explanatory error. When enabled, the Web UI port (default 5007) can be dropped from the compose port mapping.
 
+### Fixes
+
+- **Settings could no longer be saved when the proxy port is pinned by the environment:** with `UMLAUTADAPTARREX_PROXY_PORT` set, every save from the Settings page — on any tab, not just Advanced — was rejected with a `proxy-port-env-managed` conflict, because the form round-tripped the read-only, env-managed port value back to the server. The Web UI now omits the field entirely when the port is env-managed, and the server treats an unchanged value as a no-op instead of a conflict. Sending a *different* value while the env var is set is still rejected with 409, so the "your edit would silently have no effect" guard stays intact.
+- **Trailing punctuation leaked into renamed titles:** when the title variation that matched carried no parentheses but the release name did (e.g. variation "Chronicles of Time 2005" against `Chronicles.of.Time.(2005).S08E08...`), the closing `)` was left unconsumed and the rewrite emitted a doubled character — `Chronicles.of.Time.(2005).).S08E08...`. Closing delimiters (`)`, `]`, `}`) directly after the matched title are now skipped. Applies to both the movie/TV and the book/audiobook rename path; opening delimiters are deliberately left alone so a release named `Chronicles of Time(2005)...` still renames correctly.
+
+### Security & maintenance
+
+- **Dependency refresh:** the full stack bumped to current — Prisma `7.8.0` → `7.9.0` (client, CLI and the better-sqlite3 adapter), Next.js `16.2.10` → `16.2.11`, React `19.2.7` → `19.2.8`, argon2 `0.44.0` → `0.45.1`, nanoid `5.1.16` → `6.0.0`, better-sqlite3 `12.11.1` → `13.0.1`, undici `8.7.0` → `8.9.0`, recharts `3.9.2` → `3.10.0`, lucide-react `1.24.0` → `1.26.0`, react-hook-form `7.81.0` → `7.83.0`, next-intl `4.13.1` → `4.13.4`, fast-xml-parser `5.9.3` → `5.10.1`, ws `8.21.0` → `8.21.1`, `@fastify/cookie` `11.1.0` → `11.1.2`, `@tanstack/react-query` `5.101.2` → `5.101.4`, the Radix UI set, plus dev tooling (ESLint `10.8.0`, Prettier `3.9.6`, typescript-eslint `8.65.0`, Playwright `1.62.0`, Vite `8.1.5`, Tailwind `4.3.3`, postcss `8.5.23`, tsx `4.23.1`, autoprefixer `10.5.4`, concurrently `10.0.4`). TypeScript stays on the 6.x line (7.0 breaks the current type-check).
+- **CI & dependency automation:** `actions/setup-node` bumped to v7. Dependabot now applies a 3-day cooldown on all ecosystems, so freshly-published releases are not pulled in immediately, and auto-merge no longer needs a PR approval — it gates on the status check alone.
+
 ### Upgrade notes
 
-- No action needed — headless mode is opt-in and off by default. To use it, complete the setup wizard once with the Web UI enabled, then set `UMLAUTADAPTARREX_HEADLESS=1` and restart. Remove the variable temporarily whenever you need to change configuration in the Web UI.
+- No action needed — this release has no schema changes and no configuration changes. Headless mode is opt-in and off by default; to use it, complete the setup wizard once with the Web UI enabled, then set `UMLAUTADAPTARREX_HEADLESS=1` and restart. Remove the variable temporarily whenever you need to change configuration in the Web UI.
 
 ## 1.2.5 — 2026-07-10
 

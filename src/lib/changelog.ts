@@ -24,14 +24,26 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     version: "1.3.0",
-    date: "2026-07-11",
+    date: "2026-07-26",
     title: "1.3.0: Headless mode — run without the Web UI to save memory",
     description:
-      "Adds an optional headless mode for lean, UI-less deployments: setting UMLAUTADAPTARREX_HEADLESS=1 runs the container without the Next.js Web UI (and without the self-forking supervisor) as a single process. Headless is opt-in and off by default, so existing installs are unaffected. No database changes.",
+      "Adds an optional headless mode for lean, UI-less deployments: setting UMLAUTADAPTARREX_HEADLESS=1 runs the container without the Next.js Web UI (and without the self-forking supervisor) as a single process. Also fixes saving the settings when the proxy port is pinned by an environment variable, and a punctuation glitch in renamed titles. Headless is opt-in and off by default, so existing installs are unaffected. No database changes.",
     items: [
       {
         type: "feature",
         text: "Headless mode (UMLAUTADAPTARREX_HEADLESS=1): run without the Next.js Web UI and without the self-forking supervisor — a single Node process (Fastify + TCP proxy). In Docker tests a minimally-configured container dropped from ~160 MiB (over 200 MiB with the Web UI open) to ~115 MiB headless, roughly a third / ~50–90 MB less depending on config. Only works for an already-configured instance (the setup wizard still runs exclusively in the Web UI); the container refuses to boot headless against an unconfigured database with an explanatory error. When enabled, the Web UI port (default 5007) can be dropped from the compose port mapping.",
+      },
+      {
+        type: "fix",
+        text: "Settings can be saved again when the proxy port is pinned by UMLAUTADAPTARREX_PROXY_PORT: saving from any settings tab failed with a conflict error, because the form sent the read-only, environment-managed port value back to the server. The field is now left out of the request, and an unchanged value is accepted as a no-op. Setting a different port while the environment variable is active is still refused — it would have no effect anyway.",
+      },
+      {
+        type: "fix",
+        text: "Renamed titles no longer pick up a stray bracket: when the matching title alias had no parentheses but the release name did (e.g. alias \"Chronicles of Time 2005\" vs. release Chronicles.of.Time.(2005).S08E08…), the closing bracket was duplicated into the result — Chronicles.of.Time.(2005).).S08E08…. Affects movie/series and book/audiobook renaming.",
+      },
+      {
+        type: "improvement",
+        text: "Dependency refresh: the whole stack bumped to current — Prisma 7.9, Next.js 16.2.11, React 19.2.8, argon2 0.45.1, nanoid 6, better-sqlite3 13, undici 8.9, recharts 3.10, lucide-react 1.26, next-intl 4.13.4, plus the Radix UI set and the dev tooling (ESLint 10.8, Prettier 3.9.6, Playwright 1.62). Dependabot now waits 3 days before proposing a freshly-published release.",
       },
     ],
   },
