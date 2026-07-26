@@ -51,3 +51,18 @@ export function resolveWebUiPort(): number {
 export function resolveProxyPortEnv(): number | null {
   return parsePort(process.env.UMLAUTADAPTARREX_PROXY_PORT, "UMLAUTADAPTARREX_PROXY_PORT");
 }
+
+// Affirmative values (case-insensitive, trimmed) that enable headless mode.
+const HEADLESS_TRUTHY = ["1", "true", "yes", "on"];
+
+// True when UMLAUTADAPTARREX_HEADLESS is set to an affirmative value. Everything
+// else — unset, empty, whitespace-only, "0", "false", anything unrecognized —
+// is false. Reads process.env at call time so tests can vary the environment.
+//
+// NOTE: start.mjs mirrors this inline (that plain-.mjs supervisor runs before
+// the TS build is importable). Keep the two in sync.
+export function resolveHeadless(): boolean {
+  const raw = process.env.UMLAUTADAPTARREX_HEADLESS;
+  if (raw === undefined) return false;
+  return HEADLESS_TRUTHY.includes(raw.trim().toLowerCase());
+}

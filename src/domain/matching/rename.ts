@@ -37,6 +37,9 @@ export interface RenameResult {
 }
 
 const ALPHANUMERIC_RE = /[A-Za-z0-9]/;
+// Closing delimiters that can trail a matched title inside a release name.
+// Opening counterparts are excluded on purpose — see the skip loop below.
+const CLOSING_DELIM_RE = /[)\]}]/;
 const YEAR_TOKEN_RE = /(?<![A-Za-z0-9])(19|20)\d{2}(?![A-Za-z0-9])/g;
 // Release-format tags that title providers occasionally bake into alias
 // strings (TMDB/TVDB return e.g. "Galaxy Wars Reckoning 3D"). When such
@@ -112,6 +115,23 @@ export function renameForMoviesAndTv(
       matchedNormalized += normalizedCharContribution(c, pack);
       endIdx = i + 1;
       if (matchedNormalized >= targetCount) break;
+    }
+
+    // When the variation matched without trailing punctuation (e.g. variation
+    // "Chronicles of Time 2005" against original "Chronicles of Time (2005) -
+    // S08E08..."), targetCount is reached on the last alphanumeric character
+    // ('5'), leaving the ')' unconsumed — it would leak into the suffix and the
+    // rewrite would emit "Chronicles.of.Time.(2005).).S08E08...". Advance
+    // endIdx over it.
+    //
+    // Deliberately limited to *closing* delimiters: consuming an opening one
+    // would swallow the start of the suffix in "Chronicles of Time(2005)..."
+    // and land the token-boundary check below on '2', discarding a valid match.
+    while (
+      endIdx < originalTitle.length &&
+      CLOSING_DELIM_RE.test(originalTitle[endIdx]!)
+    ) {
+      endIdx++;
     }
 
     // Token-boundary check: a normalized prefix-match isn't enough; the

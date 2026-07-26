@@ -61,4 +61,38 @@ describe("renameForBooksAndAudio", () => {
     });
     expect(result.rewrittenTitle).toBe("Cafe - Brule-[MP3.German]");
   });
+
+  // The outer "[...]" in the expectations below is the formatter's own suffix
+  // wrapper — the inner brackets come from the release name.
+  it("skips a trailing closing paren before the quality tag", () => {
+    // The matched variation carries no parentheses, so the span ends on '5'
+    // and the ")" used to leak into the suffix as "-[) [MP3-128kbps]]".
+    const result = renameForBooksAndAudio(
+      "Jane Doe - Deep Water (2005) [MP3-128kbps]",
+      {
+        expectedAuthor: "Jane Doe",
+        expectedTitle: "Tiefes Wasser",
+        titleMatchVariations: ["Deep Water (2005)", "Deep Water 2005"],
+        authorMatchVariations: ["Jane Doe"],
+      },
+    );
+    expect(result.rewrittenTitle).toBe(
+      "Jane Doe - Tiefes Wasser-[[MP3-128kbps]]",
+    );
+  });
+
+  it("does not swallow an opening bracket that starts the quality tag", () => {
+    // Counterpart to the paren skip: with no separator between title and tag,
+    // consuming the "[" would drop it from the suffix and emit an unbalanced
+    // "-[MP3-128kbps]]".
+    const result = renameForBooksAndAudio("Jane Doe - Deep Water[MP3-128kbps]", {
+      expectedAuthor: "Jane Doe",
+      expectedTitle: "Tiefes Wasser",
+      titleMatchVariations: ["Deep Water"],
+      authorMatchVariations: ["Jane Doe"],
+    });
+    expect(result.rewrittenTitle).toBe(
+      "Jane Doe - Tiefes Wasser-[[MP3-128kbps]]",
+    );
+  });
 });

@@ -264,4 +264,66 @@ describe("renameForMoviesAndTv", () => {
     );
     expect(result.rewrittenTitle).not.toBeNull();
   });
+
+  it("skips trailing closing parentheses when variation without parentheses matches release title with parentheses", () => {
+    // Regression test: when searchItem has expectedTitle "Chronicles of Time (2005)"
+    // and variation "Chronicles of Time 2005" matches "Chronicles of Time (2005) - S08E08...",
+    // targetCount reached on '5' used to leave trailing ')' in the suffix,
+    // producing "Chronicles of Time (2005) ) - S08E08...".
+    const item = {
+      expectedTitle: "Chronicles of Time (2005)",
+      year: 2005,
+      titleMatchVariations: [
+        "Chronicles of Time (2005)",
+        "Chronicles of Time 2005",
+      ],
+    };
+    const result = renameForMoviesAndTv(
+      "Chronicles of Time (2005) - S08E08 - Mystery on the Stellar Express - Bluray-720p",
+      item,
+    );
+    expect(result.rewrittenTitle).toBe(
+      "Chronicles of Time (2005) - S08E08 - Mystery on the Stellar Express - Bluray-720p",
+    );
+  });
+
+  it("skips the trailing closing paren in a dot-separated scene name", () => {
+    // Same leak as above in the shape release names actually arrive in:
+    // dot-separated, no spaces. Used to produce "...(2005).).S08E08...".
+    const item = {
+      expectedTitle: "Chronicles of Time (2005)",
+      year: 2005,
+      titleMatchVariations: [
+        "Chronicles of Time (2005)",
+        "Chronicles of Time 2005",
+      ],
+    };
+    const result = renameForMoviesAndTv(
+      "Chronicles.of.Time.(2005).S08E08.Mystery.Bluray-720p",
+      item,
+    );
+    expect(result.rewrittenTitle).toBe(
+      "Chronicles.of.Time.(2005).S08E08.Mystery.Bluray-720p",
+    );
+  });
+
+  it("keeps renaming when an opening delimiter follows the match without a separator", () => {
+    // Guard for the trailing-punctuation skip: it must consume *closing*
+    // delimiters only. Swallowing the "(" / "[" here would land the
+    // token-boundary check on '2' and discard a valid match, leaving the
+    // release un-renamed entirely.
+    const item = {
+      expectedTitle: "Zeitchroniken",
+      year: 2005,
+      titleMatchVariations: ["Chronicles of Time"],
+    };
+    expect(
+      renameForMoviesAndTv("Chronicles of Time(2005) S08E08 Bluray-720p", item)
+        .rewrittenTitle,
+    ).toBe("Zeitchroniken (2005) S08E08 Bluray-720p");
+    expect(
+      renameForMoviesAndTv("Chronicles of Time[2005] S08E08 Bluray-720p", item)
+        .rewrittenTitle,
+    ).toBe("Zeitchroniken [2005] S08E08 Bluray-720p");
+  });
 });

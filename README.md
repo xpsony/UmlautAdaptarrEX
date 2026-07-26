@@ -270,6 +270,36 @@ Die Ports lassen sich per Umgebungsvariable setzen (Priorität: gebrandete Varia
 
 Die `data/`-DB wird in den Container gemountet und enthält die gesamte Konfiguration.
 
+## Headless-Modus (ohne Web-UI)
+
+Für schlanke Deployments lässt sich UmlautAdaptarrEX ohne die Next.js-Web-UI
+betreiben. Die eigentliche Funktion (Prowlarr-Indexer-Proxy, Legacy-API,
+Titel-Lookup) läuft vollständig in Fastify und ist von der UI unabhängig — die
+\*Arrs sprechen ohnehin direkt mit Port 5005.
+
+Aktivierung über die Umgebungsvariable `UMLAUTADAPTARREX_HEADLESS=1`. Dann
+entfällt der Next.js-Prozess **und** die selbst-forkende Supervisor-Schicht;
+der Container läuft in einem einzigen Node-Prozess. In Messungen dieses
+Projekts (minimale Konfiguration) sank der Container-Verbrauch von ca. 160 MiB
+— und über 200 MiB, während die Web-UI geöffnet ist — auf ca. 115 MiB im
+Headless-Betrieb, also grob **ein Drittel bzw. ~50–90 MB** weniger. Der
+Fastify-/Core-Prozess bleibt der Hauptverbraucher; eingespart wird im
+Wesentlichen der wegfallende Web-UI-Prozess. Der genaue Betrag hängt von deiner
+Konfiguration ab.
+
+**Wichtig:** Der Headless-Modus funktioniert nur für eine **bereits
+eingerichtete** Instanz. Der Einrichtungs-Assistent läuft ausschließlich in der
+Web-UI. Vorgehen:
+
+1. Container einmal **ohne** `UMLAUTADAPTARREX_HEADLESS` starten und den
+   Setup-Assistenten in der Web-UI abschließen.
+2. Danach `UMLAUTADAPTARREX_HEADLESS=1` setzen und neu starten.
+3. Zum Ändern der Konfiguration die Variable vorübergehend entfernen.
+
+Ist die Variable gesetzt, die Instanz aber noch nicht eingerichtet, verweigert
+der Container den Start mit einer erklärenden Meldung. Im Headless-Betrieb kann
+das Web-UI-Port-Mapping (Standard 5007) in der Compose-Datei entfallen.
+
 ## Architektur
 
 Wie UmlautAdaptarrEX zwischen den \*arrs, Prowlarr und den Indexern sitzt.

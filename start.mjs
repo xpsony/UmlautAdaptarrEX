@@ -51,11 +51,24 @@ const resolvePort = (candidates, fallback) => {
 const PORT = resolvePort([process.env.UMLAUTADAPTARREX_LEGACYAPI_PORT], 5005);
 const WEB_PORT = resolvePort([process.env.UMLAUTADAPTARREX_WEBUI_PORT], 5007);
 
+// Mirrors resolveHeadless() in src/lib/ports.ts — this plain-.mjs supervisor
+// runs before the TS build is importable, so the logic is duplicated here.
+// Affirmative (case-insensitive, trimmed): "1", "true", "yes", "on".
+const resolveHeadless = () => {
+  const raw = process.env.UMLAUTADAPTARREX_HEADLESS;
+  if (raw === undefined) return false;
+  return ["1", "true", "yes", "on"].includes(raw.trim().toLowerCase());
+};
+const HEADLESS = resolveHeadless();
+
 const RESTART_EXIT_CODE = 75;
 const SUPERVISOR_ENV = "UMLAUTADAPTARREX_SUPERVISED";
 
 // ── Parent (self-supervising loop) ───────────────────────────────────────────
-if (process.env[SUPERVISOR_ENV] !== "1") {
+// Headless runs in a single process: no parent monitor to fork (the UI restart
+// button — the only reason for the self-fork — does not exist without the UI),
+// so fall straight through to the work path below.
+if (!HEADLESS && process.env[SUPERVISOR_ENV] !== "1") {
   // Forward SIGTERM/SIGINT to the active child so it can shut down cleanly.
   let activeChild = null;
   let parentShuttingDown = false;
@@ -225,11 +238,22 @@ if (process.env[SUPERVISOR_ENV] !== "1") {
       await runPrismaMigrate();
       console.log(`[supervisor] starting Fastify gateway on :${PORT}…`);
       await startFastify();
-      console.log(`[supervisor] starting Next.js standalone on :${WEB_PORT}…`);
-      startNext();
+      if (HEADLESS) {
+        console.log("[supervisor] headless mode — Web UI disabled");
+      } else {
+        console.log(`[supervisor] starting Next.js standalone on :${WEB_PORT}…`);
+        startNext();
+      }
       console.log("[supervisor] ready");
     } catch (err) {
-      console.error("[supervisor] fatal startup error:", err);
+      // The HEADLESS_SETUP_INCOMPLETE marker is set by bootServer in
+      // src/server/index.ts — keep the string in sync with that throw site.
+      if (err && err.code === "HEADLESS_SETUP_INCOMPLETE") {
+        // Expected, actionable misconfiguration — print the message, no stack.
+        console.error(`[supervisor] ${err.message}`);
+      } else {
+        console.error("[supervisor] fatal startup error:", err);
+      }
       void shutdown(1);
     }
   })();

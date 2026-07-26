@@ -37,6 +37,10 @@ services:
       - UMLAUTADAPTARREX_LEGACYAPI_PORT=${UMLAUTADAPTARREX_LEGACYAPI_PORT:-5005}
       - UMLAUTADAPTARREX_WEBUI_PORT=${UMLAUTADAPTARREX_WEBUI_PORT:-5007}
       - UMLAUTADAPTARREX_PROXY_PORT=${UMLAUTADAPTARREX_PROXY_PORT:-5006}
+      # Headless mode: run without the Next.js Web UI to save memory. Only for
+      # an already-configured instance (complete the setup wizard once with the
+      # UI first). When enabled you can also remove the WEBUI_PORT mapping above.
+      # - UMLAUTADAPTARREX_HEADLESS=1
       # Override the runtime UID/GID if you want files in ./data to be owned
       # by your host user instead of the default 1000:1000.
       # - PUID=1000
