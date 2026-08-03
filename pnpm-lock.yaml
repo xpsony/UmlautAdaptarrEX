@@ -34,8 +34,8 @@ importers:
         specifier: ^5.4.0
         version: 5.4.0(react-hook-form@7.83.0(react@19.2.8))
       '@prisma/adapter-better-sqlite3':
-        specifier: ^7.9.0
-        version: 7.9.0
+        specifier: ^7.9.1
+        version: 7.9.1
       '@prisma/client':
         specifier: ^7.9.0
         version: 7.9.0(prisma@7.9.0(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(better-sqlite3@12.11.1)(magicast@0.5.3)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(typescript@6.0.3))(typescript@6.0.3)
@@ -1171,8 +1171,8 @@ packages:
     engines: {node: '>=20'}
     hasBin: true
 
-  '@prisma/adapter-better-sqlite3@7.9.0':
-    resolution: {integrity: sha512-svUJDASC2X1MzFG1Wl2JQ5HcHVTxN8zZYj7quRIJ6P+Aa/+OXVkYooCu7WkypNceb91SoGbVeFiP8iMD3/3Ahg==}
+  '@prisma/adapter-better-sqlite3@7.9.1':
+    resolution: {integrity: sha512-EoAk+crcwbqjdhwjVehj1TaMx7X/zsR49cxjeukFs/g5frdJYYM3k8Q3xNQp032nvWb1L+RMBytn/4b/EYrNoA==}
 
   '@prisma/client-runtime-utils@7.9.0':
     resolution: {integrity: sha512-kMVmS4ZEy3xlkca+TfxOEm/ToVVlOS2x1Tc6/wIRf/HfczBqENtSPcKszy4ZpFNzjJ8SRKvlU5V0rrpoFw2KOg==}
@@ -1198,11 +1198,14 @@ packages:
   '@prisma/debug@7.9.0':
     resolution: {integrity: sha512-i0KdVQuKUE6N9NloHs+sUNAk2c9svR3myBndQbA3BoeoArsSpwtNgTdHZL+wBtCLCcdS2OOC/PKhgTe36jkF5A==}
 
+  '@prisma/debug@7.9.1':
+    resolution: {integrity: sha512-/cpVZ4itxtcgB8GHBvZtcmuEjq+lWsLrRJxFMbwZrT1RIdtuKmUm7PPGo/wzfbYpBrk+9WmmBE8CHJw2rybKDQ==}
+
   '@prisma/dev@0.24.14':
     resolution: {integrity: sha512-NhFO49O2JPTdzYiLHvceQn/HiwmcKF/iGV39ko3CpYsoGqS3rz3ko6gzuxFSIeHNwNJeuNcDexyyGeTO3DW80A==}
 
-  '@prisma/driver-adapter-utils@7.9.0':
-    resolution: {integrity: sha512-fFXujitfMyjk3kOd1Tbs5FXBm6i2OWwEhaP5lHgkUM99jHpPEQwCWj+z/WKPFq6EDMThE1zGzSlVegtR0Pmu2w==}
+  '@prisma/driver-adapter-utils@7.9.1':
+    resolution: {integrity: sha512-vmHehG7nn/heW32DXXpp13DxxAxVVe6n250oEt3dOL2E/4bt3olktKZN0mzSuxMMronyMSkbeW2uCOn3F4g8RQ==}
 
   '@prisma/engines-version@7.9.0-1.e922089b7d7502aff4249d5da3420f6fa55fc6ad':
     resolution: {integrity: sha512-2BsPPFksz3CQUXG6af3rVCtJKg6+JJGJTtfgu2fU8DdXhOfkBjulCq8mwybCd6ge0/jhZq2kOtLAbmUDMyI1nA==}
@@ -6225,9 +6228,9 @@ snapshots:
     dependencies:
       playwright: 1.62.0
 
-  '@prisma/adapter-better-sqlite3@7.9.0':
+  '@prisma/adapter-better-sqlite3@7.9.1':
     dependencies:
-      '@prisma/driver-adapter-utils': 7.9.0
+      '@prisma/driver-adapter-utils': 7.9.1
       better-sqlite3: 12.11.1
 
   '@prisma/client-runtime-utils@7.9.0': {}
@@ -6252,6 +6255,8 @@ snapshots:
 
   '@prisma/debug@7.9.0': {}
 
+  '@prisma/debug@7.9.1': {}
+
   '@prisma/dev@0.24.14(typescript@6.0.3)':
     dependencies:
       '@electric-sql/pglite': 0.4.3
@@ -6272,9 +6277,9 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@prisma/driver-adapter-utils@7.9.0':
+  '@prisma/driver-adapter-utils@7.9.1':
     dependencies:
-      '@prisma/debug': 7.9.0
+      '@prisma/debug': 7.9.1
 
   '@prisma/engines-version@7.9.0-1.e922089b7d7502aff4249d5da3420f6fa55fc6ad': {}
 
