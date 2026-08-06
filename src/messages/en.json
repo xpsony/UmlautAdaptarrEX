@@ -593,6 +593,7 @@
     "download": "Download as JSONL",
     "droppedHint": "{count} log lines were dropped due to throttling.",
     "noConnection": "Disconnected",
+    "reconnecting": "Reconnecting…",
     "emptyTitle": "Waiting for log lines",
     "emptyHint": "New entries from the server will stream in here.",
     "emptyFiltered": "No log lines match your filter.",

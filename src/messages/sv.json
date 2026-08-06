@@ -568,6 +568,7 @@
     "download": "Ladda ner som JSONL",
     "droppedHint": "{count} loggrader förkastades på grund av throttling.",
     "noConnection": "Frånkopplad",
+    "reconnecting": "Återansluter…",
     "emptyTitle": "Väntar på loggrader",
     "emptyHint": "Nya poster från servern strömmas in här.",
     "emptyFiltered": "Inga loggrader matchar ditt filter.",

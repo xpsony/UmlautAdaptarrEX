@@ -593,6 +593,7 @@
     "download": "Als JSONL herunterladen",
     "droppedHint": "{count} Log-Zeilen wurden wegen Drosselung verworfen.",
     "noConnection": "Getrennt",
+    "reconnecting": "Verbinde neu…",
     "emptyTitle": "Warte auf Log-Zeilen",
     "emptyHint": "Neue Einträge des Servers werden hier live angezeigt.",
     "emptyFiltered": "Keine Log-Zeilen passen zu deinem Filter.",

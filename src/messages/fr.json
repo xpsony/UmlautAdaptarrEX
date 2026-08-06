@@ -568,6 +568,7 @@
     "download": "Télécharger en JSONL",
     "droppedHint": "{count} lignes de journal ont été abandonnées en raison du throttling.",
     "noConnection": "Déconnecté",
+    "reconnecting": "Reconnexion…",
     "emptyTitle": "En attente de lignes de journal",
     "emptyHint": "Les nouvelles entrées du serveur sont diffusées ici en direct.",
     "emptyFiltered": "Aucune ligne de journal ne correspond à votre filtre.",
