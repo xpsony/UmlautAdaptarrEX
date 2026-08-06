@@ -20,7 +20,9 @@
     "themeDark": "Sombre",
     "themeSystem": "Système",
     "nav": "Navigation",
-    "openNav": "Ouvrir la navigation"
+    "openNav": "Ouvrir la navigation",
+    "navLabel": "Navigation principale",
+    "skipToContent": "Aller au contenu"
   },
   "pause": {
     "trigger": "Mettre en pause",
@@ -44,6 +46,7 @@
   "setup": {
     "title": "Configuration initiale",
     "intro": "Créez l'utilisateur administrateur, connectez Prowlarr et configurez les identifiants du proxy HTTP.",
+    "stepperLabel": "Étapes de configuration",
     "step1Title": "Compte administrateur",
     "step1Hint": "Ces identifiants vous permettent de vous connecter à l'interface d'administration.",
     "step2Title": "Connecter Prowlarr",
@@ -213,9 +216,11 @@
       "requestsHint": "Réparties par heure entre cache hits et misses.",
       "cacheHit": "Cache hit",
       "cacheMiss": "Cache miss",
+      "requestsChartAlt": "Graphique : requêtes des dernières 24 heures, réparties par heure entre cache hits et cache misses.",
       "renamesTitle": "Renommages (14 derniers jours)",
       "renamesHint": "Titres réécrits par jour.",
-      "renames": "Renommages"
+      "renames": "Renommages",
+      "renamesChartAlt": "Graphique : renommages des 14 derniers jours, titres réécrits par jour."
     }
   },
   "instances": {

@@ -76,6 +76,14 @@ export function AdminShell({
   return (
     <div className="flex min-h-screen bg-background">
       <ChangelogDialog />
+      {/* Skip link — first focusable element on the page, lets keyboard users
+          jump past the nav straight to the main content. Hidden until focused. */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+      >
+        {t("skipToContent")}
+      </a>
       {/* Desktop sidebar — md and up. */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
         <Link
@@ -91,7 +99,7 @@ export function AdminShell({
             </div>
           </div>
         </Link>
-        <nav className="flex-1 space-y-0.5 p-3">
+        <nav className="flex-1 space-y-0.5 p-3" aria-label={t("navLabel")}>
           {NAV.map((item) => (
             <NavLink
               key={item.href}
@@ -133,7 +141,7 @@ export function AdminShell({
                     </div>
                   </div>
                 </Link>
-                <nav className="flex-1 space-y-0.5 overflow-y-auto p-3">
+                <nav className="flex-1 space-y-0.5 overflow-y-auto p-3" aria-label={t("navLabel")}>
                   {NAV.map((item) => (
                     <NavLink
                       key={item.href}
@@ -168,7 +176,7 @@ export function AdminShell({
             <UserMenu locale={locale} username={username} />
           </div>
         </header>
-        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
+        <main id="main" className="flex-1 px-4 py-6 md:px-8 md:py-8">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>

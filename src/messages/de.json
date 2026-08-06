@@ -20,7 +20,9 @@
     "themeDark": "Dunkel",
     "themeSystem": "System",
     "nav": "Navigation",
-    "openNav": "Navigation öffnen"
+    "openNav": "Navigation öffnen",
+    "navLabel": "Hauptnavigation",
+    "skipToContent": "Zum Inhalt springen"
   },
   "pause": {
     "trigger": "Pausieren",
@@ -44,6 +46,7 @@
   "setup": {
     "title": "Erstkonfiguration",
     "intro": "Lege den Admin-Benutzer an, verbinde Prowlarr und konfiguriere die HTTP-Proxy-Zugangsdaten.",
+    "stepperLabel": "Einrichtungsschritte",
     "step1Title": "Admin-Konto",
     "step1Hint": "Mit diesen Zugangsdaten meldest du dich am Admin-UI an.",
     "step2Title": "Prowlarr verbinden",
@@ -216,9 +219,11 @@
       "requestsHint": "Stündlich aufgeteilt nach Cache-Treffern und -Fehlversuchen.",
       "cacheHit": "Cache-Treffer",
       "cacheMiss": "Cache-Miss",
+      "requestsChartAlt": "Diagramm: Anfragen der letzten 24 Stunden, stündlich aufgeteilt nach Cache-Treffern und Cache-Fehlversuchen.",
       "renamesTitle": "Umbenennungen (letzte 14 Tage)",
       "renamesHint": "Pro Tag umgeschriebene Titel.",
-      "renames": "Umbenennungen"
+      "renames": "Umbenennungen",
+      "renamesChartAlt": "Diagramm: Umbenennungen der letzten 14 Tage, pro Tag umgeschriebene Titel."
     }
   },
   "instances": {

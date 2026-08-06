@@ -20,7 +20,9 @@
     "themeDark": "Dark",
     "themeSystem": "System",
     "nav": "Navigation",
-    "openNav": "Open navigation"
+    "openNav": "Open navigation",
+    "navLabel": "Main navigation",
+    "skipToContent": "Skip to content"
   },
   "pause": {
     "trigger": "Pause",
@@ -44,6 +46,7 @@
   "setup": {
     "title": "First-run setup",
     "intro": "Create the admin user, connect Prowlarr, and configure the HTTP-Proxy credentials.",
+    "stepperLabel": "Setup steps",
     "step1Title": "Admin account",
     "step1Hint": "These credentials sign you in to the admin UI.",
     "step2Title": "Connect Prowlarr",
@@ -216,9 +219,11 @@
       "requestsHint": "Hourly split by cache hits and misses.",
       "cacheHit": "Cache hit",
       "cacheMiss": "Cache miss",
+      "requestsChartAlt": "Chart: requests over the last 24 hours, hourly split by cache hits and misses.",
       "renamesTitle": "Renames (last 14 days)",
       "renamesHint": "Titles rewritten per day.",
-      "renames": "Renames"
+      "renames": "Renames",
+      "renamesChartAlt": "Chart: renames over the last 14 days, titles rewritten per day."
     }
   },
   "instances": {

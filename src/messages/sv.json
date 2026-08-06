@@ -20,7 +20,9 @@
     "themeDark": "Mörkt",
     "themeSystem": "System",
     "nav": "Navigation",
-    "openNav": "Öppna navigering"
+    "openNav": "Öppna navigering",
+    "navLabel": "Huvudnavigering",
+    "skipToContent": "Hoppa till innehåll"
   },
   "pause": {
     "trigger": "Pausa",
@@ -44,6 +46,7 @@
   "setup": {
     "title": "Förstagångsinställning",
     "intro": "Skapa administratörskontot, anslut Prowlarr och konfigurera autentiseringsuppgifter för HTTP-proxyn.",
+    "stepperLabel": "Inställningssteg",
     "step1Title": "Administratörskonto",
     "step1Hint": "Med dessa uppgifter loggar du in i admin-gränssnittet.",
     "step2Title": "Anslut Prowlarr",
@@ -213,9 +216,11 @@
       "requestsHint": "Per timme, uppdelat på cache-träffar och missar.",
       "cacheHit": "Cache-träff",
       "cacheMiss": "Cache-miss",
+      "requestsChartAlt": "Diagram: förfrågningar under de senaste 24 timmarna, uppdelat per timme på cache-träffar och cache-missar.",
       "renamesTitle": "Namnändringar (senaste 14 dagar)",
       "renamesHint": "Omskrivna titlar per dag.",
-      "renames": "Namnändringar"
+      "renames": "Namnändringar",
+      "renamesChartAlt": "Diagram: namnändringar under de senaste 14 dagarna, omskrivna titlar per dag."
     }
   },
   "instances": {

@@ -172,14 +172,16 @@ export function DashboardClient() {
                 "insertBefore: object can not be found here" race. The
                 dynamic loading fallback covers chunk-load; recharts handles
                 an empty data array on its own until the query settles. */}
-            <RequestsChartInner
-              data={stats.data?.requestsHourly ?? []}
-              labels={{
-                hit: t("charts.cacheHit"),
-                miss: t("charts.cacheMiss"),
-              }}
-              locale={locale}
-            />
+            <div role="img" aria-label={t("charts.requestsChartAlt")} className="h-full w-full">
+              <RequestsChartInner
+                data={stats.data?.requestsHourly ?? []}
+                labels={{
+                  hit: t("charts.cacheHit"),
+                  miss: t("charts.cacheMiss"),
+                }}
+                locale={locale}
+              />
+            </div>
           </CardContent>
         </Card>
 
@@ -189,11 +191,13 @@ export function DashboardClient() {
             <CardDescription>{t("charts.renamesHint")}</CardDescription>
           </CardHeader>
           <CardContent className="h-64">
-            <RenamesChartInner
-              data={stats.data?.renamesDaily ?? []}
-              label={t("charts.renames")}
-              locale={locale}
-            />
+            <div role="img" aria-label={t("charts.renamesChartAlt")} className="h-full w-full">
+              <RenamesChartInner
+                data={stats.data?.renamesDaily ?? []}
+                label={t("charts.renames")}
+                locale={locale}
+              />
+            </div>
           </CardContent>
         </Card>
       </div>
