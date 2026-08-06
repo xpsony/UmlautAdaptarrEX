@@ -32,8 +32,17 @@ export function SettingsClient() {
     resolver: zodResolver(SettingsUpdateSchema),
   });
 
+  // State transitions this effect must handle without clobbering user input:
+  // - Fresh load: settings.data arrives once, form is untouched (not dirty) -> reset populates it.
+  // - Edit -> locale switch: router.refresh() (from the locale toggle) re-runs the
+  //   server prefetch, which hands the query client a fresh (but referentially new)
+  //   ["settings"] object via HydrationBoundary. The form is dirty, so the guard
+  //   below skips the reset and the in-progress edit survives.
+  // - Edit -> save: handled by saveMut.onSuccess below, not here.
+  // - Background refetch while clean: settings.data changes (e.g. server-normalized
+  //   values), form is not dirty, so the reset re-syncs the form to the latest data.
   useEffect(() => {
-    if (settings.data) form.reset(settings.data);
+    if (settings.data && !form.formState.isDirty) form.reset(settings.data);
   }, [settings.data, form]);
 
   const saveMut = useMutation({
@@ -44,6 +53,10 @@ export function SettingsClient() {
       }),
     onSuccess: () => {
       toast.success(t("saved"));
+      // Mark the just-saved values as the new clean baseline immediately: the
+      // dirty-guard above means a subsequent refetch can no longer reset the
+      // form, so without this the form would stay dirty forever after a save.
+      form.reset(form.getValues());
       void qc.invalidateQueries({ queryKey: ["settings"] });
     },
     onError: () => toast.error(tCommon("error")),
