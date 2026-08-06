@@ -2,29 +2,14 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import {
-  ArrowLeft,
-  ArrowRight,
-  ChevronDown,
-  Loader2,
-  Plug,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, Loader2, Plug } from "lucide-react";
 import type { PluginListEntry } from "@/schemas/plugins";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
@@ -58,10 +43,12 @@ export function PluginsStep({
         </CardHeader>
         <CardContent className="space-y-3">
           {!tmdbConfigured ? (
-            <div className="flex items-start gap-2 rounded-md border border-amber-300/40 bg-amber-50 p-3 text-sm dark:border-amber-700/40 dark:bg-amber-950/30">
-              <Plug className="mt-0.5 h-4 w-4 text-amber-700 dark:text-amber-400" />
-              <p>{t("pluginsTmdbBanner")}</p>
-            </div>
+            // Standing condition (missing TMDB key), not a transient event —
+            // role="status" instead of the warning variant's default "alert".
+            <Alert variant="warning" role="status">
+              <Plug className="h-4 w-4" />
+              <AlertDescription>{t("pluginsTmdbBanner")}</AlertDescription>
+            </Alert>
           ) : null}
           {!pluginList ? (
             <div className="flex items-center gap-2 text-muted-foreground">
@@ -168,23 +155,16 @@ function PluginLanguageGroup({
   );
 
   return (
-    <Collapsible
-      open={open}
-      onOpenChange={setOpen}
-      className="rounded-md border"
-    >
+    <Collapsible open={open} onOpenChange={setOpen} className="rounded-md border">
       <CollapsibleTrigger
         className={cn(
           "flex w-full items-center justify-between gap-3 px-3 py-2 text-sm",
-          "hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "hover:bg-accent/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
           "data-[state=open]:rounded-b-none",
         )}
       >
         <div className="flex items-center gap-2">
-          <Badge
-            variant="secondary"
-            className="font-mono text-[10px] uppercase tracking-wide"
-          >
+          <Badge variant="secondary" className="font-mono text-[10px] tracking-wide uppercase">
             {language}
           </Badge>
           <span className="font-medium">{languageLabel}</span>
@@ -207,10 +187,7 @@ function PluginLanguageGroup({
             const descSlug = p.descriptionKey.replace(/^plugins\./, "");
             const blocked = p.language !== "de" && !tmdbConfigured && !checked;
             return (
-              <li
-                key={`plugin-${p.id}`}
-                className="flex items-start gap-3 px-3 py-2.5"
-              >
+              <li key={`plugin-${p.id}`} className="flex items-start gap-3 px-3 py-2.5">
                 <Checkbox
                   id={`plugin-${p.id}`}
                   checked={checked}
@@ -226,17 +203,12 @@ function PluginLanguageGroup({
                     <Plug className="h-3.5 w-3.5 text-muted-foreground" />
                     <span className="font-medium">{tPlugins(nameSlug)}</span>
                     {p.defaultEnabled ? (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] uppercase tracking-wide"
-                      >
+                      <Badge variant="outline" className="text-[10px] tracking-wide uppercase">
                         {defaultBadge}
                       </Badge>
                     ) : null}
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {tPlugins(descSlug)}
-                  </span>
+                  <span className="text-xs text-muted-foreground">{tPlugins(descSlug)}</span>
                 </Label>
               </li>
             );

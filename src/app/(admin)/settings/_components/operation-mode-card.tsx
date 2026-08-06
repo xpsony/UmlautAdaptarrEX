@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { AlertTriangle, Loader2, Save } from "lucide-react";
 import { apiFetch } from "@/app/_lib/api-client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { OperationModePicker, type OperationMode } from "@/components/operation-mode-picker";
@@ -63,19 +64,23 @@ export function OperationModeCard() {
           proxyPort={proxyPort}
         />
         {dirty ? (
-          <div className="flex items-start gap-2 rounded-md border border-amber-300/40 bg-amber-50 p-3 text-xs dark:border-amber-700/40 dark:bg-amber-950/30">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
-            <p>{t("operationMode.restartHint", { legacyApiPort, proxyPort })}</p>
-          </div>
+          <Alert variant="warning">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              {t("operationMode.restartHint", { legacyApiPort, proxyPort })}
+            </AlertDescription>
+          </Alert>
         ) : null}
         {!dirty && restartRequired ? (
-          <div className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-amber-300/40 bg-amber-50 p-3 text-xs dark:border-amber-700/40 dark:bg-amber-950/30">
+          <Alert variant="warning" className="flex-wrap justify-between gap-3">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" />
-              <p>{t("operationMode.restartPending", { proxyPort })}</p>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                {t("operationMode.restartPending", { proxyPort })}
+              </AlertDescription>
             </div>
             <RestartServerButton variant="outline" size="sm" />
-          </div>
+          </Alert>
         ) : null}
         <div className="flex justify-end gap-2">
           {dirty ? (

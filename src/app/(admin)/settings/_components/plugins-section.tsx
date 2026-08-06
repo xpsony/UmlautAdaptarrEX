@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Loader2, Plug, RefreshCw } from "lucide-react";
 import { ApiError, apiFetch } from "@/app/_lib/api-client";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -92,10 +93,10 @@ export function PluginsSection() {
       </CardHeader>
       <CardContent className="space-y-4">
         {requiresResync ? (
-          <div className="flex items-start justify-between gap-3 rounded-md border border-amber-300/40 bg-amber-50 p-3 text-sm dark:border-amber-700/40 dark:bg-amber-950/30">
+          <Alert variant="warning" className="flex-wrap justify-between gap-3">
             <div className="flex items-start gap-2">
-              <RefreshCw className="mt-0.5 h-4 w-4 text-amber-700 dark:text-amber-400" />
-              <p>{t("resyncBanner")}</p>
+              <RefreshCw className="mt-0.5 h-4 w-4 shrink-0" />
+              <AlertDescription>{t("resyncBanner")}</AlertDescription>
             </div>
             <Button
               type="button"
@@ -110,14 +111,16 @@ export function PluginsSection() {
               )}
               {t("resyncNow")}
             </Button>
-          </div>
+          </Alert>
         ) : null}
 
         {showTmdbWarning ? (
-          <div className="flex items-start gap-2 rounded-md border border-amber-300/40 bg-amber-50 p-3 text-sm dark:border-amber-700/40 dark:bg-amber-950/30">
-            <Plug className="mt-0.5 h-4 w-4 text-amber-700 dark:text-amber-400" />
-            <p>{t("tmdbKeyRequired")}</p>
-          </div>
+          // Standing condition (missing TMDB key), not a transient event —
+          // role="status" instead of the warning variant's default "alert".
+          <Alert variant="warning" role="status">
+            <Plug className="h-4 w-4" />
+            <AlertDescription>{t("tmdbKeyRequired")}</AlertDescription>
+          </Alert>
         ) : null}
 
         {plugins.isLoading ? (
