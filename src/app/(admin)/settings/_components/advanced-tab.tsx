@@ -107,6 +107,21 @@ export function AdvancedTab({ form, data, onSave, saving }: AdvancedTabProps) {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
+                  <Label htmlFor="historyRetentionDays">{t("historyRetentionDays")}</Label>
+                  <FieldHint text={t("historyRetentionDaysHint")} />
+                </div>
+                <Input
+                  id="historyRetentionDays"
+                  type="number"
+                  min={1}
+                  max={365}
+                  {...form.register("historyRetentionDays", {
+                    valueAsNumber: true,
+                  })}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
                   <Label htmlFor="indexerTimeoutSeconds">{t("indexerTimeoutSeconds")}</Label>
                   <FieldHint text={t("indexerTimeoutSecondsHint")} />
                 </div>
