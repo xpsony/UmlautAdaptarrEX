@@ -47,11 +47,12 @@ export function DashboardClient() {
     queryKey: ["instances"],
     queryFn: () => apiFetch<Instance[]>("/api/admin/instances"),
   });
-  const runs = useQuery<SyncRun[]>({
+  const runs = useQuery<{ items: SyncRun[]; total: number }>({
     queryKey: ["sync-runs"],
-    queryFn: () => apiFetch<SyncRun[]>("/api/admin/sync-runs?take=8"),
+    queryFn: () => apiFetch("/api/admin/sync-runs?take=8"),
     refetchInterval: 5000,
   });
+  const recentRuns = runs.data?.items;
   const stats = useQuery<StatsResponse>({
     queryKey: ["dashboard-stats"],
     queryFn: () => apiFetch<StatsResponse>("/api/admin/stats"),
@@ -72,7 +73,7 @@ export function DashboardClient() {
   });
 
   const enabledInstances = instances.data?.filter((i) => i.enabled) ?? [];
-  const lastRun = runs.data?.[0] ?? null;
+  const lastRun = recentRuns?.[0] ?? null;
   const summary = stats.data?.summary;
   const isProwlarrConfigured = !!prowlarrConfig.data?.configured;
 
@@ -204,7 +205,12 @@ export function DashboardClient() {
 
       <InstancesOverviewCard instances={instances.data} loading={instances.isLoading} />
 
-      <RecentRunsCard runs={runs.data} loading={runs.isLoading} lastRun={lastRun} locale={locale} />
+      <RecentRunsCard
+        runs={recentRuns}
+        loading={runs.isLoading}
+        lastRun={lastRun}
+        locale={locale}
+      />
 
       <ProwlarrImportDialog
         open={importOpen}

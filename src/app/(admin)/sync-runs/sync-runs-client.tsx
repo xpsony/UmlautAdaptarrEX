@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { useQuery } from "@tanstack/react-query";
-import { Activity } from "lucide-react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Activity, Search } from "lucide-react";
 import { apiFetch } from "@/app/_lib/api-client";
+import { useDebouncedValue } from "@/app/_lib/use-debounced-value";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import {
@@ -16,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { ArrIcon, type ArrIconType } from "@/components/ui/arr-icon";
 import { HistoryPage } from "@/components/ui/history-page";
+import { TablePagination } from "@/components/ui/table-pagination";
 import { syncStatusVariant } from "@/app/(admin)/_lib/status-variant";
 import type { SyncRun } from "@/app/(admin)/_lib/sync-types";
 
@@ -24,25 +27,35 @@ export function SyncRunsClient() {
   const tCommon = useTranslations("common");
   const tBoundaries = useTranslations("boundaries");
   const locale = useLocale();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const debouncedSearch = useDebouncedValue(search.trim());
 
-  const runs = useQuery<SyncRun[]>({
-    queryKey: ["sync-runs", "all"],
-    queryFn: () => apiFetch<SyncRun[]>("/api/admin/sync-runs?take=200"),
+  const runs = useQuery<{ items: SyncRun[]; total: number }>({
+    queryKey: ["sync-runs", "list", page, pageSize, debouncedSearch, statusFilter],
+    queryFn: () => {
+      const params = new URLSearchParams({
+        take: String(pageSize),
+        skip: String((page - 1) * pageSize),
+      });
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      return apiFetch(`/api/admin/sync-runs?${params}`);
+    },
+    placeholderData: keepPreviousData,
     refetchInterval: 5000,
   });
 
-  const filtered = useMemo(() => {
-    const list = runs.data ?? [];
-    if (statusFilter === "all") return list;
-    return list.filter((r) => r.status.toLowerCase() === statusFilter);
-  }, [runs.data, statusFilter]);
+  const items = runs.data?.items ?? [];
+  const total = runs.data?.total ?? 0;
 
   return (
     <HistoryPage
       title={t("title")}
       subtitle={t("subtitle")}
-      listTitle={t("listTitle", { count: runs.data?.length ?? 0 })}
+      listTitle={t("listTitle", { count: total })}
       listSubtitle={t("listSubtitle")}
       emptyTitle={t("emptyTitle")}
       emptyHint={t("emptyHint")}
@@ -53,20 +66,40 @@ export function SyncRunsClient() {
       retryLabel={tBoundaries("retry")}
       onRetry={() => void runs.refetch()}
       retryPending={runs.isFetching}
-      isEmpty={filtered.length === 0}
+      isEmpty={items.length === 0}
       filterSlot={
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("filterAll")}</SelectItem>
-            <SelectItem value="running">{t("filterRunning")}</SelectItem>
-            <SelectItem value="ok">{t("filterOk")}</SelectItem>
-            <SelectItem value="error">{t("filterError")}</SelectItem>
-            <SelectItem value="cancelled">{t("filterCancelled")}</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+          <div className="relative w-full sm:w-64">
+            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder={t("filterPlaceholder")}
+              className="pl-9"
+            />
+          </div>
+          <Select
+            value={statusFilter}
+            onValueChange={(v) => {
+              setStatusFilter(v);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("filterAll")}</SelectItem>
+              <SelectItem value="running">{t("filterRunning")}</SelectItem>
+              <SelectItem value="success">{t("filterOk")}</SelectItem>
+              <SelectItem value="error">{t("filterError")}</SelectItem>
+              <SelectItem value="cancelled">{t("filterCancelled")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       }
       columns={[
         t("colInstance"),
@@ -78,7 +111,7 @@ export function SyncRunsClient() {
         t("colDuration"),
         t("colError"),
       ]}
-      rows={filtered.map((r) => {
+      rows={items.map((r) => {
         const duration =
           r.finishedAt && r.startedAt
             ? Math.max(0, new Date(r.finishedAt).getTime() - new Date(r.startedAt).getTime())
@@ -118,6 +151,18 @@ export function SyncRunsClient() {
           </TableRow>
         );
       })}
+      footerSlot={
+        <TablePagination
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={setPage}
+          onPageSizeChange={(size) => {
+            setPageSize(size);
+            setPage(1);
+          }}
+        />
+      }
     />
   );
 }

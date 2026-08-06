@@ -208,9 +208,10 @@ describe("GET /api/admin/sync-runs", () => {
       ...sessionCookieOnly(session),
     });
     expect(r.statusCode).toBe(200);
-    const rows = r.json() as Array<{ id: string }>;
-    expect(rows[0]?.id).toBe(newest.id);
-    expect(rows[1]?.id).toBe(oldest.id);
+    const body = r.json() as { items: Array<{ id: string }>; total: number };
+    expect(body.items[0]?.id).toBe(newest.id);
+    expect(body.items[1]?.id).toBe(oldest.id);
+    expect(body.total).toBe(2);
   });
 
   it("filters by ids parameter when supplied", async () => {
@@ -231,9 +232,9 @@ describe("GET /api/admin/sync-runs", () => {
       url: `/api/admin/sync-runs?ids=${wanted.id}`,
       ...sessionCookieOnly(session),
     });
-    const rows = r.json() as Array<{ id: string }>;
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.id).toBe(wanted.id);
+    const body = r.json() as { items: Array<{ id: string }> };
+    expect(body.items).toHaveLength(1);
+    expect(body.items[0]?.id).toBe(wanted.id);
   });
 
   it("clamps take to the configured maximum", async () => {
@@ -254,9 +255,10 @@ describe("GET /api/admin/sync-runs", () => {
       url: "/api/admin/sync-runs?take=99999",
       ...sessionCookieOnly(session),
     });
-    // The route uses Math.min(parseInt(...) || 20, 200) — assert we got at
-    // most that many rows back. With 5 seeded, that's just 5.
-    const rows = r.json() as unknown[];
-    expect(rows.length).toBeLessThanOrEqual(200);
+    // The route clamps `take` at 500 (the old 200-row hardcap is gone) —
+    // assert we got at most that many rows back. With 5 seeded, that's just 5.
+    const body = r.json() as { items: unknown[]; take: number };
+    expect(body.items.length).toBeLessThanOrEqual(500);
+    expect(body.take).toBe(500);
   });
 });

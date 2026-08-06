@@ -10,6 +10,7 @@ vi.mock("@/server/auth/middleware", () => ({
 const { mockSyncRun } = vi.hoisted(() => ({
   mockSyncRun: {
     findMany: vi.fn(),
+    count: vi.fn(),
   },
 }));
 
@@ -28,6 +29,8 @@ let scheduler: FakeScheduler;
 
 beforeEach(async () => {
   mockSyncRun.findMany.mockReset();
+  mockSyncRun.count.mockReset();
+  mockSyncRun.count.mockResolvedValue(0);
   scheduler = { runNow: vi.fn() };
   app = Fastify({ logger: false });
   await syncRoutes(app, { scheduler: scheduler as never });
@@ -91,28 +94,115 @@ describe("POST /api/admin/sync", () => {
 });
 
 describe("GET /api/admin/sync-runs", () => {
-  it("returns the most recent runs with default take=20", async () => {
+  it("returns the most recent runs with default take/skip and the paginated envelope", async () => {
     mockSyncRun.findMany.mockResolvedValueOnce([{ id: "r1" }, { id: "r2" }]);
+    mockSyncRun.count.mockResolvedValueOnce(2);
     const r = await app.inject({ method: "GET", url: "/api/admin/sync-runs" });
     expect(r.statusCode).toBe(200);
-    expect(r.json()).toEqual([{ id: "r1" }, { id: "r2" }]);
-    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as { take: number };
-    expect(args.take).toBe(20);
+    expect(r.json()).toEqual({
+      items: [{ id: "r1" }, { id: "r2" }],
+      total: 2,
+      take: 50,
+      skip: 0,
+    });
+    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as {
+      take: number;
+      skip: number;
+      orderBy: unknown;
+    };
+    expect(args.take).toBe(50);
+    expect(args.skip).toBe(0);
+    expect(args.orderBy).toEqual({ startedAt: "desc" });
   });
 
-  it("clamps the take parameter at 200", async () => {
+  it("honors an explicit take/skip", async () => {
     mockSyncRun.findMany.mockResolvedValueOnce([]);
+    mockSyncRun.count.mockResolvedValueOnce(0);
+    const r = await app.inject({
+      method: "GET",
+      url: "/api/admin/sync-runs?take=8&skip=16",
+    });
+    expect(r.json()).toMatchObject({ take: 8, skip: 16 });
+    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as {
+      take: number;
+      skip: number;
+    };
+    expect(args.take).toBe(8);
+    expect(args.skip).toBe(16);
+  });
+
+  it("clamps the take parameter at 500 (the 200-row hardcap is gone)", async () => {
+    mockSyncRun.findMany.mockResolvedValueOnce([]);
+    mockSyncRun.count.mockResolvedValueOnce(0);
     await app.inject({
       method: "GET",
-      url: "/api/admin/sync-runs?take=999",
+      url: "/api/admin/sync-runs?take=99999",
     });
     const args = mockSyncRun.findMany.mock.calls[0]?.[0] as { take: number };
-    expect(args.take).toBe(200);
+    expect(args.take).toBe(500);
   });
 
-  it("queries by ids when the ids parameter is supplied", async () => {
+  it("filters by status", async () => {
     mockSyncRun.findMany.mockResolvedValueOnce([]);
+    mockSyncRun.count.mockResolvedValueOnce(0);
     await app.inject({
+      method: "GET",
+      url: "/api/admin/sync-runs?status=error",
+    });
+    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as {
+      where: { status?: string };
+    };
+    expect(args.where.status).toBe("error");
+    expect(mockSyncRun.count).toHaveBeenCalledWith({ where: { status: "error" } });
+  });
+
+  it("filters by search across the instance name relation and the error message", async () => {
+    mockSyncRun.findMany.mockResolvedValueOnce([]);
+    mockSyncRun.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/sync-runs?search=Sonarr",
+    });
+    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as {
+      where: { OR: unknown[] };
+    };
+    expect(args.where.OR).toEqual([
+      { arrInstance: { is: { name: { contains: "Sonarr" } } } },
+      { errorMessage: { contains: "Sonarr" } },
+    ]);
+  });
+
+  it("caps the search term at 256 chars", async () => {
+    mockSyncRun.findMany.mockResolvedValueOnce([]);
+    mockSyncRun.count.mockResolvedValueOnce(0);
+    const longSearch = "a".repeat(500);
+    await app.inject({
+      method: "GET",
+      url: `/api/admin/sync-runs?search=${longSearch}`,
+    });
+    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as {
+      where: { OR: [{ arrInstance: { is: { name: { contains: string } } } }] };
+    };
+    expect(args.where.OR[0].arrInstance.is.name.contains).toHaveLength(256);
+  });
+
+  it("combines search and status", async () => {
+    mockSyncRun.findMany.mockResolvedValueOnce([]);
+    mockSyncRun.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/sync-runs?search=Sonarr&status=success",
+    });
+    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as {
+      where: { status?: string; OR?: unknown[] };
+    };
+    expect(args.where.status).toBe("success");
+    expect(args.where.OR).toHaveLength(2);
+  });
+
+  it("queries by ids when the ids parameter is supplied, still wrapped in the envelope", async () => {
+    mockSyncRun.findMany.mockResolvedValueOnce([{ id: "a" }, { id: "b" }]);
+    const r = await app.inject({
       method: "GET",
       url: "/api/admin/sync-runs?ids=a,b,c,",
     });
@@ -120,14 +210,20 @@ describe("GET /api/admin/sync-runs", () => {
       where: { id: { in: string[] } };
     };
     expect(args.where.id.in).toEqual(["a", "b", "c"]);
+    expect(r.json()).toEqual({
+      items: [{ id: "a" }, { id: "b" }],
+      total: 2,
+      take: 3,
+      skip: 0,
+    });
   });
 
-  it("returns an empty array when ids resolves to none", async () => {
+  it("returns an empty envelope when ids resolves to none", async () => {
     const r = await app.inject({
       method: "GET",
       url: "/api/admin/sync-runs?ids=,,",
     });
-    expect(r.json()).toEqual([]);
+    expect(r.json()).toEqual({ items: [], total: 0, take: 0, skip: 0 });
     expect(mockSyncRun.findMany).not.toHaveBeenCalled();
   });
 
@@ -137,7 +233,7 @@ describe("GET /api/admin/sync-runs", () => {
       method: "GET",
       url: `/api/admin/sync-runs?ids=${huge}`,
     });
-    expect(r.json()).toEqual([]);
+    expect(r.json()).toEqual({ items: [], total: 0, take: 0, skip: 0 });
     expect(mockSyncRun.findMany).not.toHaveBeenCalled();
   });
 });
