@@ -24,7 +24,7 @@ function parseAliasesJson(raw: string | null): string[] | null {
  * refreshes the in-memory index of each affected instance so the change is
  * searchable immediately.
  */
-export async function rebuildSearchItemsFor(
+async function doRebuild(
   mediaType: MediaType,
   externalId: string,
 ): Promise<{ rebuiltItems: number }> {
@@ -90,4 +90,20 @@ export async function rebuildSearchItemsFor(
     await state.reindexInstance(instanceId);
   }
   return { rebuiltItems: rows.length };
+}
+
+// Rebuilds mutate the shared in-memory index (remove → re-read → re-index);
+// two interleaved runs could leave stale or duplicate entries. Serialize
+// them through a queue — callers just await their turn.
+let rebuildQueue: Promise<unknown> = Promise.resolve();
+
+export function rebuildSearchItemsFor(
+  mediaType: MediaType,
+  externalId: string,
+): Promise<{ rebuiltItems: number }> {
+  const run = rebuildQueue.then(() => doRebuild(mediaType, externalId));
+  rebuildQueue = run.catch(() => {
+    /* keep the chain alive after a failed rebuild */
+  });
+  return run;
 }

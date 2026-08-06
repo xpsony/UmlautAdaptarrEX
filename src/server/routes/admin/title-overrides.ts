@@ -1,6 +1,10 @@
 import type { FastifyInstance } from "fastify";
 import { prisma } from "@/lib/db";
-import { MediaTypeSchema, TitleOverridePutSchema } from "@/schemas/title-override";
+import {
+  ExternalIdSchema,
+  MediaTypeSchema,
+  TitleOverridePutSchema,
+} from "@/schemas/title-override";
 import { requireAuth } from "@/server/auth/middleware";
 import { rebuildSearchItemsFor } from "@/server/title-overrides/rebuild";
 import { isPrismaErrorCode, parseOrReply } from "./_helpers";
@@ -53,12 +57,16 @@ export async function titleOverrideRoutes(app: FastifyInstance): Promise<void> {
       if (!mediaType.success) {
         return reply.code(400).send({ error: "invalid", message: "Unknown media type." });
       }
+      const externalId = ExternalIdSchema.safeParse(params.externalId);
+      if (!externalId.success) {
+        return reply.code(400).send({ error: "invalid", message: "Invalid external id." });
+      }
       try {
         await prisma.titleOverride.delete({
           where: {
             mediaType_externalId: {
               mediaType: mediaType.data,
-              externalId: params.externalId,
+              externalId: externalId.data,
             },
           },
         });
@@ -71,12 +79,12 @@ export async function titleOverrideRoutes(app: FastifyInstance): Promise<void> {
         }
         throw err;
       }
-      const { rebuiltItems } = await rebuildSearchItemsFor(mediaType.data, params.externalId);
+      const { rebuiltItems } = await rebuildSearchItemsFor(mediaType.data, externalId.data);
       req.log.info(
         {
           userId: req.session?.userId ?? null,
           mediaType: mediaType.data,
-          externalId: params.externalId,
+          externalId: externalId.data,
           rebuiltItems,
         },
         "title override removed",

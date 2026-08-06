@@ -30,6 +30,7 @@ vi.mock("@/server/title-overrides/rebuild", () => ({
 }));
 
 import { titleOverrideRoutes } from "@/server/routes/admin/title-overrides";
+import { ExternalIdSchema } from "@/schemas/title-override";
 
 let app: ReturnType<typeof Fastify>;
 
@@ -187,5 +188,29 @@ describe("DELETE /api/admin/title-overrides/:mediaType/:externalId", () => {
     expect(r.statusCode).toBe(400);
     expect(mockTitleOverride.delete).not.toHaveBeenCalled();
     expect(mockRebuild).not.toHaveBeenCalled();
+  });
+
+  it("rejects an externalId longer than 256 chars without reaching prisma", async () => {
+    const longId = "x".repeat(300);
+    const r = await app.inject({
+      method: "DELETE",
+      url: `/api/admin/title-overrides/tv/${longId}`,
+    });
+
+    // Fastify's router (find-my-way) caps URL params at 100 chars by
+    // default and answers 414 before our route handler — and its
+    // ExternalIdSchema check — ever runs. Either way the request never
+    // reaches prisma, which is the property that matters; the schema
+    // check below (`ExternalIdSchema`) exercises the same bound directly
+    // for callers not gated by the router (e.g. a future non-HTTP caller,
+    // or if `maxParamLength` is ever raised).
+    expect([400, 414]).toContain(r.statusCode);
+    expect(mockTitleOverride.delete).not.toHaveBeenCalled();
+    expect(mockRebuild).not.toHaveBeenCalled();
+  });
+
+  it("ExternalIdSchema rejects a value longer than 256 chars", () => {
+    const result = ExternalIdSchema.safeParse("x".repeat(300));
+    expect(result.success).toBe(false);
   });
 });

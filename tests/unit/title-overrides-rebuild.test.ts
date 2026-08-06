@@ -176,4 +176,62 @@ describe("rebuildSearchItemsFor", () => {
     expect(mockState.reindexInstance).toHaveBeenCalledWith("inst1");
     expect(mockState.reindexInstance).toHaveBeenCalledWith("inst2");
   });
+
+  describe("concurrency", () => {
+    it("serializes overlapping rebuilds instead of interleaving them", async () => {
+      let releaseA: () => void = () => {};
+      const gateA = new Promise<void>((resolve) => {
+        releaseA = resolve;
+      });
+
+      mockSearchItem.findMany.mockImplementationOnce(async () => {
+        await gateA;
+        return [row];
+      });
+      mockOverride.findUnique.mockResolvedValueOnce({
+        mediaType: "tv",
+        externalId: "42",
+        germanTitle: "Dunkel Override",
+      });
+      mockCache.findUnique.mockResolvedValueOnce(null);
+
+      mockSearchItem.findMany.mockResolvedValueOnce([{ ...row, id: "s2", externalId: "99" }]);
+      mockOverride.findUnique.mockResolvedValueOnce(null);
+      mockCache.findUnique.mockResolvedValueOnce(null);
+
+      const runA = rebuildSearchItemsFor("tv", "42");
+      const runB = rebuildSearchItemsFor("tv", "99");
+
+      // B must wait behind A: with only one `findMany` call resolved (gated),
+      // the second call must not have happened yet.
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(mockSearchItem.findMany).toHaveBeenCalledTimes(1);
+
+      releaseA();
+      const [resultA, resultB] = await Promise.all([runA, runB]);
+
+      expect(resultA.rebuiltItems).toBe(1);
+      expect(resultB.rebuiltItems).toBe(1);
+      expect(mockSearchItem.findMany).toHaveBeenCalledTimes(2);
+    });
+
+    it("keeps the queue alive after a rejected rebuild", async () => {
+      mockSearchItem.findMany.mockRejectedValueOnce(new Error("boom"));
+      mockSearchItem.findMany.mockResolvedValueOnce([row]);
+      mockOverride.findUnique.mockResolvedValueOnce({
+        mediaType: "tv",
+        externalId: "42",
+        germanTitle: "Dunkel Override",
+      });
+      mockCache.findUnique.mockResolvedValueOnce(null);
+
+      const runA = rebuildSearchItemsFor("tv", "1");
+      const runB = rebuildSearchItemsFor("tv", "42");
+
+      await expect(runA).rejects.toThrow("boom");
+      const resultB = await runB;
+      expect(resultB.rebuiltItems).toBe(1);
+    });
+  });
 });
