@@ -41,6 +41,10 @@ export const CHANGELOG: ChangelogEntry[] = [
         type: "feature",
         text: 'New setting "History retention (days)" under Settings → Advanced (default 30, 1–365): request and rename history older than this is cleaned up automatically every 6 hours. Previously these tables grew without limit.',
       },
+      {
+        type: "fix",
+        text: 'The version under About is trustworthy again. Images built from source showed an empty version, and the automatic :latest security rebuild (every 2 days) changed the displayed string to something like 1.3.0-881f830 although the code was identical to the release. Both now show the plain release version. Note that if About still shows an older version after an update, the container was not replaced: "docker compose pull" only downloads the image, "docker compose up -d" recreates the container from it.',
+      },
     ],
   },
   {
