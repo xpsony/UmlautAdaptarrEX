@@ -148,7 +148,10 @@
     "errors": {
       "validation": "Veuillez vérifier votre saisie.",
       "alreadyExists": "La configuration est déjà terminée."
-    }
+    },
+    "patchStepTitle": "Patcher les indexeurs",
+    "patchStepSkip": "Ignorer",
+    "patchIndexersDone": "Indexeurs patchés."
   },
   "login": {
     "title": "Se connecter",
@@ -542,7 +545,28 @@
       "installSubmit": "Installer",
       "installCreated": "Proxy créé dans Prowlarr.",
       "installUpdated": "Proxy existant écrasé dans Prowlarr.",
-      "installFailed": "Installation dans Prowlarr échouée : {error}"
+      "installFailed": "Installation dans Prowlarr échouée : {error}",
+      "patchIndexers": "Patcher les indexeurs",
+      "patchTitle": "Patcher les indexeurs Prowlarr",
+      "patchDescription": "Sélectionnez les indexeurs à patcher pour UmlautAdaptarrEX.",
+      "patchWhyTitle": "Pourquoi est-ce nécessaire ?",
+      "patchWhyBody": "Par défaut, Prowlarr contacte les indexeurs via https://. La requête traverse alors le proxy comme un tunnel chiffré, ce qui empêche la réécriture du titre. Le patch change l'adresse de l'indexeur dans Prowlarr en http:// afin que la requête passe en clair par le proxy local et que les variantes avec umlauts puissent être appliquées.",
+      "patchSafeTitle": "Aucun risque de sécurité",
+      "patchSafeBody": "Le http:// ne concerne que le trajet local entre Prowlarr et le proxy UmlautAdaptarrEX (généralement localhost ou votre propre réseau). La connexion vers l'indexeur sur Internet reste toujours en https://, câblée en dur dans le code. Aucun trafic non chiffré ne quitte donc votre système.",
+      "patchMore": "En savoir plus",
+      "patchSelectAll": "Tout sélectionner",
+      "patchColName": "Indexeur",
+      "patchColStatus": "Statut",
+      "patchStatusPatched": "patché",
+      "patchStatusUnpatched": "non patché",
+      "patchNotPatchable": "Pas d'URL de base modifiable — impossible à patcher.",
+      "patchApply": "Appliquer",
+      "patchApplying": "Application en cours…",
+      "patchEmpty": "Aucun indexeur trouvé dans Prowlarr.",
+      "patchLoadFailed": "Impossible de charger les indexeurs : {error}",
+      "patchResult": "{patched} patché(s), {unpatched} réinitialisé(s), {unchanged} inchangé(s), {skipped} ignoré(s), {failed} échoué(s).",
+      "patchResultFailedDetail": "Échec : {names}",
+      "patchRetry": "Réessayer"
     }
   },
   "history": {
@@ -587,6 +611,7 @@
     "filterRunning": "En cours",
     "filterOk": "Réussie",
     "filterError": "Échec",
+    "filterCancelled": "Annulée",
     "colInstance": "Instance",
     "colStatus": "Statut",
     "colItems": "Éléments",

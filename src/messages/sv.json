@@ -148,7 +148,10 @@
     "errors": {
       "validation": "Kontrollera dina uppgifter.",
       "alreadyExists": "Konfigurationen är redan slutförd."
-    }
+    },
+    "patchStepTitle": "Patcha indexerare",
+    "patchStepSkip": "Hoppa över",
+    "patchIndexersDone": "Indexerare patchade."
   },
   "login": {
     "title": "Logga in",
@@ -542,7 +545,28 @@
       "installSubmit": "Installera",
       "installCreated": "Proxy skapad i Prowlarr.",
       "installUpdated": "Befintlig proxy i Prowlarr överskriven.",
-      "installFailed": "Installation i Prowlarr misslyckades: {error}"
+      "installFailed": "Installation i Prowlarr misslyckades: {error}",
+      "patchIndexers": "Patcha indexerare",
+      "patchTitle": "Patcha Prowlarr-indexerare",
+      "patchDescription": "Välj de indexerare som ska patchas för UmlautAdaptarrEX.",
+      "patchWhyTitle": "Varför behövs detta?",
+      "patchWhyBody": "Prowlarr pratar med indexerare via https:// som standard. Det gör att förfrågan går genom proxyn som en krypterad tunnel, så titeln kan inte skrivas om. Patchningen ändrar indexerarens adress i Prowlarr till http:// så att förfrågan går i klartext genom den lokala proxyn och umlaut-varianterna kan tillämpas.",
+      "patchSafeTitle": "Ingen säkerhetsrisk",
+      "patchSafeBody": "http:// gäller bara den lokala sträckan från Prowlarr till UmlautAdaptarrEX-proxyn (vanligtvis localhost eller ditt eget nätverk). Anslutningen till indexeraren på internet är alltid https://, hårdkodat i koden. Ingen okrypterad trafik lämnar alltså ditt system.",
+      "patchMore": "Läs mer",
+      "patchSelectAll": "Välj alla",
+      "patchColName": "Indexerare",
+      "patchColStatus": "Status",
+      "patchStatusPatched": "patchad",
+      "patchStatusUnpatched": "inte patchad",
+      "patchNotPatchable": "Ingen redigerbar bas-URL — kan inte patchas.",
+      "patchApply": "Tillämpa",
+      "patchApplying": "Tillämpar…",
+      "patchEmpty": "Inga indexerare hittades i Prowlarr.",
+      "patchLoadFailed": "Kunde inte läsa in indexerare: {error}",
+      "patchResult": "{patched} patchade, {unpatched} återställda, {unchanged} oförändrade, {skipped} överhoppade, {failed} misslyckade.",
+      "patchResultFailedDetail": "Misslyckades: {names}",
+      "patchRetry": "Försök igen"
     }
   },
   "history": {
@@ -587,6 +611,7 @@
     "filterRunning": "Körs",
     "filterOk": "Lyckades",
     "filterError": "Misslyckades",
+    "filterCancelled": "Avbruten",
     "colInstance": "Instans",
     "colStatus": "Status",
     "colItems": "Objekt",
