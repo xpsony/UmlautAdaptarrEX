@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import {
   Activity,
+  BookOpen,
   Database,
   History,
   Info,
@@ -33,6 +34,7 @@ interface NavItem {
 type Messages = {
   dashboard: string;
   instances: string;
+  library: string;
   syncRuns: string;
   requestHistory: string;
   renameHistory: string;
@@ -44,6 +46,7 @@ type Messages = {
 const NAV: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", icon: Activity },
   { href: "/instances", labelKey: "instances", icon: Database },
+  { href: "/library", labelKey: "library", icon: BookOpen },
   { href: "/sync-runs", labelKey: "syncRuns", icon: RefreshCw },
   { href: "/request-history", labelKey: "requestHistory", icon: History },
   { href: "/rename-history", labelKey: "renameHistory", icon: ListChecks },
@@ -74,7 +77,7 @@ export function AdminShell({
     <div className="flex min-h-screen bg-background">
       <ChangelogDialog />
       {/* Desktop sidebar — md and up. */}
-      <aside className="hidden md:flex sticky top-0 h-screen w-64 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
         <Link
           href="/dashboard"
           className="flex h-20 items-center gap-3 border-b px-5"
@@ -83,7 +86,7 @@ export function AdminShell({
           <BrandMark variant="mark" height={48} />
           <div className="leading-tight">
             <BrandMark variant="wordmark" height={20} className="opacity-95" />
-            <div className="mt-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+            <div className="mt-1 text-[11px] tracking-wider text-muted-foreground uppercase">
               Admin
             </div>
           </div>
@@ -100,9 +103,7 @@ export function AdminShell({
         </nav>
         {version && (
           <div className="border-t px-5 py-3">
-            <span className="text-[11px] text-muted-foreground/60">
-              v{version}
-            </span>
+            <span className="text-[11px] text-muted-foreground/60">v{version}</span>
           </div>
         )}
       </aside>
@@ -113,12 +114,7 @@ export function AdminShell({
             {/* Mobile hamburger — opens the nav drawer. */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="md:hidden"
-                  aria-label={t("openNav")}
-                >
+                <Button variant="ghost" size="icon" className="md:hidden" aria-label={t("openNav")}>
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
@@ -131,12 +127,8 @@ export function AdminShell({
                 >
                   <BrandMark variant="mark" height={36} />
                   <div className="leading-tight">
-                    <BrandMark
-                      variant="wordmark"
-                      height={16}
-                      className="opacity-95"
-                    />
-                    <div className="mt-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <BrandMark variant="wordmark" height={16} className="opacity-95" />
+                    <div className="mt-1 text-[10px] tracking-wider text-muted-foreground uppercase">
                       Admin
                     </div>
                   </div>
@@ -155,9 +147,7 @@ export function AdminShell({
                 </nav>
                 {version && (
                   <div className="border-t px-5 py-3">
-                    <span className="text-[11px] text-muted-foreground/60">
-                      v{version}
-                    </span>
+                    <span className="text-[11px] text-muted-foreground/60">v{version}</span>
                   </div>
                 )}
               </SheetContent>
@@ -171,9 +161,7 @@ export function AdminShell({
               <BrandMark variant="mark" height={28} />
             </Link>
             <span className="text-muted-foreground/50 md:hidden">/</span>
-            <span className="truncate font-medium">
-              {current ? t(current.labelKey) : ""}
-            </span>
+            <span className="truncate font-medium">{current ? t(current.labelKey) : ""}</span>
           </div>
           <div className="flex items-center gap-2">
             <PauseToggle />
@@ -211,16 +199,14 @@ function NavLink({
         "group flex items-center gap-2.5 rounded-md px-3 transition-colors",
         large ? "py-2.5 text-sm" : "py-2 text-sm",
         active
-          ? "bg-accent text-accent-foreground font-medium"
+          ? "bg-accent font-medium text-accent-foreground"
           : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
       )}
     >
       <Icon
         className={cn(
           "h-4 w-4 shrink-0 transition-colors",
-          active
-            ? "text-foreground"
-            : "text-muted-foreground group-hover:text-foreground",
+          active ? "text-foreground" : "text-muted-foreground group-hover:text-foreground",
         )}
       />
       <span>{label}</span>

@@ -6,6 +6,7 @@
   "nav": {
     "dashboard": "Översikt",
     "instances": "Instanser",
+    "library": "Bibliotek",
     "syncRuns": "Synk-körningar",
     "requestHistory": "Förfrågningshistorik",
     "renameHistory": "Namnändringshistorik",
@@ -325,6 +326,29 @@
         "masked_api_key": "Prowlarr returnerar endast maskerade API-nycklar (********). Lägg till instansen manuellt eller fyll i nyckeln senare."
       }
     }
+  },
+  "library": {
+    "title": "Bibliotek",
+    "subtitle": "Synkroniserade titlar från alla instanser — inklusive manuella overrides.",
+    "listTitle": "{count, plural, =0 {Inga titlar} one {# titel} other {# titlar}}",
+    "listSubtitle": "Original- och tyska titlar, som de används av matchningsmotorn.",
+    "emptyTitle": "Inga titlar",
+    "emptyHint": "Ingen synkning har körts än, eller filtren är för snäva.",
+    "filterPlaceholder": "Sök titlar…",
+    "allInstances": "Alla instanser",
+    "allTypes": "Alla typer",
+    "missingGermanOnly": "Endast utan tysk titel",
+    "colTitle": "Titel",
+    "colGermanTitle": "Tysk titel",
+    "colType": "Typ",
+    "colYear": "År",
+    "colInstance": "Instans",
+    "colUpdated": "Uppdaterad",
+    "typeTv": "Serie",
+    "typeMovie": "Film",
+    "typeAudio": "Musik",
+    "typeBook": "Bok",
+    "overrideBadge": "Override"
   },
   "settings": {
     "title": "Inställningar",

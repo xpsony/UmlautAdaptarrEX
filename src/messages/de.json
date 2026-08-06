@@ -6,6 +6,7 @@
   "nav": {
     "dashboard": "Übersicht",
     "instances": "Instanzen",
+    "library": "Bibliothek",
     "syncRuns": "Sync-Läufe",
     "requestHistory": "Anfragen-Verlauf",
     "renameHistory": "Umbenennungs-Verlauf",
@@ -328,6 +329,29 @@
         "masked_api_key": "Prowlarr liefert API-Keys nur maskiert (********). Instanz manuell anlegen oder Key später nachtragen."
       }
     }
+  },
+  "library": {
+    "title": "Bibliothek",
+    "subtitle": "Synchronisierte Titel aller Instanzen — inklusive manueller Overrides.",
+    "listTitle": "{count, plural, =0 {Keine Titel} one {# Titel} other {# Titel}}",
+    "listSubtitle": "Original- und deutscher Titel, wie sie im Matching verwendet werden.",
+    "emptyTitle": "Keine Titel",
+    "emptyHint": "Noch kein Sync gelaufen oder Filter zu eng.",
+    "filterPlaceholder": "Titel suchen…",
+    "allInstances": "Alle Instanzen",
+    "allTypes": "Alle Typen",
+    "missingGermanOnly": "Nur ohne deutschen Titel",
+    "colTitle": "Titel",
+    "colGermanTitle": "Deutscher Titel",
+    "colType": "Typ",
+    "colYear": "Jahr",
+    "colInstance": "Instanz",
+    "colUpdated": "Aktualisiert",
+    "typeTv": "Serie",
+    "typeMovie": "Film",
+    "typeAudio": "Musik",
+    "typeBook": "Buch",
+    "overrideBadge": "Override"
   },
   "settings": {
     "title": "Einstellungen",

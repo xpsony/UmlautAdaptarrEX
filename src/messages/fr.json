@@ -6,6 +6,7 @@
   "nav": {
     "dashboard": "Tableau de bord",
     "instances": "Instances",
+    "library": "Bibliothèque",
     "syncRuns": "Exécutions de sync",
     "requestHistory": "Historique des requêtes",
     "renameHistory": "Historique des renommages",
@@ -325,6 +326,29 @@
         "masked_api_key": "Prowlarr ne renvoie que des clés API masquées (********). Ajoutez l'instance manuellement ou complétez la clé plus tard."
       }
     }
+  },
+  "library": {
+    "title": "Bibliothèque",
+    "subtitle": "Titres synchronisés de toutes les instances — y compris les overrides manuels.",
+    "listTitle": "{count, plural, =0 {Aucun titre} one {# titre} other {# titres}}",
+    "listSubtitle": "Titres originaux et allemands tels qu'utilisés par le moteur de correspondance.",
+    "emptyTitle": "Aucun titre",
+    "emptyHint": "Aucune synchronisation n'a encore eu lieu, ou les filtres sont trop restrictifs.",
+    "filterPlaceholder": "Rechercher un titre…",
+    "allInstances": "Toutes les instances",
+    "allTypes": "Tous les types",
+    "missingGermanOnly": "Uniquement sans titre allemand",
+    "colTitle": "Titre",
+    "colGermanTitle": "Titre allemand",
+    "colType": "Type",
+    "colYear": "Année",
+    "colInstance": "Instance",
+    "colUpdated": "Mis à jour",
+    "typeTv": "Série",
+    "typeMovie": "Film",
+    "typeAudio": "Musique",
+    "typeBook": "Livre",
+    "overrideBadge": "Override"
   },
   "settings": {
     "title": "Paramètres",
