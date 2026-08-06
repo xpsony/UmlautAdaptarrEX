@@ -1,23 +1,10 @@
 import "./_setup/db";
 
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { buildTestApp } from "./_setup/app";
 import { cleanDb, ensureTestDb } from "./_setup/db";
-import {
-  authCookies,
-  login,
-  seedAdminUser,
-  sessionCookieOnly,
-} from "./_setup/auth-helpers";
+import { authCookies, login, seedAdminUser, sessionCookieOnly } from "./_setup/auth-helpers";
 import { getAppState } from "@/server/state";
 import type { IndexerFetcher } from "@/server/proxy/indexer-fetcher";
 
@@ -237,6 +224,61 @@ describe("admin /stats aggregates legacy rows", () => {
     });
     const body = r.json() as { summary: { cacheHitRate: number } };
     expect(body.summary.cacheHitRate).toBe(0);
+  });
+});
+
+describe("admin /request-history search filter", () => {
+  it("matches query, externalId or domain via contains across all pages", async () => {
+    const { prisma } = await import("@/lib/db");
+    await prisma.requestHistory.createMany({
+      data: [
+        {
+          apiKey: "a",
+          domain: INDEXER,
+          type: "tvsearch",
+          query: "Galaxy Wars S01",
+          status: 200,
+          durationMs: 5,
+          cacheHit: false,
+        },
+        {
+          apiKey: "a",
+          domain: INDEXER,
+          type: "tvsearch",
+          query: "Hidden Valley",
+          status: 200,
+          durationMs: 5,
+          cacheHit: false,
+        },
+        {
+          apiKey: "a",
+          domain: "other.example.test",
+          type: "caps",
+          query: null,
+          externalId: "galaxy-123",
+          status: 200,
+          durationMs: 5,
+          cacheHit: false,
+        },
+      ],
+    });
+
+    await seedAdminUser();
+    const session = await login(app);
+
+    const r = await app.inject({
+      method: "GET",
+      url: "/api/admin/request-history?search=galaxy",
+      ...sessionCookieOnly(session),
+    });
+    expect(r.statusCode).toBe(200);
+    const body = r.json() as {
+      items: Array<{ query: string | null }>;
+      total: number;
+    };
+    // Matches "Galaxy Wars S01" (query, case-insensitive under SQLite for
+    // ASCII) and "galaxy-123" (externalId), not "Hidden Valley".
+    expect(body.total).toBe(2);
   });
 });
 

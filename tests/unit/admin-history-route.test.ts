@@ -78,6 +78,23 @@ describe("GET /api/admin/request-history", () => {
     expect(args.where).toEqual({ type: "caps", domain: "example.com" });
   });
 
+  it("supports a free-text search over query, externalId and domain", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/request-history?search=galaxy",
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as {
+      where: { OR: unknown[] };
+    };
+    expect(args.where.OR).toEqual([
+      { query: { contains: "galaxy" } },
+      { externalId: { contains: "galaxy" } },
+      { domain: { contains: "galaxy" } },
+    ]);
+  });
+
   it("clamps take to the configured maximum", async () => {
     mockReq.findMany.mockResolvedValueOnce([]);
     mockReq.count.mockResolvedValueOnce(0);
