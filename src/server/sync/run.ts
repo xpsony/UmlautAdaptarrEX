@@ -3,7 +3,7 @@ import { buildArrClient } from "@/arr";
 import { isMaskedSecret } from "@/lib/secrets";
 import type { ArrType, ProviderId } from "@/schemas/instance";
 import type { AppLogger } from "@/server/logging/logger";
-import { type AppState, type CachedSearchItem, getAppState } from "@/server/state";
+import { type AppState, type CachedSearchItemInput, getAppState } from "@/server/state";
 import { buildSearchItem, type SearchItemDerived } from "@/domain/variations";
 import type { MediaType } from "@/domain/variations/generate";
 import type { TitleProvider } from "@/providers/types";
@@ -391,7 +391,7 @@ async function persistAndReindex(
     where: { arrInstanceId: instanceId },
   });
   for (const row of fresh) {
-    const cached: CachedSearchItem = {
+    const cached: CachedSearchItemInput = {
       id: row.id,
       arrInstanceId: row.arrInstanceId,
       arrId: row.arrId,

@@ -71,8 +71,24 @@ export interface CachedSearchItem {
   year: number | null;
   titleSearchVariations: string[];
   titleMatchVariations: string[];
+  /**
+   * `normalizeForComparison(variation, pack)` applied to each entry of
+   * `titleMatchVariations`, same order/length. Precomputed once in
+   * `indexItem` so per-request matching (`bestVariationMatchLen`) never
+   * re-normalizes the same variation on every lookup.
+   */
+  normalizedMatchVariations: string[];
   authorMatchVariations: string[];
 }
+
+// Shape accepted by `indexItem` / produced by `toCachedSearchItem`: everything
+// a CachedSearchItem needs except `normalizedMatchVariations`, which only
+// `indexItem` can fill in (it requires the active LanguagePack). Keeping this
+// as a distinct type — rather than an optional field with a `!` assertion —
+// means callers that build a fresh item (sync, tests) never have to know
+// about normalization at construction time, and `indexItem`'s signature
+// documents that it's the sole place the field gets populated.
+export type CachedSearchItemInput = Omit<CachedSearchItem, "normalizedMatchVariations">;
 
 // Raw shape of the columns `toCachedSearchItem` consumes — kept in sync with
 // SEARCH_ITEM_SELECT below so `loadSearchItemsFromDb` never over-fetches.
@@ -356,6 +372,10 @@ export class AppState {
     this._provider = this.providerForOrder(["pcjones", "tvdb", "tmdb"]);
   }
 
+  // Note: a pack change here leaves the existing index (byTitlePrefix
+  // prefixes + each item's normalizedMatchVariations) normalized against the
+  // *old* pack until a resync rebuilds it via indexItem — a known, bounded
+  // staleness window surfaced to the admin by the UI's requiresResync banner.
   async reloadPlugins(): Promise<void> {
     await seedPlugins();
     const enabledIds = new Set(await loadActivePlugins());
@@ -399,7 +419,7 @@ export class AppState {
     this._instanceOptions.delete(instanceId);
   }
 
-  private toCachedSearchItem(row: SearchItemRow): CachedSearchItem {
+  private toCachedSearchItem(row: SearchItemRow): CachedSearchItemInput {
     return {
       id: row.id,
       arrInstanceId: row.arrInstanceId,
@@ -453,17 +473,29 @@ export class AppState {
     this.indexRowsSkippingCorrupt(rows);
   }
 
-  indexItem(item: CachedSearchItem): void {
-    this.byExternalId.set(`${item.mediaType}:${item.externalId}`, item);
-    for (const variation of item.titleMatchVariations) {
-      const norm = normalizeForComparison(variation, this._languagePack);
-      const prefix = `${item.mediaType}:${norm.slice(0, 5)}`;
+  // Invariant: indexing is not idempotent per object identity — calling this
+  // twice with equivalent input (without an intervening removeItemsForInstance
+  // / removeItemsForInstance-equivalent) duplicates bucket entries, since each
+  // call builds a fresh `indexed` object. Every current caller removes an
+  // instance's items before re-indexing (see reindexInstance,
+  // persistAndReindex in sync/run.ts) — keep that ordering for new callers.
+  indexItem(item: CachedSearchItemInput): void {
+    // Normalize each match variation exactly once, reusing the result for
+    // both the byTitlePrefix bucket key and the stored array that
+    // bestVariationMatchLen reads at request time.
+    const normalizedMatchVariations = item.titleMatchVariations.map((variation) =>
+      normalizeForComparison(variation, this._languagePack),
+    );
+    const indexed: CachedSearchItem = { ...item, normalizedMatchVariations };
+    this.byExternalId.set(`${indexed.mediaType}:${indexed.externalId}`, indexed);
+    for (const norm of normalizedMatchVariations) {
+      const prefix = `${indexed.mediaType}:${norm.slice(0, 5)}`;
       let bucket = this.byTitlePrefix.get(prefix);
       if (!bucket) {
         bucket = [];
         this.byTitlePrefix.set(prefix, bucket);
       }
-      if (!bucket.includes(item)) bucket.push(item);
+      if (!bucket.includes(indexed)) bucket.push(indexed);
     }
   }
 
@@ -520,8 +552,7 @@ export class AppState {
     minLen: number,
   ): number {
     let bestLen = 0;
-    for (const variation of item.titleMatchVariations) {
-      const variationNorm = normalizeForComparison(variation, pack);
+    for (const variationNorm of item.normalizedMatchVariations) {
       if (variationNorm.length === 0) continue;
       if (variationNorm.length <= minLen) continue;
       if (variationNorm.length <= bestLen) continue;
