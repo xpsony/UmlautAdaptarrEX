@@ -454,3 +454,41 @@ describe("title-cache routes", () => {
     expect(r.json()).toEqual({ checked: 2, recovered: 1, stillMissing: 1 });
   });
 });
+
+describe("POST /api/admin/title-cache/recheck-missing — concurrency guard", () => {
+  it("returns 409 while another recheck is in flight", async () => {
+    let release!: (rows: never[]) => void;
+    const gate = new Promise<never[]>((resolve) => {
+      release = resolve;
+    });
+    // First request blocks inside the cache scan until we release the gate.
+    mockCache.findMany.mockReturnValueOnce(gate);
+    mockPick.mockReturnValue([]);
+
+    const first = app.inject({
+      method: "POST",
+      url: "/api/admin/title-cache/recheck-missing",
+    });
+    // Let the first request enter the handler and take the lock.
+    await new Promise((r) => setTimeout(r, 20));
+
+    const second = await app.inject({
+      method: "POST",
+      url: "/api/admin/title-cache/recheck-missing",
+    });
+    expect(second.statusCode).toBe(409);
+    expect(second.json()).toMatchObject({ error: "already_running" });
+
+    release([]);
+    const firstRes = await first;
+    expect(firstRes.statusCode).toBe(200);
+
+    // Lock must be released again after completion.
+    mockCache.findMany.mockResolvedValueOnce([]);
+    const third = await app.inject({
+      method: "POST",
+      url: "/api/admin/title-cache/recheck-missing",
+    });
+    expect(third.statusCode).toBe(200);
+  });
+});

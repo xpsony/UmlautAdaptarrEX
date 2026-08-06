@@ -289,53 +289,72 @@ async function recheckBucket(
 // current settings. Default order per mediaType: sonarr default for `tv`,
 // radarr default for `movie`, so the TVDB and TMDB settings apply
 // independently of any specific instance.
+// The recheck fans out to every configured title provider; a second
+// concurrent run doubles the outbound calls for zero benefit. In-process
+// flag is sufficient — the route only exists in the single API process.
+let recheckInFlight = false;
+
 async function postRecheckMissing(
   req: FastifyRequest,
-): Promise<{ checked: number; recovered: number; stillMissing: number }> {
-  const state = getAppState();
-  const wantedLangs = requiredLanguages(state.languagePack);
-
-  // Scan the cache in bounded batches via id cursor so a large library
-  // doesn't load the whole table (with translations) into memory at once.
-  const RECHECK_BATCH_SIZE = 500;
-  const candidates: ReturnType<typeof pickMissingCandidates> = [];
-  let cursorId: string | undefined;
-  for (;;) {
-    const batch = await prisma.titleApiCache.findMany({
-      take: RECHECK_BATCH_SIZE,
-      ...(cursorId ? { skip: 1, cursor: { id: cursorId } } : {}),
-      orderBy: { id: "asc" },
-      include: { translations: { select: { lang: true, title: true } } },
+  reply: FastifyReply,
+): Promise<{ checked: number; recovered: number; stillMissing: number } | undefined> {
+  if (recheckInFlight) {
+    req.log.warn("title cache recheck skipped: already running");
+    reply.code(409).send({
+      error: "already_running",
+      message: "A title cache recheck is already in progress.",
     });
-    if (batch.length === 0) break;
-    candidates.push(...pickMissingCandidates(batch, wantedLangs));
-    if (batch.length < RECHECK_BATCH_SIZE) break;
-    cursorId = batch[batch.length - 1]!.id;
+    return;
   }
-  if (candidates.length === 0) {
-    return { checked: 0, recovered: 0, stillMissing: 0 };
+  recheckInFlight = true;
+  try {
+    const state = getAppState();
+    const wantedLangs = requiredLanguages(state.languagePack);
+
+    // Scan the cache in bounded batches via id cursor so a large library
+    // doesn't load the whole table (with translations) into memory at once.
+    const RECHECK_BATCH_SIZE = 500;
+    const candidates: ReturnType<typeof pickMissingCandidates> = [];
+    let cursorId: string | undefined;
+    for (;;) {
+      const batch = await prisma.titleApiCache.findMany({
+        take: RECHECK_BATCH_SIZE,
+        ...(cursorId ? { skip: 1, cursor: { id: cursorId } } : {}),
+        orderBy: { id: "asc" },
+        include: { translations: { select: { lang: true, title: true } } },
+      });
+      if (batch.length === 0) break;
+      candidates.push(...pickMissingCandidates(batch, wantedLangs));
+      if (batch.length < RECHECK_BATCH_SIZE) break;
+      cursorId = batch[batch.length - 1]!.id;
+    }
+    if (candidates.length === 0) {
+      return { checked: 0, recovered: 0, stillMissing: 0 };
+    }
+
+    // Wipe the candidate rows in one batch so DbCachedTitleProvider sees a
+    // fresh miss and routes through the configured provider chain.
+    await prisma.titleApiCache.deleteMany({
+      where: { id: { in: candidates.map((c) => c.id) } },
+    });
+
+    const byType = groupCandidatesByType(candidates);
+    let recovered = 0;
+    let stillMissing = 0;
+    for (const [type, externalIds] of byType) {
+      const counts = await recheckBucket(type, externalIds, wantedLangs);
+      recovered += counts.recovered;
+      stillMissing += counts.stillMissing;
+    }
+
+    req.log.info(
+      { checked: candidates.length, recovered, stillMissing, wantedLangs },
+      "title cache recheck complete",
+    );
+    return { checked: candidates.length, recovered, stillMissing };
+  } finally {
+    recheckInFlight = false;
   }
-
-  // Wipe the candidate rows in one batch so DbCachedTitleProvider sees a
-  // fresh miss and routes through the configured provider chain.
-  await prisma.titleApiCache.deleteMany({
-    where: { id: { in: candidates.map((c) => c.id) } },
-  });
-
-  const byType = groupCandidatesByType(candidates);
-  let recovered = 0;
-  let stillMissing = 0;
-  for (const [type, externalIds] of byType) {
-    const counts = await recheckBucket(type, externalIds, wantedLangs);
-    recovered += counts.recovered;
-    stillMissing += counts.stillMissing;
-  }
-
-  req.log.info(
-    { checked: candidates.length, recovered, stillMissing, wantedLangs },
-    "title cache recheck complete",
-  );
-  return { checked: candidates.length, recovered, stillMissing };
 }
 
 export async function settingsRoutes(app: FastifyInstance): Promise<void> {
