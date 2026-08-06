@@ -33,6 +33,8 @@ function statusVariant(status: number): "success" | "warning" | "destructive" | 
 
 export function RequestHistoryClient() {
   const t = useTranslations("history.request");
+  const tCommon = useTranslations("common");
+  const tBoundaries = useTranslations("boundaries");
   const locale = useLocale();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
@@ -65,6 +67,11 @@ export function RequestHistoryClient() {
       emptyHint={t("emptyHint")}
       emptyIcon={<History className="h-5 w-5" />}
       isLoading={data.isLoading}
+      isError={data.isLoadingError}
+      errorLabel={tCommon("error")}
+      retryLabel={tBoundaries("retry")}
+      onRetry={() => void data.refetch()}
+      retryPending={data.isFetching}
       isEmpty={items.length === 0}
       filterSlot={
         <div className="relative w-full sm:w-72">

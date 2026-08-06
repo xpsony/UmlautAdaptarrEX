@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 
 interface HistoryPageProps {
   title: string;
@@ -14,6 +15,15 @@ interface HistoryPageProps {
   emptyIcon: ReactNode;
   isLoading: boolean;
   isEmpty: boolean;
+  /** Failed fetch with nothing to show yet. Renders an alert + retry instead of the empty state. */
+  isError?: boolean;
+  /** Translated generic error label (usually t common.error). */
+  errorLabel?: string;
+  /** Translated retry label (usually t boundaries.retry). */
+  retryLabel?: string;
+  onRetry?: () => void;
+  /** Disables the retry button and can be used to show pending state (usually query.isFetching). */
+  retryPending?: boolean;
   filterSlot: ReactNode;
   columns: string[];
   rows: ReactNode;
@@ -80,6 +90,20 @@ export function HistoryPage(props: HistoryPageProps) {
               <Skeleton className="h-9 w-full" />
               <Skeleton className="h-9 w-full" />
               <Skeleton className="h-9 w-full" />
+            </div>
+          ) : props.isError ? (
+            // A failed fetch must not masquerade as "no entries"; show a
+            // distinct error with a retry affordance instead.
+            <div
+              role="alert"
+              className="flex flex-col items-center gap-3 p-10 text-center text-sm text-destructive"
+            >
+              <span>{props.errorLabel}</span>
+              {props.onRetry ? (
+                <Button variant="outline" disabled={props.retryPending} onClick={props.onRetry}>
+                  {props.retryLabel}
+                </Button>
+              ) : null}
             </div>
           ) : props.isEmpty ? (
             <EmptyState

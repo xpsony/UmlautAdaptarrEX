@@ -30,9 +30,7 @@ interface SyncRun {
   arrInstance: { name: string; type: string } | null;
 }
 
-function statusVariant(
-  status: string,
-): "success" | "warning" | "destructive" | "muted" {
+function statusVariant(status: string): "success" | "warning" | "destructive" | "muted" {
   switch (status.toLowerCase()) {
     case "ok":
     case "success":
@@ -56,6 +54,8 @@ function statusVariant(
 
 export function SyncRunsClient() {
   const t = useTranslations("syncRuns");
+  const tCommon = useTranslations("common");
+  const tBoundaries = useTranslations("boundaries");
   const locale = useLocale();
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -81,6 +81,11 @@ export function SyncRunsClient() {
       emptyHint={t("emptyHint")}
       emptyIcon={<Activity className="h-5 w-5" />}
       isLoading={runs.isLoading}
+      isError={runs.isLoadingError}
+      errorLabel={tCommon("error")}
+      retryLabel={tBoundaries("retry")}
+      onRetry={() => void runs.refetch()}
+      retryPending={runs.isFetching}
       isEmpty={filtered.length === 0}
       filterSlot={
         <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -109,11 +114,7 @@ export function SyncRunsClient() {
       rows={filtered.map((r) => {
         const duration =
           r.finishedAt && r.startedAt
-            ? Math.max(
-                0,
-                new Date(r.finishedAt).getTime() -
-                  new Date(r.startedAt).getTime(),
-              )
+            ? Math.max(0, new Date(r.finishedAt).getTime() - new Date(r.startedAt).getTime())
             : null;
         return (
           <TableRow key={r.id}>
@@ -135,21 +136,17 @@ export function SyncRunsClient() {
                 {r.status}
               </Badge>
             </TableCell>
-            <TableCell className="tabular-nums">
-              {r.pcjonesItemsCount}
-            </TableCell>
+            <TableCell className="tabular-nums">{r.pcjonesItemsCount}</TableCell>
             <TableCell className="tabular-nums">{r.tvdbItemsCount}</TableCell>
             <TableCell className="tabular-nums">{r.tmdbItemsCount}</TableCell>
             <TableCell className="whitespace-nowrap text-muted-foreground">
               {new Date(r.startedAt).toLocaleString(locale)}
             </TableCell>
-            <TableCell className="tabular-nums text-muted-foreground">
+            <TableCell className="text-muted-foreground tabular-nums">
               {duration === null ? "—" : `${(duration / 1000).toFixed(1)}s`}
             </TableCell>
             <TableCell className="max-w-xs truncate text-xs text-destructive">
-              {r.errorMessage ?? (
-                <span className="text-muted-foreground">—</span>
-              )}
+              {r.errorMessage ?? <span className="text-muted-foreground">—</span>}
             </TableCell>
           </TableRow>
         );

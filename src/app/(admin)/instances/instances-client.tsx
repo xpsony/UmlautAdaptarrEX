@@ -92,7 +92,7 @@ export function InstancesClient() {
               <Skeleton className="h-9 w-full" />
               <Skeleton className="h-9 w-full" />
             </div>
-          ) : list.isError ? (
+          ) : list.isLoadingError ? (
             // A failed fetch must not masquerade as "no instances"; show a
             // distinct error with a retry affordance instead.
             <div
@@ -100,7 +100,11 @@ export function InstancesClient() {
               className="flex flex-col items-center gap-3 p-10 text-center text-sm text-destructive"
             >
               <span>{tCommon("error")}</span>
-              <Button variant="outline" onClick={() => void list.refetch()}>
+              <Button
+                variant="outline"
+                disabled={list.isFetching}
+                onClick={() => void list.refetch()}
+              >
                 {tBoundaries("retry")}
               </Button>
             </div>

@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { type SettingsUpdate, SettingsUpdateSchema } from "@/schemas/settings";
 import { apiFetch } from "@/app/_lib/api-client";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AdvancedTab } from "./_components/advanced-tab";
 import { GeneralTab } from "./_components/general-tab";
@@ -19,6 +20,7 @@ import type { SettingsFormInput, SettingsRow } from "./_lib/settings-types";
 export function SettingsClient() {
   const t = useTranslations("settings");
   const tCommon = useTranslations("common");
+  const tBoundaries = useTranslations("boundaries");
   const qc = useQueryClient();
 
   const settings = useQuery<SettingsRow>({
@@ -62,51 +64,68 @@ export function SettingsClient() {
         <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      <Tabs defaultValue="general" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="general">{t("section.general")}</TabsTrigger>
-          <TabsTrigger value="providers">{t("section.providers")}</TabsTrigger>
-          <TabsTrigger value="prowlarr">{t("section.prowlarr")}</TabsTrigger>
-          <TabsTrigger value="plugins">{t("section.plugins")}</TabsTrigger>
-          <TabsTrigger value="advanced">{t("section.advanced")}</TabsTrigger>
-        </TabsList>
+      {settings.isLoadingError ? (
+        // A failed settings fetch must not render an empty form silently.
+        <div
+          role="alert"
+          className="flex flex-col items-center gap-3 rounded-lg border p-10 text-center text-sm text-destructive"
+        >
+          <span>{tCommon("error")}</span>
+          <Button
+            variant="outline"
+            disabled={settings.isFetching}
+            onClick={() => void settings.refetch()}
+          >
+            {tBoundaries("retry")}
+          </Button>
+        </div>
+      ) : (
+        <Tabs defaultValue="general" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="general">{t("section.general")}</TabsTrigger>
+            <TabsTrigger value="providers">{t("section.providers")}</TabsTrigger>
+            <TabsTrigger value="prowlarr">{t("section.prowlarr")}</TabsTrigger>
+            <TabsTrigger value="plugins">{t("section.plugins")}</TabsTrigger>
+            <TabsTrigger value="advanced">{t("section.advanced")}</TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="general" className="space-y-6">
-          <GeneralTab
-            data={settings.data}
-            loading={settings.isLoading}
-            form={form}
-            onSave={onSave}
-            saving={saveMut.isPending}
-          />
-        </TabsContent>
+          <TabsContent value="general" className="space-y-6">
+            <GeneralTab
+              data={settings.data}
+              loading={settings.isLoading}
+              form={form}
+              onSave={onSave}
+              saving={saveMut.isPending}
+            />
+          </TabsContent>
 
-        <TabsContent value="providers" className="space-y-6">
-          <ProvidersTab
-            form={form}
-            data={settings.data}
-            onSave={onSave}
-            saving={saveMut.isPending}
-          />
-        </TabsContent>
+          <TabsContent value="providers" className="space-y-6">
+            <ProvidersTab
+              form={form}
+              data={settings.data}
+              onSave={onSave}
+              saving={saveMut.isPending}
+            />
+          </TabsContent>
 
-        <TabsContent value="prowlarr" className="space-y-6">
-          <ProwlarrSection />
-        </TabsContent>
+          <TabsContent value="prowlarr" className="space-y-6">
+            <ProwlarrSection />
+          </TabsContent>
 
-        <TabsContent value="plugins" className="space-y-6">
-          <PluginsSection />
-        </TabsContent>
+          <TabsContent value="plugins" className="space-y-6">
+            <PluginsSection />
+          </TabsContent>
 
-        <TabsContent value="advanced" className="space-y-6">
-          <AdvancedTab
-            form={form}
-            data={settings.data}
-            onSave={onSave}
-            saving={saveMut.isPending}
-          />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="advanced" className="space-y-6">
+            <AdvancedTab
+              form={form}
+              data={settings.data}
+              onSave={onSave}
+              saving={saveMut.isPending}
+            />
+          </TabsContent>
+        </Tabs>
+      )}
     </div>
   );
 }
