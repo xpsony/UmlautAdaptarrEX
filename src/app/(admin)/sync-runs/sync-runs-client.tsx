@@ -32,13 +32,39 @@ export function SyncRunsClient() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const debouncedSearch = useDebouncedValue(search.trim());
+  // Default matches the server's default (startedAt desc) — see
+  // SYNC_RUNS_SORT in src/server/routes/admin/sync.ts.
+  const [sort, setSort] = useState<{ key: string; order: "asc" | "desc" }>({
+    key: "startedAt",
+    order: "desc",
+  });
+
+  const handleSortChange = (key: string) => {
+    setSort((prev) =>
+      prev.key === key
+        ? { key, order: prev.order === "asc" ? "desc" : "asc" }
+        : { key, order: "asc" },
+    );
+    setPage(1);
+  };
 
   const runs = useQuery<{ items: SyncRun[]; total: number }>({
-    queryKey: ["sync-runs", "list", page, pageSize, debouncedSearch, statusFilter],
+    queryKey: [
+      "sync-runs",
+      "list",
+      page,
+      pageSize,
+      debouncedSearch,
+      statusFilter,
+      sort.key,
+      sort.order,
+    ],
     queryFn: () => {
       const params = new URLSearchParams({
         take: String(pageSize),
         skip: String((page - 1) * pageSize),
+        sort: sort.key,
+        order: sort.order,
       });
       if (debouncedSearch) params.set("search", debouncedSearch);
       if (statusFilter !== "all") params.set("status", statusFilter);
@@ -103,14 +129,17 @@ export function SyncRunsClient() {
       }
       columns={[
         t("colInstance"),
-        t("colStatus"),
+        { label: t("colStatus"), sortKey: "status" },
+        { label: t("colItems"), sortKey: "itemsCount" },
         t("colPcjones"),
         t("colTvdb"),
         t("colTmdb"),
-        t("colStarted"),
+        { label: t("colStarted"), sortKey: "startedAt" },
         t("colDuration"),
         t("colError"),
       ]}
+      sort={sort}
+      onSortChange={handleSortChange}
       rows={items.map((r) => {
         const duration =
           r.finishedAt && r.startedAt
@@ -136,6 +165,7 @@ export function SyncRunsClient() {
                 {r.status}
               </Badge>
             </TableCell>
+            <TableCell className="tabular-nums">{r.itemsCount}</TableCell>
             <TableCell className="tabular-nums">{r.pcjonesItemsCount}</TableCell>
             <TableCell className="tabular-nums">{r.tvdbItemsCount}</TableCell>
             <TableCell className="tabular-nums">{r.tmdbItemsCount}</TableCell>

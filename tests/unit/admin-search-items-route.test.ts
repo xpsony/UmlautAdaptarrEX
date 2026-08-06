@@ -100,6 +100,58 @@ describe("GET /api/admin/search-items", () => {
     ]);
   });
 
+  it("accepts a whitelisted sort key, keeping the id tiebreaker", async () => {
+    mockSearchItem.findMany.mockResolvedValueOnce([]);
+    mockSearchItem.count.mockResolvedValueOnce(0);
+
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/search-items?sort=updatedAt&order=desc",
+    });
+
+    const args = mockSearchItem.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual([{ updatedAt: "desc" }, { id: "asc" }]);
+  });
+
+  it("accepts the year sort key", async () => {
+    mockSearchItem.findMany.mockResolvedValueOnce([]);
+    mockSearchItem.count.mockResolvedValueOnce(0);
+
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/search-items?sort=year&order=asc",
+    });
+
+    const args = mockSearchItem.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual([{ year: "asc" }, { id: "asc" }]);
+  });
+
+  it("falls back to the default sort key when sort is not whitelisted", async () => {
+    mockSearchItem.findMany.mockResolvedValueOnce([]);
+    mockSearchItem.count.mockResolvedValueOnce(0);
+
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/search-items?sort=title&order=desc",
+    });
+
+    const args = mockSearchItem.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual([{ expectedTitle: "desc" }, { id: "asc" }]);
+  });
+
+  it("falls back to the default order when order is invalid", async () => {
+    mockSearchItem.findMany.mockResolvedValueOnce([]);
+    mockSearchItem.count.mockResolvedValueOnce(0);
+
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/search-items?sort=germanTitle&order=bogus",
+    });
+
+    const args = mockSearchItem.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual([{ germanTitle: "asc" }, { id: "asc" }]);
+  });
+
   it("maps instanceId, mediaType and missingGerman=1 into the where clause", async () => {
     mockSearchItem.findMany.mockResolvedValueOnce([]);
     mockSearchItem.count.mockResolvedValueOnce(0);

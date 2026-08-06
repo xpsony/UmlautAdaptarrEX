@@ -2,7 +2,17 @@ import type { FastifyInstance } from "fastify";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/server/auth/middleware";
 import type { SyncScheduler } from "@/server/sync/scheduler";
-import { clampInt } from "./_helpers";
+import { clampInt, resolveSort, type SortWhitelist } from "./_helpers";
+
+// Sortable columns exposed to the sync-runs table. A `sort` outside this map
+// (or an invalid `order`) silently falls back to `startedAt desc` — no 400s.
+const SYNC_RUNS_SORT: SortWhitelist = {
+  startedAt: "startedAt",
+  status: "status",
+  itemsCount: "itemsCount",
+};
+const SYNC_RUNS_DEFAULT_SORT_KEY = "startedAt";
+const SYNC_RUNS_DEFAULT_ORDER = "desc" as const;
 
 interface SyncRunsEnvelope {
   items: unknown[];
@@ -85,10 +95,16 @@ export async function syncRoutes(app: FastifyInstance, deps: SyncRoutesDeps): Pr
           { errorMessage: { contains: search } },
         ];
       }
+      const { field, order } = resolveSort(
+        q,
+        SYNC_RUNS_SORT,
+        SYNC_RUNS_DEFAULT_SORT_KEY,
+        SYNC_RUNS_DEFAULT_ORDER,
+      );
       const [items, total] = await Promise.all([
         prisma.syncRun.findMany({
           where,
-          orderBy: { startedAt: "desc" },
+          orderBy: { [field]: order },
           take,
           skip,
           include: { arrInstance: { select: { name: true, type: true } } },

@@ -34,13 +34,30 @@ export function RequestHistoryClient() {
   const [pageSize, setPageSize] = useState(50);
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebouncedValue(search.trim());
+  // Default matches the server's default (createdAt desc) — see
+  // REQUEST_HISTORY_SORT in src/server/routes/admin/history.ts.
+  const [sort, setSort] = useState<{ key: string; order: "asc" | "desc" }>({
+    key: "createdAt",
+    order: "desc",
+  });
+
+  const handleSortChange = (key: string) => {
+    setSort((prev) =>
+      prev.key === key
+        ? { key, order: prev.order === "asc" ? "desc" : "asc" }
+        : { key, order: "asc" },
+    );
+    setPage(1);
+  };
 
   const data = useQuery<{ items: Row[]; total: number }>({
-    queryKey: ["request-history", page, pageSize, debouncedSearch],
+    queryKey: ["request-history", page, pageSize, debouncedSearch, sort.key, sort.order],
     queryFn: () => {
       const params = new URLSearchParams({
         take: String(pageSize),
         skip: String((page - 1) * pageSize),
+        sort: sort.key,
+        order: sort.order,
       });
       if (debouncedSearch) params.set("search", debouncedSearch);
       return apiFetch(`/api/admin/request-history?${params}`);
@@ -82,15 +99,17 @@ export function RequestHistoryClient() {
         </div>
       }
       columns={[
-        t("createdAt"),
-        t("type"),
-        t("domain"),
+        { label: t("createdAt"), sortKey: "createdAt" },
+        { label: t("type"), sortKey: "type" },
+        { label: t("domain"), sortKey: "domain" },
         t("query"),
         t("externalId"),
-        t("status"),
-        t("duration"),
+        { label: t("status"), sortKey: "status" },
+        { label: t("duration"), sortKey: "durationMs" },
         t("cacheHit"),
       ]}
+      sort={sort}
+      onSortChange={handleSortChange}
       rows={items.map((r) => (
         <TableRow key={r.id}>
           <TableCell className="whitespace-nowrap text-muted-foreground">

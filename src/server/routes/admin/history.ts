@@ -1,11 +1,18 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/server/auth/middleware";
-import { clampInt } from "./_helpers";
+import { clampInt, resolveSort, type SortWhitelist } from "./_helpers";
 
 interface PaginatedModel {
   findMany: (args: object) => Promise<unknown[]>;
   count: (args: object) => Promise<number>;
+}
+
+/** Sort configuration for `paginatedList`; omit to keep the `createdAt desc` default. */
+interface SortOptions {
+  whitelist: SortWhitelist;
+  defaultKey: string;
+  defaultOrder?: "asc" | "desc";
 }
 
 async function paginatedList(
@@ -14,6 +21,7 @@ async function paginatedList(
   buildWhere: (q: Record<string, string | undefined>) => Record<string, unknown>,
   defaultTake = 50,
   maxTake = 500,
+  sortOptions?: SortOptions,
 ): Promise<{ items: unknown[]; total: number; take: number; skip: number }> {
   const q = (req.query as Record<string, string | undefined>) ?? {};
   const take = clampInt(q.take, defaultTake, 1, maxTake);
@@ -22,42 +30,91 @@ async function paginatedList(
   // multi-KB patterns would just burn CPU without being a useful search.
   if (q.search) q.search = q.search.slice(0, 256);
   const where = buildWhere(q);
+  const orderBy = sortOptions
+    ? (() => {
+        const { field, order } = resolveSort(
+          q,
+          sortOptions.whitelist,
+          sortOptions.defaultKey,
+          sortOptions.defaultOrder,
+        );
+        return { [field]: order };
+      })()
+    : { createdAt: "desc" as const };
   const [items, total] = await Promise.all([
-    model.findMany({ where, orderBy: { createdAt: "desc" }, take, skip }),
+    model.findMany({ where, orderBy, take, skip }),
     model.count({ where }),
   ]);
   return { items, total, take, skip };
 }
 
+// Sortable columns exposed to the request-history table. `sort` values that
+// don't match a key here (and any invalid `order`) silently fall back to the
+// default below — no 400s for an unrecognized sort/order combination.
+const REQUEST_HISTORY_SORT: SortOptions = {
+  whitelist: {
+    createdAt: "createdAt",
+    status: "status",
+    durationMs: "durationMs",
+    domain: "domain",
+    type: "type",
+  },
+  defaultKey: "createdAt",
+  defaultOrder: "desc",
+};
+
+const RENAME_HISTORY_SORT: SortOptions = {
+  whitelist: {
+    createdAt: "createdAt",
+    mediaType: "mediaType",
+  },
+  defaultKey: "createdAt",
+  defaultOrder: "desc",
+};
+
 export async function historyRoutes(app: FastifyInstance): Promise<void> {
   app.get("/api/admin/request-history", { preHandler: requireAuth }, (req) =>
-    paginatedList(req, prisma.requestHistory, (q) => {
-      const where: Record<string, unknown> = {};
-      if (q.type) where.type = q.type;
-      if (q.domain) where.domain = q.domain;
-      if (q.search) {
-        where.OR = [
-          { query: { contains: q.search } },
-          { externalId: { contains: q.search } },
-          { domain: { contains: q.search } },
-        ];
-      }
-      return where;
-    }),
+    paginatedList(
+      req,
+      prisma.requestHistory,
+      (q) => {
+        const where: Record<string, unknown> = {};
+        if (q.type) where.type = q.type;
+        if (q.domain) where.domain = q.domain;
+        if (q.search) {
+          where.OR = [
+            { query: { contains: q.search } },
+            { externalId: { contains: q.search } },
+            { domain: { contains: q.search } },
+          ];
+        }
+        return where;
+      },
+      50,
+      500,
+      REQUEST_HISTORY_SORT,
+    ),
   );
 
   app.get("/api/admin/rename-history", { preHandler: requireAuth }, (req) =>
-    paginatedList(req, prisma.renameHistory, (q) => {
-      const where: Record<string, unknown> = {};
-      if (q.mediaType) where.mediaType = q.mediaType;
-      if (q.search) {
-        where.OR = [
-          { originalTitle: { contains: q.search } },
-          { rewrittenTitle: { contains: q.search } },
-        ];
-      }
-      return where;
-    }),
+    paginatedList(
+      req,
+      prisma.renameHistory,
+      (q) => {
+        const where: Record<string, unknown> = {};
+        if (q.mediaType) where.mediaType = q.mediaType;
+        if (q.search) {
+          where.OR = [
+            { originalTitle: { contains: q.search } },
+            { rewrittenTitle: { contains: q.search } },
+          ];
+        }
+        return where;
+      },
+      50,
+      500,
+      RENAME_HISTORY_SORT,
+    ),
   );
 
   app.get("/api/admin/logs", { preHandler: requireAuth }, async (req) => {

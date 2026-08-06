@@ -22,6 +22,31 @@ export function clampInt(input: string | undefined, def: number, min: number, ma
   return Math.min(max, Math.max(min, n));
 }
 
+/** Maps a public `sort` query value to the Prisma field name it orders by. */
+export type SortWhitelist = Record<string, string>;
+
+/**
+ * Resolve `sort`/`order` query params against a per-endpoint whitelist.
+ * Neither axis ever 400s: a `sort` key outside the whitelist falls back to
+ * `defaultKey`, and an `order` that isn't literally "asc"/"desc" falls back
+ * to `defaultOrder`. The two axes are resolved independently, so e.g. an
+ * unknown sort key with a valid `order` still honors that order on the
+ * default column.
+ */
+export function resolveSort(
+  q: Record<string, string | undefined>,
+  whitelist: SortWhitelist,
+  defaultKey: string,
+  defaultOrder: "asc" | "desc" = "desc",
+): { field: string; order: "asc" | "desc" } {
+  const field =
+    q.sort !== undefined && Object.hasOwn(whitelist, q.sort)
+      ? whitelist[q.sort]!
+      : whitelist[defaultKey]!;
+  const order: "asc" | "desc" = q.order === "asc" || q.order === "desc" ? q.order : defaultOrder;
+  return { field, order };
+}
+
 /** True when `err` is a Prisma error with the given error code (e.g. "P2025"). */
 export function isPrismaErrorCode(err: unknown, code: string): boolean {
   return (

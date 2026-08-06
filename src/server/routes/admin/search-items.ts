@@ -1,7 +1,20 @@
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/server/auth/middleware";
-import { clampInt, parseJsonArray } from "./_helpers";
+import { clampInt, parseJsonArray, resolveSort, type SortWhitelist } from "./_helpers";
+
+// Sortable columns exposed to the library table. A `sort` outside this map
+// (or an invalid `order`) silently falls back to `expectedTitle asc` — no
+// 400s. The `id asc` tiebreaker below is always appended regardless of the
+// chosen column, matching the pre-existing default-sort behavior.
+const SEARCH_ITEMS_SORT: SortWhitelist = {
+  expectedTitle: "expectedTitle",
+  germanTitle: "germanTitle",
+  year: "year",
+  updatedAt: "updatedAt",
+};
+const SEARCH_ITEMS_DEFAULT_SORT_KEY = "expectedTitle";
+const SEARCH_ITEMS_DEFAULT_ORDER = "asc" as const;
 
 export async function searchItemRoutes(app: FastifyInstance): Promise<void> {
   app.get("/api/admin/search-items", { preHandler: requireAuth }, async (req: FastifyRequest) => {
@@ -26,13 +39,20 @@ export async function searchItemRoutes(app: FastifyInstance): Promise<void> {
       ];
     }
 
+    const { field, order } = resolveSort(
+      q,
+      SEARCH_ITEMS_SORT,
+      SEARCH_ITEMS_DEFAULT_SORT_KEY,
+      SEARCH_ITEMS_DEFAULT_ORDER,
+    );
     const [rows, total] = await Promise.all([
       prisma.searchItem.findMany({
         where,
-        // The same medium synced from two instances shares expectedTitle by
-        // construction — order by id too so ties resolve deterministically
-        // and pagination can't duplicate/skip rows at page boundaries.
-        orderBy: [{ expectedTitle: "asc" }, { id: "asc" }],
+        // The same medium synced from two instances can share a sort value
+        // (e.g. expectedTitle) by construction — order by id too so ties
+        // resolve deterministically and pagination can't duplicate/skip rows
+        // at page boundaries, whichever column the user chose to sort by.
+        orderBy: [{ [field]: order }, { id: "asc" }],
         take,
         skip,
         // Deliberate projection: arrInstance carries apiKey + host —

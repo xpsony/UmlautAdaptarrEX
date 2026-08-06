@@ -118,6 +118,58 @@ describe("GET /api/admin/request-history", () => {
     const args = mockReq.findMany.mock.calls[0]?.[0] as { take: number };
     expect(args.take).toBe(500);
   });
+
+  it("orders by createdAt desc by default", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({ method: "GET", url: "/api/admin/request-history" });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual({ createdAt: "desc" });
+  });
+
+  it("accepts a whitelisted sort key with an explicit order", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/request-history?sort=status&order=asc",
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual({ status: "asc" });
+  });
+
+  it("flips order between asc and desc for the same sort key", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/request-history?sort=durationMs&order=desc",
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual({ durationMs: "desc" });
+  });
+
+  it("falls back to the default sort key when sort is not whitelisted", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/request-history?sort=apiKey&order=asc",
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual({ createdAt: "asc" });
+  });
+
+  it("falls back to the default order when order is not asc/desc", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/request-history?sort=status&order=sideways",
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual({ status: "desc" });
+  });
 });
 
 describe("GET /api/admin/rename-history", () => {
@@ -134,6 +186,36 @@ describe("GET /api/admin/rename-history", () => {
     expect(args.where.mediaType).toBe("movie");
     expect(Array.isArray(args.where.OR)).toBe(true);
     expect(args.where.OR.length).toBe(2);
+  });
+
+  it("orders by createdAt desc by default", async () => {
+    mockRename.findMany.mockResolvedValueOnce([]);
+    mockRename.count.mockResolvedValueOnce(0);
+    await app.inject({ method: "GET", url: "/api/admin/rename-history" });
+    const args = mockRename.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual({ createdAt: "desc" });
+  });
+
+  it("accepts the whitelisted mediaType sort key", async () => {
+    mockRename.findMany.mockResolvedValueOnce([]);
+    mockRename.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/rename-history?sort=mediaType&order=asc",
+    });
+    const args = mockRename.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual({ mediaType: "asc" });
+  });
+
+  it("falls back to the default sort key when sort is not whitelisted", async () => {
+    mockRename.findMany.mockResolvedValueOnce([]);
+    mockRename.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/rename-history?sort=originalTitle",
+    });
+    const args = mockRename.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual({ createdAt: "desc" });
   });
 });
 

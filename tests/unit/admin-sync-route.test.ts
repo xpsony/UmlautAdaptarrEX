@@ -227,6 +227,50 @@ describe("GET /api/admin/sync-runs", () => {
     expect(mockSyncRun.findMany).not.toHaveBeenCalled();
   });
 
+  it("accepts a whitelisted sort key with an explicit order", async () => {
+    mockSyncRun.findMany.mockResolvedValueOnce([]);
+    mockSyncRun.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/sync-runs?sort=itemsCount&order=asc",
+    });
+    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual({ itemsCount: "asc" });
+  });
+
+  it("accepts the status sort key", async () => {
+    mockSyncRun.findMany.mockResolvedValueOnce([]);
+    mockSyncRun.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/sync-runs?sort=status&order=desc",
+    });
+    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual({ status: "desc" });
+  });
+
+  it("falls back to the default sort key when sort is not whitelisted", async () => {
+    mockSyncRun.findMany.mockResolvedValueOnce([]);
+    mockSyncRun.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/sync-runs?sort=arrInstanceId&order=asc",
+    });
+    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual({ startedAt: "asc" });
+  });
+
+  it("falls back to the default order when order is invalid", async () => {
+    mockSyncRun.findMany.mockResolvedValueOnce([]);
+    mockSyncRun.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/sync-runs?sort=itemsCount&order=bogus",
+    });
+    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual({ itemsCount: "desc" });
+  });
+
   it("rejects pathologically long ids strings", async () => {
     const huge = "x," + "y,".repeat(10_000);
     const r = await app.inject({

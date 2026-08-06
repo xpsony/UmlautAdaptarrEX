@@ -44,6 +44,21 @@ export function LibraryClient() {
   const [typeFilter, setTypeFilter] = useState(ALL);
   const [missingOnly, setMissingOnly] = useState(false);
   const [detail, setDetail] = useState<Item | null>(null);
+  // Default matches the server's default (expectedTitle asc) — see
+  // SEARCH_ITEMS_SORT in src/server/routes/admin/search-items.ts.
+  const [sort, setSort] = useState<{ key: string; order: "asc" | "desc" }>({
+    key: "expectedTitle",
+    order: "asc",
+  });
+
+  const handleSortChange = (key: string) => {
+    setSort((prev) =>
+      prev.key === key
+        ? { key, order: prev.order === "asc" ? "desc" : "asc" }
+        : { key, order: "asc" },
+    );
+    setPage(1);
+  };
 
   const instances = useQuery<Instance[]>({
     queryKey: ["instances"],
@@ -59,11 +74,15 @@ export function LibraryClient() {
       instanceFilter,
       typeFilter,
       missingOnly,
+      sort.key,
+      sort.order,
     ],
     queryFn: () => {
       const params = new URLSearchParams({
         take: String(pageSize),
         skip: String((page - 1) * pageSize),
+        sort: sort.key,
+        order: sort.order,
       });
       if (debouncedSearch) params.set("search", debouncedSearch);
       if (instanceFilter !== ALL) params.set("instanceId", instanceFilter);
@@ -179,13 +198,15 @@ export function LibraryClient() {
           </div>
         }
         columns={[
-          t("colTitle"),
-          t("colGermanTitle"),
+          { label: t("colTitle"), sortKey: "expectedTitle" },
+          { label: t("colGermanTitle"), sortKey: "germanTitle" },
           t("colType"),
-          t("colYear"),
+          { label: t("colYear"), sortKey: "year" },
           t("colInstance"),
-          t("colUpdated"),
+          { label: t("colUpdated"), sortKey: "updatedAt" },
         ]}
+        sort={sort}
+        onSortChange={handleSortChange}
         rows={items.map((item) => (
           <TableRow
             key={item.id}
