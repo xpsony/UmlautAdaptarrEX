@@ -27,6 +27,7 @@ import { historyRoutes } from "./routes/admin/history";
 import { pluginRoutes } from "./routes/admin/plugins";
 import { syncRoutes } from "./routes/admin/sync";
 import { systemRoutes } from "./routes/admin/system";
+import { titleOverrideRoutes } from "./routes/admin/title-overrides";
 import { handleCaps } from "./routes/legacy/caps";
 import { handleSearch } from "./routes/legacy/search";
 import { isLoopbackRequest } from "./routes/legacy/util";
@@ -201,6 +202,7 @@ export async function bootServer(opts: BootOptions): Promise<{
   await pluginRoutes(app);
   await syncRoutes(app, { scheduler });
   await systemRoutes(app);
+  await titleOverrideRoutes(app);
 
   await app.ready();
   broadcaster.attachToHttp(app.server);
@@ -290,7 +292,13 @@ function installErrorHandlers(app: FastifyInstance, logger: AppLogger): void {
       req.log.error(ctx, "request failed");
     } else if (isCsrfError) {
       req.log.debug(
-        { reqId: req.id, method: req.method, url: redactApiKey(req.url), ip: req.ip, code: err.code },
+        {
+          reqId: req.id,
+          method: req.method,
+          url: redactApiKey(req.url),
+          ip: req.ip,
+          code: err.code,
+        },
         "auth rejected: invalid CSRF token",
       );
     } else {

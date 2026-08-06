@@ -10,16 +10,7 @@ import {
 import { testConnection } from "@/arr/test-connection";
 import { requireAuth } from "@/server/auth/middleware";
 import { getAppState } from "@/server/state";
-import { parseOrReply } from "./_helpers";
-
-function isPrismaErrorCode(err: unknown, code: string): boolean {
-  return (
-    typeof err === "object" &&
-    err !== null &&
-    "code" in err &&
-    (err as { code: unknown }).code === code
-  );
-}
+import { isPrismaErrorCode, parseOrReply } from "./_helpers";
 
 const VALID_PROVIDERS: readonly ProviderId[] = ["pcjones", "tvdb", "tmdb"];
 
