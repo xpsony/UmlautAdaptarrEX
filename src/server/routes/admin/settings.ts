@@ -54,6 +54,7 @@ async function getSettings(): Promise<unknown> {
       prowlarrHost: true,
       prowlarrApiKey: true,
       logRetentionDays: true,
+      historyRetentionDays: true,
       indexerRateLimitMs: true,
       indexerTimeoutSeconds: true,
       operationMode: true,

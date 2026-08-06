@@ -40,7 +40,7 @@ const proxyPasswordInput = z
   )
   .optional();
 
-const SettingsSchema = z.object({
+export const SettingsSchema = z.object({
   proxyPort: z.number().int().min(1024).max(65535).default(5006),
   proxyUsername: z
     .string()
@@ -58,10 +58,7 @@ const SettingsSchema = z.object({
   // langsame Indexer nicht sofort abgewuergt werden; Maximum 600 s, weil ein
   // Sonarr/Radarr-Search ohnehin nicht laenger blockiert sein sollte.
   indexerTimeoutSeconds: z.number().int().min(5).max(600).default(60),
-  titleApiHost: z
-    .string()
-    .url()
-    .default("https://umlautadaptarr.pcjones.de/api/v1"),
+  titleApiHost: z.string().url().default("https://umlautadaptarr.pcjones.de/api/v1"),
   tmdbApiKey: optionalSecret,
   // TVDB v4 API: key plus optional subscriber PIN. Some v4 endpoints
   // require the pin, so both are optional independently.
@@ -69,6 +66,9 @@ const SettingsSchema = z.object({
   tvdbPin: optionalSecret,
   userAgent: z.string().min(1).max(256).default("UmlautAdaptarrEX/2.0"),
   logRetentionDays: z.number().int().min(1).max(30).default(3),
+  // Shared retention for RequestHistory + RenameHistory rows (days). The
+  // cleanup job purges older rows every 6 hours.
+  historyRetentionDays: z.number().int().min(1).max(365).default(30),
   operationMode: OperationModeSchema.default("proxy"),
   // Strict SSRF mode for *Arr/Prowlarr hosts. Default false (self-hosted,
   // private/loopback allowed). Set to true for default-strict, which makes
