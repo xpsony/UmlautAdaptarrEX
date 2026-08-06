@@ -35,11 +35,7 @@ interface ProviderOrderFieldProps {
  * control; add/remove goes through the checkboxes at the end of each row.
  * Built on @dnd-kit with a keyboard sensor (Tab -> arrow keys to sort).
  */
-export function ProviderOrderField({
-  value,
-  onChange,
-  available,
-}: ProviderOrderFieldProps) {
+export function ProviderOrderField({ value, onChange, available }: ProviderOrderFieldProps) {
   const t = useTranslations("instances");
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -73,11 +69,7 @@ export function ProviderOrderField({
 
   return (
     <div className="space-y-2">
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={value} strategy={verticalListSortingStrategy}>
           <ul className="space-y-1.5 rounded-md border bg-card p-1.5">
             {value.map((id, idx) => (
@@ -85,9 +77,7 @@ export function ProviderOrderField({
                 key={id}
                 id={id}
                 index={idx}
-                onRemove={
-                  value.length > 1 ? () => toggle(id, false) : undefined
-                }
+                onRemove={value.length > 1 ? () => toggle(id, false) : undefined}
                 t={t}
               />
             ))}
@@ -102,6 +92,7 @@ export function ProviderOrderField({
               key={id}
               type="button"
               onClick={() => toggle(id, true)}
+              aria-label={t("providerAddAria", { name: t(`providerOption.${id}`) })}
               className="rounded-full border bg-background px-2 py-0.5 hover:bg-accent"
             >
               + {t(`providerOption.${id}`)}
@@ -120,21 +111,11 @@ interface SortableProviderRowProps {
   t: ReturnType<typeof useTranslations<"instances">>;
 }
 
-function SortableProviderRow({
-  id,
-  index,
-  onRemove,
-  t,
-}: SortableProviderRowProps) {
+function SortableProviderRow({ id, index, onRemove, t }: SortableProviderRowProps) {
   const dragHandleId = useId();
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id,
+  });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -165,7 +146,7 @@ function SortableProviderRow({
         {index + 1}. {t(`providerOption.${id}`)}
       </span>
       {id === "pcjones" ? (
-        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium tracking-wide text-muted-foreground uppercase">
           {t("providerBadge.deOnly")}
         </span>
       ) : null}
@@ -173,6 +154,7 @@ function SortableProviderRow({
         <button
           type="button"
           onClick={onRemove}
+          aria-label={t("providerRemoveAria", { name: t(`providerOption.${id}`) })}
           className="text-xs text-muted-foreground hover:text-destructive"
         >
           {t("providerRemove")}

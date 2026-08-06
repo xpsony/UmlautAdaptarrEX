@@ -12,6 +12,12 @@ import { Label } from "@/components/ui/label";
 import { RevealableInput } from "@/components/ui/revealable-input";
 import type { AdminFormInput, TmdbTestResult, TvdbTestResult } from "../_lib/setup-wizard";
 
+// Space-separated list of ids for `aria-describedby`, skipping absent ones.
+// (Not `cn()` — that's a Tailwind class merger, not a general string joiner.)
+function describedBy(...ids: (string | undefined)[]): string {
+  return ids.filter((id): id is string => Boolean(id)).join(" ");
+}
+
 interface AdminStepProps {
   form: UseFormReturn<AdminFormInput>;
   tmdbTesting: boolean;
@@ -50,10 +56,13 @@ export function AdminStep({
               autoComplete="username"
               autoFocus
               aria-invalid={form.formState.errors.username ? true : undefined}
+              aria-describedby={form.formState.errors.username ? "username-error" : undefined}
               {...form.register("username")}
             />
             {form.formState.errors.username ? (
-              <p className="text-xs text-destructive">{form.formState.errors.username.message}</p>
+              <p id="username-error" className="text-xs text-destructive">
+                {form.formState.errors.username.message}
+              </p>
             ) : null}
           </div>
           <div className="space-y-2">
@@ -64,10 +73,13 @@ export function AdminStep({
               showLabel={t("showPassword")}
               hideLabel={t("hidePassword")}
               aria-invalid={form.formState.errors.password ? true : undefined}
+              aria-describedby={form.formState.errors.password ? "password-error" : undefined}
               {...form.register("password")}
             />
             {form.formState.errors.password ? (
-              <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>
+              <p id="password-error" className="text-xs text-destructive">
+                {form.formState.errors.password.message}
+              </p>
             ) : null}
           </div>
           <div className="space-y-2">
@@ -79,6 +91,10 @@ export function AdminStep({
                   autoComplete="off"
                   showLabel={t("showPassword")}
                   hideLabel={t("hidePassword")}
+                  aria-describedby={describedBy(
+                    "tmdbApiKey-hint",
+                    tmdbTestResult ? "tmdbApiKey-test-result" : undefined,
+                  )}
                   {...form.register("tmdbApiKey")}
                 />
               </div>
@@ -91,7 +107,7 @@ export function AdminStep({
                 {t("tmdbTest")}
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p id="tmdbApiKey-hint" className="text-xs text-muted-foreground">
               {t("tmdbApiKeyHint")}{" "}
               <a
                 href="https://www.themoviedb.org/settings/api"
@@ -104,11 +120,14 @@ export function AdminStep({
               </a>
             </p>
             {tmdbTestResult?.ok === true ? (
-              <p className="text-xs text-emerald-700 dark:text-emerald-400">
+              <p
+                id="tmdbApiKey-test-result"
+                className="text-xs text-emerald-700 dark:text-emerald-400"
+              >
                 {t("tmdbTestOk", { title: tmdbTestResult.sample.title })}
               </p>
             ) : tmdbTestResult?.ok === false ? (
-              <p className="text-xs text-destructive">
+              <p id="tmdbApiKey-test-result" className="text-xs text-destructive">
                 {t(`tmdbTestErr.${tmdbTestResult.code}`)}
                 {tmdbTestResult.detail ? ` ${tmdbTestResult.detail}` : ""}
               </p>
@@ -123,6 +142,10 @@ export function AdminStep({
                   autoComplete="off"
                   showLabel={t("showPassword")}
                   hideLabel={t("hidePassword")}
+                  aria-describedby={describedBy(
+                    "tvdbApiKey-hint",
+                    tvdbTestResult ? "tvdbApiKey-test-result" : undefined,
+                  )}
                   {...form.register("tvdbApiKey")}
                 />
               </div>
@@ -149,7 +172,7 @@ export function AdminStep({
                 {...form.register("tvdbPin")}
               />
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p id="tvdbApiKey-hint" className="text-xs text-muted-foreground">
               {t("tvdbApiKeyHint")}{" "}
               <a
                 href="https://thetvdb.com/api-information"
@@ -162,11 +185,14 @@ export function AdminStep({
               </a>
             </p>
             {tvdbTestResult?.ok === true ? (
-              <p className="text-xs text-emerald-700 dark:text-emerald-400">
+              <p
+                id="tvdbApiKey-test-result"
+                className="text-xs text-emerald-700 dark:text-emerald-400"
+              >
                 {t("tvdbTestOk", { title: tvdbTestResult.sample.title })}
               </p>
             ) : tvdbTestResult?.ok === false ? (
-              <p className="text-xs text-destructive">
+              <p id="tvdbApiKey-test-result" className="text-xs text-destructive">
                 {t(`tvdbTestErr.${tvdbTestResult.code}`)}
                 {tvdbTestResult.detail ? ` ${tvdbTestResult.detail}` : ""}
               </p>

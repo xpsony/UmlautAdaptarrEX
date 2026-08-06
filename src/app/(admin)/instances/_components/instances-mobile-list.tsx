@@ -43,28 +43,19 @@ export function InstancesMobileList({
                 </p>
               </div>
             </div>
-            <InstanceRowActions
-              instance={inst}
-              onEdit={onEdit}
-              onDelete={onDelete}
-            />
+            <InstanceRowActions instance={inst} onEdit={onEdit} onDelete={onDelete} />
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <Switch
                 checked={inst.enabled}
                 onCheckedChange={(checked) => onToggle(inst.id, checked)}
-                aria-label={t("enabled")}
+                aria-label={t("enableAria", { name: inst.name })}
               />
-              <InstanceStatusBadge
-                enabled={inst.enabled}
-                lastSyncError={inst.lastSyncError}
-              />
+              <InstanceStatusBadge enabled={inst.enabled} lastSyncError={inst.lastSyncError} />
             </div>
             <span className="ml-auto text-xs text-muted-foreground">
-              {inst.lastSyncAt
-                ? new Date(inst.lastSyncAt).toLocaleString(locale)
-                : "—"}
+              {inst.lastSyncAt ? new Date(inst.lastSyncAt).toLocaleString(locale) : "—"}
             </span>
           </div>
           {inst.lastSyncError ? (

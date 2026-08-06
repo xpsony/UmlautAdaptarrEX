@@ -61,33 +61,22 @@ export function InstancesTable({
                   {inst.type}
                 </Badge>
               </TableCell>
-              <TableCell className="font-mono text-xs text-muted-foreground">
-                {inst.host}
-              </TableCell>
+              <TableCell className="font-mono text-xs text-muted-foreground">{inst.host}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={inst.enabled}
                     onCheckedChange={(checked) => onToggle(inst.id, checked)}
-                    aria-label={t("enabled")}
+                    aria-label={t("enableAria", { name: inst.name })}
                   />
-                  <InstanceStatusBadge
-                    enabled={inst.enabled}
-                    lastSyncError={inst.lastSyncError}
-                  />
+                  <InstanceStatusBadge enabled={inst.enabled} lastSyncError={inst.lastSyncError} />
                 </div>
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {inst.lastSyncAt
-                  ? new Date(inst.lastSyncAt).toLocaleString(locale)
-                  : "—"}
+                {inst.lastSyncAt ? new Date(inst.lastSyncAt).toLocaleString(locale) : "—"}
               </TableCell>
               <TableCell className="text-right">
-                <InstanceRowActions
-                  instance={inst}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                />
+                <InstanceRowActions instance={inst} onEdit={onEdit} onDelete={onDelete} />
               </TableCell>
             </TableRow>
           ))}
