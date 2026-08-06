@@ -95,6 +95,19 @@ describe("GET /api/admin/request-history", () => {
     ]);
   });
 
+  it("caps the search term at 256 chars", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: `/api/admin/request-history?search=${"a".repeat(300)}`,
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as {
+      where: { OR: Array<{ query: { contains: string } }> };
+    };
+    expect(args.where.OR[0]?.query.contains).toHaveLength(256);
+  });
+
   it("clamps take to the configured maximum", async () => {
     mockReq.findMany.mockResolvedValueOnce([]);
     mockReq.count.mockResolvedValueOnce(0);

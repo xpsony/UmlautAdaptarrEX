@@ -18,6 +18,9 @@ async function paginatedList(
   const q = (req.query as Record<string, string | undefined>) ?? {};
   const take = clampInt(q.take, defaultTake, 1, maxTake);
   const skip = clampInt(q.skip, 0, 0, 100_000);
+  // Cap the free-text term: every LIKE '%…%' is a full table scan, so
+  // multi-KB patterns would just burn CPU without being a useful search.
+  if (q.search) q.search = q.search.slice(0, 256);
   const where = buildWhere(q);
   const [items, total] = await Promise.all([
     model.findMany({ where, orderBy: { createdAt: "desc" }, take, skip }),
