@@ -5,22 +5,12 @@ import { useTranslations } from "next-intl";
 import type { UseFormReturn } from "react-hook-form";
 import { ArrowRight, CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldHint } from "@/components/ui/field-hint";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RevealableInput } from "@/components/ui/revealable-input";
-import type {
-  AdminFormInput,
-  TmdbTestResult,
-  TvdbTestResult,
-} from "../_lib/setup-wizard";
+import type { AdminFormInput, TmdbTestResult, TvdbTestResult } from "../_lib/setup-wizard";
 
 interface AdminStepProps {
   form: UseFormReturn<AdminFormInput>;
@@ -59,8 +49,12 @@ export function AdminStep({
               id="username"
               autoComplete="username"
               autoFocus
+              aria-invalid={form.formState.errors.username ? true : undefined}
               {...form.register("username")}
             />
+            {form.formState.errors.username ? (
+              <p className="text-xs text-destructive">{form.formState.errors.username.message}</p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">{t("password")}</Label>
@@ -69,8 +63,12 @@ export function AdminStep({
               autoComplete="new-password"
               showLabel={t("showPassword")}
               hideLabel={t("hidePassword")}
+              aria-invalid={form.formState.errors.password ? true : undefined}
               {...form.register("password")}
             />
+            {form.formState.errors.password ? (
+              <p className="text-xs text-destructive">{form.formState.errors.password.message}</p>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label htmlFor="tmdbApiKey">{t("tmdbApiKey")}</Label>
@@ -84,12 +82,7 @@ export function AdminStep({
                   {...form.register("tmdbApiKey")}
                 />
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onTmdbTest}
-                disabled={tmdbTesting}
-              >
+              <Button type="button" variant="outline" onClick={onTmdbTest} disabled={tmdbTesting}>
                 {tmdbTesting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -133,12 +126,7 @@ export function AdminStep({
                   {...form.register("tvdbApiKey")}
                 />
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={onTvdbTest}
-                disabled={tvdbTesting}
-              >
+              <Button type="button" variant="outline" onClick={onTvdbTest} disabled={tvdbTesting}>
                 {tvdbTesting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -149,10 +137,7 @@ export function AdminStep({
             </div>
             <div className="space-y-1">
               <div className="flex items-center gap-1.5">
-                <Label
-                  htmlFor="tvdbPin"
-                  className="text-xs text-muted-foreground"
-                >
+                <Label htmlFor="tvdbPin" className="text-xs text-muted-foreground">
                   {t("tvdbPin")}
                 </Label>
                 <FieldHint text={t("tvdbPinHint")} />
