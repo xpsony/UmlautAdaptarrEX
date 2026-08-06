@@ -411,6 +411,8 @@
     "userAgent": "User-Agent-header",
     "logRetentionDays": "Loggbevarande (dagar)",
     "logRetentionDaysHint": "Loggar äldre än så raderas av en städ-jobb som körs var 6:e timme. 1–30 dagar.",
+    "historyRetentionDays": "Historiklagring (dagar)",
+    "historyRetentionDaysHint": "Poster i förfrågnings- och omdöpningshistoriken som är äldre än så raderas av städjobbet var 6:e timme. 1–365 dagar.",
     "indexerRateLimitMs": "Indexer-rate-limit (ms)",
     "indexerRateLimitMsHint": "Minsta avstånd mellan förfrågningar till samma indexer-värd. Lägre = snabbare TV-variantsökningar men högre risk för throttling (HTTP 429) eller bannlysning från gratis-indexers. Standard 500 ms. Limitern backar automatiskt när en indexer svarar med Retry-After.",
     "indexerTimeoutSeconds": "Indexer-request-timeout (sekunder)",
@@ -573,6 +575,12 @@
     "loadingHistoryHint": "Hämtar den persisterade historiken från databasen."
   },
   "common": {
+    "pagination": {
+      "previous": "Föregående",
+      "next": "Nästa",
+      "pageOf": "Sida {page} av {pageCount}",
+      "perPage": "Per sida"
+    },
     "save": "Spara",
     "cancel": "Avbryt",
     "confirm": "Bekräfta",

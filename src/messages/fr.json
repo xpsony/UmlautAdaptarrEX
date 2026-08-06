@@ -411,6 +411,8 @@
     "userAgent": "En-tête User-Agent",
     "logRetentionDays": "Rétention des journaux (jours)",
     "logRetentionDaysHint": "Les journaux plus anciens sont supprimés par une tâche de nettoyage toutes les 6 heures. 1–30 jours.",
+    "historyRetentionDays": "Rétention de l'historique (jours)",
+    "historyRetentionDaysHint": "Les entrées de l'historique des requêtes et des renommages plus anciennes sont supprimées par la tâche de nettoyage toutes les 6 heures. 1–365 jours.",
     "indexerRateLimitMs": "Limite de débit indexer (ms)",
     "indexerRateLimitMsHint": "Espacement minimum entre les requêtes vers le même hôte indexer. Plus bas = recherches de variantes TV plus rapides mais risque accru d'être limité (HTTP 429) ou banni par les indexers gratuits. Par défaut 500 ms. Le limiteur recule automatiquement quand un indexer répond avec Retry-After.",
     "indexerTimeoutSeconds": "Timeout de requête indexer (secondes)",
@@ -573,6 +575,12 @@
     "loadingHistoryHint": "Récupération de l'historique persistant depuis la base de données."
   },
   "common": {
+    "pagination": {
+      "previous": "Précédent",
+      "next": "Suivant",
+      "pageOf": "Page {page} sur {pageCount}",
+      "perPage": "Par page"
+    },
     "save": "Enregistrer",
     "cancel": "Annuler",
     "confirm": "Confirmer",
