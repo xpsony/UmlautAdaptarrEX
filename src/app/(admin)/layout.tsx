@@ -1,12 +1,9 @@
 import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
 import { AdminShell } from "@/components/admin-shell";
-import {
-  DEFAULT_LOCALE,
-  LOCALE_COOKIE,
-  isSupportedLocale,
-} from "@/lib/i18n-config";
+import { DEFAULT_LOCALE, LOCALE_COOKIE, isSupportedLocale } from "@/lib/i18n-config";
 import { apiUrl, forwardAuthCookies } from "@/lib/api-upstream";
+import { resolveAppVersion } from "@/lib/version";
 import pkg from "../../../package.json";
 
 async function fetchMe(): Promise<{ id: string; username: string } | null> {
@@ -19,11 +16,7 @@ async function fetchMe(): Promise<{ id: string; username: string } | null> {
   return (await res.json()) as { id: string; username: string };
 }
 
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const me = await fetchMe();
   if (!me) {
     const headersList = await headers();
@@ -37,12 +30,9 @@ export default async function AdminLayout({
 
   const cookieStore = await cookies();
   const localeCookie = cookieStore.get(LOCALE_COOKIE)?.value;
-  const locale = isSupportedLocale(localeCookie)
-    ? localeCookie
-    : DEFAULT_LOCALE;
+  const locale = isSupportedLocale(localeCookie) ? localeCookie : DEFAULT_LOCALE;
 
-  const rawVersion = process.env.APP_VERSION ?? pkg.version;
-  const version = rawVersion.replace(/^v/, "");
+  const version = resolveAppVersion(process.env.APP_VERSION, pkg.version);
 
   return (
     <AdminShell locale={locale} username={me.username} version={version}>

@@ -4,6 +4,7 @@ import { ExternalLink, Heart, Star } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { ChangelogSection } from "@/components/changelog-section";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { resolveAppVersion } from "@/lib/version";
 import pkg from "../../../../package.json";
 
 // Forks override these via build-time env vars (e.g. NEXT_PUBLIC_GITHUB_OWNER
@@ -23,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function AboutPage() {
   const t = await getTranslations("about");
-  const version = (process.env.APP_VERSION ?? pkg.version).replace(/^v/, "");
+  const version = resolveAppVersion(process.env.APP_VERSION, pkg.version);
 
   return (
     <div className="space-y-4">
