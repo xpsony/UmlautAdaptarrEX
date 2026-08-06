@@ -258,6 +258,44 @@ describe("DELETE /api/admin/instances/:id", () => {
   });
 });
 
+describe("PATCH /api/admin/instances/:id — Prisma error mapping", () => {
+  it("returns 404 when the instance does not exist (P2025)", async () => {
+    mockArr.update.mockRejectedValueOnce({ code: "P2025" });
+    const r = await app.inject({
+      method: "PATCH",
+      url: "/api/admin/instances/does-not-exist",
+      payload: { enabled: true },
+    });
+    expect(r.statusCode).toBe(404);
+    expect(r.json()).toMatchObject({ error: "not_found" });
+  });
+
+  it("returns 409 when renaming onto an existing type+name (P2002)", async () => {
+    mockArr.update.mockRejectedValueOnce({ code: "P2002" });
+    const r = await app.inject({
+      method: "PATCH",
+      url: "/api/admin/instances/i1",
+      payload: { name: "Duplicate" },
+    });
+    expect(r.statusCode).toBe(409);
+    expect(r.json()).toMatchObject({ error: "duplicate" });
+  });
+});
+
+describe("DELETE /api/admin/instances/:id — Prisma error mapping", () => {
+  it("returns 404 when the instance does not exist (P2025)", async () => {
+    mockArr.delete.mockRejectedValueOnce({ code: "P2025" });
+    const r = await app.inject({
+      method: "DELETE",
+      url: "/api/admin/instances/does-not-exist",
+    });
+    expect(r.statusCode).toBe(404);
+    expect(r.json()).toMatchObject({ error: "not_found" });
+    // State cleanup must NOT run for a failed delete.
+    expect(mockState.removeItemsForInstance).not.toHaveBeenCalled();
+  });
+});
+
 describe("POST /api/admin/instances/test", () => {
   it("delegates to testConnection with the configured user agent", async () => {
     mockTestConnection.mockResolvedValueOnce({ ok: true, version: "1.2.3" });

@@ -37,9 +37,7 @@ function csvToArray(csv: string | null): ProviderId[] | null {
   return seen.size > 0 ? Array.from(seen) : null;
 }
 
-export function arrayToCsv(
-  arr: readonly ProviderId[] | null | undefined,
-): string | null {
+export function arrayToCsv(arr: readonly ProviderId[] | null | undefined): string | null {
   if (!arr || arr.length === 0) return null;
   return arr.join(",");
 }
@@ -82,115 +80,124 @@ export async function instanceCrudRoutes(app: FastifyInstance): Promise<void> {
     return rows.map(serialize);
   });
 
-  app.post(
-    "/api/admin/instances",
-    { preHandler: requireAuth },
-    async (req, reply) => {
-      const data = parseOrReply(req.body, ArrInstanceSchema, reply);
-      if (!data) return;
-      try {
-        const created = await prisma.arrInstance.create({
-          data: {
-            ...data,
-            providerOrder: arrayToCsv(data.providerOrder),
-          },
-        });
-        refreshInstanceOptionsCache(created);
-        req.log.info(
-          {
-            userId: req.session?.userId ?? null,
-            instanceId: created.id,
-            type: created.type,
-            name: created.name,
-            host: created.host,
-            enabled: created.enabled,
-          },
-          "instance created",
-        );
-        return serialize(created);
-      } catch (err) {
-        if (isPrismaErrorCode(err, "P2002")) {
-          req.log.warn(
-            { type: data.type, name: data.name },
-            "instance create rejected: duplicate",
-          );
-          return reply.code(409).send({
-            error: "duplicate",
-            message: "An instance with this type and name already exists.",
-          });
-        }
-        throw err;
-      }
-    },
-  );
-
-  app.patch(
-    "/api/admin/instances/:id",
-    { preHandler: requireAuth },
-    async (req, reply) => {
-      const id = (req.params as { id: string }).id;
-      const data = parseOrReply(
-        { id, ...((req.body as object) ?? {}) },
-        ArrInstanceUpdateSchema,
-        reply,
-      );
-      if (!data) return;
-      const { id: _id, providerOrder, ...rest } = data;
-      const updateData: Record<string, unknown> = stripUndefined(rest);
-      // `null` and an array are both valid values for the field; only
-      // `undefined` (= not sent) leaves it unchanged.
-      if (providerOrder !== undefined) {
-        updateData.providerOrder = arrayToCsv(providerOrder);
-      }
-      const updated = await prisma.arrInstance.update({
-        where: { id },
-        data: updateData,
+  app.post("/api/admin/instances", { preHandler: requireAuth }, async (req, reply) => {
+    const data = parseOrReply(req.body, ArrInstanceSchema, reply);
+    if (!data) return;
+    try {
+      const created = await prisma.arrInstance.create({
+        data: {
+          ...data,
+          providerOrder: arrayToCsv(data.providerOrder),
+        },
       });
-      refreshInstanceOptionsCache(updated);
+      refreshInstanceOptionsCache(created);
       req.log.info(
         {
           userId: req.session?.userId ?? null,
-          instanceId: updated.id,
-          type: updated.type,
-          name: updated.name,
-          changedFields: Object.keys(updateData),
+          instanceId: created.id,
+          type: created.type,
+          name: created.name,
+          host: created.host,
+          enabled: created.enabled,
         },
-        "instance updated",
+        "instance created",
       );
-      return serialize(updated);
-    },
-  );
+      return serialize(created);
+    } catch (err) {
+      if (isPrismaErrorCode(err, "P2002")) {
+        req.log.warn({ type: data.type, name: data.name }, "instance create rejected: duplicate");
+        return reply.code(409).send({
+          error: "duplicate",
+          message: "An instance with this type and name already exists.",
+        });
+      }
+      throw err;
+    }
+  });
 
-  app.delete(
-    "/api/admin/instances/:id",
-    { preHandler: requireAuth },
-    async (req) => {
-      const id = (req.params as { id: string }).id;
-      const removed = await prisma.arrInstance.delete({ where: { id } });
-      const state = getAppState();
-      state.removeItemsForInstance(id);
-      state.removeInstanceOptions(id);
-      req.log.warn(
-        {
-          userId: req.session?.userId ?? null,
-          instanceId: removed.id,
-          type: removed.type,
-          name: removed.name,
-        },
-        "instance deleted",
-      );
-      return { ok: true };
-    },
-  );
+  app.patch("/api/admin/instances/:id", { preHandler: requireAuth }, async (req, reply) => {
+    const id = (req.params as { id: string }).id;
+    const data = parseOrReply(
+      { id, ...((req.body as object) ?? {}) },
+      ArrInstanceUpdateSchema,
+      reply,
+    );
+    if (!data) return;
+    const { id: _id, providerOrder, ...rest } = data;
+    const updateData: Record<string, unknown> = stripUndefined(rest);
+    // `null` and an array are both valid values for the field; only
+    // `undefined` (= not sent) leaves it unchanged.
+    if (providerOrder !== undefined) {
+      updateData.providerOrder = arrayToCsv(providerOrder);
+    }
+    let updated: DbInstance;
+    try {
+      updated = await prisma.arrInstance.update({
+        where: { id },
+        data: updateData,
+      });
+    } catch (err) {
+      if (isPrismaErrorCode(err, "P2025")) {
+        return reply.code(404).send({
+          error: "not_found",
+          message: "Instance not found.",
+        });
+      }
+      if (isPrismaErrorCode(err, "P2002")) {
+        return reply.code(409).send({
+          error: "duplicate",
+          message: "An instance with this type and name already exists.",
+        });
+      }
+      throw err;
+    }
+    refreshInstanceOptionsCache(updated);
+    req.log.info(
+      {
+        userId: req.session?.userId ?? null,
+        instanceId: updated.id,
+        type: updated.type,
+        name: updated.name,
+        changedFields: Object.keys(updateData),
+      },
+      "instance updated",
+    );
+    return serialize(updated);
+  });
 
-  app.post(
-    "/api/admin/instances/test",
-    { preHandler: requireAuth },
-    async (req, reply) => {
-      const data = parseOrReply(req.body, TestConnectionSchema, reply);
-      if (!data) return;
-      const ua = getAppState().settings.userAgent;
-      return testConnection(data.type, data.host, data.apiKey, ua, req.log);
-    },
-  );
+  app.delete("/api/admin/instances/:id", { preHandler: requireAuth }, async (req, reply) => {
+    const id = (req.params as { id: string }).id;
+    let removed: DbInstance;
+    try {
+      removed = await prisma.arrInstance.delete({ where: { id } });
+    } catch (err) {
+      if (isPrismaErrorCode(err, "P2025")) {
+        return reply.code(404).send({
+          error: "not_found",
+          message: "Instance not found.",
+        });
+      }
+      throw err;
+    }
+    const state = getAppState();
+    state.removeItemsForInstance(id);
+    state.removeInstanceOptions(id);
+    req.log.warn(
+      {
+        userId: req.session?.userId ?? null,
+        instanceId: removed.id,
+        type: removed.type,
+        name: removed.name,
+      },
+      "instance deleted",
+    );
+    return { ok: true };
+  });
+
+  app.post("/api/admin/instances/test", { preHandler: requireAuth }, async (req, reply) => {
+    const data = parseOrReply(req.body, TestConnectionSchema, reply);
+    if (!data) return;
+    const ua = getAppState().settings.userAgent;
+    return testConnection(data.type, data.host, data.apiKey, ua, req.log);
+  });
 }
