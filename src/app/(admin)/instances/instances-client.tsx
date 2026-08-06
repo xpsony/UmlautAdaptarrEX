@@ -55,6 +55,12 @@ export function InstancesClient() {
         body: JSON.stringify({ enabled }),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
+    onError: () => {
+      toast.error(tCommon("error"));
+      // The Switch is bound to the query cache (no optimistic write), so no
+      // rollback is needed — refetch only to reconcile with server truth.
+      void qc.invalidateQueries({ queryKey: ["instances"] });
+    },
   });
 
   const onEdit = (instance: Instance) => setEditor({ open: true, instance });
