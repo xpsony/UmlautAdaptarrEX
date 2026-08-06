@@ -192,15 +192,9 @@ export class HttpProxyServer {
           expectedUser,
         };
         if (auth) {
-          this.opts.logger.warn(
-            ctx,
-            "http-proxy 407: Proxy-Authorization invalid",
-          );
+          this.opts.logger.warn(ctx, "http-proxy 407: Proxy-Authorization invalid");
         } else {
-          this.opts.logger.debug(
-            ctx,
-            "http-proxy 407: Proxy-Authorization missing",
-          );
+          this.opts.logger.debug(ctx, "http-proxy 407: Proxy-Authorization missing");
         }
         socket.write(
           "HTTP/1.1 407 Proxy Authentication Required\r\n" +
@@ -221,11 +215,7 @@ export class HttpProxyServer {
     }
   }
 
-  private validateAuth(
-    headerValue: string,
-    expectedUser: string,
-    expectedPass: string,
-  ): boolean {
+  private validateAuth(headerValue: string, expectedUser: string, expectedPass: string): boolean {
     if (!/^Basic\s+/i.test(headerValue)) return false;
     const encoded = headerValue.replace(/^Basic\s+/i, "").trim();
     let decoded: string;
@@ -247,10 +237,7 @@ export class HttpProxyServer {
     return userOk && passOk;
   }
 
-  private async handleConnect(
-    socket: net.Socket,
-    firstLine: string,
-  ): Promise<void> {
+  private async handleConnect(socket: net.Socket, firstLine: string): Promise<void> {
     const target = firstLine.split(" ")[1] ?? "";
     const [host, portStr] = target.split(":");
     const port = parseInt(portStr ?? "443", 10);
@@ -313,10 +300,7 @@ export class HttpProxyServer {
       socket.pipe(upstream);
     });
     upstream.on("error", (err) => {
-      this.opts.logger.error(
-        { host, port, err },
-        "http-proxy CONNECT upstream error",
-      );
+      this.opts.logger.error({ host, port, err }, "http-proxy CONNECT upstream error");
       // Destroy upstream too; .end()-ing only the client left the upstream
       // socket leaked on error.
       upstream.destroy();
@@ -344,7 +328,7 @@ export class HttpProxyServer {
     const started = process.hrtime.bigint();
     let url: URL | null = null;
     try {
-      const [, urlStr] = firstLine.split(" ");
+      const [method, urlStr] = firstLine.split(" ");
       if (!urlStr) {
         this.opts.logger.warn(
           {
@@ -357,6 +341,21 @@ export class HttpProxyServer {
         return;
       }
       url = new URL(urlStr);
+      // Legacy wire behavior: every proxied request is forced to GET — the
+      // .NET predecessor did the same (HttpProxyService.cs, HttpMethod.Get)
+      // and the legacy API only registers GET routes. Say so out loud
+      // instead of silently degrading; a POST body, if any, is dropped.
+      if (method !== "GET") {
+        this.opts.logger.warn(
+          {
+            method,
+            host: url.host,
+            path: url.pathname,
+            remoteAddress: socket.remoteAddress,
+          },
+          "http-proxy: non-GET request forced to GET (legacy wire behavior), request body dropped",
+        );
+      }
       // Block SSRF before we relay anything, even though the target is
       // routed through our own legacy handler (which now also blocks
       // private hosts) — defense-in-depth keeps both layers honest.
@@ -371,11 +370,7 @@ export class HttpProxyServer {
       // Pin to the standard web ports. Without this the HTTP path is an open
       // relay to any public host:port (25, 465, 6667, 22, …), the same
       // relay-abuse case the CONNECT path rules out — keep the two symmetric.
-      const targetPort = url.port
-        ? parseInt(url.port, 10)
-        : url.protocol === "https:"
-          ? 443
-          : 80;
+      const targetPort = url.port ? parseInt(url.port, 10) : url.protocol === "https:" ? 443 : 80;
       if (targetPort !== 80 && targetPort !== 443) {
         this.opts.logger.warn(
           {
@@ -394,9 +389,7 @@ export class HttpProxyServer {
 
       const apiKey = this.opts.state.settings.appApiKey || "_";
       const modified = `http://127.0.0.1:${this.opts.appPort}/${encodeURIComponent(apiKey)}/${url.host}${url.pathname}${url.search}`;
-      const userAgent =
-        matchHeader(headerStr, "User-Agent") ??
-        this.opts.state.settings.userAgent;
+      const userAgent = matchHeader(headerStr, "User-Agent") ?? this.opts.state.settings.userAgent;
 
       const { statusCode, headers, body } = await undiciRequest(modified, {
         method: "GET",
@@ -460,9 +453,7 @@ interface InitialReadResult {
   full: Buffer;
 }
 
-async function readUntilHeaders(
-  socket: net.Socket,
-): Promise<InitialReadResult | null> {
+async function readUntilHeaders(socket: net.Socket): Promise<InitialReadResult | null> {
   return new Promise((resolve) => {
     const chunks: Buffer[] = [];
     let total = 0;
