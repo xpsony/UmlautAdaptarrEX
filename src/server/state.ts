@@ -123,6 +123,8 @@ const NO_SETTINGS: AppSettings = {
 //   - TitleProvider rebuilt on settings update
 export class AppState {
   readonly indexerCache: LRUCache<string, { body: Buffer; contentType: string; status: number }>;
+  // Keyed `${type}:${externalId}` WITHOUT instanceId: two instances sharing the
+  // same medium collapse onto one entry and the last indexed write wins.
   private byExternalId = new Map<string, CachedSearchItem>(); // `${type}:${externalId}`
   private byTitlePrefix = new Map<string, CachedSearchItem[]>(); // `${type}:${prefix5}`
   // Per-instance match options (year-matching toggle + tolerance). Loaded
@@ -361,28 +363,45 @@ export class AppState {
     this._instanceOptions.delete(instanceId);
   }
 
+  private toCachedSearchItem(row: {
+    id: string;
+    arrInstanceId: string;
+    arrId: number;
+    externalId: string;
+    title: string;
+    expectedTitle: string;
+    expectedAuthor: string | null;
+    germanTitle: string | null;
+    mediaType: string;
+    year: number | null;
+    titleSearchVariations: string;
+    titleMatchVariations: string;
+    authorMatchVariations: string;
+  }): CachedSearchItem {
+    return {
+      id: row.id,
+      arrInstanceId: row.arrInstanceId,
+      arrId: row.arrId,
+      externalId: row.externalId,
+      title: row.title,
+      expectedTitle: row.expectedTitle,
+      expectedAuthor: row.expectedAuthor,
+      germanTitle: row.germanTitle,
+      mediaType: row.mediaType as MediaType,
+      year: row.year,
+      titleSearchVariations: JSON.parse(row.titleSearchVariations) as string[],
+      titleMatchVariations: JSON.parse(row.titleMatchVariations) as string[],
+      authorMatchVariations: JSON.parse(row.authorMatchVariations) as string[],
+    };
+  }
+
   async loadSearchItemsFromDb(): Promise<void> {
     this.byExternalId.clear();
     this.byTitlePrefix.clear();
     await this.loadInstanceOptions();
     const rows = await prisma.searchItem.findMany();
     for (const row of rows) {
-      const item: CachedSearchItem = {
-        id: row.id,
-        arrInstanceId: row.arrInstanceId,
-        arrId: row.arrId,
-        externalId: row.externalId,
-        title: row.title,
-        expectedTitle: row.expectedTitle,
-        expectedAuthor: row.expectedAuthor,
-        germanTitle: row.germanTitle,
-        mediaType: row.mediaType as MediaType,
-        year: row.year,
-        titleSearchVariations: JSON.parse(row.titleSearchVariations) as string[],
-        titleMatchVariations: JSON.parse(row.titleMatchVariations) as string[],
-        authorMatchVariations: JSON.parse(row.authorMatchVariations) as string[],
-      };
-      this.indexItem(item);
+      this.indexItem(this.toCachedSearchItem(row));
     }
   }
 
@@ -410,6 +429,17 @@ export class AppState {
         this.byTitlePrefix.set(prefix, filtered);
       }
     }
+  }
+
+  // Drop and re-read one instance's items — used by the title-override
+  // rebuild so a saved override is searchable immediately, mirroring the
+  // remove-then-index pattern of the sync's persistAndReindex.
+  async reindexInstance(instanceId: string): Promise<void> {
+    this.removeItemsForInstance(instanceId);
+    const rows = await prisma.searchItem.findMany({
+      where: { arrInstanceId: instanceId },
+    });
+    for (const row of rows) this.indexItem(this.toCachedSearchItem(row));
   }
 
   getByExternalId(type: MediaType, externalId: string): CachedSearchItem | null {
