@@ -6,6 +6,8 @@ import { clampInt, parseJsonArray } from "./_helpers";
 export async function searchItemRoutes(app: FastifyInstance): Promise<void> {
   app.get("/api/admin/search-items", { preHandler: requireAuth }, async (req: FastifyRequest) => {
     const q = (req.query as Record<string, string | undefined>) ?? {};
+    // Design spec called for a default of 25; 50 matches the repo-wide
+    // listing convention (request-history et al.) — deliberate deviation.
     const take = clampInt(q.take, 50, 1, 250);
     const skip = clampInt(q.skip, 0, 0, 1_000_000);
     // Cap the free-text term: every LIKE '%…%' is a full table scan, so
@@ -27,7 +29,10 @@ export async function searchItemRoutes(app: FastifyInstance): Promise<void> {
     const [rows, total] = await Promise.all([
       prisma.searchItem.findMany({
         where,
-        orderBy: { expectedTitle: "asc" },
+        // The same medium synced from two instances shares expectedTitle by
+        // construction — order by id too so ties resolve deterministically
+        // and pagination can't duplicate/skip rows at page boundaries.
+        orderBy: [{ expectedTitle: "asc" }, { id: "asc" }],
         take,
         skip,
         // Deliberate projection: arrInstance carries apiKey + host —

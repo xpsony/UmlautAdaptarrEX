@@ -94,7 +94,11 @@ async function doRebuild(
 
 // Rebuilds mutate the shared in-memory index (remove → re-read → re-index);
 // two interleaved runs could leave stale or duplicate entries. Serialize
-// them through a queue — callers just await their turn.
+// them through a queue — callers just await their turn. Note this only
+// serializes rebuilds against each other, NOT against a running sync's
+// persist phase: a PUT landing in that seconds-wide window can be
+// overwritten with pre-override titles until the next sync re-applies the
+// override (self-healing; accepted).
 let rebuildQueue: Promise<unknown> = Promise.resolve();
 
 export function rebuildSearchItemsFor(

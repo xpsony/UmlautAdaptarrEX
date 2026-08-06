@@ -76,7 +76,7 @@ describe("GET /api/admin/search-items", () => {
     };
     expect(args.take).toBe(50);
     expect(args.skip).toBe(0);
-    expect(args.orderBy).toEqual({ expectedTitle: "asc" });
+    expect(args.orderBy).toEqual([{ expectedTitle: "asc" }, { id: "asc" }]);
   });
 
   it("builds an OR search over title, expectedTitle and germanTitle, capped at 256 chars", async () => {
