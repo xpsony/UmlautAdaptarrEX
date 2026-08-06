@@ -215,8 +215,8 @@ model RequestHistory {
   // Cache-Hit-Rate-Stats (`count(createdAt >= …, cacheHit: true)`).
   @@index([createdAt])
   @@index([createdAt, cacheHit])
-  @@index([type])
-  @@index([domain])
+  @@index([type, createdAt])
+  @@index([domain, createdAt])
 }
 
 model RenameHistory {
@@ -228,7 +228,7 @@ model RenameHistory {
   createdAt           DateTime @default(now())
 
   @@index([createdAt])
-  @@index([mediaType])
+  @@index([mediaType, createdAt])
 }
 
 // ── Sync ──────────────────────────────────────────────────────────────────────
@@ -279,7 +279,7 @@ model LogEntry {
   createdAt DateTime @default(now())
 
   @@index([createdAt])
-  @@index([level])
+  @@index([level, createdAt])
 }
 
 // ── Manuelles Titel-Override (global pro Medium) ──────────────────────────────
