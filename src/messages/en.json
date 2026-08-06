@@ -351,7 +351,20 @@
     "typeMovie": "Movie",
     "typeAudio": "Music",
     "typeBook": "Book",
-    "overrideBadge": "Override"
+    "overrideBadge": "Override",
+    "detailExternalId": "External ID",
+    "detailOriginalTitle": "Original title",
+    "detailAuthor": "Author/Artist",
+    "detailAliases": "Aliases",
+    "searchVariations": "Search variations",
+    "matchVariations": "Match variations",
+    "authorVariations": "Author variations",
+    "overrideLabel": "German title (override)",
+    "overrideHint": "Replaces this medium's German title across all instances. Variations are recomputed immediately.",
+    "overrideSave": "Save override",
+    "overrideRemove": "Remove override",
+    "overrideSaved": "Override saved — variations recomputed.",
+    "overrideRemoved": "Override removed."
   },
   "settings": {
     "title": "Settings",

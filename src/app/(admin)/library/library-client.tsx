@@ -22,27 +22,7 @@ import {
 } from "@/components/ui/select";
 import type { Instance } from "@/app/(admin)/instances/_lib/instances-types";
 import { ItemDetailSheet } from "./_components/item-detail-sheet";
-
-type MediaType = "tv" | "movie" | "audio" | "book";
-
-interface Item {
-  id: string;
-  arrId: number;
-  externalId: string;
-  title: string;
-  expectedTitle: string;
-  expectedAuthor: string | null;
-  germanTitle: string | null;
-  mediaType: MediaType;
-  year: number | null;
-  titleSearchVariations: string[];
-  titleMatchVariations: string[];
-  authorMatchVariations: string[];
-  aliases: string[] | null;
-  updatedAt: string;
-  instance: { id: string; name: string; type: string };
-  override: string | null;
-}
+import type { Item, MediaType } from "./_lib/library-types";
 
 // shadcn Select can't carry an empty-string item value, so "all" is the
 // sentinel for "no filter" and is simply omitted from the query params.
@@ -96,6 +76,10 @@ export function LibraryClient() {
 
   const items = data.data?.items ?? [];
   const total = data.data?.total ?? 0;
+  // Re-derive the open item from the latest page data so background
+  // refetches (e.g. after saving an override) update the open sheet instead
+  // of showing the stale snapshot captured at click time.
+  const detailItem = detail ? (items.find((i) => i.id === detail.id) ?? detail) : null;
 
   const typeLabel = (type: MediaType): string => {
     switch (type) {
@@ -257,7 +241,7 @@ export function LibraryClient() {
           />
         }
       />
-      {detail ? <ItemDetailSheet item={detail} onClose={() => setDetail(null)} /> : null}
+      <ItemDetailSheet open={detail !== null} item={detailItem} onClose={() => setDetail(null)} />
     </>
   );
 }

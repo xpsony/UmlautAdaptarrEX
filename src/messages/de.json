@@ -351,7 +351,20 @@
     "typeMovie": "Film",
     "typeAudio": "Musik",
     "typeBook": "Buch",
-    "overrideBadge": "Override"
+    "overrideBadge": "Override",
+    "detailExternalId": "Externe ID",
+    "detailOriginalTitle": "Originaltitel",
+    "detailAuthor": "Autor/Künstler",
+    "detailAliases": "Aliases",
+    "searchVariations": "Suchvarianten",
+    "matchVariations": "Match-Varianten",
+    "authorVariations": "Autor-Varianten",
+    "overrideLabel": "Deutscher Titel (Override)",
+    "overrideHint": "Ersetzt den deutschen Titel dieses Mediums in allen Instanzen. Varianten werden sofort neu berechnet.",
+    "overrideSave": "Override speichern",
+    "overrideRemove": "Override entfernen",
+    "overrideSaved": "Override gespeichert — Varianten neu berechnet.",
+    "overrideRemoved": "Override entfernt."
   },
   "settings": {
     "title": "Einstellungen",

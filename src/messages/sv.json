@@ -348,7 +348,20 @@
     "typeMovie": "Film",
     "typeAudio": "Musik",
     "typeBook": "Bok",
-    "overrideBadge": "Override"
+    "overrideBadge": "Override",
+    "detailExternalId": "Externt ID",
+    "detailOriginalTitle": "Originaltitel",
+    "detailAuthor": "Författare/Artist",
+    "detailAliases": "Alias",
+    "searchVariations": "Sökvarianter",
+    "matchVariations": "Matchningsvarianter",
+    "authorVariations": "Författarvarianter",
+    "overrideLabel": "Tysk titel (override)",
+    "overrideHint": "Ersätter den tyska titeln för detta medium i alla instanser. Varianter beräknas om omedelbart.",
+    "overrideSave": "Spara override",
+    "overrideRemove": "Ta bort override",
+    "overrideSaved": "Override sparad — varianter omberäknade.",
+    "overrideRemoved": "Override borttagen."
   },
   "settings": {
     "title": "Inställningar",
