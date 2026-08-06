@@ -120,4 +120,167 @@ describe("AppState.loadSearchItemsFromDb", () => {
     await state.loadSearchItemsFromDb();
     expect(state.getByExternalId("tv", "stale")).toBeNull();
   });
+
+  it("requests only the columns toCachedSearchItem needs (no full-row fetch)", async () => {
+    mockSearchItem.findMany.mockResolvedValueOnce([]);
+    const state = new AppState();
+    await state.loadSearchItemsFromDb();
+
+    expect(mockSearchItem.findMany).toHaveBeenCalledWith({
+      select: {
+        id: true,
+        arrInstanceId: true,
+        arrId: true,
+        externalId: true,
+        title: true,
+        expectedTitle: true,
+        expectedAuthor: true,
+        germanTitle: true,
+        mediaType: true,
+        year: true,
+        titleSearchVariations: true,
+        titleMatchVariations: true,
+        authorMatchVariations: true,
+      },
+    });
+  });
+
+  it("skips corrupt rows, indexes the valid ones, and warns once with counts", async () => {
+    const warn = vi.fn();
+    const state = new AppState();
+    state.setLogger({
+      child: () => ({}) as never,
+      info: () => {},
+      warn,
+      error: () => {},
+      debug: () => {},
+      trace: () => {},
+      fatal: () => {},
+    } as never);
+
+    mockSearchItem.findMany.mockResolvedValueOnce([
+      {
+        id: "row1",
+        arrInstanceId: "inst-1",
+        arrId: 5,
+        externalId: "100",
+        title: "Show",
+        expectedTitle: "Show",
+        expectedAuthor: null,
+        germanTitle: "Sendung",
+        mediaType: "tv",
+        year: null,
+        titleSearchVariations: '["Show"]',
+        titleMatchVariations: '["Show","Sendung"]',
+        authorMatchVariations: "[]",
+      },
+      {
+        id: "row2",
+        arrInstanceId: "inst-1",
+        arrId: 6,
+        externalId: "200",
+        title: "Broken",
+        expectedTitle: "Broken",
+        expectedAuthor: null,
+        germanTitle: null,
+        mediaType: "tv",
+        year: null,
+        titleSearchVariations: "{bad",
+        titleMatchVariations: '["Broken"]',
+        authorMatchVariations: "[]",
+      },
+    ]);
+
+    await expect(state.loadSearchItemsFromDb()).resolves.toBeUndefined();
+
+    expect(state.getByExternalId("tv", "100")).not.toBeNull();
+    expect(state.getByExternalId("tv", "200")).toBeNull();
+    expect(warn).toHaveBeenCalledTimes(1);
+    const [warnPayload, warnMessage] = warn.mock.calls[0] as [
+      { skipped: number; total: number; samples: { rowId: string; error: string }[] },
+      string,
+    ];
+    expect(warnMessage).toBe("search-item index: skipped corrupt rows");
+    expect(warnPayload.skipped).toBe(1);
+    expect(warnPayload.total).toBe(2);
+    expect(warnPayload.samples).toHaveLength(1);
+    expect(warnPayload.samples[0]?.rowId).toBe("row2");
+    expect(warnPayload.samples[0]?.error.length).toBeGreaterThan(0);
+  });
+
+  it("indexes a valid row that comes after a corrupt row (does not stop on first error)", async () => {
+    mockSearchItem.findMany.mockResolvedValueOnce([
+      {
+        id: "rowBad",
+        arrInstanceId: "inst-1",
+        arrId: 6,
+        externalId: "200",
+        title: "Broken",
+        expectedTitle: "Broken",
+        expectedAuthor: null,
+        germanTitle: null,
+        mediaType: "tv",
+        year: null,
+        titleSearchVariations: "{bad",
+        titleMatchVariations: '["Broken"]',
+        authorMatchVariations: "[]",
+      },
+      {
+        id: "rowGood",
+        arrInstanceId: "inst-1",
+        arrId: 5,
+        externalId: "100",
+        title: "Show",
+        expectedTitle: "Show",
+        expectedAuthor: null,
+        germanTitle: "Sendung",
+        mediaType: "tv",
+        year: null,
+        titleSearchVariations: '["Show"]',
+        titleMatchVariations: '["Show","Sendung"]',
+        authorMatchVariations: "[]",
+      },
+    ]);
+
+    const state = new AppState();
+    await state.loadSearchItemsFromDb();
+
+    expect(state.getByExternalId("tv", "200")).toBeNull();
+    expect(state.getByExternalId("tv", "100")).not.toBeNull();
+  });
+
+  it("does not warn when no rows are corrupt", async () => {
+    const warn = vi.fn();
+    const state = new AppState();
+    state.setLogger({
+      child: () => ({}) as never,
+      info: () => {},
+      warn,
+      error: () => {},
+      debug: () => {},
+      trace: () => {},
+      fatal: () => {},
+    } as never);
+
+    mockSearchItem.findMany.mockResolvedValueOnce([
+      {
+        id: "row1",
+        arrInstanceId: "inst-1",
+        arrId: 5,
+        externalId: "100",
+        title: "Show",
+        expectedTitle: "Show",
+        expectedAuthor: null,
+        germanTitle: "Sendung",
+        mediaType: "tv",
+        year: null,
+        titleSearchVariations: '["Show"]',
+        titleMatchVariations: '["Show","Sendung"]',
+        authorMatchVariations: "[]",
+      },
+    ]);
+
+    await state.loadSearchItemsFromDb();
+    expect(warn).not.toHaveBeenCalled();
+  });
 });

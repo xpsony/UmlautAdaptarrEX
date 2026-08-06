@@ -50,6 +50,21 @@ describe("AppState.reindexInstance", () => {
     expect(state.getByExternalId("tv", "42")?.germanTitle).toBe("Finster");
     expect(mockSearchItem.findMany).toHaveBeenLastCalledWith({
       where: { arrInstanceId: "inst1" },
+      select: {
+        id: true,
+        arrInstanceId: true,
+        arrId: true,
+        externalId: true,
+        title: true,
+        expectedTitle: true,
+        expectedAuthor: true,
+        germanTitle: true,
+        mediaType: true,
+        year: true,
+        titleSearchVariations: true,
+        titleMatchVariations: true,
+        authorMatchVariations: true,
+      },
     });
   });
 
@@ -82,5 +97,51 @@ describe("AppState.reindexInstance", () => {
 
     expect(state.findByTitle("tv", "Dunkel S01E01 Pilot")).toBeNull();
     expect(state.findByTitle("tv", "Finster S01E01 Pilot")?.externalId).toBe("42");
+  });
+
+  it("skips corrupt rows without throwing and warns once with counts", async () => {
+    const state = new AppState();
+    const warn = vi.fn();
+    state.setLogger({
+      child: () => ({}) as never,
+      info: () => {},
+      warn,
+      error: () => {},
+      debug: () => {},
+      trace: () => {},
+      fatal: () => {},
+    } as never);
+
+    mockSearchItem.findMany.mockResolvedValueOnce([
+      dbRow(),
+      dbRow({ id: "s2", externalId: "43", titleSearchVariations: "{bad" }),
+    ]);
+    await expect(state.reindexInstance("inst1")).resolves.toBeUndefined();
+
+    expect(state.getByExternalId("tv", "42")?.externalId).toBe("42");
+    expect(state.getByExternalId("tv", "43")).toBeNull();
+    expect(warn).toHaveBeenCalledTimes(1);
+    const [warnPayload, warnMessage] = warn.mock.calls[0] as [
+      { skipped: number; total: number; samples: { rowId: string; error: string }[] },
+      string,
+    ];
+    expect(warnMessage).toBe("search-item index: skipped corrupt rows");
+    expect(warnPayload.skipped).toBe(1);
+    expect(warnPayload.total).toBe(2);
+    expect(warnPayload.samples).toHaveLength(1);
+    expect(warnPayload.samples[0]?.rowId).toBe("s2");
+    expect(warnPayload.samples[0]?.error.length).toBeGreaterThan(0);
+  });
+
+  it("indexes a valid row that comes after a corrupt row (does not stop on first error)", async () => {
+    const state = new AppState();
+    mockSearchItem.findMany.mockResolvedValueOnce([
+      dbRow({ id: "sBad", externalId: "43", titleSearchVariations: "{bad" }),
+      dbRow(),
+    ]);
+    await state.reindexInstance("inst1");
+
+    expect(state.getByExternalId("tv", "43")).toBeNull();
+    expect(state.getByExternalId("tv", "42")?.externalId).toBe("42");
   });
 });

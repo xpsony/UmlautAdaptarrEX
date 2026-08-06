@@ -74,6 +74,42 @@ export interface CachedSearchItem {
   authorMatchVariations: string[];
 }
 
+// Raw shape of the columns `toCachedSearchItem` consumes — kept in sync with
+// SEARCH_ITEM_SELECT below so `loadSearchItemsFromDb` never over-fetches.
+interface SearchItemRow {
+  id: string;
+  arrInstanceId: string;
+  arrId: number;
+  externalId: string;
+  title: string;
+  expectedTitle: string;
+  expectedAuthor: string | null;
+  germanTitle: string | null;
+  mediaType: string;
+  year: number | null;
+  titleSearchVariations: string;
+  titleMatchVariations: string;
+  authorMatchVariations: string;
+}
+
+// Prisma `select` matching SearchItemRow exactly — used by loadSearchItemsFromDb
+// so boot doesn't pull unused columns (e.g. `aliases`) for every row.
+const SEARCH_ITEM_SELECT = {
+  id: true,
+  arrInstanceId: true,
+  arrId: true,
+  externalId: true,
+  title: true,
+  expectedTitle: true,
+  expectedAuthor: true,
+  germanTitle: true,
+  mediaType: true,
+  year: true,
+  titleSearchVariations: true,
+  titleMatchVariations: true,
+  authorMatchVariations: true,
+} as const;
+
 interface AppSettings {
   appApiKey: string;
   proxyPort: number;
@@ -363,21 +399,7 @@ export class AppState {
     this._instanceOptions.delete(instanceId);
   }
 
-  private toCachedSearchItem(row: {
-    id: string;
-    arrInstanceId: string;
-    arrId: number;
-    externalId: string;
-    title: string;
-    expectedTitle: string;
-    expectedAuthor: string | null;
-    germanTitle: string | null;
-    mediaType: string;
-    year: number | null;
-    titleSearchVariations: string;
-    titleMatchVariations: string;
-    authorMatchVariations: string;
-  }): CachedSearchItem {
+  private toCachedSearchItem(row: SearchItemRow): CachedSearchItem {
     return {
       id: row.id,
       arrInstanceId: row.arrInstanceId,
@@ -395,14 +417,40 @@ export class AppState {
     };
   }
 
+  // Converts + indexes a batch of raw SearchItem rows, skipping any row whose
+  // JSON variation columns fail to parse (e.g. left truncated by an aborted
+  // write) instead of failing the whole load/reindex. Shared by
+  // loadSearchItemsFromDb and reindexInstance since both feed the same
+  // toCachedSearchItem conversion. Keeps up to 3 error samples (row id +
+  // message) so the single warn can distinguish a genuine data-corruption
+  // case from a code bug in the conversion.
+  private indexRowsSkippingCorrupt(rows: SearchItemRow[]): void {
+    let skipped = 0;
+    const samples: { rowId: string; error: string }[] = [];
+    for (const row of rows) {
+      try {
+        this.indexItem(this.toCachedSearchItem(row));
+      } catch (err) {
+        skipped++;
+        if (samples.length < 3) {
+          samples.push({ rowId: row.id, error: err instanceof Error ? err.message : String(err) });
+        }
+      }
+    }
+    if (skipped > 0) {
+      this._logger?.warn(
+        { skipped, total: rows.length, samples },
+        "search-item index: skipped corrupt rows",
+      );
+    }
+  }
+
   async loadSearchItemsFromDb(): Promise<void> {
     this.byExternalId.clear();
     this.byTitlePrefix.clear();
     await this.loadInstanceOptions();
-    const rows = await prisma.searchItem.findMany();
-    for (const row of rows) {
-      this.indexItem(this.toCachedSearchItem(row));
-    }
+    const rows = await prisma.searchItem.findMany({ select: SEARCH_ITEM_SELECT });
+    this.indexRowsSkippingCorrupt(rows);
   }
 
   indexItem(item: CachedSearchItem): void {
@@ -438,8 +486,9 @@ export class AppState {
     this.removeItemsForInstance(instanceId);
     const rows = await prisma.searchItem.findMany({
       where: { arrInstanceId: instanceId },
+      select: SEARCH_ITEM_SELECT,
     });
-    for (const row of rows) this.indexItem(this.toCachedSearchItem(row));
+    this.indexRowsSkippingCorrupt(rows);
   }
 
   getByExternalId(type: MediaType, externalId: string): CachedSearchItem | null {
