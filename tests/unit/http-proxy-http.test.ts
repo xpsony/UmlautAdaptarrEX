@@ -30,6 +30,7 @@ function buildState(): AppState {
       setupComplete: true,
       logRetentionDays: 3,
       indexerRateLimitMs: 500,
+      indexerTimeoutSeconds: 60,
       operationMode: "proxy",
       blockPrivateInstanceHosts: false,
     },

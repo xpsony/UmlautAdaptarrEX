@@ -99,6 +99,22 @@ export class LogRetentionScheduler {
         );
       }
 
+      // Let SQLite refresh its query-planner statistics after a bulk delete.
+      // Cheap and non-critical: a failure — or a hang, raced against the same
+      // PURGE_TIMEOUT_MS deadline as the deletes above, since an un-timed-out
+      // PRAGMA would wedge `this.running` exactly like a hung deleteMany
+      // would — must not fail the cleanup run that already deleted rows
+      // successfully, so it's logged at debug and swallowed rather than
+      // propagated to the outer catch.
+      try {
+        await this.withTimeout(
+          prisma.$queryRawUnsafe("PRAGMA optimize;").then(() => ({ count: 0 })),
+          "pragma-optimize",
+        );
+      } catch (err) {
+        this.opts.logger.debug({ err }, "PRAGMA optimize failed after retention cleanup");
+      }
+
       return logResult.count + requestResult.count + renameResult.count;
     } catch (err) {
       this.opts.logger.error({ err }, "log retention cleanup failed");

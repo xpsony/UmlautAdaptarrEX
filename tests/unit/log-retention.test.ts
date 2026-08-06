@@ -1,25 +1,29 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockLog, mockReqHistory, mockRenameHistory, mockState } = vi.hoisted(() => ({
-  mockLog: {
-    deleteMany: vi.fn(),
-  },
-  mockReqHistory: {
-    deleteMany: vi.fn(),
-  },
-  mockRenameHistory: {
-    deleteMany: vi.fn(),
-  },
-  mockState: {
-    settings: { logRetentionDays: 14, historyRetentionDays: 30 },
-  },
-}));
+const { mockLog, mockReqHistory, mockRenameHistory, mockState, mockQueryRawUnsafe } = vi.hoisted(
+  () => ({
+    mockLog: {
+      deleteMany: vi.fn(),
+    },
+    mockReqHistory: {
+      deleteMany: vi.fn(),
+    },
+    mockRenameHistory: {
+      deleteMany: vi.fn(),
+    },
+    mockState: {
+      settings: { logRetentionDays: 14, historyRetentionDays: 30 },
+    },
+    mockQueryRawUnsafe: vi.fn(),
+  }),
+);
 
 vi.mock("@/lib/db", () => ({
   prisma: {
     logEntry: mockLog,
     requestHistory: mockReqHistory,
     renameHistory: mockRenameHistory,
+    $queryRawUnsafe: mockQueryRawUnsafe,
   },
 }));
 
@@ -54,6 +58,8 @@ beforeEach(() => {
     m.deleteMany.mockReset();
     m.deleteMany.mockResolvedValue({ count: 0 });
   }
+  mockQueryRawUnsafe.mockReset();
+  mockQueryRawUnsafe.mockResolvedValue(undefined);
   mockState.settings.logRetentionDays = 14;
   mockState.settings.historyRetentionDays = 30;
 });
@@ -62,6 +68,7 @@ afterEach(() => {
   for (const m of [mockLog, mockReqHistory, mockRenameHistory]) {
     m.deleteMany.mockReset();
   }
+  mockQueryRawUnsafe.mockReset();
 });
 
 describe("LogRetentionScheduler", () => {
@@ -180,5 +187,28 @@ describe("LogRetentionScheduler", () => {
     const sched = new LogRetentionScheduler({ logger: logger as never });
     expect(await sched.runNow()).toBe(0);
     expect(logger.error).toHaveBeenCalledOnce();
+  });
+
+  it("runs PRAGMA optimize after a successful delete batch", async () => {
+    mockLog.deleteMany.mockResolvedValueOnce({ count: 3 });
+    const logger = makeLogger();
+    const sched = new LogRetentionScheduler({ logger: logger as never });
+    await sched.runNow();
+
+    expect(mockQueryRawUnsafe).toHaveBeenCalledOnce();
+    expect(mockQueryRawUnsafe).toHaveBeenCalledWith("PRAGMA optimize;");
+  });
+
+  it("does not fail the cleanup run when PRAGMA optimize rejects", async () => {
+    mockLog.deleteMany.mockResolvedValueOnce({ count: 3 });
+    mockQueryRawUnsafe.mockRejectedValueOnce(new Error("pragma boom"));
+    const logger = makeLogger();
+    const sched = new LogRetentionScheduler({ logger: logger as never });
+
+    const deleted = await sched.runNow();
+
+    expect(deleted).toBe(3);
+    expect(logger.debug).toHaveBeenCalledOnce();
+    expect(logger.error).not.toHaveBeenCalled();
   });
 });

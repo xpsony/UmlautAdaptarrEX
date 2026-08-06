@@ -70,26 +70,37 @@ function parseProviderOrder(csv: string | null): ProviderId[] | null {
 }
 
 // Mark a run failed and propagate the message to the instance row so the UI
-// can surface it. Always returns a perInstance entry the caller can collect.
+// can surface it. Always returns a perInstance entry the caller can collect —
+// a status-write failure (e.g. DB locked) must not lose the in-memory result
+// that the sync already computed, so writes are best-effort and logged rather
+// than propagated.
 async function markRunFailed(
   prepared: PreparedRun,
   message: string,
+  logger: AppLogger,
   options: { updateInstance?: boolean } = {},
 ): Promise<PerInstanceResult> {
   const { instance, runId } = prepared;
-  await prisma.syncRun.update({
-    where: { id: runId },
-    data: {
-      status: "error",
-      finishedAt: new Date(),
-      errorMessage: message,
-    },
-  });
-  if (options.updateInstance !== false) {
-    await prisma.arrInstance.update({
-      where: { id: instance.id },
-      data: { lastSyncError: message },
+  try {
+    await prisma.syncRun.update({
+      where: { id: runId },
+      data: {
+        status: "error",
+        finishedAt: new Date(),
+        errorMessage: message,
+      },
     });
+    if (options.updateInstance !== false) {
+      await prisma.arrInstance.update({
+        where: { id: instance.id },
+        data: { lastSyncError: message },
+      });
+    }
+  } catch (err) {
+    logger.error(
+      { runId, err: describeError(err) },
+      "sync: failed to persist run-failed status; returning result anyway",
+    );
   }
   return {
     instanceId: instance.id,
@@ -127,23 +138,31 @@ async function markRunSucceeded(
   prepared: PreparedRun,
   itemsCount: number,
   stats: ProviderStats,
+  logger: AppLogger,
 ): Promise<PerInstanceResult> {
   const { instance, runId } = prepared;
-  await prisma.syncRun.update({
-    where: { id: runId },
-    data: {
-      status: "success",
-      finishedAt: new Date(),
-      itemsCount,
-      pcjonesItemsCount: stats.pcjonesItems,
-      tmdbItemsCount: stats.tmdbItems,
-      tvdbItemsCount: stats.tvdbItems,
-    },
-  });
-  await prisma.arrInstance.update({
-    where: { id: instance.id },
-    data: { lastSyncAt: new Date(), lastSyncError: null },
-  });
+  try {
+    await prisma.syncRun.update({
+      where: { id: runId },
+      data: {
+        status: "success",
+        finishedAt: new Date(),
+        itemsCount,
+        pcjonesItemsCount: stats.pcjonesItems,
+        tmdbItemsCount: stats.tmdbItems,
+        tvdbItemsCount: stats.tvdbItems,
+      },
+    });
+    await prisma.arrInstance.update({
+      where: { id: instance.id },
+      data: { lastSyncAt: new Date(), lastSyncError: null },
+    });
+  } catch (err) {
+    logger.error(
+      { runId, err: describeError(err) },
+      "sync: failed to persist run-succeeded status; returning result anyway",
+    );
+  }
   return {
     instanceId: instance.id,
     runId,
@@ -433,6 +452,7 @@ async function syncOneInstance(
     return markRunFailed(
       prepared,
       "No title provider could be built. Configure at least one provider in Settings and review the instance's provider order.",
+      logger,
       { updateInstance: false },
     );
   }
@@ -441,6 +461,7 @@ async function syncOneInstance(
     return markRunFailed(
       prepared,
       "API key is only the Prowlarr mask (********). Set the real key on the instance.",
+      logger,
     );
   }
 
@@ -449,7 +470,7 @@ async function syncOneInstance(
   } catch (err) {
     const message = describeError(err);
     logger.error({ instance: instance.name, type: instance.type, err }, "sync error");
-    return markRunFailed(prepared, message);
+    return markRunFailed(prepared, message, logger);
   }
 }
 
@@ -527,7 +548,7 @@ async function fetchAndPersist(
     },
     "sync persisted",
   );
-  return markRunSucceeded(prepared, changeStats.persistedCount, providerStats);
+  return markRunSucceeded(prepared, changeStats.persistedCount, providerStats, logger);
 }
 
 export async function runSync(opts: RunSyncOptions): Promise<SyncResult> {
@@ -545,7 +566,7 @@ export async function runSync(opts: RunSyncOptions): Promise<SyncResult> {
       "sync aborted: TMDB key missing for non-German language plugins",
     );
     const perInstance = await Promise.all(
-      preparedRuns.map((prepared) => markRunFailed(prepared, preflightError)),
+      preparedRuns.map((prepared) => markRunFailed(prepared, preflightError, logger)),
     );
     return { totalItems: 0, perInstance };
   }

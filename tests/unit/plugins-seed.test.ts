@@ -11,17 +11,19 @@ vi.mock("@/lib/db", () => ({
   prisma: { plugin: mockPlugin },
 }));
 
-import { loadActivePlugins, seedPlugins } from "@/server/plugins/seed";
+import { loadActivePlugins, resetSeedGuardForTests, seedPlugins } from "@/server/plugins/seed";
 import { BUILTIN_PLUGINS } from "@/domain/plugins";
 
 beforeEach(() => {
   mockPlugin.upsert.mockReset();
   mockPlugin.findMany.mockReset();
+  resetSeedGuardForTests();
 });
 
 afterEach(() => {
   mockPlugin.upsert.mockReset();
   mockPlugin.findMany.mockReset();
+  resetSeedGuardForTests();
 });
 
 describe("seedPlugins", () => {
@@ -46,6 +48,23 @@ describe("seedPlugins", () => {
       expect(args.update).toEqual({});
     }
   });
+
+  it("only upserts once across repeated calls within the same process", async () => {
+    mockPlugin.upsert.mockResolvedValue({});
+    await seedPlugins();
+    await seedPlugins();
+
+    expect(mockPlugin.upsert).toHaveBeenCalledTimes(BUILTIN_PLUGINS.length);
+  });
+
+  it("seeds again after resetSeedGuardForTests()", async () => {
+    mockPlugin.upsert.mockResolvedValue({});
+    await seedPlugins();
+    resetSeedGuardForTests();
+    await seedPlugins();
+
+    expect(mockPlugin.upsert).toHaveBeenCalledTimes(BUILTIN_PLUGINS.length * 2);
+  });
 });
 
 describe("loadActivePlugins", () => {
@@ -54,10 +73,7 @@ describe("loadActivePlugins", () => {
       { id: "german-umlauts" },
       { id: "swedish-umlauts" },
     ]);
-    expect(await loadActivePlugins()).toEqual([
-      "german-umlauts",
-      "swedish-umlauts",
-    ]);
+    expect(await loadActivePlugins()).toEqual(["german-umlauts", "swedish-umlauts"]);
     const args = mockPlugin.findMany.mock.calls[0]?.[0] as {
       where: { enabled: boolean };
     };

@@ -26,11 +26,13 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
+    "format": "prettier --write .",
     "clean": "rm -rf .next dist coverage test-results tsconfig.tsbuildinfo node_modules/.cache && find . -name .DS_Store -not -path './node_modules/*' -not -path './.git/*' -delete"
   },
   "dependencies": {

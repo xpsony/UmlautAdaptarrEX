@@ -391,11 +391,17 @@ export class HttpProxyServer {
       const modified = `http://127.0.0.1:${this.opts.appPort}/${encodeURIComponent(apiKey)}/${url.host}${url.pathname}${url.search}`;
       const userAgent = matchHeader(headerStr, "User-Agent") ?? this.opts.state.settings.userAgent;
 
+      // The target is our own buffering legacy route: headers arrive only when
+      // the search completes, so both timeouts must cover the route's worst
+      // case — its soft deadline (0.75×T) can overshoot by one in-flight fetch
+      // (≈ +T) plus rate-limit slack. Budget: 1.75×T + 5s.
+      const timeoutSeconds = this.opts.state.settings.indexerTimeoutSeconds || 60;
+      const proxyTimeoutMs = Math.ceil(timeoutSeconds * 1.75) * 1000 + 5_000;
       const { statusCode, headers, body } = await undiciRequest(modified, {
         method: "GET",
         headers: { "User-Agent": userAgent },
-        bodyTimeout: 60_000,
-        headersTimeout: 30_000,
+        bodyTimeout: proxyTimeoutMs,
+        headersTimeout: proxyTimeoutMs,
       });
 
       const chunks: Buffer[] = [];

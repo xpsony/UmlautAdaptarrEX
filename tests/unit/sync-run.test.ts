@@ -256,6 +256,56 @@ describe("runSync per-instance handling", () => {
   });
 });
 
+describe("runSync status-write hardening", () => {
+  it("still resolves with a failed-run result and logs an error when syncRun.update rejects on failure", async () => {
+    mockState.providerForOrder.mockReturnValueOnce({ name: "stub" });
+    mockBuild.mockReturnValueOnce({
+      fetchAllItems: async () => {
+        throw new Error("upstream timeout");
+      },
+    });
+    mockPrisma.syncRun.update.mockRejectedValueOnce(new Error("db locked"));
+
+    const logger = makeLogger();
+    const result = await runSync({
+      logger: logger as never,
+      preparedRuns: [makePrepared("sonarr")],
+    });
+
+    // The in-memory result must survive even though the status write failed.
+    expect(result.perInstance[0]?.error).toMatch(/upstream timeout/);
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ runId: "run-sonarr" }),
+      expect.stringContaining("run-failed"),
+    );
+  });
+
+  it("still resolves with a succeeded-run result and logs an error when syncRun.update rejects on success", async () => {
+    mockState.providerForOrder.mockReturnValueOnce({ name: "stub" });
+    mockBuild.mockReturnValueOnce({ fetchAllItems: async () => [] });
+    mockPrisma.searchItem.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    mockPrisma.$transaction.mockImplementationOnce(
+      async (cb: (tx: typeof mockPrisma) => Promise<void>) => {
+        await cb(mockPrisma);
+      },
+    );
+    mockPrisma.syncRun.update.mockRejectedValueOnce(new Error("db locked"));
+
+    const logger = makeLogger();
+    const result = await runSync({
+      logger: logger as never,
+      preparedRuns: [makePrepared("sonarr")],
+    });
+
+    expect(result.perInstance[0]?.error).toBeUndefined();
+    expect(result.perInstance[0]?.count).toBe(0);
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.objectContaining({ runId: "run-sonarr" }),
+      expect.stringContaining("run-succeeded"),
+    );
+  });
+});
+
 describe("runSync provider-order parsing", () => {
   it("treats invalid CSV provider order as null and still succeeds for lidarr", async () => {
     // lidarr does not need a provider; an unparseable order is irrelevant.

@@ -55,4 +55,12 @@ export async function cleanDb(): Promise<void> {
   await prisma.adminUser.deleteMany({});
   await prisma.plugin.deleteMany({});
   await prisma.setting.deleteMany({});
+  // seedPlugins() is now guarded to run once per process (see
+  // src/server/plugins/seed.ts). Without this reset, only the first test in
+  // a file would ever re-seed the Plugin table just wiped above — every
+  // later test in the file would run against an empty Plugin table /
+  // language pack, a latent order-dependency across the ~9 API test files
+  // that call cleanDb() between tests.
+  const { resetSeedGuardForTests } = await import("@/server/plugins/seed");
+  resetSeedGuardForTests();
 }
