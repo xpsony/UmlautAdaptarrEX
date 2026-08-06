@@ -208,7 +208,7 @@ export class AppState {
       logger: this._logger ?? undefined,
       providerOrder: order,
     });
-    const wrapped = new DbCachedTitleProvider(composite);
+    const wrapped = new DbCachedTitleProvider(composite, this._logger ?? undefined);
     this._providersByOrder.set(key, wrapped);
     return wrapped;
   }
