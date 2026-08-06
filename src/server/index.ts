@@ -28,6 +28,7 @@ import { pluginRoutes } from "./routes/admin/plugins";
 import { syncRoutes } from "./routes/admin/sync";
 import { systemRoutes } from "./routes/admin/system";
 import { titleOverrideRoutes } from "./routes/admin/title-overrides";
+import { searchItemRoutes } from "./routes/admin/search-items";
 import { handleCaps } from "./routes/legacy/caps";
 import { handleSearch } from "./routes/legacy/search";
 import { isLoopbackRequest } from "./routes/legacy/util";
@@ -203,6 +204,7 @@ export async function bootServer(opts: BootOptions): Promise<{
   await syncRoutes(app, { scheduler });
   await systemRoutes(app);
   await titleOverrideRoutes(app);
+  await searchItemRoutes(app);
 
   await app.ready();
   broadcaster.attachToHttp(app.server);

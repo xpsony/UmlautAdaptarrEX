@@ -31,3 +31,18 @@ export function isPrismaErrorCode(err: unknown, code: string): boolean {
     (err as { code: unknown }).code === code
   );
 }
+
+/**
+ * Parse a JSON-array column, returning `null` on corrupt input instead of
+ * throwing. Mirrors `parseAliasesJson` in `src/server/title-overrides/rebuild.ts`
+ * — a single malformed row must degrade gracefully, not 500 an entire page.
+ */
+export function parseJsonArray(raw: string | null): string[] | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as string[]) : null;
+  } catch {
+    return null;
+  }
+}
