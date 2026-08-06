@@ -31,13 +31,7 @@ import {
 
 const subscribe = () => () => {};
 
-export function UserMenu({
-  locale,
-  username,
-}: {
-  locale: Locale;
-  username?: string | undefined;
-}) {
+export function UserMenu({ locale, username }: { locale: Locale; username?: string | undefined }) {
   const t = useTranslations("nav");
   const router = useRouter();
   const { theme, setTheme } = useTheme();
@@ -50,15 +44,17 @@ export function UserMenu({
   const [, startTransition] = useTransition();
 
   const currentTheme = mounted ? (theme ?? "system") : "system";
-  const ThemeIcon =
-    currentTheme === "dark" ? Moon : currentTheme === "system" ? Monitor : Sun;
+  const ThemeIcon = currentTheme === "dark" ? Moon : currentTheme === "system" ? Monitor : Sun;
 
   function changeLocale(next: string): void {
     if (!isSupportedLocale(next)) return;
     if (next === locale) return;
     document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}`;
+    // router.refresh() re-runs the server layout/page tree (getLocale/getMessages
+    // in the root layout read the cookie fresh), swapping next-intl messages
+    // without a full page reload — client state elsewhere on the page survives.
     startTransition(() => {
-      window.location.reload();
+      router.refresh();
     });
   }
 
@@ -75,20 +71,18 @@ export function UserMenu({
         <Button
           variant="ghost"
           className={cn(
-            "h-9 gap-2 rounded-full pl-1 pr-3 hover:bg-accent",
+            "h-9 gap-2 rounded-full pr-3 pl-1 hover:bg-accent",
             "data-[state=open]:bg-accent",
           )}
           aria-label={username ?? "User menu"}
         >
           <span
-            className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[11px] font-semibold uppercase text-primary-foreground"
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-[11px] font-semibold text-primary-foreground uppercase"
             aria-hidden="true"
           >
             {initial}
           </span>
-          <span className="hidden text-sm font-medium sm:inline">
-            {username ?? ""}
-          </span>
+          <span className="hidden text-sm font-medium sm:inline">{username ?? ""}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
@@ -99,10 +93,7 @@ export function UserMenu({
           </DropdownMenuSubTrigger>
           <DropdownMenuPortal>
             <DropdownMenuSubContent className="w-40">
-              <DropdownMenuRadioGroup
-                value={currentTheme}
-                onValueChange={(v) => setTheme(v)}
-              >
+              <DropdownMenuRadioGroup value={currentTheme} onValueChange={(v) => setTheme(v)}>
                 <DropdownMenuRadioItem value="light">
                   <span className="flex items-center gap-2">
                     <Sun className="h-4 w-4" />
@@ -136,10 +127,7 @@ export function UserMenu({
           </DropdownMenuSubTrigger>
           <DropdownMenuPortal>
             <DropdownMenuSubContent className="w-44">
-              <DropdownMenuRadioGroup
-                value={locale}
-                onValueChange={changeLocale}
-              >
+              <DropdownMenuRadioGroup value={locale} onValueChange={changeLocale}>
                 {SUPPORTED_LOCALES.map((code) => (
                   <DropdownMenuRadioItem key={code} value={code}>
                     <span className="flex items-center gap-2">
