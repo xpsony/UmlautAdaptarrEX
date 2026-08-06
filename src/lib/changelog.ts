@@ -23,6 +23,31 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.0",
+    date: "2026-08-06",
+    title: "1.4.0: History pagination & configurable retention",
+    description:
+      "Request and rename history are now fully browsable: server-side pagination with selectable page size, and search covers the whole retained period instead of only the newest rows. A new setting controls how long history is kept.",
+    items: [
+      {
+        type: "feature",
+        text: "Request history and rename history pages now paginate through all stored entries (page size 25/50/100/250) instead of showing only the most recent 50 rows.",
+      },
+      {
+        type: "feature",
+        text: "Searching and filtering on both history pages now runs server-side across the entire retention period.",
+      },
+      {
+        type: "feature",
+        text: 'New setting "History retention (days)" under Settings → Advanced (default 30, 1–365): request and rename history older than this is cleaned up automatically every 6 hours. Previously these tables grew without limit.',
+      },
+      {
+        type: "fix",
+        text: 'The version under About is trustworthy again. Images built from source showed an empty version, and the automatic :latest security rebuild (every 2 days) changed the displayed string to something like 1.3.0-881f830 although the code was identical to the release. Both now show the plain release version. Note that if About still shows an older version after an update, the container was not replaced: "docker compose pull" only downloads the image, "docker compose up -d" recreates the container from it.',
+      },
+    ],
+  },
+  {
     version: "1.3.0",
     date: "2026-07-26",
     title: "1.3.0: Headless mode — run without the Web UI to save memory",
@@ -39,7 +64,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "fix",
-        text: "Renamed titles no longer pick up a stray bracket: when the matching title alias had no parentheses but the release name did (e.g. alias \"Chronicles of Time 2005\" vs. release Chronicles.of.Time.(2005).S08E08…), the closing bracket was duplicated into the result — Chronicles.of.Time.(2005).).S08E08…. Affects movie/series and book/audiobook renaming.",
+        text: 'Renamed titles no longer pick up a stray bracket: when the matching title alias had no parentheses but the release name did (e.g. alias "Chronicles of Time 2005" vs. release Chronicles.of.Time.(2005).S08E08…), the closing bracket was duplicated into the result — Chronicles.of.Time.(2005).).S08E08…. Affects movie/series and book/audiobook renaming.',
       },
       {
         type: "improvement",

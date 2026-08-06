@@ -78,6 +78,36 @@ describe("GET /api/admin/request-history", () => {
     expect(args.where).toEqual({ type: "caps", domain: "example.com" });
   });
 
+  it("supports a free-text search over query, externalId and domain", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/request-history?search=galaxy",
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as {
+      where: { OR: unknown[] };
+    };
+    expect(args.where.OR).toEqual([
+      { query: { contains: "galaxy" } },
+      { externalId: { contains: "galaxy" } },
+      { domain: { contains: "galaxy" } },
+    ]);
+  });
+
+  it("caps the search term at 256 chars", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: `/api/admin/request-history?search=${"a".repeat(300)}`,
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as {
+      where: { OR: Array<{ query: { contains: string } }> };
+    };
+    expect(args.where.OR[0]?.query.contains).toHaveLength(256);
+  });
+
   it("clamps take to the configured maximum", async () => {
     mockReq.findMany.mockResolvedValueOnce([]);
     mockReq.count.mockResolvedValueOnce(0);

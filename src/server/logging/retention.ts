@@ -16,7 +16,8 @@ interface LogRetentionOptions {
 }
 
 // Retention days are read live from settings on each tick so UI changes apply
-// without a restart.
+// without a restart. One tick purges three tables: LogEntry (logRetentionDays)
+// plus RequestHistory and RenameHistory (shared historyRetentionDays).
 export class LogRetentionScheduler {
   private timer: NodeJS.Timeout | null = null;
   private running = false;
@@ -45,32 +46,60 @@ export class LogRetentionScheduler {
     }, INTERVAL_MS);
   }
 
+  // Race a delete against a hard timeout so a stuck DB lock can't
+  // permanently disable cleanup.
+  private withTimeout(p: Promise<{ count: number }>, label: string): Promise<{ count: number }> {
+    return Promise.race([
+      p,
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`${label} retention purge timed out after ${PURGE_TIMEOUT_MS}ms`)),
+          PURGE_TIMEOUT_MS,
+        ).unref?.(),
+      ),
+    ]);
+  }
+
   private async purge(): Promise<number> {
     if (this.running) return 0;
     this.running = true;
     try {
-      const days = getAppState().settings.logRetentionDays;
-      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-      // Race the actual delete against a hard timeout so a stuck DB
-      // lock can't permanently disable cleanup.
-      const result = await Promise.race([
-        prisma.logEntry.deleteMany({
-          where: { createdAt: { lt: cutoff } },
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () => reject(new Error(`log retention purge timed out after ${PURGE_TIMEOUT_MS}ms`)),
-            PURGE_TIMEOUT_MS,
-          ).unref?.(),
-        ),
-      ]);
-      if (result.count > 0) {
+      const settings = getAppState().settings;
+      const dayMs = 24 * 60 * 60 * 1000;
+      const logCutoff = new Date(Date.now() - settings.logRetentionDays * dayMs);
+      const historyCutoff = new Date(Date.now() - settings.historyRetentionDays * dayMs);
+
+      const logResult = await this.withTimeout(
+        prisma.logEntry.deleteMany({ where: { createdAt: { lt: logCutoff } } }),
+        "log",
+      );
+      if (logResult.count > 0) {
         this.opts.logger.info(
-          { deleted: result.count, retentionDays: days },
+          { deleted: logResult.count, retentionDays: settings.logRetentionDays },
           "log retention cleanup",
         );
       }
-      return result.count;
+
+      const requestResult = await this.withTimeout(
+        prisma.requestHistory.deleteMany({ where: { createdAt: { lt: historyCutoff } } }),
+        "request-history",
+      );
+      const renameResult = await this.withTimeout(
+        prisma.renameHistory.deleteMany({ where: { createdAt: { lt: historyCutoff } } }),
+        "rename-history",
+      );
+      if (requestResult.count + renameResult.count > 0) {
+        this.opts.logger.info(
+          {
+            deletedRequests: requestResult.count,
+            deletedRenames: renameResult.count,
+            retentionDays: settings.historyRetentionDays,
+          },
+          "history retention cleanup",
+        );
+      }
+
+      return logResult.count + requestResult.count + renameResult.count;
     } catch (err) {
       this.opts.logger.error({ err }, "log retention cleanup failed");
       return 0;

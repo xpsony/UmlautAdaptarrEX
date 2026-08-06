@@ -87,6 +87,7 @@ interface AppSettings {
   userAgent: string;
   setupComplete: boolean;
   logRetentionDays: number;
+  historyRetentionDays: number;
   indexerRateLimitMs: number;
   indexerTimeoutSeconds: number;
   operationMode: OperationMode;
@@ -107,6 +108,7 @@ const NO_SETTINGS: AppSettings = {
   userAgent: "UmlautAdaptarrEX/2.0",
   setupComplete: false,
   logRetentionDays: 3,
+  historyRetentionDays: 30,
   indexerRateLimitMs: 500,
   indexerTimeoutSeconds: 60,
   operationMode: "proxy",
@@ -265,6 +267,7 @@ export class AppState {
       userAgent: row.userAgent,
       setupComplete: row.setupComplete,
       logRetentionDays: row.logRetentionDays,
+      historyRetentionDays: row.historyRetentionDays,
       indexerRateLimitMs: row.indexerRateLimitMs,
       indexerTimeoutSeconds: row.indexerTimeoutSeconds,
       // Defensive parse: SQLite TEXT column without CHECK; an invalid value

@@ -1,18 +1,6 @@
 import type { ReactNode } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 
@@ -29,6 +17,8 @@ interface HistoryPageProps {
   filterSlot: ReactNode;
   columns: string[];
   rows: ReactNode;
+  /** Optional footer (e.g. pagination bar) rendered below the table. */
+  footerSlot?: ReactNode;
 }
 
 /**
@@ -98,16 +88,19 @@ export function HistoryPage(props: HistoryPageProps) {
               description={props.emptyHint}
             />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {props.columns.map((c) => (
-                    <TableHead key={c}>{c}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>{props.rows}</TableBody>
-            </Table>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {props.columns.map((c) => (
+                      <TableHead key={c}>{c}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>{props.rows}</TableBody>
+              </Table>
+              {props.footerSlot}
+            </>
           )}
         </CardContent>
       </Card>

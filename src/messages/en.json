@@ -414,6 +414,8 @@
     "userAgent": "User-Agent header",
     "logRetentionDays": "Log retention (days)",
     "logRetentionDaysHint": "Logs older than this are deleted by a cleanup job that runs every 6 hours. 1–30 days.",
+    "historyRetentionDays": "History retention (days)",
+    "historyRetentionDaysHint": "Request and rename history entries older than this are removed by the cleanup job every 6 hours. 1–365 days.",
     "indexerRateLimitMs": "Indexer rate-limit (ms)",
     "indexerRateLimitMsHint": "Minimum spacing between requests to the same indexer host. Lower = faster TV variation searches but higher risk of getting throttled (HTTP 429) or banned by free-tier indexers. Default 500 ms. The limiter automatically backs off when an indexer responds with Retry-After.",
     "indexerTimeoutSeconds": "Indexer request timeout (seconds)",
@@ -598,6 +600,12 @@
     "loadingHistoryHint": "Fetching the persisted history from the database."
   },
   "common": {
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {pageCount}",
+      "perPage": "Per page"
+    },
     "save": "Save",
     "cancel": "Cancel",
     "confirm": "Confirm",

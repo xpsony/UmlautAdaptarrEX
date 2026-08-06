@@ -66,6 +66,10 @@ model Setting {
   // Ältere). Default 3 — genug, um vergangene Fehler nachzusehen, ohne dass
   // die Tabelle ungebremst wächst.
   logRetentionDays     Int     @default(3)
+  // How long request/rename history rows are kept (days). One shared value
+  // for RequestHistory + RenameHistory; the cleanup job (every 6h) deletes
+  // older rows. Default 30.
+  historyRetentionDays Int     @default(30)
   // Mindest-Spacing zwischen zwei Calls gegen denselben Indexer-Host (ms).
   // Schützt vor 429/Bans bei Free-Tier-Indexern. Bei 429/Retry-After wird der
   // Limiter dynamisch hochgesetzt (siehe HostRateLimiter.backoff).

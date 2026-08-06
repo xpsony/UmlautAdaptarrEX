@@ -1,16 +1,26 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockLog, mockState } = vi.hoisted(() => ({
+const { mockLog, mockReqHistory, mockRenameHistory, mockState } = vi.hoisted(() => ({
   mockLog: {
     deleteMany: vi.fn(),
   },
+  mockReqHistory: {
+    deleteMany: vi.fn(),
+  },
+  mockRenameHistory: {
+    deleteMany: vi.fn(),
+  },
   mockState: {
-    settings: { logRetentionDays: 14 },
+    settings: { logRetentionDays: 14, historyRetentionDays: 30 },
   },
 }));
 
 vi.mock("@/lib/db", () => ({
-  prisma: { logEntry: mockLog },
+  prisma: {
+    logEntry: mockLog,
+    requestHistory: mockReqHistory,
+    renameHistory: mockRenameHistory,
+  },
 }));
 
 vi.mock("@/server/state", () => ({
@@ -40,12 +50,18 @@ function makeLogger(): MockLogger {
 }
 
 beforeEach(() => {
-  mockLog.deleteMany.mockReset();
+  for (const m of [mockLog, mockReqHistory, mockRenameHistory]) {
+    m.deleteMany.mockReset();
+    m.deleteMany.mockResolvedValue({ count: 0 });
+  }
   mockState.settings.logRetentionDays = 14;
+  mockState.settings.historyRetentionDays = 30;
 });
 
 afterEach(() => {
-  mockLog.deleteMany.mockReset();
+  for (const m of [mockLog, mockReqHistory, mockRenameHistory]) {
+    m.deleteMany.mockReset();
+  }
 });
 
 describe("LogRetentionScheduler", () => {
@@ -96,5 +112,73 @@ describe("LogRetentionScheduler", () => {
     const logger = makeLogger();
     const sched = new LogRetentionScheduler({ logger: logger as never });
     expect(() => sched.stop()).not.toThrow();
+  });
+
+  it("purges request and rename history older than historyRetentionDays", async () => {
+    mockState.settings.historyRetentionDays = 30;
+    mockReqHistory.deleteMany.mockResolvedValueOnce({ count: 5 });
+    mockRenameHistory.deleteMany.mockResolvedValueOnce({ count: 2 });
+
+    const logger = makeLogger();
+    const sched = new LogRetentionScheduler({ logger: logger as never });
+
+    const before = Date.now();
+    const deleted = await sched.runNow();
+    const after = Date.now();
+
+    expect(deleted).toBe(7); // 0 logs + 5 requests + 2 renames
+
+    for (const mock of [mockReqHistory, mockRenameHistory]) {
+      expect(mock.deleteMany).toHaveBeenCalledOnce();
+      const cutoff = (
+        mock.deleteMany.mock.calls[0]?.[0] as {
+          where: { createdAt: { lt: Date } };
+        }
+      ).where.createdAt.lt;
+      const expectedFloor = before - 30 * 24 * 60 * 60 * 1000;
+      const expectedCeil = after - 30 * 24 * 60 * 60 * 1000;
+      expect(cutoff.getTime()).toBeGreaterThanOrEqual(expectedFloor - 100);
+      expect(cutoff.getTime()).toBeLessThanOrEqual(expectedCeil + 100);
+    }
+
+    // One "history retention cleanup" info line for the two history tables.
+    expect(logger.info).toHaveBeenCalledOnce();
+    expect(logger.info.mock.calls[0]?.[1]).toBe("history retention cleanup");
+  });
+
+  it("uses independent cutoffs for logs and history", async () => {
+    mockState.settings.logRetentionDays = 3;
+    mockState.settings.historyRetentionDays = 60;
+    const logger = makeLogger();
+    const sched = new LogRetentionScheduler({ logger: logger as never });
+    await sched.runNow();
+
+    const logCutoff = (
+      mockLog.deleteMany.mock.calls[0]?.[0] as {
+        where: { createdAt: { lt: Date } };
+      }
+    ).where.createdAt.lt.getTime();
+    const histCutoff = (
+      mockReqHistory.deleteMany.mock.calls[0]?.[0] as {
+        where: { createdAt: { lt: Date } };
+      }
+    ).where.createdAt.lt.getTime();
+    // The 60d cutoff lies further in the past than the 3d cutoff.
+    expect(histCutoff).toBeLessThan(logCutoff);
+  });
+
+  it("does not log history cleanup when nothing was deleted", async () => {
+    const logger = makeLogger();
+    const sched = new LogRetentionScheduler({ logger: logger as never });
+    await sched.runNow();
+    expect(logger.info).not.toHaveBeenCalled();
+  });
+
+  it("logs an error and returns 0 when a history delete fails", async () => {
+    mockReqHistory.deleteMany.mockRejectedValueOnce(new Error("io"));
+    const logger = makeLogger();
+    const sched = new LogRetentionScheduler({ logger: logger as never });
+    expect(await sched.runNow()).toBe(0);
+    expect(logger.error).toHaveBeenCalledOnce();
   });
 });

@@ -103,7 +103,7 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v4.5.0
+        uses: docker/login-action@v4.5.1
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -122,8 +122,13 @@ jobs:
           pull: true
           no-cache: true
           platforms: ${{ matrix.platform }}
+          # The plain release tag, exactly as release.yml passes it: a rebuild
+          # ships identical code, so the version shown in the Web UI must not
+          # change just because `:latest` was refreshed. The commit stays
+          # visible in the `:<version>-<sha>` image tag and in the
+          # `image.revision` label below.
           build-args: |
-            APP_VERSION=${{ needs.prepare.outputs.tag }}-${{ needs.prepare.outputs.sha }}
+            APP_VERSION=${{ needs.prepare.outputs.tag }}
           labels: |
             org.opencontainers.image.title=UmlautAdaptarrEX
             org.opencontainers.image.description=Umlaut/German-title proxy for Sonarr/Radarr/Lidarr/Readarr
@@ -168,7 +173,7 @@ jobs:
         uses: docker/setup-buildx-action@v4
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@v4.5.0
+        uses: docker/login-action@v4.5.1
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ secrets.DOCKERHUB_USERNAME }}
