@@ -5,16 +5,11 @@ import { useTranslations } from "next-intl";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrIcon, type ArrIconType } from "@/components/ui/arr-icon";
-import { statusVariant, type SyncRun } from "../_lib/dashboard-types";
+import { syncStatusVariant } from "@/app/(admin)/_lib/status-variant";
+import type { SyncRun } from "@/app/(admin)/_lib/sync-types";
 
 interface RecentRunsCardProps {
   runs: SyncRun[] | undefined;
@@ -23,12 +18,7 @@ interface RecentRunsCardProps {
   locale: string;
 }
 
-export function RecentRunsCard({
-  runs,
-  loading,
-  lastRun,
-  locale,
-}: RecentRunsCardProps) {
+export function RecentRunsCard({ runs, loading, lastRun, locale }: RecentRunsCardProps) {
   const t = useTranslations("dashboard");
 
   return (
@@ -78,11 +68,7 @@ export function RecentRunsCard({
 function RecentRunRow({ run, locale }: { run: SyncRun; locale: string }) {
   const duration =
     run.finishedAt && run.startedAt
-      ? Math.max(
-          0,
-          new Date(run.finishedAt).getTime() -
-            new Date(run.startedAt).getTime(),
-        )
+      ? Math.max(0, new Date(run.finishedAt).getTime() - new Date(run.startedAt).getTime())
       : null;
 
   return (
@@ -93,9 +79,7 @@ function RecentRunRow({ run, locale }: { run: SyncRun; locale: string }) {
         <span className="h-5 w-5 shrink-0 rounded-full bg-muted" />
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
-        <span className="truncate font-medium">
-          {run.arrInstance?.name ?? "—"}
-        </span>
+        <span className="truncate font-medium">{run.arrInstance?.name ?? "—"}</span>
         <span className="flex items-center gap-2 text-xs text-muted-foreground sm:hidden">
           <span className="tabular-nums">pcjones {run.pcjonesItemsCount}</span>
           <span aria-hidden>·</span>
@@ -107,26 +91,23 @@ function RecentRunRow({ run, locale }: { run: SyncRun; locale: string }) {
             {duration === null ? "—" : `${(duration / 1000).toFixed(1)}s`}
           </span>
         </span>
-        <span className="hidden tabular-nums text-muted-foreground sm:inline">
+        <span className="hidden text-muted-foreground tabular-nums sm:inline">
           pcjones {run.pcjonesItemsCount}
         </span>
-        <span className="hidden tabular-nums text-muted-foreground sm:inline">
+        <span className="hidden text-muted-foreground tabular-nums sm:inline">
           TVDB {run.tvdbItemsCount}
         </span>
-        <span className="hidden tabular-nums text-muted-foreground sm:inline">
+        <span className="hidden text-muted-foreground tabular-nums sm:inline">
           TMDB {run.tmdbItemsCount}
         </span>
-        <span className="hidden tabular-nums text-muted-foreground sm:inline">
+        <span className="hidden text-muted-foreground tabular-nums sm:inline">
           {duration === null ? "—" : `${(duration / 1000).toFixed(1)}s`}
         </span>
-        <span className="hidden whitespace-nowrap text-xs text-muted-foreground md:inline">
+        <span className="hidden text-xs whitespace-nowrap text-muted-foreground md:inline">
           {new Date(run.startedAt).toLocaleString(locale)}
         </span>
       </div>
-      <Badge
-        variant={statusVariant(run.status)}
-        className="shrink-0 capitalize"
-      >
+      <Badge variant={syncStatusVariant(run.status)} className="shrink-0 capitalize">
         {run.status}
       </Badge>
     </li>

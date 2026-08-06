@@ -19,13 +19,7 @@ const RenamesChartInner = dynamic(
   { ssr: false, loading: () => <Skeleton className="h-full w-full" /> },
 );
 import { apiFetch } from "@/app/_lib/api-client";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProwlarrImportDialog } from "@/components/instances/prowlarr-import-dialog";
 import { ProwlarrInstallProxyDialog } from "@/components/instances/prowlarr-install-proxy-dialog";
@@ -35,12 +29,8 @@ import { KpiCard } from "./_components/kpi-card";
 import { RecentRunsCard } from "./_components/recent-runs-card";
 import { SyncBackgroundProgress } from "./_components/sync-background-progress";
 import { SyncConfirmDialog } from "./_components/sync-confirm-dialog";
-import type {
-  Instance,
-  ProwlarrConfig,
-  StatsResponse,
-  SyncRun,
-} from "./_lib/dashboard-types";
+import type { Instance, ProwlarrConfig, StatsResponse } from "./_lib/dashboard-types";
+import type { SyncRun } from "@/app/(admin)/_lib/sync-types";
 
 export function DashboardClient() {
   const t = useTranslations("dashboard");
@@ -69,8 +59,7 @@ export function DashboardClient() {
   });
   const prowlarrConfig = useQuery<ProwlarrConfig>({
     queryKey: ["prowlarr-config"],
-    queryFn: () =>
-      apiFetch<ProwlarrConfig>("/api/admin/instances/prowlarr/config"),
+    queryFn: () => apiFetch<ProwlarrConfig>("/api/admin/instances/prowlarr/config"),
   });
 
   const sync = useSyncTracker({
@@ -89,8 +78,7 @@ export function DashboardClient() {
 
   // Surface a failed core fetch explicitly; otherwise an error reads as
   // "no data" (zeroed KPIs / empty cards) and hides the real problem.
-  const hasError =
-    instances.isError || stats.isError || runs.isError;
+  const hasError = instances.isError || stats.isError || runs.isError;
 
   async function startSync(): Promise<void> {
     await sync.start();
@@ -102,9 +90,7 @@ export function DashboardClient() {
       {/* Header + Quick Actions */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {t("title")}
-          </h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
           <p className="text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -143,9 +129,7 @@ export function DashboardClient() {
         </div>
       ) : null}
 
-      {sync.tracking && !confirmOpen ? (
-        <SyncBackgroundProgress sync={sync} />
-      ) : null}
+      {sync.tracking && !confirmOpen ? <SyncBackgroundProgress sync={sync} /> : null}
 
       {/* KPI Row */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -171,9 +155,7 @@ export function DashboardClient() {
           title={t("renames24h")}
           loading={stats.isLoading}
           value={summary?.renames24h ?? 0}
-          hint={
-            summary ? t("renames14dHint", { total: summary.renames14d }) : ""
-          }
+          hint={summary ? t("renames14dHint", { total: summary.renames14d }) : ""}
         />
       </div>
 
@@ -181,9 +163,7 @@ export function DashboardClient() {
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
-              {t("charts.requestsTitle")}
-            </CardTitle>
+            <CardTitle className="text-base">{t("charts.requestsTitle")}</CardTitle>
             <CardDescription>{t("charts.requestsHint")}</CardDescription>
           </CardHeader>
           <CardContent className="h-64">
@@ -205,9 +185,7 @@ export function DashboardClient() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
-              {t("charts.renamesTitle")}
-            </CardTitle>
+            <CardTitle className="text-base">{t("charts.renamesTitle")}</CardTitle>
             <CardDescription>{t("charts.renamesHint")}</CardDescription>
           </CardHeader>
           <CardContent className="h-64">
@@ -220,17 +198,9 @@ export function DashboardClient() {
         </Card>
       </div>
 
-      <InstancesOverviewCard
-        instances={instances.data}
-        loading={instances.isLoading}
-      />
+      <InstancesOverviewCard instances={instances.data} loading={instances.isLoading} />
 
-      <RecentRunsCard
-        runs={runs.data}
-        loading={runs.isLoading}
-        lastRun={lastRun}
-        locale={locale}
-      />
+      <RecentRunsCard runs={runs.data} loading={runs.isLoading} lastRun={lastRun} locale={locale} />
 
       <ProwlarrImportDialog
         open={importOpen}
@@ -239,10 +209,7 @@ export function DashboardClient() {
           void instances.refetch();
         }}
       />
-      <ProwlarrInstallProxyDialog
-        open={installProxyOpen}
-        onOpenChange={setInstallProxyOpen}
-      />
+      <ProwlarrInstallProxyDialog open={installProxyOpen} onOpenChange={setInstallProxyOpen} />
     </div>
   );
 }

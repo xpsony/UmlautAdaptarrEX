@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { HistoryPage } from "@/components/ui/history-page";
 import { TablePagination } from "@/components/ui/table-pagination";
+import { httpStatusVariant } from "@/app/(admin)/_lib/status-variant";
 
 interface Row {
   id: string;
@@ -22,13 +23,6 @@ interface Row {
   durationMs: number;
   cacheHit: boolean;
   createdAt: string;
-}
-
-function statusVariant(status: number): "success" | "warning" | "destructive" | "muted" {
-  if (status >= 500) return "destructive";
-  if (status >= 400) return "warning";
-  if (status >= 200 && status < 300) return "success";
-  return "muted";
 }
 
 export function RequestHistoryClient() {
@@ -115,7 +109,7 @@ export function RequestHistoryClient() {
             {r.externalId ?? <span className="text-muted-foreground">—</span>}
           </TableCell>
           <TableCell>
-            <Badge variant={statusVariant(r.status)} className="tabular-nums">
+            <Badge variant={httpStatusVariant(r.status)} className="tabular-nums">
               {r.status}
             </Badge>
           </TableCell>

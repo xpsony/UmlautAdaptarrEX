@@ -16,41 +16,8 @@ import {
 } from "@/components/ui/select";
 import { ArrIcon, type ArrIconType } from "@/components/ui/arr-icon";
 import { HistoryPage } from "@/components/ui/history-page";
-
-interface SyncRun {
-  id: string;
-  status: string;
-  startedAt: string;
-  finishedAt: string | null;
-  itemsCount: number;
-  pcjonesItemsCount: number;
-  tmdbItemsCount: number;
-  tvdbItemsCount: number;
-  errorMessage?: string | null;
-  arrInstance: { name: string; type: string } | null;
-}
-
-function statusVariant(status: string): "success" | "warning" | "destructive" | "muted" {
-  switch (status.toLowerCase()) {
-    case "ok":
-    case "success":
-    case "completed":
-      return "success";
-    case "running":
-    case "queued":
-    case "pending":
-      return "warning";
-    case "failed":
-    case "error":
-      return "destructive";
-    case "cancelled":
-    case "canceled":
-    case "aborted":
-      return "muted";
-    default:
-      return "muted";
-  }
-}
+import { syncStatusVariant } from "@/app/(admin)/_lib/status-variant";
+import type { SyncRun } from "@/app/(admin)/_lib/sync-types";
 
 export function SyncRunsClient() {
   const t = useTranslations("syncRuns");
@@ -132,7 +99,7 @@ export function SyncRunsClient() {
               )}
             </TableCell>
             <TableCell>
-              <Badge variant={statusVariant(r.status)} className="capitalize">
+              <Badge variant={syncStatusVariant(r.status)} className="capitalize">
                 {r.status}
               </Badge>
             </TableCell>
