@@ -4,6 +4,7 @@ import { isMaskedSecret } from "@/lib/secrets";
 import type { ArrType, ProviderId } from "@/schemas/instance";
 import type { AppLogger } from "@/server/logging/logger";
 import { type AppState, type CachedSearchItem, getAppState } from "@/server/state";
+import { buildSearchItem, type SearchItemDerived } from "@/domain/variations";
 import type { MediaType } from "@/domain/variations/generate";
 import type { TitleProvider } from "@/providers/types";
 import { requiredLanguages } from "@/providers";
@@ -164,6 +165,63 @@ function checkTmdbPreflight(state: AppState): string | null {
     `but no usable TMDB v3 API key is configured. Set one in Settings → ` +
     `Providers, or disable the non-German plugins.`
   );
+}
+
+// Manual overrides win over provider titles. Items are already derived by
+// the arr client; re-derive only the overridden ones (cheap: a handful of
+// rows) so persisted variations and runtime matching agree with the override.
+//
+// titlesByLang is sourced from the TitleApiCache (same source the route-
+// triggered rebuild helper in title-overrides/rebuild.ts uses), not just
+// `{ de: overrideTitle }` — that keeps non-DE plugin variations (sv/fr/...)
+// intact for overridden items across every sync instead of dropping them.
+async function applyTitleOverrides(items: SearchItemDerived[]): Promise<SearchItemDerived[]> {
+  const overrides = await prisma.titleOverride.findMany();
+  if (overrides.length === 0) return items;
+  const map = new Map(overrides.map((o) => [`${o.mediaType}:${o.externalId}`, o.germanTitle]));
+
+  // Cache lookup is bounded by the (few) items actually overridden, not the
+  // whole library.
+  const overriddenKeys = new Set(
+    items.map((item) => `${item.mediaType}:${item.externalId}`).filter((key) => map.has(key)),
+  );
+  const cacheById = new Map<string, { translations: { lang: string; title: string | null }[] }>();
+  if (overriddenKeys.size > 0) {
+    const caches = await prisma.titleApiCache.findMany({
+      where: { id: { in: [...overriddenKeys] } },
+      include: { translations: { select: { lang: true, title: true } } },
+    });
+    for (const cache of caches) cacheById.set(cache.id, cache);
+  }
+
+  return items.map((item) => {
+    const key = `${item.mediaType}:${item.externalId}`;
+    const overrideTitle = map.get(key);
+    if (overrideTitle === undefined) return item;
+
+    const titlesByLang: Record<string, string> = {};
+    for (const t of cacheById.get(key)?.translations ?? []) {
+      if (t.title) titlesByLang[t.lang] = t.title;
+    }
+    // The override must win the "de" slot the same way it does in
+    // rebuild.ts, regardless of what the cache last saw for German.
+    titlesByLang["de"] = overrideTitle;
+
+    return buildSearchItem({
+      arrId: item.arrId,
+      externalId: item.externalId,
+      title: item.title,
+      expectedTitle: item.expectedTitle,
+      expectedAuthor: item.expectedAuthor,
+      // titlesByLang.de wins for tv/movie; germanTitle feeds the books/audio
+      // path, which ignores titlesByLang entirely.
+      germanTitle: overrideTitle,
+      titlesByLang,
+      mediaType: item.mediaType,
+      aliases: item.aliases,
+      year: item.year,
+    });
+  });
 }
 
 interface PersistChangeStats {
@@ -428,7 +486,8 @@ async function fetchAndPersist(
   });
   const { items, providerStats } = await withSyncStats(async (stats) => {
     const fetched = await client.fetchAllItems();
-    return { items: fetched, providerStats: { ...stats } };
+    const withOverrides = await applyTitleOverrides(fetched);
+    return { items: withOverrides, providerStats: { ...stats } };
   });
 
   const withGermanTitle = items.filter((i) => i.germanTitle).length;
