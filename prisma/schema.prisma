@@ -281,3 +281,18 @@ model LogEntry {
   @@index([createdAt])
   @@index([level])
 }
+
+// ── Manuelles Titel-Override (global pro Medium) ──────────────────────────────
+// Schlüssel = mediaType+externalId (wie TitleApiCache). Überlebt Re-Syncs,
+// Item-Entfernung und Instanz-Neuanlage; verwaiste Overrides bleiben bewusst
+// bestehen. Wird beim Sync-Assembly und beim Sofort-Rebuild angewandt.
+model TitleOverride {
+  id          String   @id @default(cuid())
+  mediaType   String
+  externalId  String
+  germanTitle String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([mediaType, externalId])
+}
