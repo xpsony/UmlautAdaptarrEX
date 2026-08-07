@@ -77,7 +77,9 @@ export function parseJsonArray(raw: string | null): string[] | null {
 // exported free-text columns (search queries, original/rewritten titles)
 // ultimately trace back to *arr search terms / indexer release names, which
 // an attacker can influence, so this can't be dismissed as "our own data".
-const FORMULA_PREFIX = /^[=+\-@]/;
+// Leading tab is included per OWASP's CSV-injection character list, in
+// addition to the classic =, +, -, @.
+const FORMULA_PREFIX = /^[=+\-@\t]/;
 
 /** Quote a single CSV cell per RFC 4180 when it needs it, else return it verbatim. */
 function csvCell(value: unknown): string {

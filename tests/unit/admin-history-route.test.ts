@@ -241,9 +241,38 @@ describe("GET /api/admin/request-history", () => {
         method: "GET",
         url: "/api/admin/request-history?format=csv",
       });
-      const lines = r.body.split("\r\n");
+      // Body is BOM-prefixed (see below) — strip it before splitting on rows.
+      const lines = r.body.slice(1).split("\r\n");
       expect(lines[0]).toBe("id,createdAt,type,domain,query,externalId,status,durationMs,cacheHit");
       expect(lines[1]).toBe('r1,2026-01-02T03:04:05.000Z,caps,example.com,"a, b",,200,12,true');
+    });
+
+    it("prefixes the body with a UTF-8 BOM so Excel doesn't mis-decode umlauts as ANSI", async () => {
+      mockReq.findMany.mockResolvedValueOnce([]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv",
+      });
+      expect(r.body.startsWith("﻿")).toBe(true);
+    });
+
+    it("sets x-truncated when the row count hits the 10_000 cap", async () => {
+      const rows = Array.from({ length: 10_000 }, (_, i) => ({ id: String(i) }));
+      mockReq.findMany.mockResolvedValueOnce(rows);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv",
+      });
+      expect(r.headers["x-truncated"]).toBe("true");
+    });
+
+    it("omits x-truncated when the row count is under the cap", async () => {
+      mockReq.findMany.mockResolvedValueOnce([{ id: "r1" }]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv",
+      });
+      expect(r.headers["x-truncated"]).toBeUndefined();
     });
   });
 });
@@ -352,9 +381,38 @@ describe("GET /api/admin/rename-history", () => {
         method: "GET",
         url: "/api/admin/rename-history?format=csv",
       });
-      const lines = r.body.split("\r\n");
+      // Body is BOM-prefixed (see below) — strip it before splitting on rows.
+      const lines = r.body.slice(1).split("\r\n");
       expect(lines[0]).toBe("id,createdAt,mediaType,originalTitle,rewrittenTitle");
       expect(lines[1]).toBe('n1,2026-01-02T03:04:05.000Z,movie,Die Hard,"Stirb ""langsam"""');
+    });
+
+    it("prefixes the body with a UTF-8 BOM so Excel doesn't mis-decode umlauts as ANSI", async () => {
+      mockRename.findMany.mockResolvedValueOnce([]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/rename-history?format=csv",
+      });
+      expect(r.body.startsWith("﻿")).toBe(true);
+    });
+
+    it("sets x-truncated when the row count hits the 10_000 cap", async () => {
+      const rows = Array.from({ length: 10_000 }, (_, i) => ({ id: String(i) }));
+      mockRename.findMany.mockResolvedValueOnce(rows);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/rename-history?format=csv",
+      });
+      expect(r.headers["x-truncated"]).toBe("true");
+    });
+
+    it("omits x-truncated when the row count is under the cap", async () => {
+      mockRename.findMany.mockResolvedValueOnce([{ id: "n1" }]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/rename-history?format=csv",
+      });
+      expect(r.headers["x-truncated"]).toBeUndefined();
     });
   });
 });

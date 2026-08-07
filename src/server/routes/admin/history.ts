@@ -85,10 +85,19 @@ async function csvExport(
   })) as Record<string, unknown>[];
   const csv = toCsv(items, columns);
   const filename = `${filenamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`;
-  return reply
+  reply
     .header("content-type", "text/csv; charset=utf-8")
-    .header("content-disposition", `attachment; filename="${filename}"`)
-    .send(csv);
+    .header("content-disposition", `attachment; filename="${filename}"`);
+  // The row count hit the cap: there may be more matching rows than were
+  // exported, so callers must not read a full file as "that's everything" —
+  // same no-silent-caps principle as the JSON list's `take`/`total` pair,
+  // just without a total to compare against here.
+  if (items.length === CSV_ROW_CAP) reply.header("x-truncated", "true");
+  // Prefix with a UTF-8 BOM: without it, Excel on Windows opens the file in
+  // the system ANSI codepage instead of UTF-8, so umlaut titles like
+  // "Männer" render as "MÃ¤nner". `toCsv` itself stays BOM-free/pure — the
+  // BOM is a transport concern, not part of the CSV content.
+  return reply.send(`﻿${csv}`);
 }
 
 // Sortable columns exposed to the request-history table. `sort` values that

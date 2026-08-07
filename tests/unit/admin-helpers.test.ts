@@ -147,7 +147,7 @@ describe("toCsv", () => {
   // queries / indexer release titles, which an attacker can influence — so a
   // crafted release name must not turn into an executing formula for the
   // admin who opens the export.
-  it.each(["=1+1", "+1+1", "-1+1", "@SUM(A1:A2)", "=cmd|'/c calc'!A1"])(
+  it.each(["=1+1", "+1+1", "-1+1", "@SUM(A1:A2)", "=cmd|'/c calc'!A1", "\t=1+1"])(
     "neutralizes a string cell that looks like a formula (%s) with a leading apostrophe",
     (formula) => {
       const csv = toCsv([{ note: formula }], ["note"]);
