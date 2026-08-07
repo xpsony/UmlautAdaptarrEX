@@ -60,7 +60,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "feature",
-        text: "Request history and rename history paginate through all stored entries (page size 25/50/100/250) with server-side search, and the new “History retention (days)” setting (Settings → Advanced, default 30, 1–365) cleans up old entries automatically every 6 hours.",
+        text: "Request history and rename history paginate through all stored entries (page size 25/50/100/250) with server-side search across the whole retained period — previously search only covered the newest rows. The new “History retention (days)” setting (Settings → Advanced, default 30, 1–365) cleans up old entries automatically every 6 hours. Thanks to Tom-Furrer for reporting the search limitation (#115).",
       },
       {
         type: "improvement",
@@ -84,7 +84,11 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "fix",
-        text: 'The version under About is trustworthy again. Images built from source showed an empty version, and the automatic :latest security rebuild (every 2 days) changed the displayed string to something like 1.3.0-881f830 although the code was identical to the release. Both now show the plain release version. Note that if About still shows an older version after an update, the container was not replaced: "docker compose pull" only downloads the image, "docker compose up -d" recreates the container from it.',
+        text: 'The version under About is trustworthy again. Images built from source showed an empty version, and the automatic :latest security rebuild (every 2 days) changed the displayed string to something like 1.3.0-881f830 although the code was identical to the release. Both now show the plain release version. Note that if About still shows an older version after an update, the container was not replaced: "docker compose pull" only downloads the image, "docker compose up -d" recreates the container from it. Thanks to Tom-Furrer for the report (#86).',
+      },
+      {
+        type: "fix",
+        text: "No more spurious FST_CSRF_MISSING_SECRET 403 warnings in the logs: the CSRF cookie could expire before the login session (e.g. after a browser restart), making the next action fail with a 403. CSRF cookies now live exactly as long as the session, and CSRF rejections are logged at debug level instead of warn. Thanks to Tom-Furrer for the report (#87).",
       },
     ],
   },
