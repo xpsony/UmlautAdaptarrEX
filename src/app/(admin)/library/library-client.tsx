@@ -30,6 +30,10 @@ const ALL = "all";
 
 const MEDIA_TYPES: MediaType[] = ["tv", "movie", "audio", "book"];
 
+// Accepted `override` query values; anything else falls back to ALL (both
+// here and server-side in src/server/routes/admin/search-items.ts).
+const OVERRIDE_FILTERS = ["with", "without"] as const;
+
 export function LibraryClient() {
   const t = useTranslations("library");
   const tCommon = useTranslations("common");
@@ -47,6 +51,7 @@ export function LibraryClient() {
   const instanceFilter = url.getParam("instanceId", ALL);
   const typeFilter = url.getParam("mediaType", ALL, MEDIA_TYPES);
   const missingOnly = url.getFlag("missing");
+  const overrideFilter = url.getParam("override", ALL, OVERRIDE_FILTERS);
   const [detail, setDetail] = useState<Item | null>(null);
 
   const instances = useQuery<Instance[]>({
@@ -63,6 +68,7 @@ export function LibraryClient() {
       instanceFilter,
       typeFilter,
       missingOnly,
+      overrideFilter,
       sort.key,
       sort.order,
     ],
@@ -77,6 +83,7 @@ export function LibraryClient() {
       if (instanceFilter !== ALL) params.set("instanceId", instanceFilter);
       if (typeFilter !== ALL) params.set("mediaType", typeFilter);
       if (missingOnly) params.set("missingGerman", "1");
+      if (overrideFilter !== ALL) params.set("override", overrideFilter);
       return apiFetch(`/api/admin/search-items?${params}`);
     },
     placeholderData: keepPreviousData,
@@ -160,6 +167,19 @@ export function LibraryClient() {
                     {typeLabel(type)}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={overrideFilter}
+              onValueChange={(v) => url.setFilters({ override: v === ALL ? undefined : v })}
+            >
+              <SelectTrigger className="w-44" aria-label={t("allOverrides")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t("allOverrides")}</SelectItem>
+                <SelectItem value="with">{t("overrideOnly")}</SelectItem>
+                <SelectItem value="without">{t("noOverrideOnly")}</SelectItem>
               </SelectContent>
             </Select>
             <div className="flex items-center gap-2">
