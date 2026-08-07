@@ -246,6 +246,8 @@
     "test": "Tester la connexion",
     "testOk": "Connexion OK (version {version})",
     "testFail": "Connexion échouée : {error}",
+    "syncNow": "Synchroniser maintenant",
+    "syncStarted": "Synchronisation démarrée.",
     "type": "Type",
     "name": "Nom",
     "host": "Hôte",

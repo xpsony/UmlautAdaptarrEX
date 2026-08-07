@@ -246,6 +246,8 @@
     "test": "Testa anslutning",
     "testOk": "Anslutning OK (version {version})",
     "testFail": "Anslutning misslyckades: {error}",
+    "syncNow": "Synkronisera nu",
+    "syncStarted": "Synkronisering startad.",
     "type": "Typ",
     "name": "Namn",
     "host": "Värd",

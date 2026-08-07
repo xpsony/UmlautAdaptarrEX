@@ -246,6 +246,8 @@
     "test": "Verbindung testen",
     "testOk": "Verbindung OK (Version {version})",
     "testFail": "Verbindung fehlgeschlagen: {error}",
+    "syncNow": "Jetzt synchronisieren",
+    "syncStarted": "Sync gestartet.",
     "type": "Typ",
     "name": "Name",
     "host": "Host",

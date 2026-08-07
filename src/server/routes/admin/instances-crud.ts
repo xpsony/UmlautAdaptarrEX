@@ -4,6 +4,7 @@ import { stripUndefined } from "@/lib/utils";
 import {
   ArrInstanceSchema,
   ArrInstanceUpdateSchema,
+  type ArrType,
   type ProviderId,
   TestConnectionSchema,
 } from "@/schemas/instance";
@@ -190,5 +191,21 @@ export async function instanceCrudRoutes(app: FastifyInstance): Promise<void> {
     if (!data) return;
     const ua = getAppState().settings.userAgent;
     return testConnection(data.type, data.host, data.apiKey, ua, req.log);
+  });
+
+  // Same as above but loads the instance server-side by id instead of taking
+  // host/apiKey from the request body — avoids round-tripping the stored
+  // apiKey through the client just to re-test an existing connection.
+  app.post("/api/admin/instances/:id/test", { preHandler: requireAuth }, async (req, reply) => {
+    const id = (req.params as { id: string }).id;
+    const instance = await prisma.arrInstance.findUnique({ where: { id } });
+    if (!instance) {
+      return reply.code(404).send({
+        error: "not_found",
+        message: "Instance not found.",
+      });
+    }
+    const ua = getAppState().settings.userAgent;
+    return testConnection(instance.type as ArrType, instance.host, instance.apiKey, ua, req.log);
   });
 }
