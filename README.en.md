@@ -32,6 +32,10 @@ UmlautAdaptarrEX presents itself to the \*arrs as an indexer, sits between the \
 corrects both searches and results so that releases with umlauts or German titles are reliably found, downloaded and
 imported.
 
+> **Coming from the original UmlautAdaptarr?** A detailed comparison of the two projects
+> (features, operations, migration) lives in [docs/comparison.en.md](docs/comparison.en.md)
+> (Deutsch: [docs/comparison.de.md](docs/comparison.de.md)).
+
 ## Which problems does it solve?
 
 - Releases with umlauts are often not found or imported correctly by the \*arrs (searching for `o` instead of `ö`,
@@ -55,12 +59,16 @@ imported.
 | Detection of releases with German title & TVDB alias                                                                                    |   ✓    |
 | Correct search and detection of titles with umlauts                                                                                     |   ✓    |
 | Renaming of releases with bad naming (optional)                                                                                         |   ✓    |
-| **Web UI** (setup wizard, login, dashboard, instances, sync runs, request & rename history)                                             |   ✓    |
+| **Web UI** (setup wizard, login, dashboard, instances, library, sync runs, request & rename history)                                    |   ✓    |
+| **Title library with manual overrides**: browse every synced title, fix individual mismatches directly                                  |   ✓    |
+| **Table comfort**: sortable columns, shareable URL filters/pages, row detail views, CSV export                                          |   ✓    |
+| **History with pagination & retention** (configurable, automatic cleanup)                                                               |   ✓    |
 | **Persistent SQLite database**, no cache loss after restart                                                                             |   ✓    |
-| **Live logs** via WebSocket                                                                                                             |   ✓    |
+| **Live logs** via WebSocket (with auto-reconnect)                                                                                       |   ✓    |
 | **Multiple title providers** with configurable order: pcjones-API, TVDB, TMDB                                                           |   ✓    |
 | **Language plugins**: German umlauts (default), Swedish umlauts, French accents                                                         |   ✓    |
-| **i18n**: German + English                                                                                                              |   ✓    |
+| **Headless mode** (no Web UI, ~115 MiB RAM)                                                                                             |   ✓    |
+| **i18n**: German, English, French, Swedish                                                                                              |   ✓    |
 
 > **Information about Radarr:**
 >
@@ -474,7 +482,7 @@ src/
 ├─ providers/             # External title providers (pcjones, TVDB, TMDB, db-cache)
 ├─ arr/                   # Sonarr/Radarr/Lidarr/Readarr/Prowlarr clients
 ├─ schemas/               # Zod schemas (shared client/server)
-├─ messages/              # i18n (de.json, en.json)
+├─ messages/              # i18n (de, en, fr, sv)
 └─ lib/                   # db, auth, secrets, legacy-env, i18n, utils
 ```
 
@@ -493,7 +501,8 @@ src/
 
 ## Credits
 
-Based on the idea and logic of [PCJones/UmlautAdaptarr](https://github.com/PCJones/UmlautAdaptarr).
+Based on the idea and logic of [PCJones/UmlautAdaptarr](https://github.com/PCJones/UmlautAdaptarr) —
+a detailed comparison of the two projects lives in [docs/comparison.en.md](docs/comparison.en.md).
 
 Thanks to [xopez](https://github.com/xopez) for the TrueNAS community app.
 

@@ -32,6 +32,10 @@ UmlautAdaptarrEX gibt sich gegenüber den *arrs als Indexer aus, schaltet sich z
 korrigiert Suchen wie Ergebnisse, damit Releases mit Umlauten oder deutschen Titeln zuverlässig gefunden, geladen und
 importiert werden.
 
+> **Umsteiger vom originalen UmlautAdaptarr?** Ein ausführlicher Vergleich der beiden Projekte
+> (Funktionen, Betrieb, Migration) steht in [docs/comparison.de.md](docs/comparison.de.md)
+> (English: [docs/comparison.en.md](docs/comparison.en.md)).
+
 ## Welche Probleme löst es?
 
 - Releases mit Umlauten werden von den \*arrs sonst oft nicht korrekt gefunden oder importiert (Suche nach `o` statt
@@ -56,12 +60,16 @@ importiert werden.
 | Erkennung von Releases mit deutschem Titel & TVDB-Alias                                                                                |   ✓    |
 | Korrekte Suche und Erkennung von Titeln mit Umlauten                                                                                   |   ✓    |
 | Umbenennung von Releases mit schlechtem Naming (optional)                                                                              |   ✓    |
-| **Web-UI** (Setup-Wizard, Login, Dashboard, Instanzen, Sync-Runs, Request- & Rename-History)                                           |   ✓    |
+| **Web-UI** (Setup-Wizard, Login, Dashboard, Instanzen, Bibliothek, Sync-Runs, Request- & Rename-History)                               |   ✓    |
+| **Titel-Bibliothek mit manuellem Override**: alle synchronisierten Titel einsehen, einzelne Fehlmatches direkt fixen                   |   ✓    |
+| **Tabellen-Komfort**: sortierbare Spalten, Filter/Seite per URL teilbar, Zeilen-Detailansichten, CSV-Export                            |   ✓    |
+| **History mit Pagination & Aufbewahrungsfrist** (konfigurierbar, automatisches Aufräumen)                                              |   ✓    |
 | **Persistente SQLite-Datenbank**, kein Cache-Verlust nach Neustart                                                                     |   ✓    |
-| **Live-Logs** über WebSocket                                                                                                           |   ✓    |
+| **Live-Logs** über WebSocket (mit Auto-Reconnect)                                                                                      |   ✓    |
 | **Mehrere Title-Provider** mit konfigurierbarer Reihenfolge: pcjones-API, TVDB, TMDB                                                   |   ✓    |
 | **Sprach-Plugins**: Deutsche Umlaute (default), Schwedische Umlaute, Französische Akzente                                              |   ✓    |
-| **i18n**: Deutsch + Englisch                                                                                                           |   ✓    |
+| **Headless-Modus** (ohne Web-UI, ~115 MiB RAM)                                                                                         |   ✓    |
+| **i18n**: Deutsch, Englisch, Französisch, Schwedisch                                                                                   |   ✓    |
 
 > **Hinweis zu Radarr:**
 >
@@ -482,7 +490,7 @@ src/
 ├─ providers/             # Externe Title-Provider (pcjones, TVDB, TMDB, db-cache)
 ├─ arr/                   # Sonarr/Radarr/Lidarr/Readarr/Prowlarr-Clients
 ├─ schemas/               # Zod-Schemas (shared client/server)
-├─ messages/              # i18n (de.json, en.json)
+├─ messages/              # i18n (de, en, fr, sv)
 └─ lib/                   # db, auth, secrets, legacy-env, i18n, utils
 ```
 
@@ -501,7 +509,8 @@ src/
 
 ## Credits
 
-Basiert auf der Idee und Logik von [PCJones/UmlautAdaptarr](https://github.com/PCJones/UmlautAdaptarr).
+Basiert auf der Idee und Logik von [PCJones/UmlautAdaptarr](https://github.com/PCJones/UmlautAdaptarr) —
+ein ausführlicher Vergleich beider Projekte steht in [docs/comparison.de.md](docs/comparison.de.md).
 
 Danke an [xopez](https://github.com/xopez) für die TrueNAS-Community-App.
 
