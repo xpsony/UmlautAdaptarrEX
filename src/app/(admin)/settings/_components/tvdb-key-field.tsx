@@ -11,26 +11,18 @@ import { FieldHint } from "@/components/ui/field-hint";
 import { Label } from "@/components/ui/label";
 import { SecretField } from "@/components/ui/secret-field";
 import { isMaskedSecret } from "@/lib/secrets";
-import type { SettingsForm, TvdbTestResult } from "../_lib/settings-types";
+import type { ProvidersForm, TvdbTestResult } from "../_lib/settings-types";
 
 interface TvdbKeyFieldProps {
-  form: SettingsForm;
+  form: ProvidersForm;
   apiKeyConfigured: boolean;
   pinConfigured: boolean;
 }
 
-export function TvdbKeyField({
-  form,
-  apiKeyConfigured,
-  pinConfigured,
-}: TvdbKeyFieldProps) {
+export function TvdbKeyField({ form, apiKeyConfigured, pinConfigured }: TvdbKeyFieldProps) {
   const t = useTranslations("settings");
   const [result, setResult] = useState<TvdbTestResult | null>(null);
-  const testMut = useMutation<
-    TvdbTestResult,
-    Error,
-    { apiKey: string; pin: string }
-  >({
+  const testMut = useMutation<TvdbTestResult, Error, { apiKey: string; pin: string }>({
     mutationFn: ({ apiKey, pin }) =>
       apiFetch<TvdbTestResult>("/api/admin/settings/test-tvdb-key", {
         method: "POST",
@@ -40,16 +32,11 @@ export function TvdbKeyField({
         }),
       }),
     onSuccess: (r) => setResult(r),
-    onError: (err) =>
-      setResult({ ok: false, code: "unknown", detail: err.message }),
+    onError: (err) => setResult({ ok: false, code: "unknown", detail: err.message }),
   });
 
-  const currentKey = (
-    useWatch({ control: form.control, name: "tvdbApiKey" }) ?? ""
-  ).toString();
-  const currentPin = (
-    useWatch({ control: form.control, name: "tvdbPin" }) ?? ""
-  ).toString();
+  const currentKey = (useWatch({ control: form.control, name: "tvdbApiKey" }) ?? "").toString();
+  const currentPin = (useWatch({ control: form.control, name: "tvdbPin" }) ?? "").toString();
 
   // Masked sentinels mean "test the stored value"; the admin route falls back
   // to the persisted key/pin when the body field is empty.
@@ -62,13 +49,11 @@ export function TvdbKeyField({
     });
   };
 
-  // RHF's UseFormReturn carries Zod-transformed output generics that don't
+  // ProvidersForm's UseFormReturn carries Zod-transformed output generics that don't
   // structurally match SecretField's relaxed signature under
   // exactOptionalPropertyTypes (validate is contravariant). SecretField only
   // touches control/register/setValue/resetField, so the cast is safe here.
-  const formForSecret = form as unknown as Parameters<
-    typeof SecretField
-  >[0]["form"];
+  const formForSecret = form as unknown as Parameters<typeof SecretField>[0]["form"];
 
   return (
     <div className="space-y-3">
@@ -83,12 +68,7 @@ export function TvdbKeyField({
         replaceLabel={t("secretReplace")}
         cancelLabel={t("secretCancel")}
         trailing={
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onTest}
-            disabled={testMut.isPending}
-          >
+          <Button type="button" variant="outline" onClick={onTest} disabled={testMut.isPending}>
             {testMut.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (

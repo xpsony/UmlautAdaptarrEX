@@ -9,10 +9,10 @@ import { apiFetch } from "@/app/_lib/api-client";
 import { Button } from "@/components/ui/button";
 import { SecretField } from "@/components/ui/secret-field";
 import { isMaskedSecret } from "@/lib/secrets";
-import type { SettingsForm, TmdbTestResult } from "../_lib/settings-types";
+import type { ProvidersForm, TmdbTestResult } from "../_lib/settings-types";
 
 interface TmdbKeyFieldProps {
-  form: SettingsForm;
+  form: ProvidersForm;
   configured: boolean;
 }
 
@@ -26,13 +26,10 @@ export function TmdbKeyField({ form, configured }: TmdbKeyFieldProps) {
         body: JSON.stringify(apiKey ? { apiKey } : {}),
       }),
     onSuccess: (r) => setResult(r),
-    onError: (err) =>
-      setResult({ ok: false, code: "unknown", detail: err.message }),
+    onError: (err) => setResult({ ok: false, code: "unknown", detail: err.message }),
   });
 
-  const currentKey = (
-    useWatch({ control: form.control, name: "tmdbApiKey" }) ?? ""
-  ).toString();
+  const currentKey = (useWatch({ control: form.control, name: "tmdbApiKey" }) ?? "").toString();
 
   const onTest = () => {
     // Masked sentinel means "test the stored key"; the admin route falls
@@ -48,7 +45,7 @@ export function TmdbKeyField({ form, configured }: TmdbKeyFieldProps) {
         id="tmdbApiKey"
         name="tmdbApiKey"
         configured={configured}
-        // SettingsForm carries Zod-transformed output types that don't
+        // ProvidersForm carries Zod-transformed output types that don't
         // structurally match UseFormReturn<any> under exactOptionalPropertyTypes
         // (RHF's internal validate signature is contravariant). The component
         // only touches control/register/setValue/resetField, so the cast is
@@ -60,12 +57,7 @@ export function TmdbKeyField({ form, configured }: TmdbKeyFieldProps) {
         replaceLabel={t("secretReplace")}
         cancelLabel={t("secretCancel")}
         trailing={
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onTest}
-            disabled={testMut.isPending}
-          >
+          <Button type="button" variant="outline" onClick={onTest} disabled={testMut.isPending}>
             {testMut.isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (

@@ -1,20 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type {
-  FieldErrors,
-  UseFormRegister,
-  UseFormReset,
-} from "react-hook-form";
+import type { FieldErrors, UseFormRegister, UseFormReset } from "react-hook-form";
 import { Lock, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { FieldHint } from "@/components/ui/field-hint";
 import { Input } from "@/components/ui/input";
@@ -22,21 +12,16 @@ import { Label } from "@/components/ui/label";
 import { CopyButton } from "@/components/ui/copy-button";
 import { RevealableInput } from "@/components/ui/revealable-input";
 import { useRegenerateSecret } from "../_lib/use-regenerate-secret";
-import type { SettingsFormInput, SettingsRow } from "../_lib/settings-types";
+import type { GeneralFormInput, SettingsRow } from "../_lib/settings-types";
 
 interface ProxyAuthCardProps {
-  register: UseFormRegister<SettingsFormInput>;
-  errors: FieldErrors<SettingsFormInput>;
+  register: UseFormRegister<GeneralFormInput>;
+  errors: FieldErrors<GeneralFormInput>;
   proxyPassword: string;
-  reset: UseFormReset<SettingsFormInput>;
+  reset: UseFormReset<GeneralFormInput>;
 }
 
-export function ProxyAuthCard({
-  register,
-  errors,
-  proxyPassword,
-  reset,
-}: ProxyAuthCardProps) {
+export function ProxyAuthCard({ register, errors, proxyPassword, reset }: ProxyAuthCardProps) {
   const t = useTranslations("settings");
   const regen = useRegenerateSecret<keyof SettingsRow>({
     endpoint: "/api/admin/settings/regenerate-proxy-password",
@@ -65,15 +50,9 @@ export function ProxyAuthCard({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="proxyUsername">{t("proxyAuth.username")}</Label>
-              <Input
-                id="proxyUsername"
-                autoComplete="off"
-                {...register("proxyUsername")}
-              />
+              <Input id="proxyUsername" autoComplete="off" {...register("proxyUsername")} />
               {errors.proxyUsername ? (
-                <p className="text-xs text-destructive">
-                  {errors.proxyUsername.message}
-                </p>
+                <p className="text-xs text-destructive">{errors.proxyUsername.message}</p>
               ) : null}
             </div>
             <div className="space-y-2">
@@ -93,19 +72,13 @@ export function ProxyAuthCard({
                   />
                 </div>
                 <CopyButton value={proxyPassword} label={t("copy")} />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => regen.setConfirming(true)}
-                >
+                <Button type="button" variant="outline" onClick={() => regen.setConfirming(true)}>
                   <RefreshCw className="h-4 w-4" />
                   {t("proxyAuth.regenerate")}
                 </Button>
               </div>
               {errors.proxyPassword ? (
-                <p className="text-xs text-destructive">
-                  {errors.proxyPassword.message}
-                </p>
+                <p className="text-xs text-destructive">{errors.proxyPassword.message}</p>
               ) : null}
             </div>
           </div>

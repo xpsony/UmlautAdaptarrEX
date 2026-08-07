@@ -1,11 +1,50 @@
 import type { z } from "zod";
 import type { UseFormReturn } from "react-hook-form";
-import type { SettingsUpdate, SettingsUpdateSchema } from "@/schemas/settings";
+import { SettingsUpdateSchema } from "@/schemas/settings";
+import type { SettingsUpdate } from "@/schemas/settings";
 import type { OperationMode } from "@/components/operation-mode-picker";
 
-export type SettingsFormInput = z.input<typeof SettingsUpdateSchema>;
+// Per-tab field subsets of SettingsUpdateSchema (Epic 6 / Task 7): the
+// settings form was split into one RHF instance per tab so a dirty edit in
+// tab A no longer keeps tab B's Save button enabled, and each Save only PUTs
+// the fields that tab actually owns. `SettingsUpdateSchema` is already
+// `SettingsSchema.partial()`, so every field here stays optional and a
+// partial PUT is a no-op change on the server.
+export const GeneralSettingsSchema = SettingsUpdateSchema.pick({
+  proxyUsername: true,
+  proxyPassword: true,
+});
+export const ProvidersSettingsSchema = SettingsUpdateSchema.pick({
+  titleApiHost: true,
+  tmdbApiKey: true,
+  tvdbApiKey: true,
+  tvdbPin: true,
+});
+// operationMode is intentionally excluded — OperationModeCard owns its own
+// save path (a dedicated PUT of just `{ operationMode }`), independent of
+// the Advanced form.
+export const AdvancedSettingsSchema = SettingsUpdateSchema.pick({
+  proxyPort: true,
+  cacheDurationMinutes: true,
+  indexerRateLimitMs: true,
+  indexerTimeoutSeconds: true,
+  userAgent: true,
+  logRetentionDays: true,
+  historyRetentionDays: true,
+  blockPrivateInstanceHosts: true,
+});
 
-export type SettingsForm = UseFormReturn<SettingsFormInput, unknown, SettingsUpdate>;
+export type GeneralFormInput = z.input<typeof GeneralSettingsSchema>;
+export type GeneralFormOutput = z.infer<typeof GeneralSettingsSchema>;
+export type GeneralForm = UseFormReturn<GeneralFormInput, unknown, GeneralFormOutput>;
+
+export type ProvidersFormInput = z.input<typeof ProvidersSettingsSchema>;
+export type ProvidersFormOutput = z.infer<typeof ProvidersSettingsSchema>;
+export type ProvidersForm = UseFormReturn<ProvidersFormInput, unknown, ProvidersFormOutput>;
+
+export type AdvancedFormInput = z.input<typeof AdvancedSettingsSchema>;
+export type AdvancedFormOutput = z.infer<typeof AdvancedSettingsSchema>;
+export type AdvancedForm = UseFormReturn<AdvancedFormInput, unknown, AdvancedFormOutput>;
 
 export interface SettingsRow extends SettingsUpdate {
   appApiKey: string;

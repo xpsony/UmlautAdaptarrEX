@@ -6,7 +6,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { type SettingsUpdate, SettingsUpdateSchema } from "@/schemas/settings";
 import { apiFetch } from "@/app/_lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,7 +14,20 @@ import { GeneralTab } from "./_components/general-tab";
 import { PluginsSection } from "./_components/plugins-section";
 import { ProvidersTab } from "./_components/providers-tab";
 import { ProwlarrSection } from "./_components/prowlarr-section";
-import type { SettingsFormInput, SettingsRow } from "./_lib/settings-types";
+import {
+  AdvancedSettingsSchema,
+  GeneralSettingsSchema,
+  ProvidersSettingsSchema,
+} from "./_lib/settings-types";
+import type {
+  AdvancedFormInput,
+  AdvancedFormOutput,
+  GeneralFormInput,
+  GeneralFormOutput,
+  ProvidersFormInput,
+  ProvidersFormOutput,
+  SettingsRow,
+} from "./_lib/settings-types";
 
 export function SettingsClient() {
   const t = useTranslations("settings");
@@ -28,47 +40,125 @@ export function SettingsClient() {
     queryFn: () => apiFetch<SettingsRow>("/api/admin/settings"),
   });
 
-  const form = useForm<SettingsFormInput, unknown, SettingsUpdate>({
-    resolver: zodResolver(SettingsUpdateSchema),
+  // Three independent RHF instances, one per tab (Epic 6 Task 7). This
+  // replaces a single form that shared one dirty flag across all tabs — the
+  // Epic-8 bug where editing the Providers tab kept the General tab's Save
+  // button enabled too. Each form is scoped to its own field subset via
+  // `SettingsUpdateSchema.pick(...)` (see settings-types.ts) and PUTs only
+  // those fields, which the partial-update-friendly `SettingsUpdateSchema`
+  // (already `SettingsSchema.partial()`) and `putSettings` already support
+  // unmodified.
+  //
+  // The dirty-guarded reset effect + onSuccess-reset pattern from Epic 8 is
+  // replicated per form below:
+  // - Fresh load / background refetch while clean: settings.data changes,
+  //   the form isn't dirty, so the effect resets it to the latest data.
+  // - In-progress edit + unrelated refetch (e.g. locale switch): the form is
+  //   dirty, so the effect skips the reset and the edit survives.
+  // - Save: the mutation's onSuccess resets the form to its own just-saved
+  //   values immediately, so it doesn't stay dirty forever waiting for the
+  //   background refetch that the dirty-guard above would otherwise block.
+
+  // --- General tab (proxy auth) --------------------------------------------
+  const generalForm = useForm<GeneralFormInput, unknown, GeneralFormOutput>({
+    resolver: zodResolver(GeneralSettingsSchema),
   });
-
-  // State transitions this effect must handle without clobbering user input:
-  // - Fresh load: settings.data arrives once, form is untouched (not dirty) -> reset populates it.
-  // - Edit -> locale switch: router.refresh() (from the locale toggle) re-runs the
-  //   server prefetch, which hands the query client a fresh (but referentially new)
-  //   ["settings"] object via HydrationBoundary. The form is dirty, so the guard
-  //   below skips the reset and the in-progress edit survives.
-  // - Edit -> save: handled by saveMut.onSuccess below, not here.
-  // - Background refetch while clean: settings.data changes (e.g. server-normalized
-  //   values), form is not dirty, so the reset re-syncs the form to the latest data.
   useEffect(() => {
-    if (settings.data && !form.formState.isDirty) form.reset(settings.data);
-  }, [settings.data, form]);
-
-  const saveMut = useMutation({
-    mutationFn: (data: SettingsUpdate) =>
+    if (settings.data && !generalForm.formState.isDirty) generalForm.reset(settings.data);
+  }, [settings.data, generalForm]);
+  const generalSaveMut = useMutation({
+    mutationFn: (data: GeneralFormOutput) =>
       apiFetch("/api/admin/settings", {
         method: "PUT",
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
       toast.success(t("saved"));
-      // Mark the just-saved values as the new clean baseline immediately: the
-      // dirty-guard above means a subsequent refetch can no longer reset the
-      // form, so without this the form would stay dirty forever after a save.
-      form.reset(form.getValues());
+      generalForm.reset(generalForm.getValues());
       void qc.invalidateQueries({ queryKey: ["settings"] });
     },
     onError: () => toast.error(tCommon("error")),
   });
+  const onSaveGeneral = (data: GeneralFormOutput) => generalSaveMut.mutate(data);
 
-  const onSave = (data: SettingsUpdate) => {
+  // --- Providers tab ---------------------------------------------------------
+  const providersForm = useForm<ProvidersFormInput, unknown, ProvidersFormOutput>({
+    resolver: zodResolver(ProvidersSettingsSchema),
+  });
+  useEffect(() => {
+    if (settings.data && !providersForm.formState.isDirty) providersForm.reset(settings.data);
+  }, [settings.data, providersForm]);
+  const providersSaveMut = useMutation({
+    mutationFn: (data: ProvidersFormOutput) =>
+      apiFetch("/api/admin/settings", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      toast.success(t("saved"));
+      providersForm.reset(providersForm.getValues());
+      void qc.invalidateQueries({ queryKey: ["settings"] });
+    },
+    onError: () => toast.error(tCommon("error")),
+  });
+  const onSaveProviders = (data: ProvidersFormOutput) => providersSaveMut.mutate(data);
+
+  // --- Advanced tab -----------------------------------------------------------
+  const advancedForm = useForm<AdvancedFormInput, unknown, AdvancedFormOutput>({
+    resolver: zodResolver(AdvancedSettingsSchema),
+  });
+  useEffect(() => {
+    if (settings.data && !advancedForm.formState.isDirty) advancedForm.reset(settings.data);
+  }, [settings.data, advancedForm]);
+  const advancedSaveMut = useMutation({
+    mutationFn: (data: AdvancedFormOutput) =>
+      apiFetch("/api/admin/settings", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      toast.success(t("saved"));
+      advancedForm.reset(advancedForm.getValues());
+      void qc.invalidateQueries({ queryKey: ["settings"] });
+    },
+    onError: () => toast.error(tCommon("error")),
+  });
+  const onSaveAdvanced = (data: AdvancedFormOutput) => {
     const payload = { ...data };
+    // The proxy port is pinned by UMLAUTADAPTARREX_PROXY_PORT when set; the
+    // field is disabled in the UI (see advanced-tab.tsx) but a stale value
+    // could still be part of `data` (e.g. programmatic reset), so drop it
+    // here too rather than rely solely on the disabled input.
     if (settings.data?.proxyPortEnvManaged) {
       delete payload.proxyPort;
     }
-    saveMut.mutate(payload);
+    advancedSaveMut.mutate(payload);
   };
+
+  // beforeunload guard: fires when ANY of the three per-tab forms is dirty.
+  // Reading `formState.isDirty` at render time subscribes this component to
+  // that field on each form (RHF's proxy-based formState), so `anyDirty`
+  // recomputes and the effect below re-runs whenever any one of the three
+  // flips dirty/clean.
+  //
+  // We deliberately do NOT intercept in-app navigation (clicking a sidebar
+  // link, browser back/forward within the app): Next.js App Router has no
+  // stable, cancelable router-transition event to hook a confirm dialog
+  // into. `beforeunload` only covers the tab/window-close and hard-navigation
+  // case, which is the one irrecoverable data-loss scenario — that's a
+  // deliberate scope limit, not an oversight.
+  const anyDirty =
+    generalForm.formState.isDirty ||
+    providersForm.formState.isDirty ||
+    advancedForm.formState.isDirty;
+  useEffect(() => {
+    if (!anyDirty) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [anyDirty]);
 
   return (
     <div className="space-y-6">
@@ -106,18 +196,18 @@ export function SettingsClient() {
             <GeneralTab
               data={settings.data}
               loading={settings.isLoading}
-              form={form}
-              onSave={onSave}
-              saving={saveMut.isPending}
+              form={generalForm}
+              onSave={onSaveGeneral}
+              saving={generalSaveMut.isPending}
             />
           </TabsContent>
 
           <TabsContent value="providers" className="space-y-6">
             <ProvidersTab
-              form={form}
+              form={providersForm}
               data={settings.data}
-              onSave={onSave}
-              saving={saveMut.isPending}
+              onSave={onSaveProviders}
+              saving={providersSaveMut.isPending}
             />
           </TabsContent>
 
@@ -131,10 +221,10 @@ export function SettingsClient() {
 
           <TabsContent value="advanced" className="space-y-6">
             <AdvancedTab
-              form={form}
+              form={advancedForm}
               data={settings.data}
-              onSave={onSave}
-              saving={saveMut.isPending}
+              onSave={onSaveAdvanced}
+              saving={advancedSaveMut.isPending}
             />
           </TabsContent>
         </Tabs>

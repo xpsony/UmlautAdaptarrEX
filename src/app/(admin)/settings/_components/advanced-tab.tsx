@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import { Controller } from "react-hook-form";
 import { Settings as SettingsIcon } from "lucide-react";
-import type { SettingsUpdate } from "@/schemas/settings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldHint } from "@/components/ui/field-hint";
 import { Input } from "@/components/ui/input";
@@ -12,12 +11,12 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { SaveBar } from "./save-bar";
 import { TitleCacheSection } from "./title-cache-section";
-import type { SettingsForm, SettingsRow } from "../_lib/settings-types";
+import type { AdvancedForm, AdvancedFormOutput, SettingsRow } from "../_lib/settings-types";
 
 interface AdvancedTabProps {
-  form: SettingsForm;
+  form: AdvancedForm;
   data: SettingsRow | undefined;
-  onSave: (data: SettingsUpdate) => void;
+  onSave: (data: AdvancedFormOutput) => void;
   saving: boolean;
 }
 
