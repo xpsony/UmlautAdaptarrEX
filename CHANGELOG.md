@@ -1,5 +1,56 @@
 # Changelog
 
+## 1.4.0 — 2026-08-07
+
+The biggest release since the rewrite. Headline feature: a new **Library** page that finally makes the synced title data visible — and lets you fix individual mismatches with **manual title overrides** instead of clearing the whole cache. Around it: a full table/UX overhaul (sorting, URL-persisted filters, detail views, CSV export), history pagination with configurable retention, a performance and robustness pass on the sync/search hot paths, and a complete accessibility & translation sweep. Three new database migrations run automatically on first start; no configuration changes are required.
+
+### Features
+
+- **Library page (`/library`):** browse every synced title across all instances — original title, resolved German title and all generated search variations, with server-side search, filters (instance, media type, "missing German title only") and pagination. This is the data the matching engine actually works with; previously it was only visible in log lines.
+- **Manual title overrides:** fix a single mismatched title from the Library detail view. An override is stored per medium (`mediaType` + external id), applies to **all** instances, survives re-syncs and library removal/re-add, and recomputes the search variations immediately — the fix is searchable at once, not after the next 12h sync. Removing an override restores the provider-resolved title (or re-resolves on the next sync). Sync runs apply overrides at assembly time, sourcing multi-language variations from the title cache so non-German language plugins keep their variations.
+- **Sortable columns** on request history, rename history, sync runs and the library. Sorting is server-side against a per-endpoint whitelist, with a stable id tiebreaker so page boundaries never duplicate or skip rows.
+- **Filters, page and sorting live in the URL** on all four list pages: reload, browser back and deep links reproduce exactly the view you had. Default values are kept out of the URL.
+- **Sync runs list rebuilt:** server-side pagination, free-text search (instance name, error message) and a status filter replace the old 200-run display cap.
+- **Row detail views** for request history and sync runs: full untruncated query strings and error messages, per-provider item counters, localized timestamps. An open sync-run sheet live-updates while the run progresses.
+- **CSV export** for request and rename history: respects the current filter and sort order, RFC-4180 quoting, UTF-8 BOM (umlauts survive Excel), spreadsheet formula injection neutralized, capped at 10,000 rows (`x-truncated` response header when the cap hits).
+- **Per-instance actions in the instances list:** "Test connection" and "Sync now" directly from the row menu (desktop table and mobile cards). Connection tests run through a new server-side endpoint (`POST /api/admin/instances/:id/test`), so the stored API key never round-trips through the browser.
+- **History pagination & retention:** request and rename history paginate through all stored entries (page size 25/50/100/250) with server-side search across the whole retained period, and the new setting **History retention (days)** (Settings → Advanced, default 30, range 1–365) cleans up older entries automatically every 6 hours. Previously these tables grew without limit.
+- **Per-tab settings forms:** each settings tab is an independent form — dirty state no longer leaks across tabs, saves send only that tab's fields, and the browser warns before unloading with unsaved changes.
+- **Language switch without reload:** switching the UI language now refreshes in place (React Server Component refresh) — form state and scroll position survive.
+
+### Fixes
+
+- **Silent failures:** failed list/settings loads now render an error state with a retry button instead of masquerading as "no entries" / an empty form; enabling/disabling an instance shows an error toast instead of silently snapping back; the setup wizard's admin step shows field validation errors instead of doing nothing on invalid input.
+- **Sync-runs "Successful" filter never matched:** the filter sent `ok` while the database stores `success`. It works now.
+- **Live logs reconnect automatically:** the WebSocket stream reconnects with exponential backoff (1s → 30s) after a server restart or dropped connection, with a "Reconnecting…" badge — previously the page silently sat on a dead stream until reload.
+- **Instances API returns proper status codes:** PATCH/DELETE on a missing instance return 404, renaming onto an existing type+name returns 409 (previously both were 500).
+- **Concurrent title-cache rechecks** are rejected with 409 instead of doubling all outbound provider calls.
+- **Switching the UI language no longer discards unsaved settings edits** (the settings form no longer resets from a background refetch while dirty).
+- **Version display under About** is trustworthy again: source builds no longer show an empty version, and the 2-day `:latest` security rebuild no longer changes the displayed string to `1.3.0-<sha>` even though the code is identical to the release.
+- Docs: corrected the (false) global-rate-limit claim in `docs/api.md` and refreshed the per-route limits table against the code.
+
+### Performance & robustness
+
+- **Search hot path:** match variations are pre-normalized at index time instead of re-normalized on every incoming search request.
+- **Bounded search fan-out:** variation searches per request are capped at 10 with a total deadline at 75% of the configured indexer timeout. The literal query and the canonical title always survive the cap; partial results are aggregated and returned normally. Previously an alias-heavy title against a slow indexer could make Sonarr/Radarr time out with nothing.
+- **Proxy timeouts follow settings:** the Prowlarr proxy's HTTP timeouts now scale with `indexerTimeoutSeconds` (sized to cover the search route's worst case) instead of hardcoded 30s/60s values that could abort long-running searches the app would still have answered.
+- **First-sync cache writes batched:** each title's cache writes run in one transaction (~4× fewer SQLite commits on a 5,000-item first sync), and cache write failures are now logged through the structured logger instead of `console.error`.
+- **Composite database indexes** for the filtered history/log listings (`[level, createdAt]`, `[type, createdAt]`, `[domain, createdAt]`, `[mediaType, createdAt]`).
+- **Boot hardening:** a corrupt search-item row no longer prevents startup or reindexing — bad rows are skipped and logged with samples; the boot query also fetches only the columns it needs.
+- **Sync status hardening:** a failed status write (e.g. locked database) no longer discards a completed sync result; plugin seeding runs once per boot instead of on every settings save; the retention job runs `PRAGMA optimize` after cleanup.
+- The proxy logs a warning when an indexer sends a non-GET request (which is forced to GET, matching long-standing wire behavior) instead of silently dropping the request body.
+
+### Accessibility & i18n
+
+- **Complete French and Swedish UI coverage:** 25 previously untranslated strings (Prowlarr patch flow, sync-runs filter) are now translated — all four locales carry the identical key set.
+- Skip-to-content link, labeled navigation/stepper/charts, per-instance switch labels, keyboard- and touch-reachable error details (status badges, action-menu hints), `aria-describedby` on setup fields, `aria-sort` on sortable columns, and a shared alert primitive with correct `role="alert"`/`role="status"` semantics.
+
+### Upgrade notes
+
+- Three new database migrations (history retention setting, title overrides table, composite indexes) run automatically on first start — no manual action needed.
+- No configuration changes required. The bounded search fan-out is a deliberate behavior improvement over the unbounded fan-out of earlier versions (and of the original UmlautAdaptarr); if you ever need to diagnose it, the server logs a warning with counts whenever the cap or deadline trims a search.
+- New: a German/English comparison of UmlautAdaptarr vs. UmlautAdaptarrEX lives in `docs/comparison.de.md` / `docs/comparison.en.md`.
+
 ## 1.3.0 — 2026-07-26
 
 Adds an optional headless mode for lean, UI-less deployments, fixes two rename/settings bugs, and refreshes the whole dependency stack. Headless is opt-in and off by default, so existing installs are unaffected. No schema changes, no configuration changes.
@@ -10,7 +61,7 @@ Adds an optional headless mode for lean, UI-less deployments, fixes two rename/s
 
 ### Fixes
 
-- **Settings could no longer be saved when the proxy port is pinned by the environment:** with `UMLAUTADAPTARREX_PROXY_PORT` set, every save from the Settings page — on any tab, not just Advanced — was rejected with a `proxy-port-env-managed` conflict, because the form round-tripped the read-only, env-managed port value back to the server. The Web UI now omits the field entirely when the port is env-managed, and the server treats an unchanged value as a no-op instead of a conflict. Sending a *different* value while the env var is set is still rejected with 409, so the "your edit would silently have no effect" guard stays intact.
+- **Settings could no longer be saved when the proxy port is pinned by the environment:** with `UMLAUTADAPTARREX_PROXY_PORT` set, every save from the Settings page — on any tab, not just Advanced — was rejected with a `proxy-port-env-managed` conflict, because the form round-tripped the read-only, env-managed port value back to the server. The Web UI now omits the field entirely when the port is env-managed, and the server treats an unchanged value as a no-op instead of a conflict. Sending a _different_ value while the env var is set is still rejected with 409, so the "your edit would silently have no effect" guard stays intact.
 - **Trailing punctuation leaked into renamed titles:** when the title variation that matched carried no parentheses but the release name did (e.g. variation "Chronicles of Time 2005" against `Chronicles.of.Time.(2005).S08E08...`), the closing `)` was left unconsumed and the rewrite emitted a doubled character — `Chronicles.of.Time.(2005).).S08E08...`. Closing delimiters (`)`, `]`, `}`) directly after the matched title are now skipped. Applies to both the movie/TV and the book/audiobook rename path; opening delimiters are deliberately left alone so a release named `Chronicles of Time(2005)...` still renames correctly.
 
 ### Security & maintenance

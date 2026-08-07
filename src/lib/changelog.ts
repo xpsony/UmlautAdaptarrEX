@@ -24,22 +24,63 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     version: "1.4.0",
-    date: "2026-08-06",
-    title: "1.4.0: History pagination & configurable retention",
+    date: "2026-08-07",
+    highlight: true,
+    title: "1.4.0: Library browser with manual title overrides, big table & performance update",
     description:
-      "Request and rename history are now fully browsable: server-side pagination with selectable page size, and search covers the whole retained period instead of only the newest rows. A new setting controls how long history is kept.",
+      "The biggest release since the rewrite: a new Library page finally makes the synced titles visible and lets you fix individual mismatches with manual overrides. All list pages gain sorting, deep-linkable filters, detail views and CSV export. Under the hood: faster searches on large libraries, bounded search fan-out, and a full accessibility & translation pass.",
     items: [
       {
         type: "feature",
-        text: "Request history and rename history pages now paginate through all stored entries (page size 25/50/100/250) instead of showing only the most recent 50 rows.",
+        text: "New Library page: browse every synced title (original ↔ resolved German title, all search variations) across all instances, with search, filters (instance, media type, missing German title) and pagination. This data previously lived only in the logs.",
       },
       {
         type: "feature",
-        text: "Searching and filtering on both history pages now runs server-side across the entire retention period.",
+        text: "Manual title overrides: fix a single mismatched title straight from the Library detail view. Overrides apply to all instances, survive re-syncs and item removal, and search variations recompute immediately — no more clearing the whole title cache for one bad match. Removing an override restores the provider title.",
       },
       {
         type: "feature",
-        text: 'New setting "History retention (days)" under Settings → Advanced (default 30, 1–365): request and rename history older than this is cleaned up automatically every 6 hours. Previously these tables grew without limit.',
+        text: "Sortable columns on request history, rename history, sync runs and the library — and filters, page and sorting now live in the URL, so reload, back button and deep links reproduce exactly the view you had.",
+      },
+      {
+        type: "feature",
+        text: "Sync runs: server-side pagination with free-text search and a status filter — the old 200-run display cap is gone. (Also fixed: the “Successful” filter option never matched anything.)",
+      },
+      {
+        type: "feature",
+        text: "Row detail views for request history and sync runs: click any row to see the full query string, complete error messages and per-provider counters; an open sheet live-updates while a sync is running.",
+      },
+      {
+        type: "feature",
+        text: "CSV export for request and rename history — respects the current filter and sorting, Excel-safe (UTF-8 BOM so umlauts survive, spreadsheet formula injection neutralized), capped at 10,000 rows.",
+      },
+      {
+        type: "feature",
+        text: "Instances list: per-row “Test connection” and “Sync now” actions. Connection tests now run through a server-side endpoint, so instance API keys no longer round-trip through the browser.",
+      },
+      {
+        type: "feature",
+        text: "Request history and rename history paginate through all stored entries (page size 25/50/100/250) with server-side search, and the new “History retention (days)” setting (Settings → Advanced, default 30, 1–365) cleans up old entries automatically every 6 hours.",
+      },
+      {
+        type: "improvement",
+        text: "Settings tabs are now independent forms: editing one tab no longer lights up the save button on the others, saves send only the fields of that tab, and the browser warns before closing with unsaved changes. Switching the UI language no longer reloads the page — and no longer discards unsaved edits.",
+      },
+      {
+        type: "improvement",
+        text: "Faster and more predictable searches on large libraries: match variations are pre-computed instead of re-normalized on every request, variation fan-out per search is capped at 10 with a total deadline at 75% of the configured indexer timeout (your literal query and the canonical title are always searched), and the Prowlarr proxy timeouts now scale with that setting instead of a hardcoded 30s — no more Sonarr/Radarr timeouts on title-alias-heavy items.",
+      },
+      {
+        type: "improvement",
+        text: "Robustness: first-sync title-cache writes are batched (~4× fewer database commits), new composite indexes speed up filtered history/log views, a corrupt cache row no longer prevents startup, and a failed status write no longer loses a completed sync result.",
+      },
+      {
+        type: "improvement",
+        text: "Accessibility & translations: complete French and Swedish UI coverage (25 missing strings translated), skip-to-content link, screen-reader labels for navigation, charts and per-instance switches, keyboard- and touch-reachable error details, and live-log streaming now reconnects automatically after a connection drop.",
+      },
+      {
+        type: "fix",
+        text: "A batch of silent-failure fixes: failed list or settings loads now show an error with a retry button instead of pretending to be empty, enabling/disabling an instance reports errors instead of silently snapping back, and the setup wizard shows field validation errors instead of doing nothing on an invalid submit.",
       },
       {
         type: "fix",
