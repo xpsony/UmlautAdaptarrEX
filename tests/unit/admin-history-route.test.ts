@@ -170,6 +170,82 @@ describe("GET /api/admin/request-history", () => {
     const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
     expect(args.orderBy).toEqual({ status: "desc" });
   });
+
+  describe("format=csv", () => {
+    it("returns text/csv with an attachment content-disposition and today's date in the filename", async () => {
+      mockReq.findMany.mockResolvedValueOnce([]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv",
+      });
+      expect(r.statusCode).toBe(200);
+      expect(r.headers["content-type"]).toBe("text/csv; charset=utf-8");
+      const today = new Date().toISOString().slice(0, 10);
+      expect(r.headers["content-disposition"]).toBe(
+        `attachment; filename="request-history-${today}.csv"`,
+      );
+    });
+
+    it("does not run the count query (no pagination total needed for a file export)", async () => {
+      mockReq.findMany.mockResolvedValueOnce([]);
+      await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv",
+      });
+      expect(mockReq.count).not.toHaveBeenCalled();
+    });
+
+    it("ignores take/skip and caps at 10_000 rows", async () => {
+      mockReq.findMany.mockResolvedValueOnce([]);
+      await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv&take=5&skip=10",
+      });
+      const args = mockReq.findMany.mock.calls[0]?.[0] as {
+        take: number;
+        skip?: number;
+      };
+      expect(args.take).toBe(10_000);
+      expect(args.skip).toBeUndefined();
+    });
+
+    it("applies the same filters and sort as the JSON list", async () => {
+      mockReq.findMany.mockResolvedValueOnce([]);
+      await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv&type=caps&domain=example.com&sort=status&order=asc",
+      });
+      const args = mockReq.findMany.mock.calls[0]?.[0] as {
+        where: Record<string, unknown>;
+        orderBy: unknown;
+      };
+      expect(args.where).toEqual({ type: "caps", domain: "example.com" });
+      expect(args.orderBy).toEqual({ status: "asc" });
+    });
+
+    it("emits a header row plus one row per item, with id included", async () => {
+      mockReq.findMany.mockResolvedValueOnce([
+        {
+          id: "r1",
+          createdAt: new Date("2026-01-02T03:04:05.000Z"),
+          type: "caps",
+          domain: "example.com",
+          query: "a, b",
+          externalId: null,
+          status: 200,
+          durationMs: 12,
+          cacheHit: true,
+        },
+      ]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv",
+      });
+      const lines = r.body.split("\r\n");
+      expect(lines[0]).toBe("id,createdAt,type,domain,query,externalId,status,durationMs,cacheHit");
+      expect(lines[1]).toBe('r1,2026-01-02T03:04:05.000Z,caps,example.com,"a, b",,200,12,true');
+    });
+  });
 });
 
 describe("GET /api/admin/rename-history", () => {
@@ -216,6 +292,70 @@ describe("GET /api/admin/rename-history", () => {
     });
     const args = mockRename.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
     expect(args.orderBy).toEqual({ createdAt: "desc" });
+  });
+
+  describe("format=csv", () => {
+    it("returns text/csv with an attachment content-disposition and today's date in the filename", async () => {
+      mockRename.findMany.mockResolvedValueOnce([]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/rename-history?format=csv",
+      });
+      expect(r.statusCode).toBe(200);
+      expect(r.headers["content-type"]).toBe("text/csv; charset=utf-8");
+      const today = new Date().toISOString().slice(0, 10);
+      expect(r.headers["content-disposition"]).toBe(
+        `attachment; filename="rename-history-${today}.csv"`,
+      );
+    });
+
+    it("does not run the count query and caps at 10_000 rows", async () => {
+      mockRename.findMany.mockResolvedValueOnce([]);
+      await app.inject({
+        method: "GET",
+        url: "/api/admin/rename-history?format=csv&take=5&skip=10",
+      });
+      expect(mockRename.count).not.toHaveBeenCalled();
+      const args = mockRename.findMany.mock.calls[0]?.[0] as {
+        take: number;
+        skip?: number;
+      };
+      expect(args.take).toBe(10_000);
+      expect(args.skip).toBeUndefined();
+    });
+
+    it("applies the same filters and sort as the JSON list", async () => {
+      mockRename.findMany.mockResolvedValueOnce([]);
+      await app.inject({
+        method: "GET",
+        url: "/api/admin/rename-history?format=csv&mediaType=movie&sort=mediaType&order=asc",
+      });
+      const args = mockRename.findMany.mock.calls[0]?.[0] as {
+        where: Record<string, unknown>;
+        orderBy: unknown;
+      };
+      expect(args.where).toEqual({ mediaType: "movie" });
+      expect(args.orderBy).toEqual({ mediaType: "asc" });
+    });
+
+    it("emits a header row plus one row per item, with id included", async () => {
+      mockRename.findMany.mockResolvedValueOnce([
+        {
+          id: "n1",
+          createdAt: new Date("2026-01-02T03:04:05.000Z"),
+          mediaType: "movie",
+          originalTitle: "Die Hard",
+          rewrittenTitle: 'Stirb "langsam"',
+        },
+      ]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/rename-history?format=csv",
+      });
+      const lines = r.body.split("\r\n");
+      expect(lines[0]).toBe("id,createdAt,mediaType,originalTitle,rewrittenTitle");
+      expect(lines[1]).toBe('n1,2026-01-02T03:04:05.000Z,movie,Die Hard,"Stirb ""langsam"""');
+    });
   });
 });
 

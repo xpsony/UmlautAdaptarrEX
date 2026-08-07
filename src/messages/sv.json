@@ -663,7 +663,8 @@
     "yes": "Ja",
     "no": "Nej",
     "loading": "Läser in…",
-    "error": "Ett fel uppstod."
+    "error": "Ett fel uppstod.",
+    "export": "Exportera"
   },
   "boundaries": {
     "errorTitle": "Något gick fel",

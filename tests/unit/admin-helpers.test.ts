@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { clampInt, parseOrReply } from "@/server/routes/admin/_helpers";
+import { clampInt, parseOrReply, toCsv } from "@/server/routes/admin/_helpers";
 
 interface FakeReply {
   code: ReturnType<typeof vi.fn>;
@@ -76,5 +76,68 @@ describe("clampInt", () => {
 
   it("treats an empty string as the default (parseInt → NaN)", () => {
     expect(clampInt("", 20, 1, 100)).toBe(20);
+  });
+});
+
+describe("toCsv", () => {
+  it("renders a header row followed by one row per item, in column order", () => {
+    const csv = toCsv([{ id: "1", name: "Alice" }], ["id", "name"]);
+    expect(csv).toBe("id,name\r\n1,Alice");
+  });
+
+  it("joins multiple rows with CRLF (RFC-4180 line endings)", () => {
+    const csv = toCsv(
+      [
+        { id: "1", name: "Alice" },
+        { id: "2", name: "Bob" },
+      ],
+      ["id", "name"],
+    );
+    expect(csv).toBe("id,name\r\n1,Alice\r\n2,Bob");
+  });
+
+  it("renders just the header row when there are no items", () => {
+    expect(toCsv([], ["id", "name"])).toBe("id,name");
+  });
+
+  it("quotes a cell containing a comma", () => {
+    const csv = toCsv([{ note: "a, b" }], ["note"]);
+    expect(csv).toBe('note\r\n"a, b"');
+  });
+
+  it("quotes a cell containing a double quote, doubling it", () => {
+    const csv = toCsv([{ note: 'say "hi"' }], ["note"]);
+    expect(csv).toBe('note\r\n"say ""hi"""');
+  });
+
+  it("quotes a cell containing a newline", () => {
+    const csv = toCsv([{ note: "line1\nline2" }], ["note"]);
+    expect(csv).toBe('note\r\n"line1\nline2"');
+  });
+
+  it("quotes a cell containing a carriage return", () => {
+    const csv = toCsv([{ note: "line1\rline2" }], ["note"]);
+    expect(csv).toBe('note\r\n"line1\rline2"');
+  });
+
+  it("renders null and undefined cells as empty (not the string 'null'/'undefined')", () => {
+    const csv = toCsv([{ a: null, b: undefined }], ["a", "b"]);
+    expect(csv).toBe("a,b\r\n,");
+  });
+
+  it("renders a Date cell as its ISO-8601 string", () => {
+    const date = new Date("2026-01-02T03:04:05.000Z");
+    const csv = toCsv([{ createdAt: date }], ["createdAt"]);
+    expect(csv).toBe("createdAt\r\n2026-01-02T03:04:05.000Z");
+  });
+
+  it("stringifies numbers and booleans without quoting", () => {
+    const csv = toCsv([{ n: 42, ok: true, off: false }], ["n", "ok", "off"]);
+    expect(csv).toBe("n,ok,off\r\n42,true,false");
+  });
+
+  it("reads a column missing from the row as an empty cell", () => {
+    const csv = toCsv([{ a: "x" }], ["a", "b"]);
+    expect(csv).toBe("a,b\r\nx,");
   });
 });

@@ -1,10 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { ArrowRight, ListChecks, Search } from "lucide-react";
+import { ArrowRight, Download, ListChecks, Search } from "lucide-react";
 import { apiFetch } from "@/app/_lib/api-client";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { HistoryPage } from "@/components/ui/history-page";
@@ -52,6 +54,19 @@ export function RenameHistoryClient() {
   const items = data.data?.items ?? [];
   const total = data.data?.total ?? 0;
 
+  // Same filters/sort as the JSON query above, plus `format=csv`. `take`/
+  // `skip` are omitted — the CSV route ignores them in favor of its own
+  // fixed row cap, so there's nothing meaningful to pass.
+  const exportUrl = useMemo(() => {
+    const params = new URLSearchParams({
+      format: "csv",
+      sort: sort.key,
+      order: sort.order,
+    });
+    if (debouncedSearch) params.set("search", debouncedSearch);
+    return `/api/admin/rename-history?${params}`;
+  }, [debouncedSearch, sort.key, sort.order]);
+
   return (
     <HistoryPage
       title={t("title")}
@@ -69,14 +84,28 @@ export function RenameHistoryClient() {
       retryPending={data.isFetching}
       isEmpty={items.length === 0}
       filterSlot={
-        <div className="relative w-full sm:w-72">
-          <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={searchInput}
-            onChange={(e) => url.setSearchInput(e.target.value)}
-            placeholder={t("filterPlaceholder")}
-            className="pl-9"
-          />
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <div className="relative w-full sm:w-72">
+            <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={searchInput}
+              onChange={(e) => url.setSearchInput(e.target.value)}
+              placeholder={t("filterPlaceholder")}
+              className="pl-9"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={items.length === 0}
+            // Cookie-based auth + the Next proxy streaming `/api/*` means a
+            // plain new-tab navigation to the CSV URL is enough — no need to
+            // fetch+blob the response client-side.
+            onClick={() => window.open(exportUrl, "_blank")}
+          >
+            <Download className="h-4 w-4" />
+            {tCommon("export")}
+          </Button>
         </div>
       }
       columns={[

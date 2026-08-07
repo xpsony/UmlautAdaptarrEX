@@ -663,7 +663,8 @@
     "yes": "Ja",
     "no": "Nein",
     "loading": "Wird geladen…",
-    "error": "Ein Fehler ist aufgetreten."
+    "error": "Ein Fehler ist aufgetreten.",
+    "export": "Exportieren"
   },
   "boundaries": {
     "errorTitle": "Etwas ist schiefgelaufen",

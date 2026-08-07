@@ -663,7 +663,8 @@
     "yes": "Oui",
     "no": "Non",
     "loading": "Chargement…",
-    "error": "Une erreur est survenue."
+    "error": "Une erreur est survenue.",
+    "export": "Exporter"
   },
   "boundaries": {
     "errorTitle": "Une erreur est survenue",

@@ -663,7 +663,8 @@
     "yes": "Yes",
     "no": "No",
     "loading": "Loading…",
-    "error": "An error occurred."
+    "error": "An error occurred.",
+    "export": "Export"
   },
   "boundaries": {
     "errorTitle": "Something went wrong",

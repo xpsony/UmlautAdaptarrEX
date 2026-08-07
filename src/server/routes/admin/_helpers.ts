@@ -71,3 +71,25 @@ export function parseJsonArray(raw: string | null): string[] | null {
     return null;
   }
 }
+
+/** Quote a single CSV cell per RFC 4180 when it needs it, else return it verbatim. */
+function csvCell(value: unknown): string {
+  const raw = value == null ? "" : value instanceof Date ? value.toISOString() : String(value);
+  return /["\n\r,]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
+}
+
+/**
+ * Render `rows` as RFC-4180 CSV text: a header row of `columns`, followed by
+ * one row per item in the same column order. `null`/`undefined` cells become
+ * empty, `Date` cells become their ISO-8601 string, everything else is
+ * stringified. Cells containing `"`, `,`, `\n`, or `\r` are quoted (with `"`
+ * doubled). Lines are joined with `\r\n` (the RFC's line ending); no trailing
+ * line ending is appended.
+ */
+export function toCsv(rows: Record<string, unknown>[], columns: string[]): string {
+  const lines = [columns.map(csvCell).join(",")];
+  for (const row of rows) {
+    lines.push(columns.map((c) => csvCell(row[c])).join(","));
+  }
+  return lines.join("\r\n");
+}

@@ -1,12 +1,18 @@
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "@/lib/db";
 import { requireAuth } from "@/server/auth/middleware";
-import { clampInt, resolveSort, type SortWhitelist } from "./_helpers";
+import { clampInt, resolveSort, toCsv, type SortWhitelist } from "./_helpers";
 
 interface PaginatedModel {
   findMany: (args: object) => Promise<unknown[]>;
   count: (args: object) => Promise<number>;
 }
+
+// Row cap for `?format=csv` exports — a file download has no pagination UI to
+// page through, so this is the hard ceiling instead of `maxTake`. Chosen well
+// above any realistic manual export while still bounding worst-case memory/
+// response size for an unfiltered history table.
+const CSV_ROW_CAP = 10_000;
 
 /** Sort configuration for `paginatedList`; omit to keep the `createdAt desc` default. */
 interface SortOptions {
@@ -48,6 +54,43 @@ async function paginatedList(
   return { items, total, take, skip };
 }
 
+/**
+ * Stream a `?format=csv` export: same `search`/filter and `sort`/`order`
+ * handling as `paginatedList`, but — unlike the JSON list — it never runs the
+ * `count` query (there's no pagination total to report for a file download)
+ * and ignores `take`/`skip` in favor of the fixed `CSV_ROW_CAP`.
+ */
+async function csvExport(
+  req: FastifyRequest,
+  reply: FastifyReply,
+  model: PaginatedModel,
+  buildWhere: (q: Record<string, string | undefined>) => Record<string, unknown>,
+  sortOptions: SortOptions,
+  columns: string[],
+  filenamePrefix: string,
+): Promise<FastifyReply> {
+  const q = (req.query as Record<string, string | undefined>) ?? {};
+  if (q.search) q.search = q.search.slice(0, 256);
+  const where = buildWhere(q);
+  const { field, order } = resolveSort(
+    q,
+    sortOptions.whitelist,
+    sortOptions.defaultKey,
+    sortOptions.defaultOrder,
+  );
+  const items = (await model.findMany({
+    where,
+    orderBy: { [field]: order },
+    take: CSV_ROW_CAP,
+  })) as Record<string, unknown>[];
+  const csv = toCsv(items, columns);
+  const filename = `${filenamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`;
+  return reply
+    .header("content-type", "text/csv; charset=utf-8")
+    .header("content-disposition", `attachment; filename="${filename}"`)
+    .send(csv);
+}
+
 // Sortable columns exposed to the request-history table. `sort` values that
 // don't match a key here (and any invalid `order`) silently fall back to the
 // default below — no 400s for an unrecognized sort/order combination.
@@ -72,50 +115,100 @@ const RENAME_HISTORY_SORT: SortOptions = {
   defaultOrder: "desc",
 };
 
+// Column set for `?format=csv` — the visible list columns (see the `columns`
+// prop in the two history clients) plus `id`.
+const REQUEST_HISTORY_CSV_COLUMNS = [
+  "id",
+  "createdAt",
+  "type",
+  "domain",
+  "query",
+  "externalId",
+  "status",
+  "durationMs",
+  "cacheHit",
+];
+
+const RENAME_HISTORY_CSV_COLUMNS = [
+  "id",
+  "createdAt",
+  "mediaType",
+  "originalTitle",
+  "rewrittenTitle",
+];
+
+function buildRequestHistoryWhere(q: Record<string, string | undefined>): Record<string, unknown> {
+  const where: Record<string, unknown> = {};
+  if (q.type) where.type = q.type;
+  if (q.domain) where.domain = q.domain;
+  if (q.search) {
+    where.OR = [
+      { query: { contains: q.search } },
+      { externalId: { contains: q.search } },
+      { domain: { contains: q.search } },
+    ];
+  }
+  return where;
+}
+
+function buildRenameHistoryWhere(q: Record<string, string | undefined>): Record<string, unknown> {
+  const where: Record<string, unknown> = {};
+  if (q.mediaType) where.mediaType = q.mediaType;
+  if (q.search) {
+    where.OR = [
+      { originalTitle: { contains: q.search } },
+      { rewrittenTitle: { contains: q.search } },
+    ];
+  }
+  return where;
+}
+
 export async function historyRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/api/admin/request-history", { preHandler: requireAuth }, (req) =>
-    paginatedList(
+  app.get("/api/admin/request-history", { preHandler: requireAuth }, (req, reply) => {
+    const q = (req.query as Record<string, string | undefined>) ?? {};
+    if (q.format === "csv") {
+      return csvExport(
+        req,
+        reply,
+        prisma.requestHistory,
+        buildRequestHistoryWhere,
+        REQUEST_HISTORY_SORT,
+        REQUEST_HISTORY_CSV_COLUMNS,
+        "request-history",
+      );
+    }
+    return paginatedList(
       req,
       prisma.requestHistory,
-      (q) => {
-        const where: Record<string, unknown> = {};
-        if (q.type) where.type = q.type;
-        if (q.domain) where.domain = q.domain;
-        if (q.search) {
-          where.OR = [
-            { query: { contains: q.search } },
-            { externalId: { contains: q.search } },
-            { domain: { contains: q.search } },
-          ];
-        }
-        return where;
-      },
+      buildRequestHistoryWhere,
       50,
       500,
       REQUEST_HISTORY_SORT,
-    ),
-  );
+    );
+  });
 
-  app.get("/api/admin/rename-history", { preHandler: requireAuth }, (req) =>
-    paginatedList(
+  app.get("/api/admin/rename-history", { preHandler: requireAuth }, (req, reply) => {
+    const q = (req.query as Record<string, string | undefined>) ?? {};
+    if (q.format === "csv") {
+      return csvExport(
+        req,
+        reply,
+        prisma.renameHistory,
+        buildRenameHistoryWhere,
+        RENAME_HISTORY_SORT,
+        RENAME_HISTORY_CSV_COLUMNS,
+        "rename-history",
+      );
+    }
+    return paginatedList(
       req,
       prisma.renameHistory,
-      (q) => {
-        const where: Record<string, unknown> = {};
-        if (q.mediaType) where.mediaType = q.mediaType;
-        if (q.search) {
-          where.OR = [
-            { originalTitle: { contains: q.search } },
-            { rewrittenTitle: { contains: q.search } },
-          ];
-        }
-        return where;
-      },
+      buildRenameHistoryWhere,
       50,
       500,
       RENAME_HISTORY_SORT,
-    ),
-  );
+    );
+  });
 
   app.get("/api/admin/logs", { preHandler: requireAuth }, async (req) => {
     const { items } = await paginatedList(
