@@ -1,11 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Activity, Search } from "lucide-react";
 import { apiFetch } from "@/app/_lib/api-client";
-import { useDebouncedValue } from "@/app/_lib/use-debounced-value";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -20,33 +18,30 @@ import { ArrIcon, type ArrIconType } from "@/components/ui/arr-icon";
 import { HistoryPage } from "@/components/ui/history-page";
 import { TablePagination } from "@/components/ui/table-pagination";
 import { syncStatusVariant } from "@/app/(admin)/_lib/status-variant";
+import { useListUrlState } from "@/app/(admin)/_lib/use-list-url-state";
 import type { SyncRun } from "@/app/(admin)/_lib/sync-types";
+
+// Sortable columns exposed by the route — see SYNC_RUNS_SORT in
+// src/server/routes/admin/sync.ts. Default matches the server's default
+// (startedAt desc).
+const SORT_KEYS = ["startedAt", "status", "itemsCount"] as const;
+
+// Status values the filter Select offers — a bogus deep-link value falls
+// back to "all" instead of leaving the Select trigger blank.
+const STATUS_VALUES = ["running", "success", "error", "cancelled"] as const;
 
 export function SyncRunsClient() {
   const t = useTranslations("syncRuns");
   const tCommon = useTranslations("common");
   const tBoundaries = useTranslations("boundaries");
   const locale = useLocale();
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const debouncedSearch = useDebouncedValue(search.trim());
-  // Default matches the server's default (startedAt desc) — see
-  // SYNC_RUNS_SORT in src/server/routes/admin/sync.ts.
-  const [sort, setSort] = useState<{ key: string; order: "asc" | "desc" }>({
-    key: "startedAt",
-    order: "desc",
-  });
 
-  const handleSortChange = (key: string) => {
-    setSort((prev) =>
-      prev.key === key
-        ? { key, order: prev.order === "asc" ? "desc" : "asc" }
-        : { key, order: "asc" },
-    );
-    setPage(1);
-  };
+  const url = useListUrlState({
+    defaultSort: { key: "startedAt", order: "desc" },
+    validSortKeys: SORT_KEYS,
+  });
+  const { page, pageSize, sort, searchInput, debouncedSearch } = url;
+  const statusFilter = url.getParam("status", "all", STATUS_VALUES);
 
   const runs = useQuery<{ items: SyncRun[]; total: number }>({
     queryKey: [
@@ -98,21 +93,15 @@ export function SyncRunsClient() {
           <div className="relative w-full sm:w-64">
             <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
+              value={searchInput}
+              onChange={(e) => url.setSearchInput(e.target.value)}
               placeholder={t("filterPlaceholder")}
               className="pl-9"
             />
           </div>
           <Select
             value={statusFilter}
-            onValueChange={(v) => {
-              setStatusFilter(v);
-              setPage(1);
-            }}
+            onValueChange={(v) => url.setFilters({ status: v === "all" ? undefined : v })}
           >
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue />
@@ -139,7 +128,7 @@ export function SyncRunsClient() {
         t("colError"),
       ]}
       sort={sort}
-      onSortChange={handleSortChange}
+      onSortChange={url.toggleSort}
       rows={items.map((r) => {
         const duration =
           r.finishedAt && r.startedAt
@@ -186,11 +175,8 @@ export function SyncRunsClient() {
           page={page}
           pageSize={pageSize}
           total={total}
-          onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-          }}
+          onPageChange={url.setPage}
+          onPageSizeChange={url.setPageSize}
         />
       }
     />

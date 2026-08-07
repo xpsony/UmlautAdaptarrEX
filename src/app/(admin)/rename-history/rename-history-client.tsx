@@ -1,16 +1,15 @@
 "use client";
 
-import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { ArrowRight, ListChecks, Search } from "lucide-react";
 import { apiFetch } from "@/app/_lib/api-client";
-import { useDebouncedValue } from "@/app/_lib/use-debounced-value";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { HistoryPage } from "@/components/ui/history-page";
 import { TablePagination } from "@/components/ui/table-pagination";
+import { useListUrlState } from "@/app/(admin)/_lib/use-list-url-state";
 
 interface Row {
   id: string;
@@ -25,25 +24,15 @@ export function RenameHistoryClient() {
   const tCommon = useTranslations("common");
   const tBoundaries = useTranslations("boundaries");
   const locale = useLocale();
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebouncedValue(search.trim());
-  // Default matches the server's default (createdAt desc) — see
-  // RENAME_HISTORY_SORT in src/server/routes/admin/history.ts.
-  const [sort, setSort] = useState<{ key: string; order: "asc" | "desc" }>({
-    key: "createdAt",
-    order: "desc",
-  });
 
-  const handleSortChange = (key: string) => {
-    setSort((prev) =>
-      prev.key === key
-        ? { key, order: prev.order === "asc" ? "desc" : "asc" }
-        : { key, order: "asc" },
-    );
-    setPage(1);
-  };
+  // Sortable columns exposed by the route — see RENAME_HISTORY_SORT in
+  // src/server/routes/admin/history.ts. Default matches the server's
+  // default (createdAt desc).
+  const url = useListUrlState({
+    defaultSort: { key: "createdAt", order: "desc" },
+    validSortKeys: ["createdAt", "mediaType"],
+  });
+  const { page, pageSize, sort, searchInput, debouncedSearch } = url;
 
   const data = useQuery<{ items: Row[]; total: number }>({
     queryKey: ["rename-history", page, pageSize, debouncedSearch, sort.key, sort.order],
@@ -83,11 +72,8 @@ export function RenameHistoryClient() {
         <div className="relative w-full sm:w-72">
           <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(1);
-            }}
+            value={searchInput}
+            onChange={(e) => url.setSearchInput(e.target.value)}
             placeholder={t("filterPlaceholder")}
             className="pl-9"
           />
@@ -100,7 +86,7 @@ export function RenameHistoryClient() {
         t("rewrittenTitle"),
       ]}
       sort={sort}
-      onSortChange={handleSortChange}
+      onSortChange={url.toggleSort}
       rows={items.map((r) => (
         <TableRow key={r.id}>
           <TableCell className="whitespace-nowrap text-muted-foreground">
@@ -125,11 +111,8 @@ export function RenameHistoryClient() {
           page={page}
           pageSize={pageSize}
           total={total}
-          onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-          }}
+          onPageChange={url.setPage}
+          onPageSizeChange={url.setPageSize}
         />
       }
     />

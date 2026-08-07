@@ -5,7 +5,6 @@ import { useLocale, useTranslations } from "next-intl";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { BookOpen, Search } from "lucide-react";
 import { apiFetch } from "@/app/_lib/api-client";
-import { useDebouncedValue } from "@/app/_lib/use-debounced-value";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -21,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Instance } from "@/app/(admin)/instances/_lib/instances-types";
+import { useListUrlState } from "@/app/(admin)/_lib/use-list-url-state";
 import { ItemDetailSheet } from "./_components/item-detail-sheet";
 import type { Item, MediaType } from "./_lib/library-types";
 
@@ -36,29 +36,18 @@ export function LibraryClient() {
   const tBoundaries = useTranslations("boundaries");
   const locale = useLocale();
 
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebouncedValue(search.trim());
-  const [instanceFilter, setInstanceFilter] = useState(ALL);
-  const [typeFilter, setTypeFilter] = useState(ALL);
-  const [missingOnly, setMissingOnly] = useState(false);
-  const [detail, setDetail] = useState<Item | null>(null);
-  // Default matches the server's default (expectedTitle asc) — see
-  // SEARCH_ITEMS_SORT in src/server/routes/admin/search-items.ts.
-  const [sort, setSort] = useState<{ key: string; order: "asc" | "desc" }>({
-    key: "expectedTitle",
-    order: "asc",
+  // Sortable columns exposed by the route — see SEARCH_ITEMS_SORT in
+  // src/server/routes/admin/search-items.ts. Default matches the server's
+  // default (expectedTitle asc).
+  const url = useListUrlState({
+    defaultSort: { key: "expectedTitle", order: "asc" },
+    validSortKeys: ["expectedTitle", "germanTitle", "year", "updatedAt"],
   });
-
-  const handleSortChange = (key: string) => {
-    setSort((prev) =>
-      prev.key === key
-        ? { key, order: prev.order === "asc" ? "desc" : "asc" }
-        : { key, order: "asc" },
-    );
-    setPage(1);
-  };
+  const { page, pageSize, sort, searchInput, debouncedSearch } = url;
+  const instanceFilter = url.getParam("instanceId", ALL);
+  const typeFilter = url.getParam("mediaType", ALL, MEDIA_TYPES);
+  const missingOnly = url.getFlag("missing");
+  const [detail, setDetail] = useState<Item | null>(null);
 
   const instances = useQuery<Instance[]>({
     queryKey: ["instances"],
@@ -135,21 +124,15 @@ export function LibraryClient() {
             <div className="relative w-full sm:w-64">
               <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
+                value={searchInput}
+                onChange={(e) => url.setSearchInput(e.target.value)}
                 placeholder={t("filterPlaceholder")}
                 className="pl-9"
               />
             </div>
             <Select
               value={instanceFilter}
-              onValueChange={(v) => {
-                setInstanceFilter(v);
-                setPage(1);
-              }}
+              onValueChange={(v) => url.setFilters({ instanceId: v === ALL ? undefined : v })}
             >
               <SelectTrigger className="w-40" aria-label={t("allInstances")}>
                 <SelectValue />
@@ -165,10 +148,7 @@ export function LibraryClient() {
             </Select>
             <Select
               value={typeFilter}
-              onValueChange={(v) => {
-                setTypeFilter(v);
-                setPage(1);
-              }}
+              onValueChange={(v) => url.setFilters({ mediaType: v === ALL ? undefined : v })}
             >
               <SelectTrigger className="w-36" aria-label={t("allTypes")}>
                 <SelectValue />
@@ -186,10 +166,7 @@ export function LibraryClient() {
               <Switch
                 id="missing-german-only"
                 checked={missingOnly}
-                onCheckedChange={(v) => {
-                  setMissingOnly(v);
-                  setPage(1);
-                }}
+                onCheckedChange={(v) => url.setFilters({ missing: v })}
               />
               <Label htmlFor="missing-german-only" className="font-normal whitespace-nowrap">
                 {t("missingGermanOnly")}
@@ -206,7 +183,7 @@ export function LibraryClient() {
           { label: t("colUpdated"), sortKey: "updatedAt" },
         ]}
         sort={sort}
-        onSortChange={handleSortChange}
+        onSortChange={url.toggleSort}
         rows={items.map((item) => (
           <TableRow
             key={item.id}
@@ -254,11 +231,8 @@ export function LibraryClient() {
             page={page}
             pageSize={pageSize}
             total={total}
-            onPageChange={setPage}
-            onPageSizeChange={(size) => {
-              setPageSize(size);
-              setPage(1);
-            }}
+            onPageChange={url.setPage}
+            onPageSizeChange={url.setPageSize}
           />
         }
       />
