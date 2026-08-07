@@ -119,12 +119,12 @@ describe("GET /api/admin/request-history", () => {
     expect(args.take).toBe(500);
   });
 
-  it("orders by createdAt desc by default", async () => {
+  it("orders by createdAt desc by default, with an id tiebreaker", async () => {
     mockReq.findMany.mockResolvedValueOnce([]);
     mockReq.count.mockResolvedValueOnce(0);
     await app.inject({ method: "GET", url: "/api/admin/request-history" });
     const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
-    expect(args.orderBy).toEqual({ createdAt: "desc" });
+    expect(args.orderBy).toEqual([{ createdAt: "desc" }, { id: "asc" }]);
   });
 
   it("accepts a whitelisted sort key with an explicit order", async () => {
@@ -135,7 +135,7 @@ describe("GET /api/admin/request-history", () => {
       url: "/api/admin/request-history?sort=status&order=asc",
     });
     const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
-    expect(args.orderBy).toEqual({ status: "asc" });
+    expect(args.orderBy).toEqual([{ status: "asc" }, { id: "asc" }]);
   });
 
   it("flips order between asc and desc for the same sort key", async () => {
@@ -146,7 +146,7 @@ describe("GET /api/admin/request-history", () => {
       url: "/api/admin/request-history?sort=durationMs&order=desc",
     });
     const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
-    expect(args.orderBy).toEqual({ durationMs: "desc" });
+    expect(args.orderBy).toEqual([{ durationMs: "desc" }, { id: "asc" }]);
   });
 
   it("falls back to the default sort key when sort is not whitelisted", async () => {
@@ -157,7 +157,7 @@ describe("GET /api/admin/request-history", () => {
       url: "/api/admin/request-history?sort=apiKey&order=asc",
     });
     const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
-    expect(args.orderBy).toEqual({ createdAt: "asc" });
+    expect(args.orderBy).toEqual([{ createdAt: "asc" }, { id: "asc" }]);
   });
 
   it("falls back to the default order when order is not asc/desc", async () => {
@@ -168,7 +168,19 @@ describe("GET /api/admin/request-history", () => {
       url: "/api/admin/request-history?sort=status&order=sideways",
     });
     const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
-    expect(args.orderBy).toEqual({ status: "desc" });
+    expect(args.orderBy).toEqual([{ status: "desc" }, { id: "asc" }]);
+  });
+
+  it("keeps a stable id tiebreaker after a low-cardinality, non-default sort", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/request-history?sort=status&order=asc",
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown[] };
+    expect(args.orderBy).toHaveLength(2);
+    expect(args.orderBy[1]).toEqual({ id: "asc" });
   });
 
   describe("format=csv", () => {
@@ -220,7 +232,7 @@ describe("GET /api/admin/request-history", () => {
         orderBy: unknown;
       };
       expect(args.where).toEqual({ type: "caps", domain: "example.com" });
-      expect(args.orderBy).toEqual({ status: "asc" });
+      expect(args.orderBy).toEqual([{ status: "asc" }, { id: "asc" }]);
     });
 
     it("emits a header row plus one row per item, with id included", async () => {
@@ -293,12 +305,12 @@ describe("GET /api/admin/rename-history", () => {
     expect(args.where.OR.length).toBe(2);
   });
 
-  it("orders by createdAt desc by default", async () => {
+  it("orders by createdAt desc by default, with an id tiebreaker", async () => {
     mockRename.findMany.mockResolvedValueOnce([]);
     mockRename.count.mockResolvedValueOnce(0);
     await app.inject({ method: "GET", url: "/api/admin/rename-history" });
     const args = mockRename.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
-    expect(args.orderBy).toEqual({ createdAt: "desc" });
+    expect(args.orderBy).toEqual([{ createdAt: "desc" }, { id: "asc" }]);
   });
 
   it("accepts the whitelisted mediaType sort key", async () => {
@@ -309,7 +321,7 @@ describe("GET /api/admin/rename-history", () => {
       url: "/api/admin/rename-history?sort=mediaType&order=asc",
     });
     const args = mockRename.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
-    expect(args.orderBy).toEqual({ mediaType: "asc" });
+    expect(args.orderBy).toEqual([{ mediaType: "asc" }, { id: "asc" }]);
   });
 
   it("falls back to the default sort key when sort is not whitelisted", async () => {
@@ -320,7 +332,19 @@ describe("GET /api/admin/rename-history", () => {
       url: "/api/admin/rename-history?sort=originalTitle",
     });
     const args = mockRename.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
-    expect(args.orderBy).toEqual({ createdAt: "desc" });
+    expect(args.orderBy).toEqual([{ createdAt: "desc" }, { id: "asc" }]);
+  });
+
+  it("keeps a stable id tiebreaker after the low-cardinality mediaType sort", async () => {
+    mockRename.findMany.mockResolvedValueOnce([]);
+    mockRename.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/rename-history?sort=mediaType&order=asc",
+    });
+    const args = mockRename.findMany.mock.calls[0]?.[0] as { orderBy: unknown[] };
+    expect(args.orderBy).toHaveLength(2);
+    expect(args.orderBy[1]).toEqual({ id: "asc" });
   });
 
   describe("format=csv", () => {
@@ -364,7 +388,7 @@ describe("GET /api/admin/rename-history", () => {
         orderBy: unknown;
       };
       expect(args.where).toEqual({ mediaType: "movie" });
-      expect(args.orderBy).toEqual({ mediaType: "asc" });
+      expect(args.orderBy).toEqual([{ mediaType: "asc" }, { id: "asc" }]);
     });
 
     it("emits a header row plus one row per item, with id included", async () => {

@@ -44,7 +44,11 @@ async function paginatedList(
           sortOptions.defaultKey,
           sortOptions.defaultOrder,
         );
-        return { [field]: order };
+        // Low-cardinality columns (status, type, domain, mediaType, …)
+        // produce large tie groups when used as the sole ORDER BY — append
+        // an id tiebreaker so pagination can't duplicate/skip rows across
+        // page boundaries. Mirrors the orderBy tiebreaker in search-items.ts.
+        return [{ [field]: order }, { id: "asc" as const }];
       })()
     : { createdAt: "desc" as const };
   const [items, total] = await Promise.all([
@@ -78,9 +82,14 @@ async function csvExport(
     sortOptions.defaultKey,
     sortOptions.defaultOrder,
   );
+  // Same id tiebreaker as paginatedList/search-items.ts — a low-cardinality
+  // sort column would otherwise leave row order within a tie group
+  // undefined, which for a capped export can silently drop/duplicate rows
+  // relative to what the JSON list (paginated through the same tie groups)
+  // would have shown.
   const items = (await model.findMany({
     where,
-    orderBy: { [field]: order },
+    orderBy: [{ [field]: order }, { id: "asc" }],
     take: CSV_ROW_CAP,
   })) as Record<string, unknown>[];
   const csv = toCsv(items, columns);

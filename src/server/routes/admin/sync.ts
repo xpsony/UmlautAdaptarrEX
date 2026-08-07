@@ -104,7 +104,11 @@ export async function syncRoutes(app: FastifyInstance, deps: SyncRoutesDeps): Pr
       const [items, total] = await Promise.all([
         prisma.syncRun.findMany({
           where,
-          orderBy: { [field]: order },
+          // Low-cardinality columns (status, itemsCount) produce large tie
+          // groups when used as the sole ORDER BY — append an id tiebreaker
+          // so pagination can't duplicate/skip rows across page boundaries.
+          // Mirrors the orderBy tiebreaker in history.ts/search-items.ts.
+          orderBy: [{ [field]: order }, { id: "asc" }],
           take,
           skip,
           include: { arrInstance: { select: { name: true, type: true } } },

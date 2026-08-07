@@ -112,7 +112,7 @@ describe("GET /api/admin/sync-runs", () => {
     };
     expect(args.take).toBe(50);
     expect(args.skip).toBe(0);
-    expect(args.orderBy).toEqual({ startedAt: "desc" });
+    expect(args.orderBy).toEqual([{ startedAt: "desc" }, { id: "asc" }]);
   });
 
   it("honors an explicit take/skip", async () => {
@@ -235,7 +235,7 @@ describe("GET /api/admin/sync-runs", () => {
       url: "/api/admin/sync-runs?sort=itemsCount&order=asc",
     });
     const args = mockSyncRun.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
-    expect(args.orderBy).toEqual({ itemsCount: "asc" });
+    expect(args.orderBy).toEqual([{ itemsCount: "asc" }, { id: "asc" }]);
   });
 
   it("accepts the status sort key", async () => {
@@ -246,7 +246,7 @@ describe("GET /api/admin/sync-runs", () => {
       url: "/api/admin/sync-runs?sort=status&order=desc",
     });
     const args = mockSyncRun.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
-    expect(args.orderBy).toEqual({ status: "desc" });
+    expect(args.orderBy).toEqual([{ status: "desc" }, { id: "asc" }]);
   });
 
   it("falls back to the default sort key when sort is not whitelisted", async () => {
@@ -257,7 +257,7 @@ describe("GET /api/admin/sync-runs", () => {
       url: "/api/admin/sync-runs?sort=arrInstanceId&order=asc",
     });
     const args = mockSyncRun.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
-    expect(args.orderBy).toEqual({ startedAt: "asc" });
+    expect(args.orderBy).toEqual([{ startedAt: "asc" }, { id: "asc" }]);
   });
 
   it("falls back to the default order when order is invalid", async () => {
@@ -268,7 +268,19 @@ describe("GET /api/admin/sync-runs", () => {
       url: "/api/admin/sync-runs?sort=itemsCount&order=bogus",
     });
     const args = mockSyncRun.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
-    expect(args.orderBy).toEqual({ itemsCount: "desc" });
+    expect(args.orderBy).toEqual([{ itemsCount: "desc" }, { id: "asc" }]);
+  });
+
+  it("keeps a stable id tiebreaker after a low-cardinality, non-default sort", async () => {
+    mockSyncRun.findMany.mockResolvedValueOnce([]);
+    mockSyncRun.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/sync-runs?sort=status&order=asc",
+    });
+    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as { orderBy: unknown[] };
+    expect(args.orderBy).toHaveLength(2);
+    expect(args.orderBy[1]).toEqual({ id: "asc" });
   });
 
   it("rejects pathologically long ids strings", async () => {
