@@ -56,6 +56,10 @@ export async function searchItemRoutes(app: FastifyInstance): Promise<void> {
     if (overrideMode) {
       const keys = await prisma.titleOverride.findMany({
         select: { mediaType: true, externalId: true },
+        // Ordered so that *which* keys survive the cap is deterministic rather
+        // than left to storage order — same reason history.ts orders its
+        // CSV_ROW_CAP read.
+        orderBy: { id: "asc" },
         take: OVERRIDE_KEY_CAP,
       });
       if (keys.length === OVERRIDE_KEY_CAP) {

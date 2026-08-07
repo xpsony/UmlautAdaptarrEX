@@ -389,8 +389,35 @@ describe("GET /api/admin/search-items", () => {
     expect(args.where.AND).toBeUndefined();
     expect(mockTitleOverride.findMany).toHaveBeenNthCalledWith(1, {
       select: { mediaType: true, externalId: true },
+      orderBy: { id: "asc" },
       take: 800,
     });
+  });
+
+  it("ANDs override=without with search and the other filters too", async () => {
+    mockTitleOverride.findMany
+      .mockResolvedValueOnce([{ mediaType: "tv", externalId: "1001" }])
+      .mockResolvedValueOnce([]);
+    mockSearchItem.findMany.mockResolvedValueOnce([]);
+    mockSearchItem.count.mockResolvedValueOnce(0);
+
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/search-items?override=without&search=Nebel&mediaType=tv",
+    });
+
+    const args = mockSearchItem.findMany.mock.calls[0]?.[0] as {
+      where: { AND: unknown[]; OR: unknown[]; mediaType: string };
+    };
+    expect(args.where.OR).toEqual([
+      { title: { contains: "Nebel" } },
+      { expectedTitle: { contains: "Nebel" } },
+      { germanTitle: { contains: "Nebel" } },
+    ]);
+    expect(args.where.AND).toEqual([
+      { NOT: { OR: [{ mediaType: "tv", externalId: { in: ["1001"] } }] } },
+    ]);
+    expect(args.where.mediaType).toBe("tv");
   });
 
   it("ignores an unknown override value instead of 400ing", async () => {
