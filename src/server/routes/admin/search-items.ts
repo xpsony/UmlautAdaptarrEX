@@ -16,6 +16,14 @@ const SEARCH_ITEMS_SORT: SortWhitelist = {
 const SEARCH_ITEMS_DEFAULT_SORT_KEY = "expectedTitle";
 const SEARCH_ITEMS_DEFAULT_ORDER = "asc" as const;
 
+// Bind-parameter budget for the override filter's `in` lists. Prisma clamps a
+// single statement at ~999 parameters (well below SQLite's own 32766) and
+// throws P2029 above it, which would 500 the whole listing — so the key fetch
+// is capped instead. The filter degrades to the first N overrides past this
+// point; the warn below is the operator's signal. Same no-unbounded-read
+// principle as CSV_ROW_CAP in history.ts.
+const OVERRIDE_KEY_CAP = 800;
+
 export async function searchItemRoutes(app: FastifyInstance): Promise<void> {
   app.get("/api/admin/search-items", { preHandler: requireAuth }, async (req: FastifyRequest) => {
     const q = (req.query as Record<string, string | undefined>) ?? {};
@@ -37,6 +45,47 @@ export async function searchItemRoutes(app: FastifyInstance): Promise<void> {
         { expectedTitle: { contains: q.search } },
         { germanTitle: { contains: q.search } },
       ];
+    }
+
+    // Override filter. SearchItem has no Prisma relation to TitleOverride —
+    // the override is keyed by mediaType+externalId and deliberately outlives
+    // its item (see prisma/schema.prisma) — so the filter is a key lookup
+    // folded into the where clause. Unknown values fall back to "no filter",
+    // matching how sort/order treat bad input.
+    const overrideMode = q.override === "with" || q.override === "without" ? q.override : null;
+    if (overrideMode) {
+      const keys = await prisma.titleOverride.findMany({
+        select: { mediaType: true, externalId: true },
+        take: OVERRIDE_KEY_CAP,
+      });
+      if (keys.length === OVERRIDE_KEY_CAP) {
+        req.log.warn(
+          { cap: OVERRIDE_KEY_CAP, mode: overrideMode },
+          "override filter hit the key cap — results are approximate",
+        );
+      }
+      // Group by mediaType: N overrides become one branch per media type with
+      // an `in` list, which cuts bound parameters from 2N to N+T (T = number
+      // of media types). That parameter count is what OVERRIDE_KEY_CAP bounds.
+      const byType = new Map<string, string[]>();
+      for (const k of keys) {
+        const ids = byType.get(k.mediaType);
+        if (ids) ids.push(k.externalId);
+        else byType.set(k.mediaType, [k.externalId]);
+      }
+      const branches = [...byType].map(([mediaType, externalIds]) => ({
+        mediaType,
+        externalId: { in: externalIds },
+      }));
+      if (branches.length === 0) {
+        // No overrides exist at all: "with" can only be empty (short-circuit
+        // rather than send an empty OR to Prisma), "without" matches every row.
+        if (overrideMode === "with") return { items: [], total: 0, take, skip };
+      } else {
+        // AND (not OR) so this composes with the free-text search, which owns
+        // the top-level `OR` key.
+        where.AND = [overrideMode === "with" ? { OR: branches } : { NOT: { OR: branches } }];
+      }
     }
 
     const { field, order } = resolveSort(
@@ -76,6 +125,9 @@ export async function searchItemRoutes(app: FastifyInstance): Promise<void> {
         externalId: r.externalId,
       });
     }
+    // Deliberately a second query, not a reuse of the capped filter keys
+    // above: the badge for a page row must be correct even when the filter's
+    // key list was truncated.
     const overrides =
       overrideTargets.size > 0
         ? await prisma.titleOverride.findMany({

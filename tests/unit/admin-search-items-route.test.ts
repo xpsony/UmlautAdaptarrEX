@@ -295,4 +295,114 @@ describe("GET /api/admin/search-items", () => {
       { mediaType: "movie", externalId: "42" },
     ]);
   });
+
+  it("filters to items that have an override (override=with)", async () => {
+    // 1st call: filter keys. 2nd call: page enrichment.
+    mockTitleOverride.findMany
+      .mockResolvedValueOnce([
+        { mediaType: "tv", externalId: "1001" },
+        { mediaType: "tv", externalId: "1002" },
+        { mediaType: "movie", externalId: "2001" },
+      ])
+      .mockResolvedValueOnce([]);
+    mockSearchItem.findMany.mockResolvedValueOnce([]);
+    mockSearchItem.count.mockResolvedValueOnce(0);
+
+    await app.inject({ method: "GET", url: "/api/admin/search-items?override=with" });
+
+    const args = mockSearchItem.findMany.mock.calls[0]?.[0] as { where: { AND: unknown[] } };
+    // One branch per mediaType, each with an `in` list — not one branch per override.
+    expect(args.where.AND).toEqual([
+      {
+        OR: [
+          { mediaType: "tv", externalId: { in: ["1001", "1002"] } },
+          { mediaType: "movie", externalId: { in: ["2001"] } },
+        ],
+      },
+    ]);
+    // The same where object must drive the total, or pagination lies.
+    const countArgs = mockSearchItem.count.mock.calls[0]?.[0] as { where: { AND: unknown[] } };
+    expect(countArgs.where.AND).toEqual(args.where.AND);
+  });
+
+  it("filters to items without an override (override=without)", async () => {
+    mockTitleOverride.findMany
+      .mockResolvedValueOnce([{ mediaType: "tv", externalId: "1001" }])
+      .mockResolvedValueOnce([]);
+    mockSearchItem.findMany.mockResolvedValueOnce([]);
+    mockSearchItem.count.mockResolvedValueOnce(0);
+
+    await app.inject({ method: "GET", url: "/api/admin/search-items?override=without" });
+
+    const args = mockSearchItem.findMany.mock.calls[0]?.[0] as { where: { AND: unknown[] } };
+    expect(args.where.AND).toEqual([
+      { NOT: { OR: [{ mediaType: "tv", externalId: { in: ["1001"] } }] } },
+    ]);
+  });
+
+  it("ANDs the override filter with search and the other filters", async () => {
+    mockTitleOverride.findMany
+      .mockResolvedValueOnce([{ mediaType: "tv", externalId: "1001" }])
+      .mockResolvedValueOnce([]);
+    mockSearchItem.findMany.mockResolvedValueOnce([]);
+    mockSearchItem.count.mockResolvedValueOnce(0);
+
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/search-items?override=with&search=Nebel&mediaType=tv&instanceId=inst1",
+    });
+
+    const args = mockSearchItem.findMany.mock.calls[0]?.[0] as {
+      where: { AND: unknown[]; OR: unknown[]; mediaType: string; arrInstanceId: string };
+    };
+    // search keeps its own top-level OR; the override branches live under AND,
+    // so Prisma ANDs them instead of widening the search.
+    expect(args.where.OR).toEqual([
+      { title: { contains: "Nebel" } },
+      { expectedTitle: { contains: "Nebel" } },
+      { germanTitle: { contains: "Nebel" } },
+    ]);
+    expect(args.where.AND).toEqual([{ OR: [{ mediaType: "tv", externalId: { in: ["1001"] } }] }]);
+    expect(args.where.mediaType).toBe("tv");
+    expect(args.where.arrInstanceId).toBe("inst1");
+  });
+
+  it("returns an empty page for override=with when no overrides exist", async () => {
+    mockTitleOverride.findMany.mockResolvedValueOnce([]);
+
+    const r = await app.inject({ method: "GET", url: "/api/admin/search-items?override=with" });
+
+    expect(r.json()).toEqual({ items: [], total: 0, take: 50, skip: 0 });
+    // Short-circuit: the item table is never queried.
+    expect(mockSearchItem.findMany).not.toHaveBeenCalled();
+    expect(mockSearchItem.count).not.toHaveBeenCalled();
+  });
+
+  it("applies no filter for override=without when no overrides exist", async () => {
+    mockTitleOverride.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
+    mockSearchItem.findMany.mockResolvedValueOnce([]);
+    mockSearchItem.count.mockResolvedValueOnce(0);
+
+    await app.inject({ method: "GET", url: "/api/admin/search-items?override=without" });
+
+    const args = mockSearchItem.findMany.mock.calls[0]?.[0] as { where: Record<string, unknown> };
+    expect(args.where.AND).toBeUndefined();
+    expect(mockTitleOverride.findMany).toHaveBeenNthCalledWith(1, {
+      select: { mediaType: true, externalId: true },
+      take: 800,
+    });
+  });
+
+  it("ignores an unknown override value instead of 400ing", async () => {
+    mockSearchItem.findMany.mockResolvedValueOnce([]);
+    mockSearchItem.count.mockResolvedValueOnce(0);
+
+    const r = await app.inject({ method: "GET", url: "/api/admin/search-items?override=bogus" });
+
+    expect(r.statusCode).toBe(200);
+    const args = mockSearchItem.findMany.mock.calls[0]?.[0] as { where: Record<string, unknown> };
+    expect(args.where.AND).toBeUndefined();
+    // No key lookup at all for an unrecognized value.
+    expect(mockTitleOverride.findMany).not.toHaveBeenCalled();
+  });
 });
