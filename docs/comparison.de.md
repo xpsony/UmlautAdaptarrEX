@@ -17,25 +17,28 @@ weiterzuentwickeln.
 
 ## Auf einen Blick
 
-|                                                 | UmlautAdaptarr               | UmlautAdaptarrEX                                                      |
-| ----------------------------------------------- | ---------------------------- | --------------------------------------------------------------------- |
-| Grundprinzip (Proxy + Titelvarianten + Rewrite) | ✅                           | ✅ (gleiche bewährte Idee)                                            |
-| Sonarr / Lidarr / Readarr                       | ✅                           | ✅                                                                    |
-| **Radarr**                                      | eingeschränkt                | ✅ vollwertig unterstützt                                             |
-| Web-Oberfläche                                  | —                            | ✅ komplett (Setup-Wizard, Dashboard, Einstellungen)                  |
-| Konfiguration                                   | Umgebungsvariablen / Dateien | ✅ vollständig über die UI, in SQLite persistiert                     |
-| Titel-Browser + manuelles Titel-Override        | —                            | ✅ Fehlmatches pro Titel fixen statt Cache leeren                     |
-| Sprach-Plugins                                  | Deutsch                      | ✅ Deutsch, Schwedisch, Französisch (erweiterbar)                     |
-| Titel-Provider                                  | PCJones-API                  | ✅ PCJones-API + TVDB + TMDB, Reihenfolge konfigurierbar              |
-| Request-/Rename-Historie                        | —                            | ✅ durchsuchbar, paginiert, mit Aufbewahrungsfristen                  |
-| Live-Logs                                       | Container-Logs               | ✅ im Browser (WebSocket), filterbar, exportierbar                    |
-| Statistiken                                     | —                            | ✅ Dashboard mit Cache-Rate, Requests, Renames                        |
-| Pause-Funktion                                  | —                            | ✅ zeitgesteuert, ohne Neustart                                       |
-| UI-Sprachen                                     | —                            | ✅ Deutsch, Englisch, Französisch, Schwedisch                         |
-| Headless-Betrieb                                | —                            | ✅ eigener Modus (~115 MiB RAM)                                       |
-| Speicherverhalten                               | —                            | ✅ stabiler RAM-Verbrauch auch im Langzeitbetrieb, keine Memory-Leaks |
-| Sicherheits-Rebuilds des Docker-Images          | —                            | ✅ automatisch alle 2 Tage (OS-/Base-Image-Patches)                   |
-| Entwicklung                                     | sporadische Wartungs-Updates | ✅ aktive Weiterentwicklung mit Roadmap                               |
+|                                                 | UmlautAdaptarr               | UmlautAdaptarrEX                                                                        |
+| ----------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------- |
+| Grundprinzip (Proxy + Titelvarianten + Rewrite) | ✅                           | ✅ (gleiche bewährte Idee)                                                              |
+| Sonarr / Lidarr / Readarr                       | ✅                           | ✅                                                                                      |
+| **Radarr**                                      | eingeschränkt                | ✅ vollwertig unterstützt                                                               |
+| Web-Oberfläche                                  | —                            | ✅ komplett (Setup-Wizard, Dashboard, Einstellungen)                                    |
+| Konfiguration                                   | Umgebungsvariablen / Dateien | ✅ vollständig über die UI, in SQLite persistiert                                       |
+| Titel-Browser + manuelles Titel-Override        | —                            | ✅ Fehlmatches pro Titel fixen statt Cache leeren                                       |
+| Sprach-Plugins                                  | Deutsch                      | ✅ Deutsch, Schwedisch, Französisch (erweiterbar)                                       |
+| Titel-Provider                                  | PCJones-API                  | ✅ PCJones-API + TVDB + TMDB, Reihenfolge konfigurierbar                                |
+| Request-/Rename-Historie                        | —                            | ✅ durchsuchbar, sortierbar, paginiert, CSV-Export (Excel-sicher), Aufbewahrungsfristen |
+| Tabellen & Deep-Links                           | —                            | ✅ sortierbare Spalten, Filter/Seite per URL teilbar, Zeilen-Detailansichten            |
+| Instanz-Aktionen                                | —                            | ✅ Verbindungstest & Einzel-Sync direkt aus der Instanzliste                            |
+| Live-Logs                                       | Container-Logs               | ✅ im Browser (WebSocket), filterbar, exportierbar, Auto-Reconnect                      |
+| Statistiken                                     | —                            | ✅ Dashboard mit Cache-Rate, Requests, Renames                                          |
+| Pause-Funktion                                  | —                            | ✅ zeitgesteuert, ohne Neustart                                                         |
+| UI-Sprachen                                     | —                            | ✅ Deutsch, Englisch, Französisch, Schwedisch                                           |
+| Barrierefreiheit                                | —                            | ✅ Tastaturbedienung, Screenreader-Labels, Skip-Link                                    |
+| Headless-Betrieb                                | ✅ (immer, keine UI)         | ✅ wahlweise — Web-UI standardmäßig an, Headless-Modus opt-in (~115 MiB RAM)            |
+| Speicherverhalten                               | —                            | ✅ stabiler RAM-Verbrauch auch im Langzeitbetrieb, keine Memory-Leaks                   |
+| Sicherheits-Rebuilds des Docker-Images          | —                            | ✅ automatisch alle 2 Tage (OS-/Base-Image-Patches)                                     |
+| Entwicklung                                     | sporadische Wartungs-Updates | ✅ aktive Weiterentwicklung mit Roadmap                                                 |
 
 ## Was EX darüber hinaus mitbringt
 

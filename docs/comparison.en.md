@@ -16,25 +16,28 @@ operations story.
 
 ## At a glance
 
-|                                                     | UmlautAdaptarr                | UmlautAdaptarrEX                                               |
-| --------------------------------------------------- | ----------------------------- | -------------------------------------------------------------- |
-| Core principle (proxy + title variations + rewrite) | ✅                            | ✅ (same proven idea)                                          |
-| Sonarr / Lidarr / Readarr                           | ✅                            | ✅                                                             |
-| **Radarr**                                          | limited                       | ✅ fully supported                                             |
-| Web interface                                       | —                             | ✅ complete (setup wizard, dashboard, settings)                |
-| Configuration                                       | environment variables / files | ✅ entirely via the UI, persisted in SQLite                    |
-| Title browser + manual title overrides              | —                             | ✅ fix individual mismatches instead of clearing the cache     |
-| Language plugins                                    | German                        | ✅ German, Swedish, French (extensible)                        |
-| Title providers                                     | PCJones API                   | ✅ PCJones API + TVDB + TMDB, configurable order               |
-| Request/rename history                              | —                             | ✅ searchable, paginated, with retention policies              |
-| Live logs                                           | container logs                | ✅ in the browser (WebSocket), filterable, exportable          |
-| Statistics                                          | —                             | ✅ dashboard with cache rate, requests, renames                |
-| Pause function                                      | —                             | ✅ time-based, no restart required                             |
-| UI languages                                        | —                             | ✅ German, English, French, Swedish                            |
-| Headless operation                                  | —                             | ✅ dedicated mode (~115 MiB RAM)                               |
-| Memory behavior                                     | —                             | ✅ stable RAM usage in long-running operation, no memory leaks |
-| Docker image security rebuilds                      | —                             | ✅ automatic every 2 days (OS/base-image patches)              |
-| Development                                         | sporadic maintenance updates  | ✅ active development with a roadmap                           |
+|                                                     | UmlautAdaptarr                | UmlautAdaptarrEX                                                                |
+| --------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------- |
+| Core principle (proxy + title variations + rewrite) | ✅                            | ✅ (same proven idea)                                                           |
+| Sonarr / Lidarr / Readarr                           | ✅                            | ✅                                                                              |
+| **Radarr**                                          | limited                       | ✅ fully supported                                                              |
+| Web interface                                       | —                             | ✅ complete (setup wizard, dashboard, settings)                                 |
+| Configuration                                       | environment variables / files | ✅ entirely via the UI, persisted in SQLite                                     |
+| Title browser + manual title overrides              | —                             | ✅ fix individual mismatches instead of clearing the cache                      |
+| Language plugins                                    | German                        | ✅ German, Swedish, French (extensible)                                         |
+| Title providers                                     | PCJones API                   | ✅ PCJones API + TVDB + TMDB, configurable order                                |
+| Request/rename history                              | —                             | ✅ searchable, sortable, paginated, CSV export (Excel-safe), retention policies |
+| Tables & deep links                                 | —                             | ✅ sortable columns, shareable URL filters/pages, row detail views              |
+| Instance actions                                    | —                             | ✅ test connection & single-instance sync straight from the list                |
+| Live logs                                           | container logs                | ✅ in the browser (WebSocket), filterable, exportable, auto-reconnect           |
+| Statistics                                          | —                             | ✅ dashboard with cache rate, requests, renames                                 |
+| Pause function                                      | —                             | ✅ time-based, no restart required                                              |
+| UI languages                                        | —                             | ✅ German, English, French, Swedish                                             |
+| Accessibility                                       | —                             | ✅ keyboard navigation, screen-reader labels, skip link                         |
+| Headless operation                                  | ✅ (always, no UI)            | ✅ your choice — Web UI on by default, headless mode opt-in (~115 MiB RAM)      |
+| Memory behavior                                     | —                             | ✅ stable RAM usage in long-running operation, no memory leaks                  |
+| Docker image security rebuilds                      | —                             | ✅ automatic every 2 days (OS/base-image patches)                               |
+| Development                                         | sporadic maintenance updates  | ✅ active development with a roadmap                                            |
 
 ## What else EX brings
 
