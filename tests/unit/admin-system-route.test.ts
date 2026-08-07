@@ -45,10 +45,13 @@ describe("systemRoutes", () => {
 
   it("POST /system/restart returns 202 with the supervisor flag and exit code", async () => {
     vi.stubEnv("UMLAUTADAPTARREX_SUPERVISED", "1");
-    // Replace the setTimeout side effect: capture it so the test does not
-    // actually emit the restart event.
-    const realSetTimeout = global.setTimeout;
-    global.setTimeout = ((_fn: () => void, _ms: number) => 0) as never;
+    // Observe the supervisor hand-off instead of stubbing global.setTimeout:
+    // a blunt setTimeout stub swallows avvio's internal ready-timeout timer
+    // (scheduled on nextTick since avvio 9.3.0) and deadlocks app.close().
+    // The emit is harmless here — nothing in this worker listens for it
+    // except this test.
+    const emitted = vi.fn();
+    (process as NodeJS.EventEmitter).once("umlautadaptarrex:restart", emitted);
 
     try {
       const r = await app.inject({
@@ -62,8 +65,13 @@ describe("systemRoutes", () => {
         exitCode: number;
       };
       expect(body).toEqual({ ok: true, supervised: true, exitCode: 75 });
+      // Teardown fires once the 202 has flushed (response "finish"); the
+      // route's 1s fallback timer covers the case where it never does.
+      await vi.waitFor(() => expect(emitted).toHaveBeenCalledTimes(1), {
+        timeout: 3000,
+      });
     } finally {
-      global.setTimeout = realSetTimeout;
+      (process as NodeJS.EventEmitter).removeListener("umlautadaptarrex:restart", emitted);
     }
   });
 });
