@@ -586,7 +586,8 @@
       "createdAt": "Tid",
       "filterPlaceholder": "Filtrera efter domän eller sökning…",
       "emptyTitle": "Inget här ännu",
-      "emptyHint": "När förfrågningar passerar proxyn visas de här."
+      "emptyHint": "När förfrågningar passerar proxyn visas de här.",
+      "detailTitle": "Förfrågningsdetaljer"
     },
     "rename": {
       "title": "Namnändringshistorik",
@@ -623,7 +624,9 @@
     "colDuration": "Varaktighet",
     "colError": "Fel",
     "emptyTitle": "Inga körningar ännu",
-    "emptyHint": "Starta en synk från översikten för att fylla listan."
+    "emptyHint": "Starta en synk från översikten för att fylla listan.",
+    "detailFinishedAt": "Avslutad",
+    "detailUnknownInstance": "Okänd instans"
   },
   "logs": {
     "title": "Loggar",

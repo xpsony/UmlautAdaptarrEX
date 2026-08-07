@@ -586,7 +586,8 @@
       "createdAt": "Zeit",
       "filterPlaceholder": "Nach Domain, Suche oder External-ID filtern…",
       "emptyTitle": "Hier ist noch nichts",
-      "emptyHint": "Sobald Anfragen den Proxy passieren, erscheinen sie hier."
+      "emptyHint": "Sobald Anfragen den Proxy passieren, erscheinen sie hier.",
+      "detailTitle": "Anfrage-Details"
     },
     "rename": {
       "title": "Umbenennungs-Verlauf",
@@ -623,7 +624,9 @@
     "colDuration": "Dauer",
     "colError": "Fehler",
     "emptyTitle": "Noch keine Läufe",
-    "emptyHint": "Starte einen Sync auf der Übersicht, um diese Liste zu füllen."
+    "emptyHint": "Starte einen Sync auf der Übersicht, um diese Liste zu füllen.",
+    "detailFinishedAt": "Beendet",
+    "detailUnknownInstance": "Unbekannte Instanz"
   },
   "logs": {
     "title": "Logs",

@@ -586,7 +586,8 @@
       "createdAt": "Heure",
       "filterPlaceholder": "Filtrer par domaine ou recherche…",
       "emptyTitle": "Rien ici pour l'instant",
-      "emptyHint": "Une fois les requêtes passées par le proxy, elles apparaîtront ici."
+      "emptyHint": "Une fois les requêtes passées par le proxy, elles apparaîtront ici.",
+      "detailTitle": "Détails de la requête"
     },
     "rename": {
       "title": "Historique des renommages",
@@ -623,7 +624,9 @@
     "colDuration": "Durée",
     "colError": "Erreur",
     "emptyTitle": "Aucune exécution pour l'instant",
-    "emptyHint": "Lancez un sync depuis le tableau de bord pour remplir cette liste."
+    "emptyHint": "Lancez un sync depuis le tableau de bord pour remplir cette liste.",
+    "detailFinishedAt": "Terminée",
+    "detailUnknownInstance": "Instance inconnue"
   },
   "logs": {
     "title": "Journaux",

@@ -586,7 +586,8 @@
       "createdAt": "Time",
       "filterPlaceholder": "Filter by domain, query or external ID…",
       "emptyTitle": "Nothing here yet",
-      "emptyHint": "Once requests pass through the proxy they appear here."
+      "emptyHint": "Once requests pass through the proxy they appear here.",
+      "detailTitle": "Request details"
     },
     "rename": {
       "title": "Rename history",
@@ -623,7 +624,9 @@
     "colDuration": "Duration",
     "colError": "Error",
     "emptyTitle": "No runs yet",
-    "emptyHint": "Trigger a sync from the dashboard to populate this list."
+    "emptyHint": "Trigger a sync from the dashboard to populate this list.",
+    "detailFinishedAt": "Finished",
+    "detailUnknownInstance": "Unknown instance"
   },
   "logs": {
     "title": "Logs",
