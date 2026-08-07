@@ -140,4 +140,38 @@ describe("toCsv", () => {
     const csv = toCsv([{ a: "x" }], ["a", "b"]);
     expect(csv).toBe("a,b\r\nx,");
   });
+
+  // CSV/formula injection (CWE-1236): a string cell starting with =, +, -, or
+  // @ is interpreted as a formula by Excel/Sheets/LibreOffice on open. These
+  // columns carry free text that ultimately traces back to *arr search
+  // queries / indexer release titles, which an attacker can influence — so a
+  // crafted release name must not turn into an executing formula for the
+  // admin who opens the export.
+  it.each(["=1+1", "+1+1", "-1+1", "@SUM(A1:A2)", "=cmd|'/c calc'!A1"])(
+    "neutralizes a string cell that looks like a formula (%s) with a leading apostrophe",
+    (formula) => {
+      const csv = toCsv([{ note: formula }], ["note"]);
+      expect(csv).toBe(`note\r\n'${formula}`);
+    },
+  );
+
+  it("still quotes a neutralized formula cell if it also contains a comma", () => {
+    const csv = toCsv([{ note: "=1+1,2" }], ["note"]);
+    expect(csv).toBe('note\r\n"\'=1+1,2"');
+  });
+
+  it("neutralizes AND RFC-4180-quotes a formula cell that also contains a double quote", () => {
+    const csv = toCsv([{ note: '=HYPERLINK("http://evil")' }], ["note"]);
+    expect(csv).toBe('note\r\n"\'=HYPERLINK(""http://evil"")"');
+  });
+
+  it("does not neutralize a legitimate negative number (not a string cell)", () => {
+    const csv = toCsv([{ n: -5 }], ["n"]);
+    expect(csv).toBe("n\r\n-5");
+  });
+
+  it("does not touch a plain string that merely contains (not starts with) a formula character", () => {
+    const csv = toCsv([{ note: "total = 5" }], ["note"]);
+    expect(csv).toBe("note\r\ntotal = 5");
+  });
 });

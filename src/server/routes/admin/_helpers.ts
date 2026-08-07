@@ -72,9 +72,24 @@ export function parseJsonArray(raw: string | null): string[] | null {
   }
 }
 
+// A string cell starting with one of these is interpreted as a formula by
+// Excel/Sheets/LibreOffice on open (CSV/formula injection, CWE-1236) — the
+// exported free-text columns (search queries, original/rewritten titles)
+// ultimately trace back to *arr search terms / indexer release names, which
+// an attacker can influence, so this can't be dismissed as "our own data".
+const FORMULA_PREFIX = /^[=+\-@]/;
+
 /** Quote a single CSV cell per RFC 4180 when it needs it, else return it verbatim. */
 function csvCell(value: unknown): string {
-  const raw = value == null ? "" : value instanceof Date ? value.toISOString() : String(value);
+  let raw = value == null ? "" : value instanceof Date ? value.toISOString() : String(value);
+  // Only string-typed values get the anti-formula prefix: a leading `'`
+  // would otherwise misrepresent legitimate negative numbers (e.g.
+  // `durationMs`) as text in the spreadsheet. A leading apostrophe in a CSV
+  // cell is the standard mitigation — Excel/Sheets render it as literal text
+  // instead of evaluating the rest as a formula.
+  if (typeof value === "string" && FORMULA_PREFIX.test(raw)) {
+    raw = `'${raw}`;
+  }
   return /["\n\r,]/.test(raw) ? `"${raw.replace(/"/g, '""')}"` : raw;
 }
 
@@ -83,8 +98,9 @@ function csvCell(value: unknown): string {
  * one row per item in the same column order. `null`/`undefined` cells become
  * empty, `Date` cells become their ISO-8601 string, everything else is
  * stringified. Cells containing `"`, `,`, `\n`, or `\r` are quoted (with `"`
- * doubled). Lines are joined with `\r\n` (the RFC's line ending); no trailing
- * line ending is appended.
+ * doubled). A string cell starting with `=`, `+`, `-`, or `@` is prefixed
+ * with `'` to defuse spreadsheet formula injection. Lines are joined with
+ * `\r\n` (the RFC's line ending); no trailing line ending is appended.
  */
 export function toCsv(rows: Record<string, unknown>[], columns: string[]): string {
   const lines = [columns.map(csvCell).join(",")];
