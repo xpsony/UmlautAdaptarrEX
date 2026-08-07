@@ -598,6 +598,8 @@
       "listSubtitle": "Filtrer par titre original ou réécrit.",
       "originalTitle": "Original",
       "rewrittenTitle": "Réécrit",
+      "titleColumn": "Titre",
+      "groupCount": "×{count} · {from}–{to}",
       "mediaType": "Type",
       "createdAt": "Heure",
       "filterPlaceholder": "Filtrer par titre…",

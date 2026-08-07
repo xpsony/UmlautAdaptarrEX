@@ -598,6 +598,8 @@
       "listSubtitle": "Nach Original- oder umgeschriebenem Titel filtern.",
       "originalTitle": "Original",
       "rewrittenTitle": "Umgeschrieben",
+      "titleColumn": "Titel",
+      "groupCount": "×{count} · {from}–{to}",
       "mediaType": "Typ",
       "createdAt": "Zeit",
       "filterPlaceholder": "Nach Titel filtern…",

@@ -598,6 +598,8 @@
       "listSubtitle": "Filtrera efter original- eller omskriven titel.",
       "originalTitle": "Original",
       "rewrittenTitle": "Omskriven",
+      "titleColumn": "Titel",
+      "groupCount": "×{count} · {from}–{to}",
       "mediaType": "Typ",
       "createdAt": "Tid",
       "filterPlaceholder": "Filtrera efter titel…",
