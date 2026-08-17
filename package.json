@@ -44,7 +44,7 @@
     "@fastify/cookie": "^11.1.2",
     "@fastify/csrf-protection": "^8.0.1",
     "@fastify/rate-limit": "^11.2.0",
-    "@hookform/resolvers": "^5.7.1",
+    "@hookform/resolvers": "^5.8.0",
     "@prisma/adapter-better-sqlite3": "^7.9.1",
     "@prisma/client": "^7.9.1",
     "@radix-ui/react-alert-dialog": "^1.1.23",
