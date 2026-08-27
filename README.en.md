@@ -67,6 +67,7 @@ imported.
 | **Live logs** via WebSocket (with auto-reconnect)                                                                                       |   ✓    |
 | **Multiple title providers** with configurable order: pcjones-API, TVDB, TMDB                                                           |   ✓    |
 | **Language plugins**: German umlauts (default), Swedish umlauts, French accents                                                         |   ✓    |
+| **Configurable renaming**: strip special characters, attach external ids, individually switchable safety rules                          |   ✓    |
 | **Headless mode** (no Web UI, ~115 MiB RAM)                                                                                             |   ✓    |
 | **i18n**: German, English, French, Swedish                                                                                              |   ✓    |
 
@@ -90,6 +91,35 @@ can run at the same time, e.g. when a library contains both German and French ti
 Each plugin generates multiple variation maps so that releases with mixed spellings (e.g. `Brueckenkopf` vs.
 `Brückenkopf` vs. `Brueckenkopf`) are still reliably detected. Audio libraries (Lidarr) additionally use a
 "strip-all" path that removes the diacritic letter entirely.
+
+> **Only enable languages you actually consume.** Every extra plugin costs lookups:
+>
+> - **Per search**, each language variation adds one more indexer request. The total is hard-capped at 10 — surplus
+>   variations are dropped, possibly including German ones. A plugin for a language you never download can therefore
+>   push genuinely useful queries out of the budget.
+> - **Per sync**, TheTVDB needs one more request per title per language (it has no bulk translations endpoint). TMDB
+>   returns all languages in a single call and does not scale with the plugin count.
+
+## Renaming
+
+How release titles in indexer responses are rewritten is configurable under **Settings → Renaming**. Changes apply from
+the next search onwards — no restart, no re-sync.
+
+| Toggle                                         | Default (new) | Default (existing) | Effect                                                                                                                                        |
+| ---------------------------------------------- | :-----------: | :----------------: | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Strip unwelcome characters**                 |       ✓       |         ◯          | Removes `: ? * " < > \| / \` from the inserted title without leaving doubled separators. The indexer's own suffix is left verbatim.           |
+| **Attach external ids**                        |       ✓       |         ◯          | Appends `tvdbid` / `tmdbid` / `imdb` as a newznab attribute so Sonarr/Radarr can bind the release without parsing its title. Purely additive. |
+| **Year check**                                 |       ✓       |         ✓          | Declines the rewrite when the year in the release name does not match the item (tolerance is configured per instance).                        |
+| **Ambiguous-prefix check**                     |       ✓       |         ✓          | Declines when the target title starts with the matched variation and no `SxxExx` or year follows.                                             |
+| **Preserve release tags**                      |       ✓       |         ✓          | Pushes `3D` / `4K` / `HDR` / `IMAX` back into the suffix when a provider alias brought it along.                                              |
+| **Cut the suffix like the old Umlautadaptarr** |       ◯       |         ◯          | Cuts at the variation's raw length instead of counting normalized characters. With `ß`/umlauts that cuts too far — legacy compatibility only. |
+
+Two preset buttons flip the four safety rules at once: **Like the old Umlautadaptarr** (all guards off, legacy suffix
+on) and **Recommended values**.
+
+> Existing installations keep their current output: the migration switches the two toggles that change the delivered
+> bytes **off** for them. Fresh installs start with them **on**. Both are worth enabling — scene releases never carry
+> the stripped characters, and the external ids markedly improve matching in Sonarr/Radarr.
 
 ## Installation
 

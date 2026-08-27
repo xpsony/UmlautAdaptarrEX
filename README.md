@@ -68,6 +68,7 @@ importiert werden.
 | **Live-Logs** über WebSocket (mit Auto-Reconnect)                                                                                      |   ✓    |
 | **Mehrere Title-Provider** mit konfigurierbarer Reihenfolge: pcjones-API, TVDB, TMDB                                                   |   ✓    |
 | **Sprach-Plugins**: Deutsche Umlaute (default), Schwedische Umlaute, Französische Akzente                                              |   ✓    |
+| **Konfigurierbares Renaming**: Sonderzeichen entfernen, externe IDs anhängen, Schutzregeln einzeln schaltbar                           |   ✓    |
 | **Headless-Modus** (ohne Web-UI, ~115 MiB RAM)                                                                                         |   ✓    |
 | **i18n**: Deutsch, Englisch, Französisch, Schwedisch                                                                                   |   ✓    |
 
@@ -92,6 +93,36 @@ z. B. wenn eine Bibliothek deutsche und französische Titel enthält.
 Pro Plugin werden mehrere Variationsmaps generiert, sodass auch Releases mit gemischter Schreibweise (z. B. `Brueckenkopf`
 vs. `Brückenkopf` vs. `Brueckenkopf`) zuverlässig erkannt werden. Audio-Bibliotheken (Lidarr) verwenden zusätzlich
 einen "Strip-All"-Pfad, der den diakritischen Buchstaben komplett entfernt.
+
+> **Aktiviere nur Sprachen, die du tatsächlich konsumierst.** Jedes zusätzliche Plugin kostet Abfragen:
+>
+> - **Pro Suche** entsteht je Sprachvariante eine zusätzliche Anfrage an die Indexer. Die Gesamtzahl ist hart auf 10
+>   begrenzt — überzählige Varianten fallen weg, im Zweifel auch deutsche. Ein Plugin, dessen Sprache du nie
+>   herunterlädst, verdrängt also potenziell nützliche Suchen.
+> - **Pro Sync** stellt TheTVDB eine weitere Anfrage je Titel und Sprache (es gibt dort keinen Bulk-Endpoint für
+>   Übersetzungen). TMDB liefert alle Sprachen in einem Aufruf und skaliert daher nicht mit der Plugin-Anzahl.
+
+## Renaming
+
+Wie Release-Titel in den Indexer-Antworten umgeschrieben werden, ist unter **Settings → Renaming** konfigurierbar.
+Änderungen wirken ab der nächsten Suche — kein Neustart, kein Re-Sync.
+
+| Schalter                                 | Default (neu) | Default (bestehend) | Wirkung                                                                                                                                                |
+| ---------------------------------------- | :-----------: | :-----------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Unerwünschte Zeichen entfernen**       |       ✓       |          ◯          | Entfernt `: ? * " < > \| / \` aus dem eingesetzten Titel, ohne doppelte Trennzeichen zu hinterlassen. Das Suffix des Indexers bleibt unverändert.      |
+| **Externe IDs anhängen**                 |       ✓       |          ◯          | Hängt `tvdbid` / `tmdbid` / `imdb` als newznab-Attribut an. Sonarr/Radarr können das Release damit ohne Titel-Analyse zuordnen. Rein additiv.          |
+| **Jahres-Prüfung**                       |       ✓       |          ✓          | Lehnt das Umschreiben ab, wenn die Jahreszahl im Release nicht zum Medium passt (Toleranz pro Instanz konfigurierbar).                                 |
+| **Prüfung auf mehrdeutigen Präfix**      |       ✓       |          ✓          | Lehnt ab, wenn der Zieltitel mit der gefundenen Variante beginnt und danach kein `SxxExx` bzw. keine Jahreszahl folgt.                                 |
+| **Release-Tags erhalten**                |       ✓       |          ✓          | Schiebt `3D` / `4K` / `HDR` / `IMAX` zurück ins Suffix, wenn ein Provider-Alias sie mitgebracht hat.                                                   |
+| **Suffix wie beim alten Umlautadaptarr** |       ◯       |          ◯          | Schneidet nach Rohlänge der Variante statt nach normalisierten Zeichen. Bei `ß`/Umlauten schneidet das zu weit — nur für exakte Legacy-Kompatibilität. |
+
+Zwei Preset-Buttons setzen die vier Schutzregeln auf einmal: **Wie der alte Umlautadaptarr** (alle Schutzregeln aus,
+Legacy-Suffix an) und **Empfohlene Werte**.
+
+> Bestandsinstallationen behalten ihre bisherige Ausgabe: die Migration setzt die beiden Schalter, die die
+> ausgelieferten Bytes verändern, für sie auf **aus**. Neuinstallationen starten mit **an**. Beide lohnen sich —
+> Scene-Releases enthalten die entfernten Zeichen nie, und die externen IDs verbessern die Zuordnung in Sonarr/Radarr
+> deutlich.
 
 ## Installation
 

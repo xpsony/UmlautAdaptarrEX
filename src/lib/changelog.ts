@@ -24,11 +24,11 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     version: "1.4.0",
-    date: "2026-08-07",
+    date: "2026-08-27",
     highlight: true,
-    title: "1.4.0: Library browser with manual title overrides, big table & performance update",
+    title: "1.4.0: Library browser, configurable renaming & the German-title search fix",
     description:
-      "The biggest release since the rewrite: a new Library page finally makes the synced titles visible and lets you fix individual mismatches with manual overrides. All list pages gain sorting, deep-linkable filters, detail views and CSV export. Under the hood: faster searches on large libraries, bounded search fan-out, and a full accessibility & translation pass.",
+      "The biggest release since the rewrite: a new Library page finally makes the synced titles visible and lets you fix individual mismatches with manual overrides. Renaming becomes configurable in its own settings tab, and the reported case where the German title never reached the indexers is fixed. All list pages gain sorting, deep-linkable filters, detail views and CSV export. Under the hood: faster searches on large libraries, bounded search fan-out, and a full accessibility & translation pass.",
     items: [
       {
         type: "feature",
@@ -89,6 +89,26 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         type: "fix",
         text: "No more spurious FST_CSRF_MISSING_SECRET 403 warnings in the logs: the CSRF cookie could expire before the login session (e.g. after a browser restart), making the next action fail with a 403. CSRF cookies now live exactly as long as the session, and CSRF rejections are logged at debug level instead of warn. Thanks to Tom-Furrer for the report (#87).",
+      },
+      {
+        type: "fix",
+        text: "German titles that existed only as an alias were never actually searched. If Sonarr holds a German production under its English TVDB title, the German name often only shows up in the alias list — and aliases were used to rewrite the indexer response, never to query the indexer. So only the English title went out and nothing was found, while a series whose German title came back as a proper translation worked fine. Three causes fixed: TheTVDB is now also asked for the extended record (embedded name translations, and the primary name when the original language proves it is German), Sonarr's own alternate titles are merged with the provider aliases instead of being discarded, and when no German title resolves at all, up to three Latin-script aliases are searched as well.",
+      },
+      {
+        type: "feature",
+        text: 'Renaming is now configurable under Settings → Renaming, with a worked before/after example on each switch so you can see what it does. Two new options: “Strip unwelcome characters” removes : ? * " < > | / \\ from the inserted title (scene releases never carry them, and Sonarr/Radarr parse the result more reliably), and “Attach external ids” adds tvdbid / tmdbid / imdb as newznab attributes so the *Arr can match a release without parsing its title. Four more switches expose the safety rules UmlautAdaptarrEX added on top of the old .NET version (year check, ambiguous prefix, release tags, legacy suffix cut), with presets for “Like the old Umlautadaptarr” and “Recommended values”. Changes apply from the next search — no restart, no re-sync.',
+      },
+      {
+        type: "improvement",
+        text: "Existing installations keep their current renaming output: the two options that change what is delivered to Sonarr/Radarr are switched off for them and default to on only for fresh installs. Both are worth enabling — have a look at Settings → Renaming.",
+      },
+      {
+        type: "improvement",
+        text: "The language plugins now tell you what they cost: only enable a language you actually consume. Each extra plugin adds search variations and therefore one more indexer request per search — and since the total is capped at 10, an unused language can push genuinely useful queries (including German ones) out of the budget. On top of that, TheTVDB needs one more request per title per language on every sync. TMDB returns all languages in a single call and does not scale with the plugin count.",
+      },
+      {
+        type: "fix",
+        text: "TRUST_PROXY no longer accepts a hop count. Fastify disabled hop-count trust because it cannot validate the immediate peer, which would let a client reaching the app directly spoof X-Forwarded-* headers. A numeric value now trusts nothing and logs a warning at startup telling you to use “loopback” (the default) or a comma-separated list of trusted CIDRs/IPs instead. Only relevant if you set the variable yourself.",
       },
     ],
   },

@@ -1,8 +1,10 @@
 # Changelog
 
-## 1.4.0 — 2026-08-07
+## 1.4.0 — 2026-08-27
 
-The biggest release since the rewrite. Headline feature: a new **Library** page that finally makes the synced title data visible — and lets you fix individual mismatches with **manual title overrides** instead of clearing the whole cache. Around it: a full table/UX overhaul (sorting, URL-persisted filters, detail views, CSV export), history pagination with configurable retention, a performance and robustness pass on the sync/search hot paths, and a complete accessibility & translation sweep. Three new database migrations run automatically on first start; no configuration changes are required.
+The biggest release since the rewrite. Headline feature: a new **Library** page that finally makes the synced title data visible — and lets you fix individual mismatches with **manual title overrides** instead of clearing the whole cache. Around it: a full table/UX overhaul (sorting, URL-persisted filters, detail views, CSV export), history pagination with configurable retention, a performance and robustness pass on the sync/search hot paths, and a complete accessibility & translation sweep.
+
+Also in this release: the reported **"the German title is never sent to the indexers"** case is fixed, and **renaming is now configurable** in a new Settings tab. Four new database migrations run automatically on first start. Existing installations keep their current renaming output — the two toggles that change what is delivered to the \*Arr are switched off for them and default to on only for fresh installs.
 
 ### Features
 
@@ -17,6 +19,12 @@ The biggest release since the rewrite. Headline feature: a new **Library** page 
 - **History pagination & retention:** request and rename history paginate through all stored entries (page size 25/50/100/250) with server-side search across the whole retained period, and the new setting **History retention (days)** (Settings → Advanced, default 30, range 1–365) cleans up older entries automatically every 6 hours. Previously these tables grew without limit, and search only covered the newest rows ([#115](https://github.com/xpsony/UmlautAdaptarrEX/issues/115) — thanks [@Tom-Furrer](https://github.com/Tom-Furrer) for the report).
 - **Per-tab settings forms:** each settings tab is an independent form — dirty state no longer leaks across tabs, saves send only that tab's fields, and the browser warns before unloading with unsaved changes.
 - **Language switch without reload:** switching the UI language now refreshes in place (React Server Component refresh) — form state and scroll position survive.
+- **Renaming is configurable** (Settings → Renaming). Six toggles, each shown with a worked before/after example on an invented release name so the effect is visible without reading docs:
+  - _Strip unwelcome characters_ — removes `: ? * " < > | / \` from the inserted title without leaving a doubled separator. Scene releases never carry them, and Sonarr/Radarr parse the result more reliably. The indexer's own suffix is left verbatim. **On for new installs, off for existing ones.**
+  - _Attach external ids_ — appends `tvdbid` / `tmdbid` / `imdb` as a newznab attribute to every matched item, so the \*Arr can bind a release without parsing its title. Purely additive: an id the indexer already sent is never overwritten, the feed's own attribute prefix (`newznab:` / `torznab:`) is mirrored, and ids are attached even when the rewrite itself was declined — which is exactly the case where they help most. **On for new installs, off for existing ones.**
+  - _Year check_, _ambiguous-prefix check_, _preserve release tags_, _legacy suffix cut_ — the four safety rules UmlautAdaptarrEX added on top of the .NET predecessor, now individually switchable. Two preset buttons flip them all at once: **Like the old Umlautadaptarr** and **Recommended values**.
+  - Changes take effect on the next search; no restart and no re-sync needed.
+- **Language plugins now state their cost** in Settings → Plugins and in the setup wizard: only enable a language you actually consume. Each extra plugin adds search variations, hence one more indexer request per search (hard cap 10, so German variants can get squeezed out), plus one more TheTVDB request per title per language on every sync. TMDB returns all languages in a single call and does not scale with the plugin count.
 
 ### Fixes
 
@@ -28,6 +36,11 @@ The biggest release since the rewrite. Headline feature: a new **Library** page 
 - **Switching the UI language no longer discards unsaved settings edits** (the settings form no longer resets from a background refetch while dirty).
 - **Version display under About** is trustworthy again: source builds no longer show an empty version, and the 2-day `:latest` security rebuild no longer changes the displayed string to `1.3.0-<sha>` even though the code is identical to the release ([#86](https://github.com/xpsony/UmlautAdaptarrEX/issues/86) — thanks [@Tom-Furrer](https://github.com/Tom-Furrer) for the report).
 - **Spurious `FST_CSRF_MISSING_SECRET` 403 warnings:** the CSRF cookie could expire before the login session (e.g. after a browser restart), making the next action fail with a 403 and a scary-looking warning in the logs. CSRF cookies now live exactly as long as the session, and CSRF rejections are logged at debug level instead of warn ([#87](https://github.com/xpsony/UmlautAdaptarrEX/issues/87) — thanks [@Tom-Furrer](https://github.com/Tom-Furrer) for the report).
+- **German titles that only exist as an alias were never searched.** A German production that Sonarr holds under its English TVDB translation ended up with no German title at all, and the alias list that _did_ carry the German name was only used to rewrite the response — never to query the indexer. Result: the indexers only ever saw the English title and found nothing, while a series whose German title came back as a proper translation worked fine. Three separate causes, all fixed:
+  - The TVDB provider only read `/series/{id}/translations/deu`. It now also consults `/{type}/{id}/extended` for a still-missing language: the embedded `nameTranslations`, and — when `originalLanguage` proves it — the record's own primary `name`. The extra call is shared with the existing alias fallback, so a fully-resolved item costs nothing more.
+  - Sonarr's own `alternateTitles` were discarded outright as soon as a provider returned a single alias (`??` instead of a merge). Both lists are now unioned, matching what Radarr has always done.
+  - When no German title resolves at all, up to three Latin-script aliases are now promoted to _search_ variations. Bounded on purpose: the search issues one indexer request per variation with a hard cap of 10, and alias lists routinely carry a dozen non-Latin translations that would be pure noise and would push the useful queries out of that cap.
+- **`TRUST_PROXY` hop counts are no longer silently ignored.** Fastify 5.12 disabled hop-count trust (a hop count cannot validate the immediate peer, so a client reaching the origin directly could spoof `X-Forwarded-*`). A numeric `TRUST_PROXY` now fails closed _and_ logs a warning at startup telling you to switch to `loopback` or a CIDR/IP list, instead of quietly trusting nothing.
 - Docs: corrected the (false) global-rate-limit claim in `docs/api.md` and refreshed the per-route limits table against the code.
 
 ### Performance & robustness
@@ -46,9 +59,17 @@ The biggest release since the rewrite. Headline feature: a new **Library** page 
 - **Complete French and Swedish UI coverage:** 25 previously untranslated strings (Prowlarr patch flow, sync-runs filter) are now translated — all four locales carry the identical key set.
 - Skip-to-content link, labeled navigation/stepper/charts, per-instance switch labels, keyboard- and touch-reachable error details (status badges, action-menu hints), `aria-describedby` on setup fields, `aria-sort` on sortable columns, and a shared alert primitive with correct `role="alert"`/`role="status"` semantics.
 
+### Dependencies & internals
+
+- Whole dependency stack refreshed within the supply-chain gate (`minimumReleaseAge`): Next 16.3.3, Fastify 5.12.1, Prisma 7.10.0, ESLint 10.9.1, Vitest 4.1.11, typescript-eslint 8.68.0, `@tanstack/react-query` 5.102.4 and others. Prisma stays on 7.x: its `latest` dist-tag currently points at an 8.0.0 release candidate.
+- Fastify's deprecated top-level `disableRequestLogging` (removed in Fastify 6) replaced with `LogController`, clearing a warning on every boot.
+- The manual title override is now covered end-to-end against a real SQLite: save → override row → variations re-derived → in-memory index refreshed → the overridden title is what gets _queried_ → and a release named after it gets rewritten; delete restores the cached provider title. Two harness gaps closed along the way: `cleanDb()` never truncated `TitleOverride` (an override leaked into later tests), and the four message catalogues are now checked for key parity so a feature can no longer ship with an untranslated French/Swedish UI.
+
 ### Upgrade notes
 
-- Three new database migrations (history retention setting, title overrides table, composite indexes) run automatically on first start — no manual action needed.
+- Four new database migrations (history retention setting, title overrides table, composite indexes, renaming options) run automatically on first start — no manual action needed. The last one also adds a `SearchItem.imdbId` column and pins _Strip unwelcome characters_ and _Attach external ids_ to **off** for existing installations so your output does not change under you. Both are worth turning on — see Settings → Renaming.
+- `SearchItem.imdbId` is filled by the next Radarr sync; until then movie items simply emit no `imdb` attribute.
+- If you set `TRUST_PROXY` to a number, change it: use `loopback` (the default) or a comma-separated CIDR/IP list. The startup log now says so explicitly.
 - No configuration changes required. The bounded search fan-out is a deliberate behavior improvement over the unbounded fan-out of earlier versions (and of the original UmlautAdaptarr); if you ever need to diagnose it, the server logs a warning with counts whenever the cap or deadline trims a search.
 - New: a German/English comparison of UmlautAdaptarr vs. UmlautAdaptarrEX lives in `docs/comparison.de.md` / `docs/comparison.en.md`.
 
