@@ -17,8 +17,32 @@ const DEFAULT_TIMEOUT_MS = 5_000;
  * How long a miss is remembered. Without this, an id nobody knows would cost
  * one *Arr call plus up to three provider calls on every single request.
  */
-const NEGATIVE_TTL_MS = 30 * 60 * 1000;
+export const NEGATIVE_TTL_MS = 30 * 60 * 1000;
 const NEGATIVE_MAX = 2_000;
+
+/**
+ * A much shorter memory for a resolution that *failed* rather than came back
+ * empty. "Nobody has this id" stays true for a while; "the *Arr was restarting"
+ * does not, and blinding a title for half an hour over a transient error would
+ * be a worse outcome than one extra attempt a minute later.
+ */
+export const ERROR_TTL_MS = 60 * 1000;
+
+/** Why a resolution produced no item. Drives which negative window applies. */
+export type NegativeOutcome = "empty" | "error" | "timeout";
+
+/**
+ * How long a non-result is remembered. Only a genuine "nobody has this id"
+ * earns the long window; an error or an exhausted budget says nothing about
+ * the id itself.
+ *
+ * Exported and pure so the policy is testable: `lru-cache` measures its TTL
+ * on a clock vitest's fake timers cannot move, so the windows themselves
+ * cannot be exercised by advancing time.
+ */
+export function negativeTtlFor(outcome: NegativeOutcome): number {
+  return outcome === "empty" ? NEGATIVE_TTL_MS : ERROR_TTL_MS;
+}
 
 /**
  * Global ceiling on concurrent resolutions. A burst of unknown ids must not
@@ -102,12 +126,19 @@ export async function resolveOnDemand(
   running += 1;
   const task = withTimeout(resolveUncached(req, deps), timeoutMs)
     .then((item) => {
-      if (!item) negativeCache.set(key, true);
+      // A timeout is reported as `timedOut`, not as an empty answer: the
+      // underlying resolution may still be running and may still index the
+      // item, so it must not be remembered as a miss for the full window.
+      if (item === TIMED_OUT) {
+        negativeCache.set(key, true, { ttl: negativeTtlFor("timeout") });
+        return null;
+      }
+      if (!item) negativeCache.set(key, true, { ttl: negativeTtlFor("empty") });
       return item;
     })
     .catch((err) => {
       deps.logger.debug({ key, err: describeError(err) }, "on-demand lookup failed");
-      negativeCache.set(key, true);
+      negativeCache.set(key, true, { ttl: negativeTtlFor("error") });
       return null;
     })
     .finally(() => {
@@ -217,11 +248,14 @@ function parseOrder(csv: string | null): ProviderId[] {
   return seen.size > 0 ? [...seen] : ["pcjones", "tvdb", "tmdb"];
 }
 
-function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | null> {
+/** Distinguishes "the budget ran out" from "the chain answered with nothing". */
+const TIMED_OUT = Symbol("on-demand-timeout");
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T | typeof TIMED_OUT> {
   return Promise.race([
     p,
-    new Promise<null>((resolve) => {
-      setTimeout(() => resolve(null), ms).unref?.();
+    new Promise<typeof TIMED_OUT>((resolve) => {
+      setTimeout(() => resolve(TIMED_OUT), ms).unref?.();
     }),
   ]);
 }

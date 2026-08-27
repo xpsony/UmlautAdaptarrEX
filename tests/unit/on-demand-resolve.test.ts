@@ -9,7 +9,13 @@ vi.mock("@/arr", () => ({ buildArrClient: mockBuild }));
 const { mockLookupTmdbId } = vi.hoisted(() => ({ mockLookupTmdbId: vi.fn() }));
 vi.mock("@/providers/imdb-lookup", () => ({ lookupTmdbIdByImdbId: mockLookupTmdbId }));
 
-import { clearOnDemandCaches, resolveOnDemand } from "@/server/on-demand/resolve";
+import {
+  clearOnDemandCaches,
+  ERROR_TTL_MS,
+  NEGATIVE_TTL_MS,
+  negativeTtlFor,
+  resolveOnDemand,
+} from "@/server/on-demand/resolve";
 
 const DERIVED = {
   arrId: 7,
@@ -279,5 +285,25 @@ describe("resolveOnDemand", () => {
     );
 
     expect(item).toBeNull();
+  });
+});
+
+describe("negativeTtlFor", () => {
+  it("gives a genuine miss the long window", () => {
+    expect(negativeTtlFor("empty")).toBe(NEGATIVE_TTL_MS);
+    expect(NEGATIVE_TTL_MS).toBe(30 * 60 * 1000);
+  });
+
+  it("gives an error the short window, so a restarting *Arr is retried soon", () => {
+    expect(negativeTtlFor("error")).toBe(ERROR_TTL_MS);
+    expect(ERROR_TTL_MS).toBe(60 * 1000);
+  });
+
+  it("treats an exhausted budget like an error, not like a miss", () => {
+    expect(negativeTtlFor("timeout")).toBe(ERROR_TTL_MS);
+  });
+
+  it("keeps the error window well below the miss window", () => {
+    expect(ERROR_TTL_MS).toBeLessThan(NEGATIVE_TTL_MS);
   });
 });
