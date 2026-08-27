@@ -72,6 +72,19 @@ export const SettingsSchema = z.object({
   // Full sync: re-queries every TitleProvider, so it also picks up German
   // titles that appeared upstream after the item was first synced.
   fullSyncIntervalHours: z.number().int().min(1).max(168).default(24),
+  // ── Suchverhalten ──────────────────────────────────────────────────────────
+  // Resolve a title that isn't in the index yet, in the moment its search
+  // arrives. The one case a shorter sync interval cannot cover.
+  onDemandLookup: z.boolean().default(true),
+  // Search with the German title variations too, per media type.
+  tvVariationSearch: z.boolean().default(true),
+  movieVariationSearch: z.boolean().default(true),
+  // Counts GERMAN VARIATIONS, not total requests: the literal query and the
+  // canonical title are appended on top, so the worst case is N+2 extra
+  // indexer requests. A cap of 0 is rejected - switching the fan-out off is
+  // what the two toggles above are for, and 0 would be a second, silent way
+  // to express the same thing.
+  maxTitleVariations: z.number().int().min(1).max(20).default(3),
   titleApiHost: z.string().url().default("https://umlautadaptarr.pcjones.de/api/v1"),
   tmdbApiKey: optionalSecret,
   // TVDB v4 API: key plus optional subscriber PIN. Some v4 endpoints

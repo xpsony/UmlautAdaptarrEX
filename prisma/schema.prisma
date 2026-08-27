@@ -93,6 +93,18 @@ model Setting {
   // Vollabgleich in Stunden: fragt zusaetzlich alle Titel-Provider neu ab und
   // findet so nachtraeglich ergaenzte deutsche Titel.
   fullSyncIntervalHours     Int       @default(24)
+  // Loest einen Titel, der noch nicht im Index liegt, im Moment der Anfrage
+  // auf. Empfohlener Modus - siehe CHANGELOG zur Jellyseerr-Begruendung.
+  onDemandLookup            Boolean   @default(true)
+  // Sucht zusaetzlich mit den deutschen Titelvarianten, pro Medientyp.
+  // tvVariationSearch = true ist das bisherige Verhalten; Filme bekamen aus
+  // Legacy-Gruenden nie einen Fan-out und werden per Migration auf false
+  // gepinnt, weil der Sprung sonst ungefragt Indexer-Last erzeugt.
+  tvVariationSearch         Boolean   @default(true)
+  movieVariationSearch      Boolean   @default(true)
+  // Obergrenze der deutschen Titelvarianten pro Suche. Das literale Suchwort
+  // und der Originaltitel kommen obendrauf, der Worst Case ist also N+2.
+  maxTitleVariations        Int       @default(3)
   // HMAC-Secret für CSRF-Tokens (base64). Wird beim ersten Boot via
   // `ensureCsrfSecret()` generiert und persistiert, damit Tokens
   // Container-Restarts überleben. ENV `CSRF_SECRET` überschreibt die DB.

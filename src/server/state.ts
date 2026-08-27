@@ -72,6 +72,13 @@ interface AppSettings {
   syncIntervalMinutes: number;
   /** Full-sync cadence in hours. */
   fullSyncIntervalHours: number;
+  /** Resolve unknown titles during the request that asks for them. */
+  onDemandLookup: boolean;
+  /** Search with German title variations, per media type. */
+  tvVariationSearch: boolean;
+  movieVariationSearch: boolean;
+  /** Cap on GERMAN variations per search; q and expectedTitle come on top. */
+  maxTitleVariations: number;
   operationMode: OperationMode;
   blockPrivateInstanceHosts: boolean;
   pausedUntil: Date | null;
@@ -104,6 +111,10 @@ const NO_SETTINGS: AppSettings = {
   indexerTimeoutSeconds: 60,
   syncIntervalMinutes: 10,
   fullSyncIntervalHours: 24,
+  onDemandLookup: true,
+  tvVariationSearch: true,
+  movieVariationSearch: true,
+  maxTitleVariations: 3,
   operationMode: "proxy",
   blockPrivateInstanceHosts: false,
   pausedUntil: null,
@@ -297,6 +308,10 @@ export class AppState {
       indexerTimeoutSeconds: row.indexerTimeoutSeconds,
       syncIntervalMinutes: row.syncIntervalMinutes,
       fullSyncIntervalHours: row.fullSyncIntervalHours,
+      onDemandLookup: row.onDemandLookup,
+      tvVariationSearch: row.tvVariationSearch,
+      movieVariationSearch: row.movieVariationSearch,
+      maxTitleVariations: row.maxTitleVariations,
       // Defensive parse: SQLite TEXT column without CHECK; an invalid value
       // falls back cleanly to the recommended default "proxy".
       operationMode: OperationModeSchema.catch("proxy").parse(row.operationMode),
