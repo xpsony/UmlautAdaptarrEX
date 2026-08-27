@@ -1,12 +1,37 @@
-import { removeExtraWhitespaces } from "../normalization/clean";
-import {
-  aggregatePlugins,
-  getActiveLanguagePack,
-  type LanguagePack,
-} from "../plugins";
+import { getCleanTitle, removeExtraWhitespaces } from "../normalization/clean";
+import { aggregatePlugins, getActiveLanguagePack, type LanguagePack } from "../plugins";
 import { generateVariations, type MediaType } from "./generate";
 
 const YEAR_AT_END_RE = /\((\d{4})\)$/;
+
+// ── Alias search fallback ────────────────────────────────────────────────────
+//
+// Aliases normally feed `titleMatchVariations` only: they let us *recognise*
+// a German release in the indexer response, but they are never *queried*.
+// That leaves a hole when no provider could resolve a German title while the
+// alias list does carry the German name — the release exists, the indexer is
+// only ever asked for the English title, and nothing is found. Reported for
+// German productions that Sonarr holds under their English TVDB translation.
+//
+// So when (and only when) there is no German title, a bounded slice of the
+// alias list is promoted to search variations. Bounded because the legacy
+// search issues ONE indexer request per search variation, hard-capped at 10
+// (see `MAX_VARIATIONS` in src/server/routes/legacy/search.ts) — an unbounded
+// promotion would both flood the indexer and push the high-value queries out
+// of that cap.
+const SEARCH_ALIAS_FALLBACK_LIMIT = 3;
+
+// A letter that is not Latin script. Radarr/TMDB alias lists routinely carry
+// the Japanese, Chinese, Korean, Cyrillic and Arabic titles of a work;
+// querying a German indexer for those is pure noise, so they are dropped
+// from the *search* fallback (they stay in the match variations).
+const NON_LATIN_LETTER_RE = /(?!\p{Script=Latin})\p{L}/u;
+
+function usableAsSearchAlias(alias: string): boolean {
+  const trimmed = alias.trim();
+  if (trimmed.length === 0) return false;
+  return !NON_LATIN_LETTER_RE.test(trimmed);
+}
 
 export interface TvMovieVariationInput {
   /**
@@ -57,11 +82,7 @@ export function generateForTvMovie(
     }
   }
 
-  let titleSearchVariations = generateVariations(
-    germanTitle,
-    input.mediaType,
-    pack,
-  );
+  let titleSearchVariations = generateVariations(germanTitle, input.mediaType, pack);
   const allMatch = [...titleSearchVariations];
 
   if (aliases) {
@@ -71,12 +92,31 @@ export function generateForTvMovie(
         allMatch.push(alias.replace(/:/g, " -"));
       }
     }
+
+    // No German title → promote a bounded, Latin-script slice of the aliases
+    // to search variations (see SEARCH_ALIAS_FALLBACK_LIMIT above). Aliases
+    // that clean down to the expectedTitle are skipped: the search route
+    // appends the expectedTitle itself, so they would burn a request slot on
+    // a duplicate query.
+    if (!germanTitle) {
+      const expectedClean = getCleanTitle(input.expectedTitle, pack).toLowerCase();
+      const seen = new Set<string>([expectedClean]);
+      let promoted = 0;
+      for (const alias of aliases) {
+        if (promoted >= SEARCH_ALIAS_FALLBACK_LIMIT) break;
+        if (!usableAsSearchAlias(alias)) continue;
+        const clean = getCleanTitle(alias, pack);
+        const key = clean.toLowerCase();
+        if (clean.length === 0 || seen.has(key)) continue;
+        seen.add(key);
+        titleSearchVariations.push(...generateVariations(alias, input.mediaType, pack));
+        promoted += 1;
+      }
+    }
   }
 
   if (germanTitle?.endsWith("(DE)")) {
-    const replaced = removeExtraWhitespaces(
-      germanTitle.replace(/\(DE\)/g, " GERMAN"),
-    );
+    const replaced = removeExtraWhitespaces(germanTitle.replace(/\(DE\)/g, " GERMAN"));
     titleSearchVariations = [
       ...titleSearchVariations,
       ...generateVariations(replaced, input.mediaType, pack),
@@ -110,11 +150,7 @@ export function generateForTvMovie(
       const langTitle = input.titlesByLang[plugin.language];
       if (!langTitle) continue;
       const miniPack = aggregatePlugins([plugin]);
-      const langVariations = generateVariations(
-        langTitle,
-        input.mediaType,
-        miniPack,
-      );
+      const langVariations = generateVariations(langTitle, input.mediaType, miniPack);
       titleSearchVariations.push(...langVariations);
       allMatch.push(...langVariations);
     }
