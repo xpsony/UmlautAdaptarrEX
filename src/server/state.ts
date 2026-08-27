@@ -10,11 +10,6 @@ import type { RewriteSearchItem } from "@/domain/xml/rewrite";
 import type { ProviderId } from "@/schemas/instance";
 import { OperationModeSchema, type OperationMode } from "@/schemas/settings";
 import {
-  normalizeForComparison,
-  normalizedCharContribution,
-} from "@/domain/normalization/comparison";
-import { getCleanTitle } from "@/domain/normalization/clean";
-import {
   aggregatePlugins,
   BUILTIN_PLUGINS,
   type LanguagePack,
@@ -32,6 +27,7 @@ import {
   type InstanceMatchOptions,
   type SearchItemRow,
 } from "./search-item";
+import { SearchItemIndex } from "./search-index";
 
 export type {
   CachedSearchItem,
@@ -39,31 +35,6 @@ export type {
   InstanceMatchOptions,
   SearchItemRow,
 } from "./search-item";
-
-const RELEASE_YEAR_RE = /(?<![A-Za-z0-9])(19|20)\d{2}(?![A-Za-z0-9])/g;
-
-function extractReleaseYears(title: string): number[] {
-  const out: number[] = [];
-  for (const m of title.matchAll(RELEASE_YEAR_RE)) out.push(Number(m[0]));
-  return out;
-}
-
-// Walks the original string and returns the index after enough characters
-// have been consumed to cover `targetCount` normalized chars. Mirrors the
-// walk used in src/domain/matching/rename.ts so findByTitle can apply the
-// same token-boundary check.
-function mapNormalizedLengthToOriginal(
-  original: string,
-  targetCount: number,
-  pack: LanguagePack,
-): number {
-  let matched = 0;
-  for (let i = 0; i < original.length; i++) {
-    matched += normalizedCharContribution(original[i]!, pack);
-    if (matched >= targetCount) return i + 1;
-  }
-  return original.length;
-}
 
 interface AppSettings {
   appApiKey: string;
@@ -140,10 +111,8 @@ const NO_SETTINGS: AppSettings = {
 //   - TitleProvider rebuilt on settings update
 export class AppState {
   readonly indexerCache: LRUCache<string, { body: Buffer; contentType: string; status: number }>;
-  // Keyed `${type}:${externalId}` WITHOUT instanceId: two instances sharing the
-  // same medium collapse onto one entry and the last indexed write wins.
-  private byExternalId = new Map<string, CachedSearchItem>(); // `${type}:${externalId}`
-  private byTitlePrefix = new Map<string, CachedSearchItem[]>(); // `${type}:${prefix5}`
+  /** Items written by the sync. Sole owner: the sync path. */
+  private readonly syncIndex = new SearchItemIndex();
   // Per-instance match options (year-matching toggle + tolerance). Loaded
   // alongside SearchItems so findByTitle / toRewriteSearchItem can apply
   // them without an extra DB hit per request.
@@ -435,49 +404,18 @@ export class AppState {
   }
 
   async loadSearchItemsFromDb(): Promise<void> {
-    this.byExternalId.clear();
-    this.byTitlePrefix.clear();
+    this.syncIndex.clear();
     await this.loadInstanceOptions();
     const rows = await prisma.searchItem.findMany({ select: SEARCH_ITEM_SELECT });
     this.indexRowsSkippingCorrupt(rows);
   }
 
-  // Invariant: indexing is not idempotent per object identity - calling this
-  // twice with equivalent input (without an intervening removeItemsForInstance
-  // / removeItemsForInstance-equivalent) duplicates bucket entries, since each
-  // call builds a fresh `indexed` object. Every current caller removes an
-  // instance's items before re-indexing (see reindexInstance,
-  // persistAndReindex in sync/run.ts) - keep that ordering for new callers.
   indexItem(item: CachedSearchItemInput): void {
-    // Normalize each match variation exactly once, reusing the result for
-    // both the byTitlePrefix bucket key and the stored array that
-    // bestVariationMatchLen reads at request time.
-    const normalizedMatchVariations = item.titleMatchVariations.map((variation) =>
-      normalizeForComparison(variation, this._languagePack),
-    );
-    const indexed: CachedSearchItem = { ...item, normalizedMatchVariations };
-    this.byExternalId.set(`${indexed.mediaType}:${indexed.externalId}`, indexed);
-    for (const norm of normalizedMatchVariations) {
-      const prefix = `${indexed.mediaType}:${norm.slice(0, 5)}`;
-      let bucket = this.byTitlePrefix.get(prefix);
-      if (!bucket) {
-        bucket = [];
-        this.byTitlePrefix.set(prefix, bucket);
-      }
-      if (!bucket.includes(indexed)) bucket.push(indexed);
-    }
+    this.syncIndex.indexItem(item, this._languagePack);
   }
 
   removeItemsForInstance(instanceId: string): void {
-    for (const [key, item] of this.byExternalId) {
-      if (item.arrInstanceId === instanceId) this.byExternalId.delete(key);
-    }
-    for (const [prefix, bucket] of this.byTitlePrefix) {
-      const filtered = bucket.filter((it) => it.arrInstanceId !== instanceId);
-      if (filtered.length !== bucket.length) {
-        this.byTitlePrefix.set(prefix, filtered);
-      }
-    }
+    this.syncIndex.removeItemsForInstance(instanceId);
   }
 
   // Drop and re-read one instance's items - used by the title-override
@@ -493,72 +431,17 @@ export class AppState {
   }
 
   getByExternalId(type: MediaType, externalId: string): CachedSearchItem | null {
-    return this.byExternalId.get(`${type}:${externalId}`) ?? null;
+    return this.syncIndex.getByExternalId(type, externalId);
   }
 
-  // Returns true when the item's release year is compatible with the years
-  // mentioned in the release title (or when the gate doesn't apply). The
-  // gate only kicks in when the candidate item has a known year AND the
-  // release names at least one year AND the instance has year-matching on.
-  private passesYearGate(item: CachedSearchItem, releaseYears: number[]): boolean {
-    if (item.year == null || releaseYears.length === 0) return true;
-    const opts = this.getInstanceOptions(item.arrInstanceId);
-    if (!opts.enableYearMatching) return true;
-    const itemYear = item.year;
-    const tol = opts.yearMatchingTolerance;
-    return releaseYears.some((y) => Math.abs(y - itemYear) <= tol);
-  }
-
-  // Length of the longest match contributed by this item's variations,
-  // strictly greater than `minLen`, or 0 when none qualifies. Mirrors the
-  // boundary check in renameForMoviesAndTv so e.g. "Mike Renko 2" doesn't
-  // spuriously prefix-match "Mike Renko 2016".
-  private bestVariationMatchLen(
-    item: CachedSearchItem,
-    cleanTitle: string,
-    norm: string,
-    pack: LanguagePack,
-    minLen: number,
-  ): number {
-    let bestLen = 0;
-    for (const variationNorm of item.normalizedMatchVariations) {
-      if (variationNorm.length === 0) continue;
-      if (variationNorm.length <= minLen) continue;
-      if (variationNorm.length <= bestLen) continue;
-      if (!norm.startsWith(variationNorm)) continue;
-      const endIdx = mapNormalizedLengthToOriginal(cleanTitle, variationNorm.length, pack);
-      const nextChar = cleanTitle[endIdx];
-      if (nextChar !== undefined && /[A-Za-z0-9]/.test(nextChar)) continue;
-      bestLen = variationNorm.length;
-    }
-    return bestLen;
+  getByImdbId(imdbId: string): CachedSearchItem | null {
+    return this.syncIndex.getByImdbId(imdbId);
   }
 
   findByTitle(type: MediaType, releaseTitle: string): CachedSearchItem | null {
-    const pack = this._languagePack;
-    const cleanTitle = getCleanTitle(releaseTitle, pack);
-    const norm = normalizeForComparison(cleanTitle, pack);
-    const prefix = `${type}:${norm.slice(0, 5)}`;
-    const bucket = this.byTitlePrefix.get(prefix);
-    if (!bucket) return null;
-
-    // Year tokens in the original (un-normalized) release title.
-    // Disambiguates franchise overlap (e.g. a Formula-1 race recording
-    // many years off vs. the 2025 "F1 - Der Film"); operators can disable
-    // year-matching per instance if their library years are unreliable.
-    const releaseYears = extractReleaseYears(releaseTitle);
-
-    let best: CachedSearchItem | null = null;
-    let bestLen = 0;
-    for (const item of bucket) {
-      if (!this.passesYearGate(item, releaseYears)) continue;
-      const matchLen = this.bestVariationMatchLen(item, cleanTitle, norm, pack, bestLen);
-      if (matchLen > bestLen) {
-        bestLen = matchLen;
-        best = item;
-      }
-    }
-    return best;
+    return this.syncIndex.findByTitle(type, releaseTitle, this._languagePack, (id) =>
+      this.getInstanceOptions(id),
+    );
   }
 
   toRewriteSearchItem(item: CachedSearchItem): RewriteSearchItem {
