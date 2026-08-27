@@ -171,7 +171,13 @@ async function markRunSucceeded(
     }
     await prisma.arrInstance.update({
       where: { id: instance.id },
-      data: { lastSyncAt: new Date(), lastSyncError: null },
+      data: {
+        lastSyncAt: new Date(),
+        lastSyncError: null,
+        // Only a full pass proves every provider was re-queried, so only it
+        // may reset the full-sync clock.
+        ...(prepared.mode === "full" ? { lastFullSyncAt: new Date() } : {}),
+      },
     });
   } catch (err) {
     logger.error(
@@ -564,7 +570,7 @@ async function deltaAndPersist(
   }
 
   const run = await prisma.syncRun.create({
-    data: { arrInstanceId: instance.id, status: "running" },
+    data: { arrInstanceId: instance.id, status: "running", kind: "delta" },
   });
   const withRun: PreparedRun = { ...prepared, runId: run.id };
 

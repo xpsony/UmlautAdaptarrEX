@@ -12,6 +12,7 @@ vi.mock("@/lib/db", () => ({
 const { mockState } = vi.hoisted(() => ({
   mockState: {
     provider: { name: "stub" } as object | null,
+    settings: { syncIntervalMinutes: 10, fullSyncIntervalHours: 24 },
   },
 }));
 
@@ -27,7 +28,7 @@ vi.mock("@/server/sync/run", () => ({
   runSync: mockRunSync,
 }));
 
-import { SyncScheduler } from "@/server/sync/scheduler";
+import { decideMode, nextTickMs, SyncScheduler } from "@/server/sync/scheduler";
 
 interface MockLogger {
   info: ReturnType<typeof vi.fn>;
@@ -164,5 +165,78 @@ describe("SyncScheduler lifecycle", () => {
     const sched = new SyncScheduler({ logger: makeLogger() as never });
     sched.start();
     expect(() => sched.stop()).not.toThrow();
+  });
+});
+
+describe("decideMode", () => {
+  const settings = { fullSyncIntervalHours: 24, syncIntervalMinutes: 10 };
+  const now = new Date("2026-08-27T12:00:00Z");
+
+  it("runs a full sync for an instance that has never had one", () => {
+    expect(decideMode({ lastFullSyncAt: null }, settings, now)).toBe("full");
+  });
+
+  it("runs a delta sync while the full interval has not elapsed", () => {
+    expect(decideMode({ lastFullSyncAt: new Date("2026-08-27T06:00:00Z") }, settings, now)).toBe(
+      "delta",
+    );
+  });
+
+  it("runs a full sync once the full interval has elapsed", () => {
+    expect(decideMode({ lastFullSyncAt: new Date("2026-08-26T06:00:00Z") }, settings, now)).toBe(
+      "full",
+    );
+  });
+
+  it("runs a full sync exactly on the boundary", () => {
+    expect(decideMode({ lastFullSyncAt: new Date("2026-08-26T12:00:00Z") }, settings, now)).toBe(
+      "full",
+    );
+  });
+
+  it("never runs a delta sync when the quick sync is disabled", () => {
+    expect(
+      decideMode(
+        { lastFullSyncAt: new Date("2026-08-27T06:00:00Z") },
+        { fullSyncIntervalHours: 24, syncIntervalMinutes: 0 },
+        now,
+      ),
+    ).toBe("full");
+  });
+});
+
+describe("nextTickMs", () => {
+  it("ticks at the quick-sync interval when it is on", () => {
+    expect(nextTickMs({ syncIntervalMinutes: 10, fullSyncIntervalHours: 24 })).toBe(600_000);
+  });
+
+  it("falls back to the full-sync interval when the quick sync is off", () => {
+    expect(nextTickMs({ syncIntervalMinutes: 0, fullSyncIntervalHours: 12 })).toBe(43_200_000);
+  });
+});
+
+describe("SyncScheduler.runNow mode", () => {
+  it("always requests a full sync, whatever the intervals say", async () => {
+    mockArr.findMany.mockResolvedValue([
+      {
+        id: "i1",
+        type: "sonarr",
+        name: "S",
+        host: "h",
+        apiKey: "k",
+        enabled: true,
+        providerOrder: "pcjones",
+        lastFullSyncAt: new Date(),
+      },
+    ]);
+    mockSyncRun.create.mockResolvedValue({ id: "run-1" });
+    mockRunSync.mockResolvedValue({ totalItems: 0, perInstance: [] });
+
+    const scheduler = new SyncScheduler({ logger: makeLogger() as never });
+    await scheduler.runNow();
+    await vi.waitFor(() => expect(mockRunSync).toHaveBeenCalled());
+
+    const call = mockRunSync.mock.calls[0]?.[0] as { preparedRuns: { mode: string }[] };
+    expect(call.preparedRuns[0]?.mode).toBe("full");
   });
 });
