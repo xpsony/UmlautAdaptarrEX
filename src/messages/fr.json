@@ -152,7 +152,9 @@
     },
     "patchStepTitle": "Patcher les indexeurs",
     "patchStepSkip": "Ignorer",
-    "patchIndexersDone": "Indexeurs patchés."
+    "patchIndexersDone": "Indexeurs patchés.",
+    "searchStepTitle": "Comportement de recherche",
+    "searchStepHint": "Ces options déterminent la façon dont UmlautAdaptarrEX recherche. Chacune indique son exemple et son coût."
   },
   "login": {
     "title": "Se connecter",
@@ -392,7 +394,9 @@
       "renaming": "Renommage",
       "advanced": "Avancé",
       "providersHint": "Services externes utilisés pour rechercher les titres allemands.",
-      "advancedHint": "Conservez les valeurs par défaut sauf si vous savez ce que vous faites."
+      "advancedHint": "Conservez les valeurs par défaut sauf si vous savez ce que vous faites.",
+      "search": "Recherche",
+      "searchHint": "Comment la recherche fonctionne et à quelle fréquence les titres sont synchronisés."
     },
     "plugins": {
       "title": "Plugins intégrés",
@@ -625,6 +629,44 @@
         "description": "Coupe à la longueur brute de la variante trouvée au lieu de compter les caractères normalisés - et désactive du même coup le contrôle des limites de token.",
         "hint": "À n'activer que si vous avez besoin du comportement exact de l'ancienne version. Lorsqu'une variante se termine par un chiffre, la coupe peut tomber au milieu de l'année de la release et la mutiler (voir l'exemple). Sans cet interrupteur, UmlautAdaptarrEX refuse plutôt ces correspondances."
       }
+    }
+  },
+  "searchBehaviour": {
+    "onDemand": {
+      "label": "Rechercher un titre à la demande",
+      "hint": "Recommandé. Interroge votre *Arr et les fournisseurs de titres au sujet d'un titre inconnu au moment même où sa recherche arrive.",
+      "description": "Sans cette option, UmlautAdaptarrEX ne connaît que les titres récupérés lors de la dernière synchronisation.",
+      "example": "Exemple : vous faites une demande dans Jellyseerr. Radarr crée le film et lance la recherche dans la même seconde. Sans cette option, le film est encore inconnu et la release allemande passe inaperçue.",
+      "cost": "Coûte un appel à votre *Arr par titre inconnu, et éventuellement un à TMDB, TVDB ou pcjones. L'appel est effectué en parallèle de la requête vers l'indexeur et n'allonge normalement pas la recherche."
+    },
+    "variations": {
+      "label": "Rechercher aussi les variantes de titre allemandes",
+      "hint": "Recherche les orthographes allemandes en plus du titre original.",
+      "description": "Nécessaire lorsqu'un indexeur ne référence une release que sous son nom allemand.",
+      "tvVariationSearch": "Séries",
+      "movieVariationSearch": "Films",
+      "capLabel": "Nombre maximal de variantes",
+      "capHint": "Compte les variantes allemandes. Votre terme de recherche et le titre original sont recherchés en plus et ne sont jamais écartés.",
+      "exampleQuery": "Sonarr recherche",
+      "exampleExtra": "Ces requêtes sont également envoyées :",
+      "cost": "Génère jusqu'à {max} requêtes supplémentaires par recherche. À utiliser avec prudence si les limites de vos indexeurs sont serrées."
+    },
+    "refresh": {
+      "label": "Actualisation",
+      "description": "À quelle fréquence les titres de votre *Arr sont synchronisés.",
+      "presetsLabel": "Préréglages :",
+      "preset": {
+        "recommended": "Recommandé",
+        "frugal": "Économe",
+        "legacy": "Comme en 1.x"
+      },
+      "quickLabel": "Synchronisation rapide (minutes)",
+      "quickHint": "0 désactive la synchronisation rapide. Sinon, au moins 5 minutes.",
+      "quickDescription": "Récupère la liste des titres et ne traite que les ajouts, les suppressions et les titres renommés dans l'*Arr. N'écrit rien si rien n'a changé.",
+      "fullLabel": "Synchronisation complète (heures)",
+      "fullHint": "Entre 1 et 168 heures.",
+      "fullDescription": "Interroge en plus tous les fournisseurs de titres et récupère ainsi les titres allemands ajoutés après coup.",
+      "firstScanHint": "La toute première exécution est toujours une synchronisation complète. La synchronisation rapide ne prend le relais qu'ensuite."
     }
   },
   "history": {

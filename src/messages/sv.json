@@ -152,7 +152,9 @@
     },
     "patchStepTitle": "Patcha indexerare",
     "patchStepSkip": "Hoppa över",
-    "patchIndexersDone": "Indexerare patchade."
+    "patchIndexersDone": "Indexerare patchade.",
+    "searchStepTitle": "Sökbeteende",
+    "searchStepHint": "Dessa alternativ styr hur UmlautAdaptarrEX söker. Varje alternativ anger sitt exempel och sin kostnad."
   },
   "login": {
     "title": "Logga in",
@@ -392,7 +394,9 @@
       "renaming": "Omdöpning",
       "advanced": "Avancerat",
       "providersHint": "Externa tjänster som används för att slå upp tyska titlar.",
-      "advancedHint": "Använd standardvärden om du inte vet vad du gör."
+      "advancedHint": "Använd standardvärden om du inte vet vad du gör.",
+      "search": "Sökning",
+      "searchHint": "Hur sökningen fungerar och hur ofta titlarna stäms av."
     },
     "plugins": {
       "title": "Inbyggda plugins",
@@ -625,6 +629,44 @@
         "description": "Klipper vid den hittade variantens råa längd istället för att räkna normaliserade tecken - och stänger av tokengränskontrollen på samma gång.",
         "hint": "Aktivera bara om du behöver exakt det gamla beteendet. Om en variant slutar på en siffra kan snittet hamna mitt i releasens årtal och förvanska det (se exemplet). Utan den här reglaget avvisar UmlautAdaptarrEX sådana träffar istället."
       }
+    }
+  },
+  "searchBehaviour": {
+    "onDemand": {
+      "label": "Slå upp titlar vid behov",
+      "hint": "Rekommenderas. Frågar din *Arr och titel-leverantörerna om en okänd titel i samma stund som sökningen kommer in.",
+      "description": "Utan detta känner UmlautAdaptarrEX bara till de titlar som den senaste avstämningen hämtade.",
+      "example": "Exempel: du gör en förfrågan i Jellyseerr. Radarr lägger upp filmen och söker i samma sekund. Utan detta alternativ är filmen ännu okänd och den tyska releasen förbises.",
+      "cost": "Kostar ett anrop till din *Arr per okänd titel, och eventuellt ett till TMDB, TVDB eller pcjones. Det körs parallellt med indexerar-förfrågan och förlänger normalt inte sökningen."
+    },
+    "variations": {
+      "label": "Sök även med tyska titelvarianter",
+      "hint": "Söker med de tyska stavningarna utöver originaltiteln.",
+      "description": "Behövs när en indexerare bara listar en release under dess tyska namn.",
+      "tvVariationSearch": "Serier",
+      "movieVariationSearch": "Filmer",
+      "capLabel": "Högst antal varianter",
+      "capHint": "Räknar de tyska varianterna. Ditt sökord och originaltiteln söks utöver dessa och tas aldrig bort.",
+      "exampleQuery": "Sonarr söker efter",
+      "exampleExtra": "Dessa söks också:",
+      "cost": "Ger upp till {max} extra indexerar-förfrågningar per sökning. Använd med försiktighet om dina indexerar-gränser är snäva."
+    },
+    "refresh": {
+      "label": "Uppdatering",
+      "description": "Hur ofta titlarna i din *Arr stäms av.",
+      "presetsLabel": "Förval:",
+      "preset": {
+        "recommended": "Rekommenderat",
+        "frugal": "Sparsamt",
+        "legacy": "Som 1.x"
+      },
+      "quickLabel": "Snabb avstämning (minuter)",
+      "quickHint": "0 stänger av den snabba avstämningen. Annars minst 5 minuter.",
+      "quickDescription": "Hämtar titellistan och behandlar bara nytt, borttaget och sådant som döpts om i *Arr. Skriver ingenting när inget har ändrats.",
+      "fullLabel": "Full avstämning (timmar)",
+      "fullHint": "Mellan 1 och 168 timmar.",
+      "fullDescription": "Frågar dessutom alla titel-leverantörer på nytt och hittar så tyska titlar som lagts till i efterhand.",
+      "firstScanHint": "Den allra första körningen är alltid en full avstämning. Först därefter tar den snabba avstämningen över."
     }
   },
   "history": {

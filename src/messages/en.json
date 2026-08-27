@@ -152,7 +152,9 @@
     },
     "patchStepTitle": "Patch indexers",
     "patchStepSkip": "Skip",
-    "patchIndexersDone": "Indexers patched."
+    "patchIndexersDone": "Indexers patched.",
+    "searchStepTitle": "Search behaviour",
+    "searchStepHint": "These options decide how UmlautAdaptarrEX searches. Each one states its example and its cost."
   },
   "login": {
     "title": "Sign in",
@@ -392,7 +394,9 @@
       "renaming": "Renaming",
       "advanced": "Advanced",
       "providersHint": "External services used to look up German titles.",
-      "advancedHint": "Use the defaults unless you know what you're doing."
+      "advancedHint": "Use the defaults unless you know what you're doing.",
+      "search": "Search",
+      "searchHint": "How searching works and how often titles are reconciled."
     },
     "plugins": {
       "title": "Built-in plugins",
@@ -625,6 +629,44 @@
         "description": "Cuts at the matched variation's raw length instead of counting normalized characters - and turns the token-boundary check off with it.",
         "hint": "Only enable this if you need the exact old behaviour. When a variation ends on a digit the cut can land inside the release's year and mangle it (see the example). Without this switch UmlautAdaptarrEX declines such matches instead."
       }
+    }
+  },
+  "searchBehaviour": {
+    "onDemand": {
+      "label": "Look a title up on demand",
+      "hint": "Recommended. Asks your *Arr and the title providers about an unknown title in the moment its search arrives.",
+      "description": "Without this, UmlautAdaptarrEX only knows the titles the last refresh fetched.",
+      "example": "Example: you make a request in Jellyseerr. Radarr creates the movie and searches in the same second. Without this option the movie is still unknown and the German release is overlooked.",
+      "cost": "Costs one call to your *Arr per unknown title, plus possibly one to TMDB, TVDB or pcjones. It runs in parallel with the indexer request and normally adds no waiting time."
+    },
+    "variations": {
+      "label": "Search German title variations too",
+      "hint": "Searches the German spellings in addition to the original title.",
+      "description": "Needed when an indexer only lists a release under its German name.",
+      "tvVariationSearch": "Series",
+      "movieVariationSearch": "Films",
+      "capLabel": "At most variations",
+      "capHint": "Counts the German variations. Your search term and the original title are searched on top and are never dropped.",
+      "exampleQuery": "Sonarr searches for",
+      "exampleExtra": "These are searched as well:",
+      "cost": "Results in up to {max} extra indexer requests per search. Use with care if your indexer limits are tight."
+    },
+    "refresh": {
+      "label": "Refresh",
+      "description": "How often the titles in your *Arr are reconciled.",
+      "presetsLabel": "Presets:",
+      "preset": {
+        "recommended": "Recommended",
+        "frugal": "Frugal",
+        "legacy": "Like 1.x"
+      },
+      "quickLabel": "Quick sync (minutes)",
+      "quickHint": "0 turns the quick sync off. Otherwise at least 5 minutes.",
+      "quickDescription": "Fetches the title listing and processes only additions, removals and titles renamed in the *Arr. Writes nothing when nothing changed.",
+      "fullLabel": "Full sync (hours)",
+      "fullHint": "Between 1 and 168 hours.",
+      "fullDescription": "Also re-queries every title provider, so it picks up German titles added upstream later.",
+      "firstScanHint": "The very first run is always a full reconcile. Only after that does the quick sync take over."
     }
   },
   "history": {

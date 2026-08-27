@@ -152,7 +152,9 @@
     },
     "patchStepTitle": "Indexer patchen",
     "patchStepSkip": "Überspringen",
-    "patchIndexersDone": "Indexer wurden gepatcht."
+    "patchIndexersDone": "Indexer wurden gepatcht.",
+    "searchStepTitle": "Suchverhalten",
+    "searchStepHint": "Diese Optionen bestimmen, wie UmlautAdaptarrEX sucht. Jede nennt ihr Beispiel und ihre Kosten."
   },
   "login": {
     "title": "Anmelden",
@@ -392,7 +394,9 @@
       "renaming": "Renaming",
       "advanced": "Erweitert",
       "providersHint": "Externe Dienste zur Suche deutscher Titel.",
-      "advancedHint": "Behalte die Standardwerte, sofern du nicht weißt, was du tust."
+      "advancedHint": "Behalte die Standardwerte, sofern du nicht weißt, was du tust.",
+      "search": "Suche",
+      "searchHint": "Wie gesucht wird und wie oft die Titel abgeglichen werden."
     },
     "plugins": {
       "title": "Eingebaute Plugins",
@@ -625,6 +629,44 @@
         "description": "Schneidet nach Rohlänge der gefundenen Variante statt nach normalisierten Zeichen - und schaltet die Token-Grenzen-Prüfung mit ab.",
         "hint": "Nur einschalten, wenn du exakt das alte Verhalten brauchst. Endet eine Variante auf einer Ziffer, kann der Schnitt mitten in die Jahreszahl des Releases fallen und sie verstümmeln (siehe Beispiel). Ohne diesen Schalter lehnt UmlautAdaptarrEX solche Treffer stattdessen ab."
       }
+    }
+  },
+  "searchBehaviour": {
+    "onDemand": {
+      "label": "Titel bei Bedarf sofort nachschlagen",
+      "hint": "Empfohlen. Fragt einen unbekannten Titel im Moment der Anfrage bei deiner *Arr und den Titel-Providern nach.",
+      "description": "Ohne diese Option kennt UmlautAdaptarrEX nur Titel, die der letzte Abgleich geholt hat.",
+      "example": "Beispiel: Du stellst in Jellyseerr eine Anfrage. Radarr legt den Film an und sucht in derselben Sekunde. Ohne diese Option ist der Film noch unbekannt und das deutsche Release wird übersehen.",
+      "cost": "Kostet pro unbekanntem Titel einen Aufruf an deine *Arr und gegebenenfalls einen an TMDB, TVDB oder pcjones. Läuft parallel zur Indexer-Anfrage und verlängert die Suche im Normalfall nicht."
+    },
+    "variations": {
+      "label": "Mit deutschen Titelvarianten mitsuchen",
+      "hint": "Sucht zusätzlich zum Originaltitel mit den deutschen Schreibweisen.",
+      "description": "Nötig, wenn ein Indexer ein Release nur unter seinem deutschen Namen führt.",
+      "tvVariationSearch": "Serien",
+      "movieVariationSearch": "Filme",
+      "capLabel": "Höchstens Varianten",
+      "capHint": "Zählt die deutschen Varianten. Dein Suchwort und der Originaltitel kommen obendrauf und werden nie weggelassen.",
+      "exampleQuery": "Sonarr sucht nach",
+      "exampleExtra": "Zusätzlich wird gesucht nach:",
+      "cost": "Ergibt bis zu {max} zusätzliche Indexer-Anfragen pro Suche. Bei knappen Indexer-Limits vorsichtig einsetzen."
+    },
+    "refresh": {
+      "label": "Aktualisierung",
+      "description": "Wie oft die Titel deiner *Arr abgeglichen werden.",
+      "presetsLabel": "Vorgaben:",
+      "preset": {
+        "recommended": "Empfohlen",
+        "frugal": "Sparsam",
+        "legacy": "Wie 1.x"
+      },
+      "quickLabel": "Schnellabgleich (Minuten)",
+      "quickHint": "0 schaltet den Schnellabgleich ab. Sonst mindestens 5 Minuten.",
+      "quickDescription": "Holt die Titelliste und verarbeitet nur Neues, Entferntes und in der *Arr Umbenanntes. Schreibt nichts, wenn sich nichts geändert hat.",
+      "fullLabel": "Vollabgleich (Stunden)",
+      "fullHint": "Zwischen 1 und 168 Stunden.",
+      "fullDescription": "Fragt zusätzlich alle Titel-Provider neu ab und findet so nachträglich ergänzte deutsche Titel.",
+      "firstScanHint": "Beim ersten Mal läuft immer ein vollständiger Abgleich. Erst danach übernimmt der Schnellabgleich."
     }
   },
   "history": {
