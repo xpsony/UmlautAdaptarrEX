@@ -78,6 +78,7 @@
     },
     "pluginsTitle": "Välj plugins",
     "pluginsHint": "Välj de språk-plugins som används för att skapa sökvarianter och skriva om indexer-svar. Du kan ändra detta senare i Inställningar.",
+    "pluginsCostHint": "Välj bara språk som du faktiskt konsumerar — varje extra plugin ger fler sökvarianter och därmed fler indexerarförfrågningar per sökning (tak på 10), plus ytterligare en TheTVDB-förfrågan per titel och språk vid varje synk.",
     "pluginsDefaultBadge": "Standard",
     "pluginsEmpty": "Inga plugins tillgängliga.",
     "pluginsLoadFailed": "Kunde inte läsa in plugins: {error}",
@@ -395,6 +396,7 @@
     "plugins": {
       "title": "Inbyggda plugins",
       "hint": "Varje plugin bidrar med språkspecifika omvandlingar (t.ex. ä → ae) som används för att skapa sökvarianter och skriva om indexer-svar.",
+      "costHint": "Aktivera bara ett språkplugin om du faktiskt konsumerar det språket. Varje extra plugin kostar anrop: varje sökning skickar ytterligare en indexerarförfrågan per språkvariant (hårt tak på 10 — överflödiga varianter faller bort, i värsta fall även tyska), och vid varje synk behöver TheTVDB en förfrågan till per titel och språk (TMDB returnerar alla språk i ett enda anrop och skalar därför inte med antalet plugins).",
       "defaultEnabledBadge": "På som standard",
       "resyncBanner": "Plugin-ändringar börjar gälla först efter en synk, dina biblioteksvarianter genererades med tidigare konfiguration.",
       "resyncNow": "Synkronisera nu",

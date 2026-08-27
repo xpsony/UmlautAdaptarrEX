@@ -78,6 +78,7 @@
     },
     "pluginsTitle": "Select plugins",
     "pluginsHint": "Choose the language plugins used to generate search variations and rewrite indexer responses. You can change this later in Settings.",
+    "pluginsCostHint": "Only pick languages you actually consume — every extra plugin generates extra search variations, and therefore extra indexer requests per search (capped at 10), plus one more TheTVDB request per title per language on every sync.",
     "pluginsDefaultBadge": "Default",
     "pluginsEmpty": "No plugins available.",
     "pluginsLoadFailed": "Failed to load plugins: {error}",
@@ -395,6 +396,7 @@
     "plugins": {
       "title": "Built-in plugins",
       "hint": "Each plugin contributes a set of language-specific transformations (e.g. ä → ae) used to generate search variations and rewrite indexer responses.",
+      "costHint": "Only enable a language plugin if you actually consume content in that language. Every extra plugin costs lookups: each search sends one additional indexer request per language variation (hard-capped at 10 — surplus variations are dropped, possibly including German ones), and on every sync TheTVDB needs one more request per title per language (TMDB returns all languages in a single call and therefore does not scale with the plugin count).",
       "defaultEnabledBadge": "Default on",
       "resyncBanner": "Plugin changes only take effect after a sync, your library variations were generated with the previous configuration.",
       "resyncNow": "Sync now",

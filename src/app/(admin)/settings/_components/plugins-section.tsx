@@ -4,7 +4,7 @@ import { useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Plug, RefreshCw } from "lucide-react";
+import { Info, Loader2, Plug, RefreshCw } from "lucide-react";
 import { ApiError, apiFetch } from "@/app/_lib/api-client";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -113,6 +113,13 @@ export function PluginsSection() {
             </Button>
           </Alert>
         ) : null}
+
+        {/* Standing advisory about the per-plugin query cost. Always shown so
+            it is visible before a plugin is switched on, not only afterwards. */}
+        <Alert role="status">
+          <Info className="h-4 w-4" />
+          <AlertDescription>{t("costHint")}</AlertDescription>
+        </Alert>
 
         {showTmdbWarning ? (
           // Standing condition (missing TMDB key), not a transient event —

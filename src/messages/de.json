@@ -78,6 +78,7 @@
     },
     "pluginsTitle": "Plugins auswählen",
     "pluginsHint": "Wähle die Sprach-Plugins, die für Suchvarianten und das Umschreiben der Indexer-Antworten verwendet werden. Du kannst diese Auswahl später in den Einstellungen ändern.",
+    "pluginsCostHint": "Wähle nur Sprachen, die du tatsächlich konsumierst — jedes zusätzliche Plugin erzeugt zusätzliche Suchvarianten und damit zusätzliche Indexer-Anfragen pro Suche (Obergrenze 10) sowie eine weitere TheTVDB-Anfrage pro Titel und Sprache bei jedem Sync.",
     "pluginsDefaultBadge": "Standard",
     "pluginsEmpty": "Keine Plugins verfügbar.",
     "pluginsLoadFailed": "Plugins konnten nicht geladen werden: {error}",
@@ -395,6 +396,7 @@
     "plugins": {
       "title": "Eingebaute Plugins",
       "hint": "Jedes Plugin liefert sprachspezifische Transformationen (z.B. ä → ae), die in Suchvarianten und beim Umschreiben der Indexer-Antworten verwendet werden.",
+      "costHint": "Aktiviere ein Sprach-Plugin nur, wenn du Inhalte in dieser Sprache tatsächlich konsumierst. Jedes zusätzliche Plugin kostet Abfragen: pro Suche geht eine zusätzliche Anfrage je Sprachvariante an die Indexer (hart begrenzt auf 10 — überzählige Varianten fallen weg, im Zweifel auch deutsche), und beim Sync stellt TheTVDB pro Titel eine weitere Anfrage je Sprache (TMDB liefert alle Sprachen in einem Aufruf und skaliert daher nicht mit).",
       "defaultEnabledBadge": "Standardmäßig an",
       "resyncBanner": "Plugin-Änderungen wirken erst nach dem nächsten Sync, die gespeicherten Varianten wurden mit der vorigen Konfiguration berechnet.",
       "resyncNow": "Jetzt synchronisieren",

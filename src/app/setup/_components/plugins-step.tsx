@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowLeft, ArrowRight, ChevronDown, Loader2, Plug } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, Info, Loader2, Plug } from "lucide-react";
 import type { PluginListEntry } from "@/schemas/plugins";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,12 @@ export function PluginsStep({
           <CardDescription>{t("pluginsHint")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
+          {/* Per-plugin query cost — shown before the checkboxes so the
+              trade-off is visible while choosing, not after. */}
+          <Alert role="status">
+            <Info className="h-4 w-4" />
+            <AlertDescription>{t("pluginsCostHint")}</AlertDescription>
+          </Alert>
           {!tmdbConfigured ? (
             // Standing condition (missing TMDB key), not a transient event —
             // role="status" instead of the warning variant's default "alert".
