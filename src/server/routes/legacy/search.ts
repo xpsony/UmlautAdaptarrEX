@@ -43,13 +43,6 @@ const READARR_CATEGORY_IDS = new Set([
 ]);
 const LIDARR_CATEGORY_IDS = new Set(["3000", "3010", "3020", "3040", "3050"]);
 
-// Fan-out guard (S7.5): the .NET predecessor issued one indexer fetch per
-// title variation with no upper bound, which could make Sonarr/Radarr time
-// out entirely against a slow indexer. Capping at 10 and bailing out once the
-// variation phase has burned most of the configured indexer timeout keeps the
-// response bounded while still returning whatever was collected so far.
-const MAX_VARIATIONS = 10;
-
 // Reproduces SearchController's per-action upfront lookup. Returning null
 // means "no upfront searchItem" - rewrites still happen via per-item title
 // lookup against the cache (matches old `useCacheService = searchItem == null`
@@ -85,6 +78,40 @@ function determineSearchItem(
     case "book":
       // Old MovieSearch/MusicSearch/BookSearch pass searchItem=null to
       // BaseSearch. Per-item rewrites still happen via the cache lookup.
+      return null;
+  }
+}
+
+/**
+ * The item that drives the OUTBOUND variation search. Deliberately separate
+ * from `determineSearchItem`, which drives the response rewrite.
+ *
+ * Why the split: `rewriteIndexerXml` ignores its `lookup` callback as soon as
+ * `searchItem` is set, so giving the movie route an upfront item would stop
+ * releases of *other* movies in the same response from being rewritten. The
+ * fan-out has no such constraint, so movies can have a fan-out item while the
+ * rewrite keeps the per-item lookup path.
+ */
+function resolveFanoutItem(
+  spec: RouteSpec,
+  params: URLSearchParams,
+  state: AppState,
+  rewriteItem: CachedSearchItem | null,
+): CachedSearchItem | null {
+  switch (spec.type) {
+    case "tvsearch":
+    case "search":
+      // The rewrite item already IS the fan-out item for these two. Reusing
+      // it rather than re-deriving keeps the request to one index lookup.
+      return rewriteItem;
+    case "movie": {
+      const tmdbid = params.get("tmdbid");
+      if (tmdbid) return state.getByExternalId("movie", tmdbid);
+      const imdbId = canonicalImdbId(params.get("imdbid"));
+      return imdbId ? state.getByImdbId(imdbId) : null;
+    }
+    case "music":
+    case "book":
       return null;
   }
 }
@@ -148,38 +175,38 @@ function matchedSearchItemId(item: CachedSearchItem | null): string | null {
   return item.id;
 }
 
-// Mirrors SearchControllerBase.BaseSearch's variation list builder:
-// titleSearchVariations + (toggle q) + (add expectedTitle if missing).
-// `tailCount` reports how many of the trailing entries were APPENDED here
-// (the user's literal `q` and/or the canonical `expectedTitle`) as opposed to
-// generated titleSearchVariations - the cap in handleSearch needs this to
-// avoid trimming away exactly these two highest-value searches.
+/**
+ * Mirrors SearchControllerBase.BaseSearch's variation list builder, split in
+ * two so the cap can apply to the generated German variations alone.
+ *
+ * `tail` is the highest-value part of the list - the user's literal `q` and
+ * the canonical `expectedTitle` - and is never subject to the cap. That is
+ * why a cap of 3 means "three German variations", not "three requests".
+ */
 function buildVariationList(
   searchItem: CachedSearchItem,
   searchQuery: string,
-): { variations: string[]; tailCount: number } {
-  const variations: string[] = [...searchItem.titleSearchVariations];
-  let tailCount = 0;
+): { generated: string[]; tail: string[] } {
+  const generated: string[] = [...searchItem.titleSearchVariations];
+  const tail: string[] = [];
   if (searchQuery) {
     // Old behavior: if the query is already in the alias list, drop it (the
     // alias query covers it); otherwise append the user's literal query so it
     // is still searched alongside the German variations.
-    const idx = variations.indexOf(searchQuery);
+    const idx = generated.indexOf(searchQuery);
     if (idx >= 0) {
-      variations.splice(idx, 1);
+      generated.splice(idx, 1);
     } else {
-      variations.push(searchQuery);
-      tailCount++;
+      tail.push(searchQuery);
     }
   }
   // TODO_FORCE_TEXT_SEARCH_ORIGINAL_TITLE was hard-coded `true` in the legacy
   // code, so always include the canonical expected title.
   const expected = searchItem.expectedTitle;
-  if (expected && expected !== searchQuery && !variations.includes(expected)) {
-    variations.push(expected);
-    tailCount++;
+  if (expected && expected !== searchQuery && !generated.includes(expected)) {
+    tail.push(expected);
   }
-  return { variations, tailCount };
+  return { generated, tail };
 }
 
 export async function handleSearch(
@@ -198,6 +225,7 @@ export async function handleSearch(
 
   const state = getAppState();
   let searchItem = determineSearchItem(spec, params, state);
+  let fanoutItem = resolveFanoutItem(spec, params, state, searchItem);
   // While paused, the legacy path becomes a transparent pass-through: no
   // outbound variation fan-out and no response-XML rewriting. Logging and
   // request-history accounting stay intact because the gate sits inside the
@@ -208,7 +236,10 @@ export async function handleSearch(
   // fetch below: the added latency is then max(lookup, fetch) instead of the
   // sum, which in practice is close to zero. While paused we stay a
   // transparent pass-through and resolve nothing.
-  const onDemandTarget = searchItem || isPaused ? null : onDemandTargetFor(spec, params, state);
+  const onDemandTarget =
+    searchItem || fanoutItem || isPaused || !state.settings.onDemandLookup
+      ? null
+      : onDemandTargetFor(spec, params, state);
   const onDemand = onDemandTarget
     ? resolveOnDemand(onDemandTarget, { state, logger: req.log })
     : null;
@@ -282,8 +313,9 @@ export async function handleSearch(
       deps.fetcher.fetch(buildIndexerUrl(ctx), { "user-agent": userAgent }),
       onDemand ?? Promise.resolve(null),
     ]);
-    if (resolved && !searchItem && acceptsUpfrontItem(spec)) {
-      searchItem = resolved;
+    if (resolved) {
+      if (!searchItem && acceptsUpfrontItem(spec)) searchItem = resolved;
+      fanoutItem ??= resolved;
     }
     lastStatus = main.status;
     lastContentType = main.contentType;
@@ -297,21 +329,30 @@ export async function handleSearch(
     // Match SearchControllerBase.BaseSearch ordering: aggregate variations
     // first, then merge the initial response last so dedup keeps variation
     // hits ahead of the (typically less specific) original query.
-    if (searchItem && lastStatus === 200 && searchItem.expectedTitle && !isPaused) {
-      const { variations: uncappedVariations, tailCount } = buildVariationList(searchItem, q ?? "");
-      const requested = uncappedVariations.length;
-      const capped = requested > MAX_VARIATIONS;
-      // The tail (appended `q` / `expectedTitle`) is the highest-value part
-      // of the list, so a cap must never trim it away: slice the generated
-      // head down to the remaining budget and keep the tail intact at the
-      // end (aggregation dedup-priority below depends on that ordering).
-      const generatedCount = uncappedVariations.length - tailCount;
-      const variations = capped
-        ? [
-            ...uncappedVariations.slice(0, Math.max(0, MAX_VARIATIONS - tailCount)),
-            ...uncappedVariations.slice(generatedCount),
-          ]
-        : uncappedVariations;
+    // Per-media-type gate: German variation search is opt-out for series
+    // (today's behaviour) and, for existing installs, opt-in for movies.
+    const fanoutEnabled = fanoutItem
+      ? fanoutItem.mediaType === "tv"
+        ? state.settings.tvVariationSearch
+        : state.settings.movieVariationSearch
+      : false;
+    if (
+      fanoutItem &&
+      lastStatus === 200 &&
+      fanoutItem.expectedTitle &&
+      !isPaused &&
+      fanoutEnabled
+    ) {
+      const { generated, tail } = buildVariationList(fanoutItem, q ?? "");
+      const cap = state.settings.maxTitleVariations;
+      const capped = generated.length > cap;
+      // The cap applies to the generated German variations only; the tail
+      // (the literal `q` / the canonical `expectedTitle`) is the
+      // highest-value part of the list and always survives. Order matters:
+      // generated before tail before the main response, because the dedup
+      // priority in aggregateIndexerResponses depends on it.
+      const variations = [...generated.slice(0, cap), ...tail];
+      const requested = generated.length + tail.length;
       // Budget for the whole variation phase, derived from the configured
       // indexer timeout so it scales with how patient the operator has told
       // us to be with a single indexer request. This is best-effort: the

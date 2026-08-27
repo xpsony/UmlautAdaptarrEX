@@ -18,7 +18,14 @@ vi.mock("@/lib/db", () => ({
 
 const { mockState } = vi.hoisted(() => ({
   mockState: {
-    settings: { appApiKey: "", indexerTimeoutSeconds: 60 },
+    settings: {
+      appApiKey: "",
+      indexerTimeoutSeconds: 60,
+      onDemandLookup: true,
+      tvVariationSearch: true,
+      movieVariationSearch: true,
+      maxTitleVariations: 10,
+    },
     languagePack: {},
     getByExternalId: vi.fn(),
     getByImdbId: vi.fn(),
@@ -114,6 +121,11 @@ beforeEach(() => {
   mockRename.create.mockReset().mockResolvedValue({});
   mockState.settings.appApiKey = "";
   mockState.settings.indexerTimeoutSeconds = 60;
+  mockState.settings.onDemandLookup = true;
+  mockState.settings.tvVariationSearch = true;
+  mockState.settings.movieVariationSearch = true;
+  // 10 keeps the pre-existing fan-out tests asserting the old hard-coded cap.
+  mockState.settings.maxTitleVariations = 10;
   mockState.getByExternalId.mockReset();
   mockState.getByImdbId.mockReset();
   mockState.findByTitle.mockReset();
@@ -355,21 +367,23 @@ describe("handleSearch with a searchItem", () => {
       { type: "tvsearch" },
       { fetcher: fetcher as never },
     );
-    // main fetch + capped-at-10 variation fetches (8 generated + q + expectedTitle).
-    expect(fetcher.fetch).toHaveBeenCalledTimes(11);
+    // maxTitleVariations counts the GENERATED German variations only; the
+    // tail (q + expectedTitle) is appended on top and never capped. So with
+    // a cap of 10: 1 main + 10 generated + 2 tail = 13.
+    expect(fetcher.fetch).toHaveBeenCalledTimes(13);
     expect(reply._statusCode).toBe(200);
     const variationQueries = fetcher.fetch.mock.calls
       .slice(1) // drop the main (non-variation) fetch
       .map((call: unknown[]) => new URLSearchParams(new URL(call[0] as string).search).get("q"));
-    expect(variationQueries).toHaveLength(10);
+    expect(variationQueries).toHaveLength(12);
     // Both tail entries survived the cap.
     expect(variationQueries).toContain("UserQuery");
     expect(variationQueries).toContain("ExpectedTitle");
-    // Only the LAST generated entries were dropped (8 kept, 7 dropped).
+    // Only the LAST generated entries were dropped (10 kept, 5 dropped).
     const keptGenerated = variationQueries.filter((v) => v?.startsWith("GenVar"));
-    expect(keptGenerated).toHaveLength(8);
-    expect(keptGenerated).toEqual(generated.slice(0, 8));
-    expect(variationQueries).not.toContain("GenVar8");
+    expect(keptGenerated).toHaveLength(10);
+    expect(keptGenerated).toEqual(generated.slice(0, 10));
+    expect(variationQueries).not.toContain("GenVar10");
     expect(variationQueries).not.toContain("GenVar14");
   });
 
@@ -602,13 +616,17 @@ describe("on-demand lookup wiring", () => {
     );
   });
 
-  it("does not use a resolved movie as the upfront item, keeping the lookup path", async () => {
+  it("does not use a resolved movie as the upfront rewrite item", async () => {
     mockState.getByExternalId.mockReturnValue(null);
     mockResolveOnDemand.mockResolvedValue({ ...RESOLVED, mediaType: "movie" });
-    const { fetcher } = await run("?t=movie&tmdbid=900", "movie");
+    await run("?t=movie&tmdbid=900", "movie");
 
-    // No fan-out for movies in this plan: exactly the one main fetch.
-    expect(fetcher.fetch).toHaveBeenCalledOnce();
+    // The movie route keeps the per-item lookup path for the rewrite even
+    // when the on-demand lookup resolved something; only the fan-out uses
+    // the resolved item.
+    const opts = mockRewrite.mock.calls[0]![1] as RewriteOptionsLike;
+    expect(opts.searchItem).toBeNull();
+    expect(typeof opts.lookup).toBe("function");
   });
 
   it("fires for a movie search by imdbid only, in canonical form", async () => {
@@ -672,5 +690,177 @@ describe("on-demand lookup wiring", () => {
     expect(mockRename.create).toHaveBeenCalled();
     const data = mockRename.create.mock.calls[0]![0].data as { matchedSearchItemId: string | null };
     expect(data.matchedSearchItemId).toBeNull();
+  });
+});
+
+// Shared helpers for the cap and fan-out suites below.
+function okFetcher(times = 10): FakeFetcher {
+  const fetcher: FakeFetcher = { fetch: vi.fn() };
+  for (let i = 0; i < times; i++) {
+    fetcher.fetch.mockResolvedValueOnce({
+      status: 200,
+      contentType: "application/xml",
+      body: Buffer.from("<rss/>"),
+      cacheHit: false,
+    });
+  }
+  return fetcher;
+}
+
+async function runSearch(
+  search: string,
+  type: "tvsearch" | "movie",
+  fetcher: FakeFetcher = okFetcher(),
+) {
+  const reply = makeReply();
+  await handleSearch(
+    { ...makeReq(), url: `/key/host.example/api${search}` } as never,
+    reply as never,
+    { type },
+    { fetcher: fetcher as never },
+  );
+  return { reply, fetcher };
+}
+
+describe("variation cap", () => {
+  const MANY = Array.from({ length: 12 }, (_, i) => `Variante ${i}`);
+
+  function itemWithVariations() {
+    return {
+      id: "i1",
+      mediaType: "tv",
+      expectedTitle: "Realm of Ravens",
+      titleSearchVariations: MANY,
+      titleMatchVariations: ["Realm of Ravens"],
+      authorMatchVariations: [],
+    };
+  }
+
+  it("caps the German variations and still appends q and expectedTitle", async () => {
+    mockState.settings.maxTitleVariations = 3;
+    mockState.getByExternalId.mockReturnValue(itemWithVariations());
+    mockState.toRewriteSearchItem.mockReturnValue({});
+
+    const { fetcher } = await runSearch(
+      "?t=tvsearch&tvdbid=100&q=Some+Other+Query",
+      "tvsearch",
+      okFetcher(20),
+    );
+
+    // 1 main + 3 German variations + q + expectedTitle = 6
+    expect(fetcher.fetch).toHaveBeenCalledTimes(6);
+  });
+
+  it("honours a cap of one", async () => {
+    mockState.settings.maxTitleVariations = 1;
+    mockState.getByExternalId.mockReturnValue(itemWithVariations());
+    mockState.toRewriteSearchItem.mockReturnValue({});
+
+    const { fetcher } = await runSearch(
+      "?t=tvsearch&tvdbid=100&q=Some+Other+Query",
+      "tvsearch",
+      okFetcher(20),
+    );
+
+    expect(fetcher.fetch).toHaveBeenCalledTimes(4);
+  });
+
+  it("never trims q or expectedTitle away", async () => {
+    mockState.settings.maxTitleVariations = 1;
+    mockState.getByExternalId.mockReturnValue(itemWithVariations());
+    mockState.toRewriteSearchItem.mockReturnValue({});
+
+    const { fetcher } = await runSearch(
+      "?t=tvsearch&tvdbid=100&q=Some+Other+Query",
+      "tvsearch",
+      okFetcher(20),
+    );
+
+    const queries = fetcher.fetch.mock.calls
+      .slice(1)
+      .map((c) => new URLSearchParams(new URL(String(c[0])).search).get("q"));
+    expect(queries).toContain("Some Other Query");
+    expect(queries).toContain("Realm of Ravens");
+  });
+});
+
+describe("movie variation fan-out", () => {
+  const MOVIE = {
+    id: "m1",
+    mediaType: "movie",
+    expectedTitle: "Winter Harbour",
+    titleSearchVariations: ["Hafen im Winter"],
+    titleMatchVariations: ["Winter Harbour", "Hafen im Winter"],
+    authorMatchVariations: [],
+  };
+
+  it("fans out for a movie resolved by tmdbid", async () => {
+    mockState.settings.movieVariationSearch = true;
+    mockState.getByExternalId.mockReturnValue(MOVIE);
+
+    const { fetcher } = await runSearch("?t=movie&tmdbid=900", "movie");
+
+    expect(fetcher.fetch.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it("does not fan out when the movie toggle is off", async () => {
+    mockState.settings.movieVariationSearch = false;
+    mockState.getByExternalId.mockReturnValue(MOVIE);
+
+    const { fetcher } = await runSearch("?t=movie&tmdbid=900", "movie");
+
+    expect(fetcher.fetch).toHaveBeenCalledOnce();
+  });
+
+  it("does not fan out for tv when the tv toggle is off", async () => {
+    mockState.settings.tvVariationSearch = false;
+    mockState.getByExternalId.mockReturnValue({
+      id: "i1",
+      mediaType: "tv",
+      expectedTitle: "Realm of Ravens",
+      titleSearchVariations: ["Lied der Schwarzen Raben"],
+      titleMatchVariations: ["Realm of Ravens"],
+      authorMatchVariations: [],
+    });
+    mockState.toRewriteSearchItem.mockReturnValue({});
+
+    const { fetcher } = await runSearch("?t=tvsearch&tvdbid=100&q=Realm+of+Ravens", "tvsearch");
+
+    expect(fetcher.fetch).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the per-item lookup path for movies, so other titles still rewrite", async () => {
+    mockState.settings.movieVariationSearch = true;
+    mockState.getByExternalId.mockReturnValue(MOVIE);
+
+    await runSearch("?t=movie&tmdbid=900", "movie");
+
+    // searchItem stays null for movies, so rewriteIndexerXml must receive a
+    // `lookup` callback rather than a concrete item.
+    const opts = mockRewrite.mock.calls[0]![1] as RewriteOptionsLike;
+    expect(opts.searchItem).toBeNull();
+    expect(typeof opts.lookup).toBe("function");
+  });
+
+  it("resolves a movie fan-out item by imdbid as well", async () => {
+    mockState.settings.movieVariationSearch = true;
+    mockState.getByExternalId.mockReturnValue(null);
+    mockState.getByImdbId.mockReturnValue(MOVIE);
+
+    const { fetcher } = await runSearch("?t=movie&imdbid=1234567", "movie");
+
+    expect(mockState.getByImdbId).toHaveBeenCalledWith("tt1234567");
+    expect(fetcher.fetch.mock.calls.length).toBeGreaterThan(1);
+  });
+});
+
+describe("onDemandLookup toggle", () => {
+  it("does not fire the lookup when the setting is off", async () => {
+    mockState.settings.onDemandLookup = false;
+    mockState.getByExternalId.mockReturnValue(null);
+
+    await runSearch("?t=tvsearch&tvdbid=999&q=Some+Show", "tvsearch");
+
+    expect(mockResolveOnDemand).not.toHaveBeenCalled();
   });
 });

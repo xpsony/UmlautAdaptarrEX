@@ -4,6 +4,12 @@
 
 ### Features
 
+- **German title variations are now searched for films too, and the whole fan-out is configurable.** Until now only series were searched with their German titles; films were left out for historical reasons, so a German film release the indexer only listed under its German name was never found. Four new settings control this:
+  - **Search German variations: series** and **films**, separately. Series are on as before. Films are on for new installations and **off** for existing ones, because switching them on multiplies the indexer requests per film search - an existing setup with tight indexer limits should not run into a rate limit without being asked. The switch is in Settings.
+  - **Maximum German variations per search**, default **3**, replacing a hard-coded 10. The number counts the German variations; your literal search term and the original title are always searched on top and are never dropped by the cap. So 3 means at most 5 extra indexer requests per search. Existing installations get 3 as well: it is strictly less indexer load than before.
+  - **On-demand lookup** can be switched off, for anyone who does not want the extra call.
+  - The rewrite path for films is unchanged: releases of other films in the same response are still matched individually, so nothing that used to be renamed stops being renamed.
+
 - **Sync intervals are configurable, and the default cadence is much shorter.** Instead of one hard-coded full sync every 12 hours there are now two intervals (Settings, range-checked): a **quick sync** every 10 minutes and a **full sync** every 24 hours. The quick sync fetches the \*Arr's title listing and processes only what actually changed - additions, removals, and titles the \*Arr itself renamed. When nothing changed it writes no `SearchItem` row, creates no `SyncRun` row and never calls a title provider, which is what makes a 10-minute cadence affordable: a full pass on a 2,000-title library used to rewrite every row whether or not it had changed. The full sync is still the pass that re-queries every provider, so it remains the one that picks up German titles which appeared upstream after a title was first synced. Three presets are offered: **Recommended** (10 min / 24 h), **Frugal** (60 min / 24 h) and **Like 1.x** (quick sync off / 12 h).
   - An instance that has never had a full sync always gets one first. That is the one-time initial scan; quick syncs only take over afterwards.
   - "Sync now" in the UI is always a full sync - pressing the button should mean a real refresh.
