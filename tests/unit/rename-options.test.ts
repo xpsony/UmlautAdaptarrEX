@@ -103,7 +103,7 @@ describe("renameForMoviesAndTv: prefixGuard", () => {
 describe("renameForMoviesAndTv: releaseTagGuard", () => {
   // The alias carries a release tag the expectedTitle does not have.
   const item = {
-    expectedTitle: "Nachtwache: Wiederkehr",
+    expectedTitle: "Nightwatch Reborn",
     titleMatchVariations: ["Nachtwache Wiederkehr 3D"],
     year: null,
   };

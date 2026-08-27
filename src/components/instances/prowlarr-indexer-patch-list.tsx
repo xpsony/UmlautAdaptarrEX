@@ -18,7 +18,9 @@ interface IndexerPatchListProps {
 
 // Shared, data-source-agnostic list used by both the settings dialog and the
 // setup-wizard step. Renders the explainer callout, a select-all header and a
-// row per indexer. Non-patchable indexers are rendered disabled with a reason.
+// row per indexer. Non-patchable indexers are rendered greyed out with the
+// reason in a tooltip - but one that carries the proxy tag TODAY stays
+// clickable, so a tag that should not be there can still be taken off here.
 export function IndexerPatchList({
   indexers,
   selectedIds,
@@ -74,16 +76,21 @@ export function IndexerPatchList({
           </label>
           <ul className="max-h-72 divide-y overflow-y-auto">
             {indexers.map((ix) => {
+              // Greyed out, but still operable while the tag is on it: without
+              // this, an indexer that was tagged before it became non-patchable
+              // could never be un-tagged from this dialog.
+              const interactive = ix.patchable || ix.isPatched;
               const row = (
                 <label
                   className={cn(
                     "flex items-center gap-3 px-3 py-2 text-sm",
-                    ix.patchable ? "cursor-pointer" : "cursor-not-allowed opacity-60",
+                    !ix.patchable && "opacity-60",
+                    interactive ? "cursor-pointer" : "cursor-not-allowed",
                   )}
                 >
                   <Checkbox
                     checked={selectedIds.has(ix.id)}
-                    disabled={!ix.patchable}
+                    disabled={!interactive}
                     onCheckedChange={() => onToggle(ix.id)}
                   />
                   <span className="flex-1 truncate">{ix.name}</span>
@@ -102,7 +109,13 @@ export function IndexerPatchList({
                   ) : (
                     <Tooltip>
                       <TooltipTrigger asChild>{row}</TooltipTrigger>
-                      <TooltipContent>{t("patchNotPatchable")}</TooltipContent>
+                      <TooltipContent>
+                        {ix.reason === "unsupported_api"
+                          ? t("patchUnsupportedApi", {
+                              implementation: ix.implementation ?? "?",
+                            })
+                          : t("patchNotPatchable")}
+                      </TooltipContent>
                     </Tooltip>
                   )}
                 </li>

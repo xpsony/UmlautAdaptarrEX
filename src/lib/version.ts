@@ -21,3 +21,25 @@ export function resolveAppVersion(
   const version = (fromEnv || fromPackage || "unknown").replace(/^v/i, "");
   return version || "unknown";
 }
+
+// `<release>-dev-<short sha>`, the shape the dev-image workflow bakes in.
+// Anchored on `dev-` so that a prerelease tag ("2.0.0-rc1") keeps rendering
+// as one string.
+const DEV_VERSION_RE = /^(\d+\.\d+\.\d+)-(dev-[0-9a-f]{7,40})$/i;
+
+/**
+ * The version label for the UI, "v" prefix included.
+ *
+ * `APP_VERSION` stays ONE token even for a dev build, because the same string
+ * goes into the outbound User-Agent (`UmlautAdaptarrEX/<version>`) where a
+ * space would be invalid. Only the display splits the channel off and
+ * upper-cases it: `1.4.0-dev-6a0974e` renders as "v1.4.0 DEV-6A0974E", so a
+ * dev image says which release it is built on instead of naming only its
+ * commit. Everything else - a release tag, a security rebuild, `ci-smoke` -
+ * is returned unchanged behind the "v".
+ */
+export function formatAppVersionLabel(version: string): string {
+  const match = DEV_VERSION_RE.exec(version);
+  if (!match) return `v${version}`;
+  return `v${match[1]} ${match[2]!.toUpperCase()}`;
+}

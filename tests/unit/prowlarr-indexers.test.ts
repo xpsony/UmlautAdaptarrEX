@@ -4,7 +4,10 @@ import {
   computePatchPlan,
   flipScheme,
   getBaseUrlValue,
+  getImplementation,
+  isCorrectableImplementation,
   isPatchableUrl,
+  patchSkipReason,
   toIndexerView,
   type RawProwlarrIndexer,
 } from "@/arr/prowlarr/indexers";
@@ -65,10 +68,70 @@ describe("toIndexerView", () => {
     expect(v.patchable).toBe(false);
     expect(v.reason).toBe("no_base_url");
   });
+  it("carries the implementation through for the dialog tooltip", () => {
+    expect(toIndexerView(raw({ implementation: "Torznab" }), 7).implementation).toBe("Torznab");
+    expect(toIndexerView(raw({}), 7).implementation).toBeNull();
+  });
+});
+
+describe("implementation gate", () => {
+  it("reads implementation, falling back to implementationName", () => {
+    expect(getImplementation(raw({ implementation: "Newznab" }))).toBe("Newznab");
+    expect(getImplementation(raw({ implementationName: "Torznab" }))).toBe("Torznab");
+    expect(getImplementation(raw({ implementation: "  " }))).toBeNull();
+  });
+
+  it("accepts Newznab and Torznab, whatever the casing", () => {
+    expect(isCorrectableImplementation(raw({ implementation: "Newznab" }))).toBe(true);
+    expect(isCorrectableImplementation(raw({ implementation: "torznab" }))).toBe(true);
+  });
+
+  it("rejects an implementation that speaks the tracker's own API", () => {
+    // A definition-driven tracker answers its own JSON endpoint, which neither
+    // the search fan-out nor the response rewriting can read - and the legacy
+    // route has nothing to answer a request without a Newznab `t` parameter.
+    const v = toIndexerView(raw({ name: "Rivet Vault", implementation: "Cardigann" }), 7);
+    expect(v.patchable).toBe(false);
+    expect(v.reason).toBe("unsupported_api");
+    expect(v.implementation).toBe("Cardigann");
+  });
+
+  it("fails open when Prowlarr reports no implementation at all", () => {
+    // An older Prowlarr that omits the field must not grey out every indexer.
+    expect(isCorrectableImplementation(raw({}))).toBe(true);
+    expect(patchSkipReason(raw({}))).toBeNull();
+  });
+
+  it("reports the missing base URL first when both are wrong", () => {
+    expect(patchSkipReason(raw({ fields: [], implementation: "Cardigann" }))).toBe("no_base_url");
+  });
 });
 
 describe("computePatchPlan", () => {
   const tagId = 7;
+  it("skips a selected indexer whose API cannot be corrected", () => {
+    const plan = computePatchPlan(
+      [raw({ id: 1, name: "Rivet Vault", implementation: "Cardigann", tags: [] })],
+      tagId,
+      new Set([1]),
+    );
+    expect(plan[0]!.action).toBe("skip");
+  });
+
+  it("still un-patches such an indexer when it carries the tag already", () => {
+    // The reverse direction must stay open: an indexer that was tagged before
+    // this gate existed has to be removable, tag and scheme both.
+    const plan = computePatchPlan(
+      [raw({ id: 1, name: "Rivet Vault", implementation: "Cardigann", tags: [tagId] })],
+      tagId,
+      new Set(),
+    );
+    expect(plan[0]!.action).toBe("unpatch");
+    const reverted = applyPatchToRaw(plan[0]!.raw, tagId, false);
+    expect(reverted.tags).toEqual([]);
+    expect(getBaseUrlValue(reverted)).toBe("https://example.test/");
+  });
+
   it("plans patch for a selected, unpatched, patchable indexer", () => {
     const plan = computePatchPlan([raw({ id: 1, tags: [] })], tagId, new Set([1]));
     expect(plan[0]!.action).toBe("patch");

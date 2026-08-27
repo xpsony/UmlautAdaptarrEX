@@ -33,6 +33,28 @@ function usableAsSearchAlias(alias: string): boolean {
   return !NON_LATIN_LETTER_RE.test(trimmed);
 }
 
+// A letter in ANY script.
+const LETTER_RE = /\p{L}/u;
+
+/**
+ * Match variations of one alias, minus the residues.
+ *
+ * `getCleanTitle` strips every non-Latin letter, so a numbered sequel alias in
+ * a non-Latin script ("<non-Latin title> 3") collapses to the bare numeral
+ * "3". That is not a title: as a match variation it makes every unrelated
+ * release starting with "3." a rewrite candidate. An alias that never carried
+ * a letter (an all-numeric title) lost nothing and keeps its variations.
+ */
+function matchableAliasVariations(
+  alias: string,
+  mediaType: Extract<MediaType, "tv" | "movie">,
+  pack: LanguagePack,
+): string[] {
+  const generated = generateVariations(alias, mediaType, pack);
+  if (!LETTER_RE.test(alias)) return generated;
+  return generated.filter((v) => LETTER_RE.test(v));
+}
+
 export interface TvMovieVariationInput {
   /**
    * Legacy single-title input: was historically the German title only. Kept
@@ -87,7 +109,7 @@ export function generateForTvMovie(
 
   if (aliases) {
     for (const alias of aliases) {
-      allMatch.push(...generateVariations(alias, input.mediaType, pack));
+      allMatch.push(...matchableAliasVariations(alias, input.mediaType, pack));
       if (alias.includes(":")) {
         allMatch.push(alias.replace(/:/g, " -"));
       }

@@ -77,6 +77,14 @@ importiert werden.
 > - TMDB / TVDB Key wird benötigt, damit Radarr funktioniert.
 > - TMDB / TVDB Key wird benötigt, damit die Plugins funktionieren.
 
+> **Hinweis zu Torrent-Trackern:** Unterstützt werden ausschließlich Tracker, die die **Torznab-API** sprechen (bei
+> Usenet entsprechend Newznab). Die Korrektur setzt genau an dieser Schnittstelle an: UmlautAdaptarrEX liest die
+> Newznab/Torznab-Suchparameter und schreibt die Titel im Antwort-XML um. Ein Tracker mit einer eigenen API - in
+> Prowlarr sind das die definitionsbasierten Indexer (Implementation `Cardigann`) und die nativen Tracker-Clients -
+> bietet keine solche Schnittstelle und wird deshalb nicht unterstützt. Diese Indexer gehören **nicht** an den Proxy;
+> der Patch-Dialog graut sie aus und taggt sie nicht. Läuft dort noch ein altes Proxy-Tag, nimm es ab: dann sprechen
+> sie wieder direkt mit dem Tracker.
+
 ## Sprach-Plugins
 
 Sprach-Plugins steuern, wie Titel normalisiert werden und welche Schreibvarianten gegen den Indexer gefahren werden.
@@ -107,22 +115,24 @@ einen "Strip-All"-Pfad, der den diakritischen Buchstaben komplett entfernt.
 Wie Release-Titel in den Indexer-Antworten umgeschrieben werden, ist unter **Settings → Renaming** konfigurierbar.
 Änderungen wirken ab der nächsten Suche - kein Neustart, kein Re-Sync.
 
-| Schalter                                 | Default (neu) | Default (bestehend) | Wirkung                                                                                                                                                |
-| ---------------------------------------- | :-----------: | :-----------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Unerwünschte Zeichen entfernen**       |       ✓       |          ◯          | Entfernt `: ? * " < > \| / \` aus dem eingesetzten Titel, ohne doppelte Trennzeichen zu hinterlassen. Das Suffix des Indexers bleibt unverändert.      |
-| **Externe IDs anhängen**                 |       ✓       |          ◯          | Hängt `tvdbid` / `tmdbid` / `imdb` als newznab-Attribut an. Sonarr/Radarr können das Release damit ohne Titel-Analyse zuordnen. Rein additiv.          |
-| **Jahres-Prüfung**                       |       ✓       |          ✓          | Lehnt das Umschreiben ab, wenn die Jahreszahl im Release nicht zum Medium passt (Toleranz pro Instanz konfigurierbar).                                 |
-| **Prüfung auf mehrdeutigen Präfix**      |       ✓       |          ✓          | Lehnt ab, wenn der Zieltitel mit der gefundenen Variante beginnt und danach kein `SxxExx` bzw. keine Jahreszahl folgt.                                 |
-| **Release-Tags erhalten**                |       ✓       |          ✓          | Schiebt `3D` / `4K` / `HDR` / `IMAX` zurück ins Suffix, wenn ein Provider-Alias sie mitgebracht hat.                                                   |
-| **Suffix wie beim alten Umlautadaptarr** |       ◯       |          ◯          | Schneidet nach Rohlänge der Variante statt nach normalisierten Zeichen. Bei `ß`/Umlauten schneidet das zu weit - nur für exakte Legacy-Kompatibilität. |
+| Schalter                                 | Default | Wirkung                                                                                                                                                |
+| ---------------------------------------- | :-----: | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Unerwünschte Zeichen entfernen**       |    ✓    | Entfernt `: ? * " < > \| / \` aus dem eingesetzten Titel, ohne doppelte Trennzeichen zu hinterlassen. Das Suffix des Indexers bleibt unverändert.      |
+| **Externe IDs anhängen**                 |    ✓    | Hängt `tvdbid` / `tmdbid` / `imdb` als newznab-Attribut an. Sonarr/Radarr können das Release damit ohne Titel-Analyse zuordnen. Rein additiv.          |
+| **Jahres-Prüfung**                       |    ✓    | Lehnt das Umschreiben ab, wenn die Jahreszahl im Release nicht zum Medium passt (Toleranz pro Instanz konfigurierbar).                                 |
+| **Prüfung auf mehrdeutigen Präfix**      |    ✓    | Lehnt ab, wenn der Zieltitel mit der gefundenen Variante beginnt und danach kein `SxxExx` bzw. keine Jahreszahl folgt.                                 |
+| **Release-Tags erhalten**                |    ✓    | Schiebt `3D` / `4K` / `HDR` / `IMAX` zurück ins Suffix, wenn ein Provider-Alias sie mitgebracht hat.                                                   |
+| **Suffix wie beim alten Umlautadaptarr** |    ◯    | Schneidet nach Rohlänge der Variante statt nach normalisierten Zeichen. Bei `ß`/Umlauten schneidet das zu weit - nur für exakte Legacy-Kompatibilität. |
 
 Zwei Preset-Buttons setzen die vier Schutzregeln auf einmal: **Wie der alte Umlautadaptarr** (alle Schutzregeln aus,
 Legacy-Suffix an) und **Empfohlene Werte**.
 
-> Bestandsinstallationen behalten ihre bisherige Ausgabe: die Migration setzt die beiden Schalter, die die
-> ausgelieferten Bytes verändern, für sie auf **aus**. Neuinstallationen starten mit **an**. Beide lohnen sich -
-> Scene-Releases enthalten die entfernten Zeichen nie, und die externen IDs verbessern die Zuordnung in Sonarr/Radarr
-> deutlich.
+> **Ab dieser Version gelten die empfohlenen Defaults für alle Installationen.** Früher liefen die beiden Schalter, die
+> die ausgelieferten Bytes verändern, in Bestandsinstallationen auf **aus**, damit ein Update die Ausgabe nicht
+> anfasst. Beide lohnen sich aber - Scene-Releases enthalten die entfernten Zeichen nie, und die externen IDs
+> verbessern die Zuordnung in Sonarr/Radarr deutlich - deshalb schaltet eine Migration sie einmalig für alle ein. Wer
+> die alte Ausgabe will, schaltet sie unter **Settings → Renaming** wieder aus; die Presets **Wie der alte
+> Umlautadaptarr** und **Empfohlene Werte** stellen den Rest in einem Klick um.
 
 ## Installation
 

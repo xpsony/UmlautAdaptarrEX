@@ -50,6 +50,14 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v7
 
+      # The dev image's version string is "<release>-dev-<short sha>" so the UI
+      # can show which release the build is based on ("v1.4.0 DEV-6A0974E")
+      # instead of naming the commit alone. Read after checkout, obviously.
+      - name: Read package version
+        id: pkg
+        shell: bash
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -69,14 +77,14 @@ jobs:
           pull: true
           platforms: ${{ matrix.platform }}
           build-args: |
-            APP_VERSION=dev-${{ steps.sha.outputs.short }}
+            APP_VERSION=${{ steps.pkg.outputs.version }}-dev-${{ steps.sha.outputs.short }}
           labels: |
             org.opencontainers.image.title=UmlautAdaptarrEX
             org.opencontainers.image.description=Umlaut/German-title proxy for Sonarr/Radarr/Lidarr/Readarr
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.url=https://hub.docker.com/r/${{ env.IMAGE_NAME }}
             org.opencontainers.image.revision=${{ github.sha }}
-            org.opencontainers.image.version=dev-${{ steps.sha.outputs.short }}
+            org.opencontainers.image.version=${{ steps.pkg.outputs.version }}-dev-${{ steps.sha.outputs.short }}
             org.opencontainers.image.licenses=MIT
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           cache-from: |

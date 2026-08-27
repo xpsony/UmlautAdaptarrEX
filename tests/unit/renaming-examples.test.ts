@@ -70,7 +70,7 @@ describe("Renaming tab examples match the real rename output", () => {
   it("renameReleaseTagGuard", () => {
     const ex = RENAMING_EXAMPLES.renameReleaseTagGuard;
     const item = {
-      expectedTitle: "Nachtwache Wiederkehr",
+      expectedTitle: "Nightwatch Reborn",
       titleMatchVariations: ["Nachtwache Wiederkehr 3D"],
       year: null,
     };

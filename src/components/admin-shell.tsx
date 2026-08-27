@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { type Locale } from "@/lib/i18n-config";
 import { cn } from "@/lib/utils";
+import { formatAppVersionLabel } from "@/lib/version";
 import { Button } from "./ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
 import { BrandMark } from "./brand-mark";
@@ -111,7 +112,9 @@ export function AdminShell({
         </nav>
         {version && (
           <div className="border-t px-5 py-3">
-            <span className="text-[11px] text-muted-foreground/60">v{version}</span>
+            <span className="text-[11px] text-muted-foreground/60">
+              {formatAppVersionLabel(version)}
+            </span>
           </div>
         )}
       </aside>
@@ -155,7 +158,9 @@ export function AdminShell({
                 </nav>
                 {version && (
                   <div className="border-t px-5 py-3">
-                    <span className="text-[11px] text-muted-foreground/60">v{version}</span>
+                    <span className="text-[11px] text-muted-foreground/60">
+                      {formatAppVersionLabel(version)}
+                    </span>
                   </div>
                 )}
               </SheetContent>

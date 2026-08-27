@@ -74,9 +74,36 @@ describe("alias search fallback (no German title)", () => {
     // The Latin alias survives; the apostrophe is stripped by getCleanTitle
     // like any other special character.
     expect(out.titleSearchVariations).toContain("Ember Ange dAcier");
-    // Match variations are unfiltered - a release named in any script can
+    // A non-Latin alias stays matchable - a release named in any script can
     // still be recognised.
     expect(out.titleMatchVariations.join(" | ")).toContain("Ember Ange dAcier");
+  });
+
+  it("drops the numeral residue a non-Latin alias leaves behind", () => {
+    // getCleanTitle strips every non-Latin letter, so a numbered sequel alias
+    // like "エンバー・アセンディング 3" cleans down to the bare "3". As a match
+    // variation that numeral is a prefix of every unrelated release starting
+    // with "3.", so it must not be stored at all.
+    const out = generateForTvMovie({
+      germanTitle: null,
+      expectedTitle: "Ember Ascending 3",
+      aliases: ["エンバー・アセンディング 3", "余烬上升 3", "Glutsturz 3"],
+      mediaType: "movie",
+    });
+    expect(out.titleMatchVariations).not.toContain("3");
+    expect(out.titleMatchVariations).toContain("Glutsturz 3");
+  });
+
+  it("keeps a title that is genuinely all digits", () => {
+    // The residue rule triggers on letters that were LOST during cleaning.
+    // A title that never had any (an all-numeric title) keeps its variation.
+    const out = generateForTvMovie({
+      germanTitle: "1909",
+      expectedTitle: "Nineteen Oh Nine",
+      aliases: ["1909"],
+      mediaType: "movie",
+    });
+    expect(out.titleMatchVariations).toContain("1909");
   });
 
   it("promotes at most 3 aliases so the 10-request search cap is not exhausted", () => {

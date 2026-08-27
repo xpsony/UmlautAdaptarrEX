@@ -577,6 +577,7 @@
       "patchStatusPatched": "patched",
       "patchStatusUnpatched": "not patched",
       "patchNotPatchable": "No editable base URL - cannot be patched.",
+      "patchUnsupportedApi": "Not a Newznab/Torznab API ({implementation}) - cannot be corrected through the proxy.",
       "patchApply": "Apply",
       "patchApplying": "Applying…",
       "patchEmpty": "No indexers found in Prowlarr.",

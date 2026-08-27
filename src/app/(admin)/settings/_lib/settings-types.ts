@@ -207,9 +207,9 @@ export const RENAMING_EXAMPLES: Record<RenamingToggle, RenamingExample> = {
   },
   renameReleaseTagGuard: {
     input: "Nachtwache.Wiederkehr.3D.2010.GERMAN.1080p-GRP",
-    item: 'Nachtwache Wiederkehr, Alias "Nachtwache Wiederkehr 3D"',
-    off: "Nachtwache.Wiederkehr.2010.GERMAN.1080p-GRP",
-    on: "Nachtwache.Wiederkehr.3D.2010.GERMAN.1080p-GRP",
+    item: 'Nightwatch Reborn, Alias "Nachtwache Wiederkehr 3D"',
+    off: "Nightwatch.Reborn.2010.GERMAN.1080p-GRP",
+    on: "Nightwatch.Reborn.3D.2010.GERMAN.1080p-GRP",
   },
   renameLegacySuffix: {
     input: "Renko.Jagd.2016.GERMAN.DL.1080p",

@@ -577,6 +577,7 @@
       "patchStatusPatched": "patchad",
       "patchStatusUnpatched": "inte patchad",
       "patchNotPatchable": "Ingen redigerbar bas-URL - kan inte patchas.",
+      "patchUnsupportedApi": "Inte ett Newznab/Torznab-API ({implementation}) - kan inte korrigeras via proxyn.",
       "patchApply": "Tillämpa",
       "patchApplying": "Tillämpar…",
       "patchEmpty": "Inga indexerare hittades i Prowlarr.",

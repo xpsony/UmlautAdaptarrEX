@@ -110,6 +110,25 @@ const YEAR_TOKEN_RE = /(?<![A-Za-z0-9])(19|20)\d{2}(?![A-Za-z0-9])/g;
 // a variation matches the original, the trailing tag belongs to the
 // release name, not the title, and must stay in the suffix during rewrite.
 const RELEASE_TAG_TAIL_RE = /([\s._-])(3D|4K|HDR|IMAX)$/i;
+// Everything that carries no title identity: separators, punctuation,
+// brackets. Release names spell one and the same title with wildly different
+// punctuation ("Ember.Steel.Angel" vs "Ember: Steel Angel").
+const NON_IDENTITY_CHAR_RE = /[^\p{L}\p{N}]/gu;
+// A letter in ANY script.
+const LETTER_RE = /\p{L}/u;
+
+/**
+ * Identity of a release name for no-op detection: letters and digits only,
+ * lower-cased.
+ *
+ * Deliberately NOT `normalizeForComparison`: its comparison map folds
+ * diacritics onto the base letter (German "ä" -> "a", "ß" -> "ss"), and
+ * restoring exactly those characters is this product's core job. A fold that
+ * erases them would declare every umlaut rewrite a no-op.
+ */
+function releaseIdentity(title: string): string {
+  return title.replace(NON_IDENTITY_CHAR_RE, "").toLowerCase();
+}
 
 function releaseYears(title: string): number[] {
   const years: number[] = [];
@@ -152,8 +171,21 @@ export function renameForMoviesAndTv(
     }
   }
 
+  // A work whose title carries no letter at all (e.g. "7-1-3") is the only
+  // one allowed to match on a letter-less variation - see the residue guard
+  // in the loop.
+  const expectedHasLetters = LETTER_RE.test(searchItem.expectedTitle);
+
   for (const variation of variations) {
     if (variation === searchItem.expectedTitle) continue;
+
+    // A variation without a single letter is not a title, it is the residue
+    // `getCleanTitle` left of a non-Latin alias: a numbered sequel alias such
+    // as "<non-Latin title> 3" collapses to the bare "3". As a prefix match
+    // that numeral turns every unrelated release starting with "3." into a
+    // rewrite candidate, so it is only usable when the work itself has no
+    // letters to lose.
+    if (expectedHasLetters && !LETTER_RE.test(variation)) continue;
 
     const normalizedVariation = normalizeForComparison(variation, pack);
     if (!normalizedVariation) continue;
@@ -274,6 +306,16 @@ export function renameForMoviesAndTv(
       newTitle = newTitlePrefix + suffix;
     } else {
       newTitle = `${newTitlePrefix}${separator}${suffix}`;
+    }
+
+    // A rewrite that changes nothing but punctuation is no rewrite at all.
+    // Happens when no separate German title exists, so the provider hands
+    // back the expectedTitle itself: the variation generator drops its
+    // brackets, which makes the variation a different *string* naming the
+    // very same title, and inserting expectedTitle verbatim pushes "(", ")"
+    // or ":" back into a scene name that already spelled the title right.
+    if (releaseIdentity(newTitle) === releaseIdentity(originalTitle)) {
+      return { rewrittenTitle: null, reason: "match-equals-expected" };
     }
 
     return { rewrittenTitle: newTitle };

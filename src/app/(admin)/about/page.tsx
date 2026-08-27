@@ -4,7 +4,7 @@ import { ExternalLink, Heart, Star } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { ChangelogSection } from "@/components/changelog-section";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { resolveAppVersion } from "@/lib/version";
+import { formatAppVersionLabel, resolveAppVersion } from "@/lib/version";
 import pkg from "../../../../package.json";
 
 // Forks override these via build-time env vars (e.g. NEXT_PUBLIC_GITHUB_OWNER
@@ -40,8 +40,8 @@ export default async function AboutPage() {
             <div className="leading-tight">
               <CardTitle className="text-lg">UmlautAdaptarrEX</CardTitle>
               <CardDescription>{t("tagline")}</CardDescription>
-              <div className="mt-1 text-[11px] tracking-wider text-muted-foreground uppercase">
-                v{version}
+              <div className="mt-1 text-[11px] tracking-wider text-muted-foreground">
+                {formatAppVersionLabel(version)}
               </div>
             </div>
           </div>
