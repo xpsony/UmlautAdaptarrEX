@@ -11,10 +11,17 @@ import type { TitleProvider } from "@/providers/types";
 import { requiredLanguages } from "@/providers";
 import { withSyncStats } from "@/server/sync/stats";
 import { describeError } from "@/lib/error-format";
+import { planDelta } from "./delta";
 
 export interface PreparedRun {
-  /** SyncRun row pre-created by the scheduler (status="running"). */
-  runId: string;
+  /**
+   * SyncRun row pre-created by the scheduler. `null` for a delta pass: it
+   * only creates a row once `planDelta` found actual work, so a quiet
+   * instance doesn't produce one empty row per tick.
+   */
+  runId: string | null;
+  /** Full = re-query every provider. Delta = only process what changed. */
+  mode: "full" | "delta";
   instance: {
     id: string;
     name: string;
@@ -35,10 +42,12 @@ export interface RunSyncOptions {
 
 type PerInstanceResult = {
   instanceId: string;
-  runId: string;
+  runId: string | null;
   type: ArrType;
   name: string;
   count: number;
+  /** Delta pass that found nothing to do. No SyncRun row was written. */
+  skipped?: boolean;
   error?: string;
 };
 
@@ -83,14 +92,18 @@ async function markRunFailed(
 ): Promise<PerInstanceResult> {
   const { instance, runId } = prepared;
   try {
-    await prisma.syncRun.update({
-      where: { id: runId },
-      data: {
-        status: "error",
-        finishedAt: new Date(),
-        errorMessage: message,
-      },
-    });
+    // runId is null when a delta pass failed before it had any work to
+    // report - there is no row to close out in that case.
+    if (runId !== null) {
+      await prisma.syncRun.update({
+        where: { id: runId },
+        data: {
+          status: "error",
+          finishedAt: new Date(),
+          errorMessage: message,
+        },
+      });
+    }
     if (options.updateInstance !== false) {
       await prisma.arrInstance.update({
         where: { id: instance.id },
@@ -143,17 +156,19 @@ async function markRunSucceeded(
 ): Promise<PerInstanceResult> {
   const { instance, runId } = prepared;
   try {
-    await prisma.syncRun.update({
-      where: { id: runId },
-      data: {
-        status: "success",
-        finishedAt: new Date(),
-        itemsCount,
-        pcjonesItemsCount: stats.pcjonesItems,
-        tmdbItemsCount: stats.tmdbItems,
-        tvdbItemsCount: stats.tvdbItems,
-      },
-    });
+    if (runId !== null) {
+      await prisma.syncRun.update({
+        where: { id: runId },
+        data: {
+          status: "success",
+          finishedAt: new Date(),
+          itemsCount,
+          pcjonesItemsCount: stats.pcjonesItems,
+          tmdbItemsCount: stats.tmdbItems,
+          tvdbItemsCount: stats.tvdbItems,
+        },
+      });
+    }
     await prisma.arrInstance.update({
       where: { id: instance.id },
       data: { lastSyncAt: new Date(), lastSyncError: null },
@@ -486,12 +501,106 @@ async function syncOneInstance(
   }
 
   try {
-    return await fetchAndPersist(prepared, state, provider, order, logger);
+    return prepared.mode === "delta"
+      ? await deltaAndPersist(prepared, state, provider, order, logger)
+      : await fetchAndPersist(prepared, state, provider, order, logger);
   } catch (err) {
     const message = describeError(err);
     logger.error({ instance: instance.name, type: instance.type, err }, "sync error");
     return markRunFailed(prepared, message, logger);
   }
+}
+
+async function deltaAndPersist(
+  prepared: PreparedRun,
+  state: AppState,
+  provider: TitleProvider | null,
+  order: ProviderId[] | null,
+  logger: AppLogger,
+): Promise<PerInstanceResult> {
+  const { instance } = prepared;
+  const client = buildArrClient({
+    type: instance.type as ArrType,
+    instanceId: instance.id,
+    instanceName: instance.name,
+    host: instance.host,
+    apiKey: instance.apiKey,
+    userAgent: state.settings.userAgent,
+    provider: provider as TitleProvider,
+    logger,
+  });
+
+  const raw = await client.fetchRawItems();
+  const stored = await prisma.searchItem.findMany({
+    where: { arrInstanceId: instance.id },
+    select: { externalId: true, title: true, year: true },
+  });
+  const plan = planDelta(raw, stored);
+
+  if (plan.isEmpty) {
+    // Bump lastSyncAt so the UI shows the instance as alive, but write no
+    // SearchItem rows and no SyncRun row. This is the common case at a
+    // 10-minute cadence and has to stay this cheap.
+    await prisma.arrInstance
+      .update({
+        where: { id: instance.id },
+        data: { lastSyncAt: new Date(), lastSyncError: null },
+      })
+      .catch((err) => {
+        logger.debug({ err: describeError(err) }, "sync delta: lastSyncAt bump failed");
+      });
+    logger.debug(
+      { instance: instance.name, type: instance.type, listed: raw.length },
+      "sync delta: nothing changed",
+    );
+    return {
+      instanceId: instance.id,
+      runId: null,
+      type: instance.type as ArrType,
+      name: instance.name,
+      count: 0,
+      skipped: true,
+    };
+  }
+
+  const run = await prisma.syncRun.create({
+    data: { arrInstanceId: instance.id, status: "running" },
+  });
+  const withRun: PreparedRun = { ...prepared, runId: run.id };
+
+  logger.info(
+    {
+      instance: instance.name,
+      type: instance.type,
+      providerOrder: order,
+      listed: raw.length,
+      changed: plan.changed.length,
+      removed: plan.removedExternalIds.length,
+    },
+    "sync delta start",
+  );
+
+  const { items, providerStats } = await withSyncStats(async (stats) => {
+    const fetched = await client.deriveItems(plan.changed);
+    const withOverrides = await applyTitleOverrides(fetched);
+    return { items: withOverrides, providerStats: { ...stats } };
+  });
+
+  const changeStats = await persistItems(state, instance.id, instance.name, items, logger, {
+    deleteExternalIds: plan.removedExternalIds,
+    mode: "delta",
+  });
+  logger.info(
+    {
+      instance: instance.name,
+      type: instance.type,
+      created: changeStats.created,
+      updated: changeStats.updated,
+      removed: changeStats.removed,
+    },
+    "sync delta persisted",
+  );
+  return markRunSucceeded(withRun, changeStats.persistedCount, providerStats, logger);
 }
 
 async function fetchAndPersist(

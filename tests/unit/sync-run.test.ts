@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { mockPrisma } = vi.hoisted(() => ({
   mockPrisma: {
-    syncRun: { update: vi.fn() },
+    syncRun: { update: vi.fn(), create: vi.fn() },
     arrInstance: { update: vi.fn() },
     searchItem: {
       findMany: vi.fn(),
@@ -84,6 +84,7 @@ function makePrepared(
 ) {
   return {
     runId: `run-${type}`,
+    mode: "full" as const,
     instance: {
       id: `inst-${type}`,
       name: `${type} 1`,
@@ -120,6 +121,8 @@ beforeEach(() => {
   mockState.languagePack.activePlugins = [];
   mockBuild.mockReset();
 
+  mockPrisma.syncRun.create.mockReset();
+  mockPrisma.syncRun.create.mockResolvedValue({ id: "delta-run-1" });
   mockPrisma.syncRun.update.mockResolvedValue({});
   mockPrisma.arrInstance.update.mockResolvedValue({});
 });
@@ -625,5 +628,92 @@ describe("persistItems delete scope", () => {
     expect(mockPrisma.searchItem.deleteMany).toHaveBeenCalledWith({
       where: { id: { in: ["row-gone"] } },
     });
+  });
+});
+
+const RAW_UNCHANGED = {
+  arrId: 1,
+  externalId: "100",
+  imdbId: null,
+  title: "Realm of Ravens",
+  year: 2019,
+  aliases: null,
+  germanTitle: null,
+  mediaType: "tv" as const,
+  expectedAuthor: null,
+};
+
+const RAW_NEW = {
+  arrId: 2,
+  externalId: "200",
+  imdbId: null,
+  title: "Winter Harbour",
+  year: 2021,
+  aliases: null,
+  germanTitle: null,
+  mediaType: "tv" as const,
+  expectedAuthor: null,
+};
+
+describe("runSync delta mode", () => {
+  function deltaPrepared() {
+    return { ...makePrepared("sonarr"), runId: null, mode: "delta" as const };
+  }
+
+  it("writes nothing and creates no SyncRun row when the listing is unchanged", async () => {
+    mockPrisma.searchItem.findMany.mockResolvedValueOnce([
+      { externalId: "100", title: "Realm of Ravens", year: 2019 },
+    ]);
+    mockBuild.mockReturnValue({
+      fetchRawItems: async () => [RAW_UNCHANGED],
+      deriveItems: async () => {
+        throw new Error("deriveItems must not run for an empty delta");
+      },
+      fetchAllItems: async () => [],
+    });
+    mockState.providerForOrder.mockReturnValue({ name: "stub" });
+
+    const result = await runSync({
+      logger: makeLogger() as never,
+      preparedRuns: [deltaPrepared()],
+    });
+
+    expect(mockPrisma.syncRun.create).not.toHaveBeenCalled();
+    expect(mockPrisma.searchItem.update).not.toHaveBeenCalled();
+    expect(mockPrisma.searchItem.create).not.toHaveBeenCalled();
+    expect(mockPrisma.searchItem.deleteMany).not.toHaveBeenCalled();
+    expect(result.perInstance[0]?.skipped).toBe(true);
+    // lastSyncAt is still bumped so the UI shows the instance is alive.
+    expect(mockPrisma.arrInstance.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ lastSyncError: null }),
+      }),
+    );
+  });
+
+  it("derives only the changed subset and creates a SyncRun row for it", async () => {
+    mockPrisma.searchItem.findMany.mockResolvedValueOnce([
+      { externalId: "100", title: "Realm of Ravens", year: 2019 },
+    ]);
+    mockPrisma.searchItem.findMany.mockResolvedValue([]);
+    const derived: string[] = [];
+    mockBuild.mockReturnValue({
+      fetchRawItems: async () => [RAW_UNCHANGED, RAW_NEW],
+      deriveItems: async (raw: { externalId: string }[]) => {
+        derived.push(...raw.map((r) => r.externalId));
+        return [];
+      },
+      fetchAllItems: async () => [],
+    });
+    mockState.providerForOrder.mockReturnValue({ name: "stub" });
+
+    await runSync({
+      logger: makeLogger() as never,
+      preparedRuns: [deltaPrepared()],
+    });
+
+    // Only the new title, never the unchanged one.
+    expect(derived).toEqual(["200"]);
+    expect(mockPrisma.syncRun.create).toHaveBeenCalled();
   });
 });

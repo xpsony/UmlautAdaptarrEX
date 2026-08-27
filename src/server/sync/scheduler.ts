@@ -94,7 +94,7 @@ export class SyncScheduler {
         const run = await prisma.syncRun.create({
           data: { arrInstanceId: inst.id, status: "running" },
         });
-        return { runId: run.id, instance: inst } satisfies PreparedRun;
+        return { runId: run.id, mode: "full", instance: inst } satisfies PreparedRun;
       }),
     );
 
@@ -149,7 +149,7 @@ export class SyncScheduler {
         const run = await prisma.syncRun.create({
           data: { arrInstanceId: inst.id, status: "running" },
         });
-        return { runId: run.id, instance: inst } satisfies PreparedRun;
+        return { runId: run.id, mode: "full", instance: inst } satisfies PreparedRun;
       }),
     );
 
