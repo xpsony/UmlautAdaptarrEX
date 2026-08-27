@@ -5,7 +5,7 @@ import type {
   FastifyReply,
   FastifyRequest,
 } from "fastify";
-import Fastify from "fastify";
+import Fastify, { LogController } from "fastify";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/db";
 import cookie from "@fastify/cookie";
@@ -40,7 +40,7 @@ import { cancelStaleRuns } from "./sync/run";
 import { SESSION_TTL_MS } from "@/lib/auth/session";
 import { ensureCsrfSecret, getCsrfSecret } from "@/lib/auth/csrf";
 import { SessionRetentionScheduler } from "./auth/session-retention";
-import { parseTrustProxy } from "./trust-proxy";
+import { isHopCountTrustProxy, parseTrustProxy } from "./trust-proxy";
 import { applySecurityHeaders } from "./security-headers";
 import { resolveHeadless, resolveLegacyApiPort } from "@/lib/ports";
 
@@ -95,12 +95,24 @@ export async function bootServer(opts: BootOptions): Promise<{
   const fetcher = new IndexerFetcher(state, logger);
 
   const trustProxy = parseTrustProxy(process.env.TRUST_PROXY);
+  if (isHopCountTrustProxy(process.env.TRUST_PROXY)) {
+    logger.warn(
+      { trustProxy: process.env.TRUST_PROXY },
+      "TRUST_PROXY hop counts are no longer supported (Fastify 5.12 disabled " +
+        "them: a hop count cannot validate the immediate peer, so direct " +
+        "clients could spoof X-Forwarded-*). Falling back to no trust — set " +
+        'TRUST_PROXY to "loopback" or a comma-separated CIDR/IP list instead.',
+    );
+  }
   const app = Fastify({
     loggerInstance: logger as FastifyBaseLogger,
     trustProxy,
     bodyLimit: 5 * 1024 * 1024,
-    // Errors are logged centrally below; slow requests are logged via onResponse.
-    disableRequestLogging: true,
+    // Errors are logged centrally below; slow requests are logged via
+    // onResponse. The top-level `disableRequestLogging` option still works but
+    // is deprecated since Fastify 5.12 (removed in 6) and warns on every boot,
+    // so we pass it through LogController instead.
+    logController: new LogController({ disableRequestLogging: true }),
   });
 
   installErrorHandlers(app, logger);
@@ -239,12 +251,7 @@ export async function bootServer(opts: BootOptions): Promise<{
       cacheDurationMinutes: state.settings.cacheDurationMinutes,
       logRetentionDays: state.settings.logRetentionDays,
       providerConfigured: !!state.provider,
-      trustProxy:
-        typeof trustProxy === "boolean" || typeof trustProxy === "number"
-          ? trustProxy
-          : Array.isArray(trustProxy)
-            ? trustProxy.join(",")
-            : trustProxy,
+      trustProxy: Array.isArray(trustProxy) ? trustProxy.join(",") : trustProxy,
     },
     "fastify gateway listening",
   );
