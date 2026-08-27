@@ -3,13 +3,7 @@
 import { useTranslations } from "next-intl";
 import { Loader2, RefreshCw, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface SyncStepProps {
   instanceCount: number;
@@ -18,12 +12,7 @@ interface SyncStepProps {
   onSkip: () => void;
 }
 
-export function SyncStep({
-  instanceCount,
-  submitting,
-  onStart,
-  onSkip,
-}: SyncStepProps) {
+export function SyncStep({ instanceCount, submitting, onStart, onSkip }: SyncStepProps) {
   const t = useTranslations("setup");
 
   return (
@@ -31,21 +20,14 @@ export function SyncStep({
       <Card>
         <CardHeader>
           <CardTitle>{t("syncStepTitle")}</CardTitle>
-          <CardDescription>
-            {t("syncStepHint", { count: instanceCount })}
-          </CardDescription>
+          <CardDescription>{t("syncStepHint", { count: instanceCount })}</CardDescription>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
           <p>{t("syncStepBody")}</p>
         </CardContent>
       </Card>
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onSkip}
-          disabled={submitting}
-        >
+        <Button type="button" variant="outline" onClick={onSkip} disabled={submitting}>
           <SkipForward className="h-4 w-4" />
           {t("syncStepSkip")}
         </Button>

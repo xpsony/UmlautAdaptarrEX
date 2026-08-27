@@ -76,6 +76,7 @@ export type Step =
   | "admin"
   | "mode"
   | "plugins"
+  | "search"
   | "prowlarr-connect"
   | "prowlarr-import"
   | "proxy"

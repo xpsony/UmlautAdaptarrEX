@@ -14,11 +14,7 @@ import { getPlugin } from "@/domain/plugins";
 import { resolveProxyPortEnv } from "@/lib/ports";
 import { parseOrReply } from "./_helpers";
 import { arrayToCsv } from "./instances-crud";
-import {
-  csrfCookieOptions,
-  secretCsrfCookieOptions,
-  sessionCookieOptions,
-} from "./_auth-cookies";
+import { csrfCookieOptions, secretCsrfCookieOptions, sessionCookieOptions } from "./_auth-cookies";
 
 type ProwlarrInstance = NonNullable<SetupInput["prowlarrInstances"]>[number];
 type PluginSelection = NonNullable<SetupInput["plugins"]>[number];
@@ -64,6 +60,15 @@ async function persistInitialSettings(data: SetupInput, apiKey: string): Promise
     proxyUsername: data.proxyUsername,
     proxyPassword: data.proxyPassword,
     operationMode,
+    // Same policy as operationMode above: the wizard default is the
+    // RECOMMENDED value, not the existing-install pin. A fresh setup run
+    // should never inherit a default that only exists to protect upgrades.
+    onDemandLookup: data.onDemandLookup ?? true,
+    tvVariationSearch: data.tvVariationSearch ?? true,
+    movieVariationSearch: data.movieVariationSearch ?? true,
+    maxTitleVariations: data.maxTitleVariations ?? 3,
+    syncIntervalMinutes: data.syncIntervalMinutes ?? 10,
+    fullSyncIntervalHours: data.fullSyncIntervalHours ?? 24,
     setupComplete: true,
   };
   await prisma.setting.upsert({

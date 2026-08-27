@@ -1,21 +1,9 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import {
-  AlertTriangle,
-  ArrowLeft,
-  CloudUpload,
-  Loader2,
-  SkipForward,
-} from "lucide-react";
+import { AlertTriangle, ArrowLeft, CloudUpload, Loader2, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { InstallProxyPreview, ProxyFormInput } from "../_lib/setup-wizard";
@@ -66,17 +54,11 @@ export function ProwlarrInstallStep({
                 </div>
               ) : null}
               <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs">
-                <dt className="text-muted-foreground">
-                  {t("installFieldName")}
-                </dt>
+                <dt className="text-muted-foreground">{t("installFieldName")}</dt>
                 <dd className="font-mono">{installPreview.name}</dd>
-                <dt className="text-muted-foreground">
-                  {t("installFieldPort")}
-                </dt>
+                <dt className="text-muted-foreground">{t("installFieldPort")}</dt>
                 <dd className="font-mono">{installPreview.port}</dd>
-                <dt className="text-muted-foreground">
-                  {t("installFieldUsername")}
-                </dt>
+                <dt className="text-muted-foreground">{t("installFieldUsername")}</dt>
                 <dd className="font-mono">
                   {proxyValues?.proxyUsername ?? installPreview.username}
                 </dd>
@@ -90,39 +72,23 @@ export function ProwlarrInstallStep({
                   placeholder={installPreview.defaultHost}
                   autoComplete="off"
                 />
-                <p className="text-xs text-muted-foreground">
-                  {t("installHostHint")}
-                </p>
+                <p className="text-xs text-muted-foreground">{t("installHostHint")}</p>
               </div>
             </>
           )}
         </CardContent>
       </Card>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onBack}
-          disabled={isSubmitting}
-        >
+        <Button type="button" variant="ghost" onClick={onBack} disabled={isSubmitting}>
           <ArrowLeft className="h-4 w-4" />
           {t("back")}
         </Button>
         <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onSkip}
-            disabled={isSubmitting}
-          >
+          <Button type="button" variant="outline" onClick={onSkip} disabled={isSubmitting}>
             <SkipForward className="h-4 w-4" />
             {t("skipInstallProxy")}
           </Button>
-          <Button
-            type="button"
-            onClick={onSubmit}
-            disabled={isSubmitting || !installPreview}
-          >
+          <Button type="button" onClick={onSubmit} disabled={isSubmitting || !installPreview}>
             {isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (

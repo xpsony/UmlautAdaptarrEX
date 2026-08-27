@@ -4,13 +4,7 @@ import { useTranslations } from "next-intl";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import type { ProwlarrParsedApp, ProwlarrSkippedApp } from "@/schemas/prowlarr";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProwlarrAppSelectionList } from "@/components/instances/prowlarr-app-selection-list";
 import type { AppRowState, OperationMode } from "../_lib/setup-wizard";
 

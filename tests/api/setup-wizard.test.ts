@@ -1,14 +1,6 @@
 import "./_setup/db";
 
-import {
-  afterAll,
-  beforeAll,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-} from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FastifyInstance } from "fastify";
 
 vi.mock("@/providers/tmdb", async (importOriginal) => {
@@ -51,15 +43,9 @@ import {
 
 let app: FastifyInstance;
 
-const fetchAppsMock = fetchProwlarrApplications as unknown as ReturnType<
-  typeof vi.fn
->;
-const findExistingMock = findExistingUmlautProxy as unknown as ReturnType<
-  typeof vi.fn
->;
-const installProxyMock = installUmlautProxy as unknown as ReturnType<
-  typeof vi.fn
->;
+const fetchAppsMock = fetchProwlarrApplications as unknown as ReturnType<typeof vi.fn>;
+const findExistingMock = findExistingUmlautProxy as unknown as ReturnType<typeof vi.fn>;
+const installProxyMock = installUmlautProxy as unknown as ReturnType<typeof vi.fn>;
 
 beforeAll(async () => {
   await ensureTestDb();
@@ -193,9 +179,7 @@ describe("POST /api/auth/setup happy path", () => {
       method: "GET",
       url: "/api/auth/setup-status",
     });
-    expect((after.json() as { setupComplete: boolean }).setupComplete).toBe(
-      true,
-    );
+    expect((after.json() as { setupComplete: boolean }).setupComplete).toBe(true);
   });
 
   it("rejects a second setup attempt with 409 once setup is complete", async () => {
@@ -374,5 +358,72 @@ describe("setup wizard with no Setting row at all", () => {
     });
     expect(r.statusCode).toBe(409);
     expect(r.json()).toMatchObject({ error: "no_stored_creds" });
+  });
+});
+
+describe("POST /api/auth/setup search behaviour", () => {
+  it("persists the search-behaviour choices from the wizard", async () => {
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/auth/setup",
+      payload: {
+        ...minimalSetupPayload,
+        onDemandLookup: false,
+        tvVariationSearch: true,
+        movieVariationSearch: false,
+        maxTitleVariations: 5,
+        syncIntervalMinutes: 30,
+        fullSyncIntervalHours: 12,
+      },
+    });
+    expect(r.statusCode).toBe(200);
+
+    const { prisma } = await import("@/lib/db");
+    const setting = await prisma.setting.findUnique({ where: { id: 1 } });
+    expect(setting?.onDemandLookup).toBe(false);
+    expect(setting?.tvVariationSearch).toBe(true);
+    expect(setting?.movieVariationSearch).toBe(false);
+    expect(setting?.maxTitleVariations).toBe(5);
+    expect(setting?.syncIntervalMinutes).toBe(30);
+    expect(setting?.fullSyncIntervalHours).toBe(12);
+  });
+
+  it("falls back to the recommended defaults when the wizard omits them", async () => {
+    // An older client that predates the `search` step must not land on the
+    // existing-install pin; it gets the recommended values, same policy as
+    // operationMode.
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/auth/setup",
+      payload: minimalSetupPayload,
+    });
+    expect(r.statusCode).toBe(200);
+
+    const { prisma } = await import("@/lib/db");
+    const setting = await prisma.setting.findUnique({ where: { id: 1 } });
+    expect(setting?.onDemandLookup).toBe(true);
+    expect(setting?.tvVariationSearch).toBe(true);
+    expect(setting?.movieVariationSearch).toBe(true);
+    expect(setting?.maxTitleVariations).toBe(3);
+    expect(setting?.syncIntervalMinutes).toBe(10);
+    expect(setting?.fullSyncIntervalHours).toBe(24);
+  });
+
+  it("rejects a variation cap outside the allowed range", async () => {
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/auth/setup",
+      payload: { ...minimalSetupPayload, maxTitleVariations: 99 },
+    });
+    expect(r.statusCode).toBe(400);
+  });
+
+  it("rejects a quick-sync interval between one and four minutes", async () => {
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/auth/setup",
+      payload: { ...minimalSetupPayload, syncIntervalMinutes: 3 },
+    });
+    expect(r.statusCode).toBe(400);
   });
 });
