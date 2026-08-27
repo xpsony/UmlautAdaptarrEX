@@ -97,12 +97,10 @@ export function applyPatchToRaw(
 }
 
 export type FetchIndexersResult =
-  | { ok: true; indexers: ProwlarrIndexerView[] }
-  | { ok: false; status?: number; error: string };
+  { ok: true; indexers: ProwlarrIndexerView[] } | { ok: false; status?: number; error: string };
 
 export type ReconcileResult =
-  | { ok: true; results: PatchIndexerResult[] }
-  | { ok: false; status?: number; error: string };
+  { ok: true; results: PatchIndexerResult[] } | { ok: false; status?: number; error: string };
 
 function makeCtx(host: string, apiKey: string, ua: string, logger?: CompatLogger): StepContext {
   return {

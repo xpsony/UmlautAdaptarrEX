@@ -1,10 +1,7 @@
 import { request } from "undici";
 import type { ArrType } from "@/schemas/instance";
 import { isMaskedSecret } from "@/lib/secrets";
-import {
-  privateHostsAllowedForArrInstance,
-  urlIsPrivate,
-} from "@/server/security/ssrf";
+import { privateHostsAllowedForArrInstance, urlIsPrivate } from "@/server/security/ssrf";
 import { describeError } from "@/lib/error-format";
 
 // Minimal structural type so we accept both pino loggers and Fastify's
@@ -58,10 +55,7 @@ export async function testConnection(
   // targets are allowed unless the operator explicitly opts back into strict
   // mode via UA_BLOCK_PRIVATE_INSTANCE_HOSTS=true (cloud-hosted scenario).
   if (urlIsPrivate(host) && !privateHostsAllowedForArrInstance()) {
-    log?.warn(
-      { host },
-      "test-connection: refused - host resolves to a private/loopback target",
-    );
+    log?.warn({ host }, "test-connection: refused - host resolves to a private/loopback target");
     return {
       ok: false,
       code: "private_host_blocked",
@@ -97,9 +91,7 @@ export async function testConnection(
         ok: false,
         status: statusCode,
         code: isAuth ? "upstream_unauthorized" : "upstream_error",
-        error: isAuth
-          ? `HTTP ${statusCode}: ${type} rejected the API key.`
-          : `HTTP ${statusCode}`,
+        error: isAuth ? `HTTP ${statusCode}: ${type} rejected the API key.` : `HTTP ${statusCode}`,
       };
     }
     const json = (await body.json().catch(() => null)) as {
