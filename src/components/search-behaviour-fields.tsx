@@ -12,17 +12,11 @@ import { SYNC_PRESETS } from "@/schemas/settings";
 import {
   VARIATION_EXAMPLE,
   VARIATION_TOGGLES,
+  type SearchBehaviourValues,
   type VariationToggle,
 } from "@/app/(admin)/settings/_lib/settings-types";
 
-export interface SearchBehaviourValues {
-  onDemandLookup: boolean;
-  tvVariationSearch: boolean;
-  movieVariationSearch: boolean;
-  maxTitleVariations: number;
-  syncIntervalMinutes: number;
-  fullSyncIntervalHours: number;
-}
+export type { SearchBehaviourValues };
 
 export interface SearchBehaviourFieldsProps {
   values: SearchBehaviourValues;

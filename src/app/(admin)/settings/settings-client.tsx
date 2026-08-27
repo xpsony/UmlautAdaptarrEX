@@ -15,11 +15,13 @@ import { PluginsSection } from "./_components/plugins-section";
 import { ProvidersTab } from "./_components/providers-tab";
 import { ProwlarrSection } from "./_components/prowlarr-section";
 import { RenamingTab } from "./_components/renaming-tab";
+import { SearchTab } from "./_components/search-tab";
 import {
   AdvancedSettingsSchema,
   GeneralSettingsSchema,
   ProvidersSettingsSchema,
   RenamingSettingsSchema,
+  SearchSettingsSchema,
 } from "./_lib/settings-types";
 import type {
   AdvancedFormInput,
@@ -30,6 +32,8 @@ import type {
   ProvidersFormOutput,
   RenamingFormInput,
   RenamingFormOutput,
+  SearchFormInput,
+  SearchFormOutput,
   SettingsRow,
 } from "./_lib/settings-types";
 
@@ -129,6 +133,28 @@ export function SettingsClient() {
   });
   const onSaveRenaming = (data: RenamingFormOutput) => renamingSaveMut.mutate(data);
 
+  // --- Search tab ------------------------------------------------------------
+  const searchForm = useForm<SearchFormInput, unknown, SearchFormOutput>({
+    resolver: zodResolver(SearchSettingsSchema),
+  });
+  useEffect(() => {
+    if (settings.data && !searchForm.formState.isDirty) searchForm.reset(settings.data);
+  }, [settings.data, searchForm]);
+  const searchSaveMut = useMutation({
+    mutationFn: (data: SearchFormOutput) =>
+      apiFetch("/api/admin/settings", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      toast.success(t("saved"));
+      searchForm.reset(searchForm.getValues());
+      void qc.invalidateQueries({ queryKey: ["settings"] });
+    },
+    onError: () => toast.error(tCommon("error")),
+  });
+  const onSaveSearch = (data: SearchFormOutput) => searchSaveMut.mutate(data);
+
   // --- Advanced tab -----------------------------------------------------------
   const advancedForm = useForm<AdvancedFormInput, unknown, AdvancedFormOutput>({
     resolver: zodResolver(AdvancedSettingsSchema),
@@ -216,6 +242,7 @@ export function SettingsClient() {
             <TabsTrigger value="providers">{t("section.providers")}</TabsTrigger>
             <TabsTrigger value="prowlarr">{t("section.prowlarr")}</TabsTrigger>
             <TabsTrigger value="plugins">{t("section.plugins")}</TabsTrigger>
+            <TabsTrigger value="search">{t("section.search")}</TabsTrigger>
             <TabsTrigger value="renaming">{t("section.renaming")}</TabsTrigger>
             <TabsTrigger value="advanced">{t("section.advanced")}</TabsTrigger>
           </TabsList>
@@ -245,6 +272,10 @@ export function SettingsClient() {
 
           <TabsContent value="plugins" className="space-y-6">
             <PluginsSection />
+          </TabsContent>
+
+          <TabsContent value="search" className="space-y-6">
+            <SearchTab form={searchForm} onSave={onSaveSearch} saving={searchSaveMut.isPending} />
           </TabsContent>
 
           <TabsContent value="renaming" className="space-y-6">

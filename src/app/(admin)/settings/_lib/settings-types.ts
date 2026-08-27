@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import type { UseFormReturn } from "react-hook-form";
-import { SettingsUpdateSchema } from "@/schemas/settings";
+import { SettingsSchema, SettingsUpdateSchema } from "@/schemas/settings";
 import type { SettingsUpdate } from "@/schemas/settings";
 import type { OperationMode } from "@/components/operation-mode-picker";
 
@@ -68,6 +68,38 @@ export const SearchSettingsSchema = SettingsUpdateSchema.pick({
 export type SearchFormInput = z.input<typeof SearchSettingsSchema>;
 export type SearchFormOutput = z.infer<typeof SearchSettingsSchema>;
 export type SearchForm = UseFormReturn<SearchFormInput, unknown, SearchFormOutput>;
+
+/**
+ * The six search fields with every value present. `SearchFormOutput` comes
+ * from a partial schema, so its fields are optional; the UI needs a shape
+ * where they are not, and both the settings tab and the setup wizard render
+ * against this one.
+ */
+export interface SearchBehaviourValues {
+  onDemandLookup: boolean;
+  tvVariationSearch: boolean;
+  movieVariationSearch: boolean;
+  maxTitleVariations: number;
+  syncIntervalMinutes: number;
+  fullSyncIntervalHours: number;
+}
+
+/**
+ * The fresh-install values for the six search fields, used as placeholders
+ * until the settings query resolves. Derived from `SettingsSchema` rather
+ * than restated, so the UI can never drift from the server defaults.
+ */
+export const SEARCH_DEFAULTS: SearchBehaviourValues = (() => {
+  const full = SettingsSchema.parse({});
+  return {
+    onDemandLookup: full.onDemandLookup,
+    tvVariationSearch: full.tvVariationSearch,
+    movieVariationSearch: full.movieVariationSearch,
+    maxTitleVariations: full.maxTitleVariations,
+    syncIntervalMinutes: full.syncIntervalMinutes,
+    fullSyncIntervalHours: full.fullSyncIntervalHours,
+  };
+})();
 
 /** The two fan-out toggles, in the order the UI renders them. */
 export const VARIATION_TOGGLES = [
