@@ -1,8 +1,6 @@
-import {
-  normalizeForComparison,
-  normalizedCharContribution,
-} from "../normalization/comparison";
+import { normalizeForComparison, normalizedCharContribution } from "../normalization/comparison";
 import { getActiveLanguagePack, type LanguagePack } from "../plugins";
+import { stripReleaseUnsafeChars } from "./rename";
 
 export interface BooksAudioSearchItem {
   expectedTitle: string;
@@ -52,19 +50,10 @@ function findBestMatch(
     }
   }
 
-  if (bestNormLen < 0)
-    return { found: false, startOriginal: 0, endOriginal: 0 };
+  if (bestNormLen < 0) return { found: false, startOriginal: 0, endOriginal: 0 };
 
-  const startOrig = mapNormalizedIndexToOriginal(
-    originalTitle,
-    bestStartNorm,
-    pack,
-  );
-  const endOrig = mapNormalizedIndexToOriginal(
-    originalTitle,
-    bestEndNorm,
-    pack,
-  );
+  const startOrig = mapNormalizedIndexToOriginal(originalTitle, bestStartNorm, pack);
+  const endOrig = mapNormalizedIndexToOriginal(originalTitle, bestEndNorm, pack);
   return { found: true, startOriginal: startOrig, endOriginal: endOrig };
 }
 
@@ -91,24 +80,24 @@ function mapNormalizedIndexToOriginal(
 const TRAILING_DELIMS = [" ", "-", "_", "."];
 const CLOSING_DELIMS = [")", "]", "}"];
 
+export interface BooksAudioRenameOptions {
+  /**
+   * Strip release-unsafe characters (`: ? * " < > | / \`) from the inserted
+   * author/title. Mirrors the movie/TV option; the `[suffix]` block keeps the
+   * indexer's own text verbatim.
+   */
+  stripSpecialChars?: boolean;
+}
+
 export function renameForBooksAndAudio(
   originalTitle: string,
   searchItem: BooksAudioSearchItem,
   pack: LanguagePack = getActiveLanguagePack(),
+  options: BooksAudioRenameOptions = {},
 ): BooksAudioRenameResult {
   const normalized = normalizeForComparison(originalTitle, pack);
-  const author = findBestMatch(
-    searchItem.authorMatchVariations,
-    originalTitle,
-    normalized,
-    pack,
-  );
-  const title = findBestMatch(
-    searchItem.titleMatchVariations,
-    originalTitle,
-    normalized,
-    pack,
-  );
+  const author = findBestMatch(searchItem.authorMatchVariations, originalTitle, normalized, pack);
+  const title = findBestMatch(searchItem.titleMatchVariations, originalTitle, normalized, pack);
 
   if (!author.found || !title.found) return { rewrittenTitle: null };
 
@@ -117,25 +106,24 @@ export function renameForBooksAndAudio(
   // ('5' in "Deep Water (2005)"), leaving the ')' to leak into the suffix.
   // Skip closing delimiters only — consuming an opening one would strip the
   // "[" that starts the quality tag in "Deep Water[MP3-128kbps]".
-  while (
-    endPos < originalTitle.length &&
-    CLOSING_DELIMS.includes(originalTitle[endPos]!)
-  ) {
+  while (endPos < originalTitle.length && CLOSING_DELIMS.includes(originalTitle[endPos]!)) {
     endPos++;
   }
-  if (
-    endPos < originalTitle.length &&
-    TRAILING_DELIMS.includes(originalTitle[endPos]!)
-  ) {
+  if (endPos < originalTitle.length && TRAILING_DELIMS.includes(originalTitle[endPos]!)) {
     endPos++;
   }
 
   let suffix = originalTitle.slice(endPos);
-  while (suffix.length && TRAILING_DELIMS.includes(suffix[0]!))
-    suffix = suffix.slice(1);
+  while (suffix.length && TRAILING_DELIMS.includes(suffix[0]!)) suffix = suffix.slice(1);
   suffix = suffix.trim();
 
-  let updated = `${searchItem.expectedAuthor} - ${searchItem.expectedTitle}`;
+  const outAuthor = options.stripSpecialChars
+    ? stripReleaseUnsafeChars(searchItem.expectedAuthor)
+    : searchItem.expectedAuthor;
+  const outTitle = options.stripSpecialChars
+    ? stripReleaseUnsafeChars(searchItem.expectedTitle)
+    : searchItem.expectedTitle;
+  let updated = `${outAuthor} - ${outTitle}`;
   if (suffix.length >= 3) {
     updated += `-[${suffix}]`;
   }

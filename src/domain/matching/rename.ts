@@ -1,7 +1,4 @@
-import {
-  normalizeForComparison,
-  normalizedCharContribution,
-} from "../normalization/comparison";
+import { normalizeForComparison, normalizedCharContribution } from "../normalization/comparison";
 import { getActiveLanguagePack, type LanguagePack } from "../plugins";
 import { escapeRegex, findFirstSeparator } from "./separator";
 
@@ -25,6 +22,73 @@ export interface RenameSearchItem {
 }
 
 const DEFAULT_YEAR_TOLERANCE = 1;
+
+/**
+ * Operator-configurable rename behaviour (Settings -> Renaming). Every flag
+ * defaults to today's EX behaviour, so an omitted option object behaves
+ * exactly like before this was configurable.
+ */
+export interface RenameOptions {
+  /**
+   * Refuse the rewrite when the release name carries a 4-digit year outside
+   * the item's tolerance window. `false` skips the check regardless of
+   * `yearMatchingTolerance` — the .NET predecessor had no year check at all.
+   */
+  yearGuard?: boolean;
+  /**
+   * Refuse the rewrite when `expectedTitle` itself starts with the matched
+   * variation and no strong release marker (SxxExx / a 4-digit year) follows.
+   * Guards against a short alias hijacking a different work that merely
+   * shares the prefix.
+   */
+  prefixGuard?: boolean;
+  /**
+   * Push a release-format tag (3D/4K/HDR/IMAX) that a provider alias baked
+   * into its string back into the suffix instead of swallowing it.
+   */
+  releaseTagGuard?: boolean;
+  /**
+   * Cut the suffix at the matched variation's RAW length, the way the .NET
+   * predecessor did, instead of counting normalized characters. Reproduces
+   * the predecessor's off-by-N on expanding characters (German ß -> "ss")
+   * and on accents outside the active plugins, so it is opt-in only.
+   */
+  legacySuffix?: boolean;
+  /**
+   * Strip characters that are unwelcome in release names from the inserted
+   * title (see `stripReleaseUnsafeChars`). Only the *inserted* title is
+   * touched; the indexer's own suffix is passed through verbatim.
+   */
+  stripSpecialChars?: boolean;
+}
+
+const DEFAULT_RENAME_OPTIONS: Required<RenameOptions> = {
+  yearGuard: true,
+  prefixGuard: true,
+  releaseTagGuard: true,
+  legacySuffix: false,
+  stripSpecialChars: false,
+};
+
+// Characters that never appear in a scene release name and that Sonarr,
+// Radarr and most filesystems dislike. `:` is the one that actually shows up
+// in practice, via expectedTitles of the form "Subtitle: After the Colon".
+const RELEASE_UNSAFE_CHARS_RE = /[:?*"<>|/\\]/g;
+
+/**
+ * Remove release-unsafe characters from a title and tidy up what that leaves
+ * behind. Stripping `:` out of "Ember:.Steel.Angel" would otherwise emit a
+ * doubled separator ("Ember..Steel.Angel"), so runs of `.`, `_` and spaces
+ * are collapsed and any now-dangling separator is trimmed off the ends.
+ */
+export function stripReleaseUnsafeChars(title: string): string {
+  return title
+    .replace(RELEASE_UNSAFE_CHARS_RE, "")
+    .replace(/\.{2,}/g, ".")
+    .replace(/_{2,}/g, "_")
+    .replace(/ {2,}/g, " ")
+    .replace(/^[._ -]+|[._ -]+$/g, "");
+}
 
 export interface RenameResult {
   rewrittenTitle: string | null;
@@ -59,12 +123,12 @@ export function renameForMoviesAndTv(
   originalTitle: string,
   searchItem: RenameSearchItem,
   pack: LanguagePack = getActiveLanguagePack(),
+  options: RenameOptions = {},
 ): RenameResult {
+  const opts = { ...DEFAULT_RENAME_OPTIONS, ...options };
   const normalizedOriginal = normalizeForComparison(originalTitle, pack);
   const variations = [...searchItem.titleMatchVariations].sort(
-    (a, b) =>
-      normalizeForComparison(b, pack).length -
-      normalizeForComparison(a, pack).length,
+    (a, b) => normalizeForComparison(b, pack).length - normalizeForComparison(a, pack).length,
   );
 
   // Year disambiguation: if the search item knows its release year and the
@@ -77,13 +141,11 @@ export function renameForMoviesAndTv(
     searchItem.yearMatchingTolerance === undefined
       ? DEFAULT_YEAR_TOLERANCE
       : searchItem.yearMatchingTolerance;
-  if (searchItem.year != null && tolerance !== null) {
+  if (opts.yearGuard && searchItem.year != null && tolerance !== null) {
     const years = releaseYears(originalTitle);
     if (years.length > 0) {
       const itemYear = searchItem.year;
-      const inTolerance = years.some(
-        (y) => Math.abs(y - itemYear) <= tolerance,
-      );
+      const inTolerance = years.some((y) => Math.abs(y - itemYear) <= tolerance);
       if (!inTolerance) {
         return { rewrittenTitle: null, reason: "year-mismatch" };
       }
@@ -98,7 +160,17 @@ export function renameForMoviesAndTv(
     if (!normalizedOriginal.startsWith(normalizedVariation)) continue;
 
     const separator = findFirstSeparator(originalTitle);
-    const newTitlePrefix = searchItem.expectedTitle.replace(/ /g, separator);
+    // Strip release-unsafe characters BEFORE the space->separator swap, then
+    // once more after: "Ember: Steel Angel" with separator "." becomes
+    // "Ember:.Steel.Angel" -> "Ember..Steel.Angel", and only the second
+    // pass collapses that doubled separator.
+    const expectedForPrefix = opts.stripSpecialChars
+      ? stripReleaseUnsafeChars(searchItem.expectedTitle)
+      : searchItem.expectedTitle;
+    let newTitlePrefix = expectedForPrefix.replace(/ /g, separator);
+    if (opts.stripSpecialChars) {
+      newTitlePrefix = stripReleaseUnsafeChars(newTitlePrefix);
+    }
 
     // Walk originalTitle counting how many *normalized* chars each char
     // contributes. Comparison-map entries can expand 1→N (e.g. German ß →
@@ -107,14 +179,23 @@ export function renameForMoviesAndTv(
     // suffix wrong by N per char, eating the next token (e.g. variation
     // "Strasse" against "Straße.Test.S01E01" would return ".est.S01E01"
     // and "Cafe" against "Café.S01E01" would return "01E01").
-    const targetCount = normalizedVariation.length;
-    let matchedNormalized = 0;
-    let endIdx = 0;
-    for (let i = 0; i < originalTitle.length; i++) {
-      const c = originalTitle[i]!;
-      matchedNormalized += normalizedCharContribution(c, pack);
-      endIdx = i + 1;
-      if (matchedNormalized >= targetCount) break;
+    let endIdx: number;
+    if (opts.legacySuffix) {
+      // Predecessor behaviour: cut at the variation's raw length. Wrong
+      // whenever a character expands or folds during normalization, which is
+      // exactly why the counted walk below exists — kept only for operators
+      // who want the old output byte for byte.
+      endIdx = Math.min(variation.length, originalTitle.length);
+    } else {
+      const targetCount = normalizedVariation.length;
+      let matchedNormalized = 0;
+      endIdx = 0;
+      for (let i = 0; i < originalTitle.length; i++) {
+        const c = originalTitle[i]!;
+        matchedNormalized += normalizedCharContribution(c, pack);
+        endIdx = i + 1;
+        if (matchedNormalized >= targetCount) break;
+      }
     }
 
     // When the variation matched without trailing punctuation (e.g. variation
@@ -127,10 +208,7 @@ export function renameForMoviesAndTv(
     // Deliberately limited to *closing* delimiters: consuming an opening one
     // would swallow the start of the suffix in "Chronicles of Time(2005)..."
     // and land the token-boundary check below on '2', discarding a valid match.
-    while (
-      endIdx < originalTitle.length &&
-      CLOSING_DELIM_RE.test(originalTitle[endIdx]!)
-    ) {
+    while (endIdx < originalTitle.length && CLOSING_DELIM_RE.test(originalTitle[endIdx]!)) {
       endIdx++;
     }
 
@@ -141,9 +219,17 @@ export function renameForMoviesAndTv(
     // and the rewrite eats the leading "2" of the year, producing
     // "Die.Renko.Jagd.016.German.DL...". Any non-alphanumeric
     // (`.`, `-`, ` `, `_`, …) or end-of-string is a clean boundary.
-    const nextChar = originalTitle[endIdx];
-    if (nextChar !== undefined && ALPHANUMERIC_RE.test(nextChar)) {
-      continue;
+    //
+    // Skipped under `legacySuffix`: the raw-length cut above does not land on
+    // the true end of the match, so this check would be reading the wrong
+    // position and would turn the toggle into "declines renames at random"
+    // instead of reproducing the predecessor (which had no boundary check
+    // either). Both halves belong to the same optimisation.
+    if (!opts.legacySuffix) {
+      const nextChar = originalTitle[endIdx];
+      if (nextChar !== undefined && ALPHANUMERIC_RE.test(nextChar)) {
+        continue;
+      }
     }
 
     // If the consumed prefix ends with a release-format tag (3D/4K/HDR/
@@ -151,13 +237,12 @@ export function renameForMoviesAndTv(
     // carry that tag, push the tag back into the suffix. Otherwise an
     // alias like "Resident Evil: Afterlife 3D" eats the "3D" of
     // "Resident.Evil.Afterlife.3D.2010..." and the rewrite drops it.
-    const tagMatch = RELEASE_TAG_TAIL_RE.exec(originalTitle.slice(0, endIdx));
+    const tagMatch = opts.releaseTagGuard
+      ? RELEASE_TAG_TAIL_RE.exec(originalTitle.slice(0, endIdx))
+      : null;
     if (tagMatch) {
       const tag = tagMatch[2]!;
-      const tagInExpectedRe = new RegExp(
-        `(?:^|[^A-Za-z0-9])${tag}(?:$|[^A-Za-z0-9])`,
-        "i",
-      );
+      const tagInExpectedRe = new RegExp(`(?:^|[^A-Za-z0-9])${tag}(?:$|[^A-Za-z0-9])`, "i");
       if (!tagInExpectedRe.test(searchItem.expectedTitle)) {
         endIdx -= tag.length + 1;
       }
@@ -170,12 +255,11 @@ export function renameForMoviesAndTv(
     // a 4-digit year for movies. Otherwise the prefix is ambiguous (could
     // be a different work that just shares the prefix).
     if (
+      opts.prefixGuard &&
       searchItem.expectedTitle.toLowerCase().startsWith(variation.toLowerCase())
     ) {
       const sep = escapeRegex(separator);
-      const markerRe = new RegExp(
-        `^${sep}(?:S\\d{1,4}E\\d{1,4}|(?:19|20)\\d{2}(?:${sep}|$))`,
-      );
+      const markerRe = new RegExp(`^${sep}(?:S\\d{1,4}E\\d{1,4}|(?:19|20)\\d{2}(?:${sep}|$))`);
       if (!markerRe.test(suffix)) {
         return { rewrittenTitle: null, reason: "ambiguous-prefix" };
       }
