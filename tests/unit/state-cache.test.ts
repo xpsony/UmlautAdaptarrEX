@@ -96,6 +96,9 @@ describe("AppState in-memory item index", () => {
     const rewrite = state.toRewriteSearchItem(item);
     expect(rewrite).toEqual({
       expectedTitle: item.expectedTitle,
+      // Forwarded so the rewrite can emit newznab id attributes.
+      externalId: item.externalId,
+      imdbId: null,
       expectedAuthor: "Author X",
       titleMatchVariations: ["A", "B"],
       authorMatchVariations: ["Author X"],

@@ -153,6 +153,11 @@ export async function handleSearch(
     if (!body || isPaused) return body;
     return rewriteIndexerXml(body, {
       pack: state.languagePack,
+      // Operator-configurable renaming (Settings -> Renaming). Read per
+      // response off the live settings snapshot so a saved change takes
+      // effect on the next request without a restart.
+      rename: state.renameOptions,
+      attachExternalIds: state.settings.renameAttachExternalIds,
       searchItem: searchItem ? state.toRewriteSearchItem(searchItem) : null,
       lookup: searchItem
         ? undefined

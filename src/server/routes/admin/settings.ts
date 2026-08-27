@@ -60,6 +60,12 @@ async function getSettings(): Promise<unknown> {
       operationMode: true,
       blockPrivateInstanceHosts: true,
       pausedUntil: true,
+      renameYearGuard: true,
+      renamePrefixGuard: true,
+      renameReleaseTagGuard: true,
+      renameLegacySuffix: true,
+      renameStripSpecialChars: true,
+      renameAttachExternalIds: true,
     },
   });
   if (!setting) return null;

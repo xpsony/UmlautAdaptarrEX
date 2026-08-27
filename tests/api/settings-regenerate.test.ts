@@ -4,12 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { buildTestApp } from "./_setup/app";
 import { cleanDb, ensureTestDb } from "./_setup/db";
-import {
-  authCookies,
-  login,
-  seedAdminUser,
-  sessionCookieOnly,
-} from "./_setup/auth-helpers";
+import { authCookies, login, seedAdminUser, sessionCookieOnly } from "./_setup/auth-helpers";
 import { getAppState } from "@/server/state";
 
 let app: FastifyInstance;
@@ -183,6 +178,50 @@ describe("PUT /api/admin/settings live-reload", () => {
     });
     expect(r.statusCode).toBe(200);
     expect(getAppState().settings.cacheDurationMinutes).toBe(before + 5);
+  });
+
+  it("round-trips the renaming toggles into state.renameOptions", async () => {
+    await seedAdminUser();
+    const session = await login(app);
+
+    const r = await app.inject({
+      method: "PUT",
+      url: "/api/admin/settings",
+      payload: {
+        renameYearGuard: false,
+        renamePrefixGuard: false,
+        renameReleaseTagGuard: false,
+        renameLegacySuffix: true,
+        renameStripSpecialChars: true,
+        renameAttachExternalIds: true,
+      },
+      ...authCookies(session),
+    });
+    expect(r.statusCode).toBe(200);
+
+    // The getter the legacy search route reads per response.
+    expect(getAppState().renameOptions).toEqual({
+      yearGuard: false,
+      prefixGuard: false,
+      releaseTagGuard: false,
+      legacySuffix: true,
+      stripSpecialChars: true,
+    });
+    // attachExternalIds is read straight off the settings snapshot.
+    expect(getAppState().settings.renameAttachExternalIds).toBe(true);
+
+    // ...and the GET echoes them so the Renaming tab can hydrate its form.
+    const get = await app.inject({
+      method: "GET",
+      url: "/api/admin/settings",
+      cookies: { uaSession: session.sessionCookie },
+    });
+    expect(get.json()).toMatchObject({
+      renameYearGuard: false,
+      renameLegacySuffix: true,
+      renameStripSpecialChars: true,
+      renameAttachExternalIds: true,
+    });
   });
 
   it("an operationMode change triggers a warn-log hint without breaking the response", async () => {

@@ -12,15 +12,15 @@ datasource db {
 // ── Auth ───────────────────────────────────────────────────────────────────────
 
 model AdminUser {
-  id           String    @id @default(cuid())
-  username     String    @unique
-  passwordHash String
-  createdAt    DateTime  @default(now())
+  id                String    @id @default(cuid())
+  username          String    @unique
+  passwordHash      String
+  createdAt         DateTime  @default(now())
   // Version of the most recent changelog entry this user has acknowledged.
   // Null means "never acknowledged" (treated as a fresh install, no popup).
   // Drives the once-per-user changelog dialog server-side.
   lastSeenChangelog String?
-  sessions     Session[]
+  sessions          Session[]
 }
 
 model Session {
@@ -38,61 +38,61 @@ model Session {
 // ── Settings (Single-Row) ─────────────────────────────────────────────────────
 
 model Setting {
-  id                   Int     @id @default(1)
-  appApiKey            String
-  proxyPort            Int     @default(5006)
+  id                        Int       @id @default(1)
+  appApiKey                 String
+  proxyPort                 Int       @default(5006)
   // Credentials für den HTTP-Proxy auf Port 5006 (Prowlarr/Indexer-Auth).
   // Default-Username = "UmlautAdaptarr"; Passwort wird beim ersten Boot
   // mit nanoid(24) befüllt — siehe `AppState.reloadSettings`.
-  proxyUsername        String  @default("UmlautAdaptarr")
-  proxyPassword        String  @default("")
-  cacheDurationMinutes Int     @default(12)
-  titleApiHost         String  @default("https://umlautadaptarr.pcjones.de/api/v1")
-  tmdbApiKey           String?
+  proxyUsername             String    @default("UmlautAdaptarr")
+  proxyPassword             String    @default("")
+  cacheDurationMinutes      Int       @default(12)
+  titleApiHost              String    @default("https://umlautadaptarr.pcjones.de/api/v1")
+  tmdbApiKey                String?
   // TVDB v4 API: API-Key (issued in https://thetvdb.com/api-information) plus
   // optional Subscriber-PIN. Manche v4-Endpoints (z.B. ?meta=translations) sind
   // nur mit gesetztem Pin erreichbar. Beides server-only, niemals an die UI.
-  tvdbApiKey           String?
-  tvdbPin              String?
-  userAgent            String  @default("UmlautAdaptarrEX/2.0")
-  setupComplete        Boolean @default(false)
+  tvdbApiKey                String?
+  tvdbPin                   String?
+  userAgent                 String    @default("UmlautAdaptarrEX/2.0")
+  setupComplete             Boolean   @default(false)
   // Optional: persistierte Prowlarr-Verbindung. Wir nutzen sie, um den
   // Import-Dialog vorzubefüllen, damit der User die Creds nicht jedes Mal
   // neu eingeben muss. apiKey ist sensibel — wird nie an die UI geliefert,
   // nur ein "configured"-Flag.
-  prowlarrHost         String?
-  prowlarrApiKey       String?
+  prowlarrHost              String?
+  prowlarrApiKey            String?
   // Wie viele Tage Logs in der DB vorgehalten werden (Cleanup-Job kürzt alles
   // Ältere). Default 3 — genug, um vergangene Fehler nachzusehen, ohne dass
   // die Tabelle ungebremst wächst.
-  logRetentionDays     Int     @default(3)
+  logRetentionDays          Int       @default(3)
   // How long request/rename history rows are kept (days). One shared value
   // for RequestHistory + RenameHistory; the cleanup job (every 6h) deletes
   // older rows. Default 30.
-  historyRetentionDays Int     @default(30)
+  historyRetentionDays      Int       @default(30)
   // Mindest-Spacing zwischen zwei Calls gegen denselben Indexer-Host (ms).
   // Schützt vor 429/Bans bei Free-Tier-Indexern. Bei 429/Retry-After wird der
   // Limiter dynamisch hochgesetzt (siehe HostRateLimiter.backoff).
-  indexerRateLimitMs   Int     @default(500)
+  indexerRateLimitMs        Int       @default(500)
   // Maximale Wartezeit pro Indexer-Request (Sekunden). Wird einheitlich auf
   // connect-, headers- und body-Timeout des HTTP-Clients angewendet. Greift,
   // wenn ein Indexer langsam antwortet oder die TCP-Verbindung hängt
   // (vorher: hartkodierter undici-Default von 10s connectTimeout).
-  indexerTimeoutSeconds Int    @default(60)
+  indexerTimeoutSeconds     Int       @default(60)
   // HMAC-Secret für CSRF-Tokens (base64). Wird beim ersten Boot via
   // `ensureCsrfSecret()` generiert und persistiert, damit Tokens
   // Container-Restarts überleben. ENV `CSRF_SECRET` überschreibt die DB.
-  csrfSecret           String?
+  csrfSecret                String?
   // Steuert, welche Komponenten aktiv sind. "proxy" → nur HTTP-Proxy auf 5006;
   // "legacy" → nur Legacy-Indexer-Routes auf 5005; "both" → beide aktiv.
   // Default = "proxy" (empfohlener Standard); der Setup-Wizard kann das
   // explizit überschreiben.
-  operationMode        String  @default("proxy")
+  operationMode             String    @default("proxy")
   // Pause-Schalter: solange `pausedUntil > now`, leitet der Legacy-Indexer-Pfad
   // alle Sonarr/Radarr-Anfragen unmanipuliert an die Indexer durch und schreibt
   // weder Antwort-Titel um noch fügt er Umlaut-Varianten zur Suche hinzu.
   // NULL = nicht pausiert. Sentinel-Datum (Jahr 9999) = unbegrenzte Pause.
-  pausedUntil          DateTime?
+  pausedUntil               DateTime?
   // SSRF-Strict-Mode: wenn true, blockiert testConnection/Prowlarr-Fetch
   // alles, was auf eine private/Loopback-Adresse zeigt (192.168.*, 10.*,
   // ::1, *.local, host.docker.internal, …). Default false, weil
@@ -101,34 +101,66 @@ model Setting {
   // sollten das aktivieren, damit pre-setup keine internen Ziele
   // angeprobt werden können. ENV `UA_BLOCK_PRIVATE_INSTANCE_HOSTS=true`
   // überschreibt diesen Wert zur Laufzeit.
-  blockPrivateInstanceHosts Boolean @default(false)
+  blockPrivateInstanceHosts Boolean   @default(false)
+
+  // ── Renaming ────────────────────────────────────────────────────────────────
+  // Wie aggressiv der Matcher Release-Titel umschreibt. Die vier `*Guard` /
+  // `*Legacy*`-Schalter existieren, damit man das Verhalten des .NET-Vorgängers
+  // (old_code/) wiederherstellen kann: der hatte keine dieser Schutzregeln.
+  // Defaults = heutiges EX-Verhalten, d.h. alle Guards an.
+  //
+  // Year-Mismatch-Ablehnung global. Wirkt UND-verknüpft mit der pro-Instanz
+  // gepflegten `ArrInstance.enableYearMatching`: aus hier = global aus.
+  renameYearGuard         Boolean @default(true)
+  // Ablehnung, wenn der `expectedTitle` mit der gematchten Variation beginnt
+  // und danach kein starker Release-Marker (SxxExx / Jahr) folgt.
+  renamePrefixGuard       Boolean @default(true)
+  // Release-Format-Tags (3D/4K/HDR/IMAX), die ein Provider-Alias mitbringt,
+  // zurück ins Suffix schieben statt sie zu verschlucken.
+  renameReleaseTagGuard   Boolean @default(true)
+  // Suffix wie der Vorgänger per ROHLÄNGE der Variation schneiden statt per
+  // normalisierter Zeichenzahl. Achtung: bei ß/Umlauten schneidet das das
+  // nächste Token an ("Straße.Test.S01E01" -> ".est.S01E01"). Nur für Nutzer,
+  // die exakt das alte Verhalten wollen — deshalb Default aus.
+  renameLegacySuffix      Boolean @default(false)
+  // Zeichen aus dem eingesetzten Titel entfernen, die in Release-Namen
+  // unerwünscht sind (`: ? * " < > | / \`). Scene-Releases enthalten sie nie,
+  // und Sonarr/Radarr parsen "Alita.Battle.Angel..." zuverlässiger als
+  // "Alita:.Battle.Angel...". Default an — für Bestandsinstallationen setzt
+  // die Migration bewusst `false`, damit sich deren Ausgabe nicht ändert.
+  renameStripSpecialChars Boolean @default(true)
+  // Bei jedem umgeschriebenen Item die bekannten externen IDs als
+  // newznab-Attribute anhängen (tvdbid / tmdbid / imdbid), damit Sonarr/Radarr
+  // das Release ohne Titel-Parsing zuordnen können. Rein additiv. Default an —
+  // Bestandsinstallationen bekommen per Migration `false`.
+  renameAttachExternalIds Boolean @default(true)
 }
 
 // ── Arr Instances ─────────────────────────────────────────────────────────────
 
 model ArrInstance {
-  id                String       @id @default(cuid())
-  type              String
-  name              String
-  host              String
-  apiKey            String
-  enabled           Boolean      @default(true)
+  id                    String       @id @default(cuid())
+  type                  String
+  name                  String
+  host                  String
+  apiKey                String
+  enabled               Boolean      @default(true)
   // Provider-Reihenfolge als CSV ("pcjones,tvdb,tmdb"). Sonarr/Radarr nutzen
   // sie pro Sprach-Tier (DE: pcjones+tvdb+tmdb, non-DE: tvdb+tmdb). Lidarr
   // und Readarr brauchen keinen Title-Provider, deshalb NULL.
-  providerOrder     String?
+  providerOrder         String?
   // Year-Disambiguation beim Title-Matching. Wenn aktiv, lehnt der Matcher
   // Releases ab, deren 4-stelliger Year-Token im Dateinamen ausserhalb des
   // Toleranzfensters um SearchItem.year liegt. Wirkt nur fuer Sonarr/Radarr;
   // Lidarr/Readarr nutzen einen anderen Match-Pfad.
-  enableYearMatching     Boolean @default(true)
-  yearMatchingTolerance  Int     @default(1)
-  lastSyncAt        DateTime?
-  lastSyncError     String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-  searchItems       SearchItem[]
-  syncRuns          SyncRun[]
+  enableYearMatching    Boolean      @default(true)
+  yearMatchingTolerance Int          @default(1)
+  lastSyncAt            DateTime?
+  lastSyncError         String?
+  createdAt             DateTime     @default(now())
+  updatedAt             DateTime     @updatedAt
+  searchItems           SearchItem[]
+  syncRuns              SyncRun[]
 
   @@unique([type, name])
   @@index([enabled])
@@ -142,6 +174,10 @@ model SearchItem {
   arrInstance           ArrInstance @relation(fields: [arrInstanceId], references: [id], onDelete: Cascade)
   arrId                 Int
   externalId            String
+  // IMDb-ID (`tt…`), sofern die *Arr-Instanz sie kennt (Radarr liefert sie pro
+  // Movie). Nur für das newznab-Attribut `imdbid` beim Umschreiben gebraucht —
+  // `externalId` bleibt der Primär-Identifier (tvdbid für TV, tmdbid für Film).
+  imdbId                String?
   title                 String
   expectedTitle         String
   expectedAuthor        String?

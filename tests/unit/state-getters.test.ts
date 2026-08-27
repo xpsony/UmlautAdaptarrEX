@@ -132,6 +132,7 @@ describe("AppState.loadSearchItemsFromDb", () => {
         arrInstanceId: true,
         arrId: true,
         externalId: true,
+        imdbId: true,
         title: true,
         expectedTitle: true,
         expectedAuthor: true,

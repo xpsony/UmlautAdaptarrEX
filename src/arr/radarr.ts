@@ -1,7 +1,4 @@
-import {
-  buildSearchItem,
-  type SearchItemDerived,
-} from "@/domain/variations/index";
+import { buildSearchItem, type SearchItemDerived } from "@/domain/variations/index";
 import { getActiveLanguagePack } from "@/domain/plugins";
 import { requiredLanguages } from "@/providers";
 import type { TitleProvider } from "@/providers/types";
@@ -33,11 +30,7 @@ function pickGermanFromAlternateTitles(movie: RadarrMovie): {
 } {
   if (!movie.alternateTitles) return { germanTitle: null, aliases: [] };
   const germanTitles = movie.alternateTitles
-    .filter(
-      (a) =>
-        GERMAN_LANG_NAMES.has(String(a.language?.name ?? "")) ||
-        a.language?.id === 4,
-    )
+    .filter((a) => GERMAN_LANG_NAMES.has(String(a.language?.name ?? "")) || a.language?.id === 4)
     .map((a) => a.title)
     .filter(Boolean);
   const all = movie.alternateTitles.map((a) => a.title).filter(Boolean);
@@ -91,11 +84,13 @@ export class RadarrClient extends ArrClient {
         return buildSearchItem({
           arrId: m.id,
           externalId,
+          // Radarr knows the IMDb id per movie; only used for the newznab
+          // `imdb` attribute on rewritten items.
+          imdbId: m.imdbId ?? null,
           title: m.title,
           expectedTitle: m.title,
           germanTitle,
-          titlesByLang:
-            Object.keys(titlesByLang).length > 0 ? titlesByLang : undefined,
+          titlesByLang: Object.keys(titlesByLang).length > 0 ? titlesByLang : undefined,
           aliases: aliases.length ? aliases : null,
           mediaType: "movie",
           year: m.year && m.year > 0 ? m.year : null,

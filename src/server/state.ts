@@ -5,6 +5,7 @@ import { loadSetting, type SettingRow } from "@/lib/setting-helpers";
 import { CompositeTitleProvider, DbCachedTitleProvider, looksLikeTmdbV4Token } from "@/providers";
 import type { TitleProvider } from "@/providers/types";
 import type { MediaType } from "@/domain/variations/generate";
+import type { RenameOptions } from "@/domain/matching/rename";
 import type { RewriteSearchItem } from "@/domain/xml/rewrite";
 import type { ProviderId } from "@/schemas/instance";
 import { OperationModeSchema, type OperationMode } from "@/schemas/settings";
@@ -62,6 +63,12 @@ export interface CachedSearchItem {
   arrInstanceId: string;
   arrId: number;
   externalId: string;
+  /**
+   * IMDb id when the *Arr knows one — emitted as a newznab `imdb` attribute.
+   * Optional: only Radarr supplies it, and rows written before the
+   * `rename_options` migration have none.
+   */
+  imdbId?: string | null;
   title: string;
   expectedTitle: string;
   expectedAuthor: string | null;
@@ -97,6 +104,7 @@ interface SearchItemRow {
   arrInstanceId: string;
   arrId: number;
   externalId: string;
+  imdbId: string | null;
   title: string;
   expectedTitle: string;
   expectedAuthor: string | null;
@@ -115,6 +123,7 @@ const SEARCH_ITEM_SELECT = {
   arrInstanceId: true,
   arrId: true,
   externalId: true,
+  imdbId: true,
   title: true,
   expectedTitle: true,
   expectedAuthor: true,
@@ -145,6 +154,13 @@ interface AppSettings {
   operationMode: OperationMode;
   blockPrivateInstanceHosts: boolean;
   pausedUntil: Date | null;
+  // Renaming behaviour — see the Setting model for what each flag does.
+  renameYearGuard: boolean;
+  renamePrefixGuard: boolean;
+  renameReleaseTagGuard: boolean;
+  renameLegacySuffix: boolean;
+  renameStripSpecialChars: boolean;
+  renameAttachExternalIds: boolean;
 }
 
 const NO_SETTINGS: AppSettings = {
@@ -166,6 +182,14 @@ const NO_SETTINGS: AppSettings = {
   operationMode: "proxy",
   blockPrivateInstanceHosts: false,
   pausedUntil: null,
+  renameYearGuard: true,
+  renamePrefixGuard: true,
+  renameReleaseTagGuard: true,
+  renameLegacySuffix: false,
+  // Bare-install defaults, matching the Prisma column defaults. Existing
+  // installations are pinned to `false` by the rename_options migration.
+  renameStripSpecialChars: true,
+  renameAttachExternalIds: true,
 };
 
 // Central in-memory cache + settings snapshot.
@@ -329,6 +353,26 @@ export class AppState {
       operationMode: OperationModeSchema.catch("proxy").parse(row.operationMode),
       blockPrivateInstanceHosts: row.blockPrivateInstanceHosts,
       pausedUntil: row.pausedUntil,
+      renameYearGuard: row.renameYearGuard,
+      renamePrefixGuard: row.renamePrefixGuard,
+      renameReleaseTagGuard: row.renameReleaseTagGuard,
+      renameLegacySuffix: row.renameLegacySuffix,
+      renameStripSpecialChars: row.renameStripSpecialChars,
+      renameAttachExternalIds: row.renameAttachExternalIds,
+    };
+  }
+
+  /**
+   * The rename behaviour flags in the shape the domain layer expects. Kept as
+   * a getter so the legacy search path never has to know the column names.
+   */
+  get renameOptions(): RenameOptions {
+    return {
+      yearGuard: this._settings.renameYearGuard,
+      prefixGuard: this._settings.renamePrefixGuard,
+      releaseTagGuard: this._settings.renameReleaseTagGuard,
+      legacySuffix: this._settings.renameLegacySuffix,
+      stripSpecialChars: this._settings.renameStripSpecialChars,
     };
   }
 
@@ -425,6 +469,7 @@ export class AppState {
       arrInstanceId: row.arrInstanceId,
       arrId: row.arrId,
       externalId: row.externalId,
+      imdbId: row.imdbId,
       title: row.title,
       expectedTitle: row.expectedTitle,
       expectedAuthor: row.expectedAuthor,
@@ -600,6 +645,10 @@ export class AppState {
       titleMatchVariations: item.titleMatchVariations,
       authorMatchVariations: item.authorMatchVariations,
       mediaType: item.mediaType,
+      externalId: item.externalId,
+      // Normalised to null so the rewrite item never carries `undefined`
+      // (it is serialised into log lines and compared in tests).
+      imdbId: item.imdbId ?? null,
       year: item.year,
       // null disables the year check at the matching layer; otherwise the
       // configured tolerance is forwarded as +/-N around `year`.

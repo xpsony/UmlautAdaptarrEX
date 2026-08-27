@@ -74,7 +74,40 @@ export const SettingsSchema = z.object({
   // private/loopback allowed). Set to true for default-strict, which makes
   // sense for publicly reachable UmlautAdaptarrEX instances.
   blockPrivateInstanceHosts: z.boolean().default(false),
+  // ── Renaming ───────────────────────────────────────────────────────────────
+  // See the Setting model in prisma/schema.prisma for what each flag does.
+  // The `*Guard` defaults reproduce today's EX behaviour; the last two default
+  // to the better fresh-install behaviour and are pinned to `false` for
+  // existing installs by the rename_options migration.
+  renameYearGuard: z.boolean().default(true),
+  renamePrefixGuard: z.boolean().default(true),
+  renameReleaseTagGuard: z.boolean().default(true),
+  renameLegacySuffix: z.boolean().default(false),
+  renameStripSpecialChars: z.boolean().default(true),
+  renameAttachExternalIds: z.boolean().default(true),
 });
+
+/**
+ * The legacy preset — the rename behaviour of the .NET predecessor, which had
+ * none of the EX guard rules. Exposed here (rather than hard-coded in the UI)
+ * so the values live next to the schema that validates them.
+ */
+export const LEGACY_RENAME_PRESET = {
+  renameYearGuard: false,
+  renamePrefixGuard: false,
+  renameReleaseTagGuard: false,
+  renameLegacySuffix: true,
+  renameStripSpecialChars: false,
+} as const;
+
+/** The EX defaults, for the "reset to recommended" button next to the preset. */
+export const DEFAULT_RENAME_PRESET = {
+  renameYearGuard: true,
+  renamePrefixGuard: true,
+  renameReleaseTagGuard: true,
+  renameLegacySuffix: false,
+  renameStripSpecialChars: true,
+} as const;
 
 export const SettingsUpdateSchema = SettingsSchema.partial();
 export type SettingsUpdate = z.infer<typeof SettingsUpdateSchema>;
