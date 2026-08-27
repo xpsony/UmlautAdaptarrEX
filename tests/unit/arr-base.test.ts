@@ -7,6 +7,7 @@ vi.mock("undici", () => ({
 }));
 
 import { ArrClient, type ArrClientOptions } from "@/arr/base";
+import type { RawArrItem } from "@/arr/raw-item";
 
 // Minimal concrete subclass that exposes the protected helpers so we can test
 // the shared HTTP/JSON-decoding logic without spinning up Sonarr or Radarr.
@@ -15,7 +16,11 @@ class TestClient extends ArrClient {
     super(opts);
   }
 
-  async fetchAllItems() {
+  async fetchRawItems() {
+    return [];
+  }
+
+  async deriveItems() {
     return [];
   }
 
@@ -201,9 +206,11 @@ it("fetchNested maps to whatever type the caller asks for", async () => {
   requestMock.mockResolvedValueOnce(jsonResponse([{ id: 10, label: "C" }]));
 
   class ShapeClient extends ArrClient {
-    // Task 6 turns fetchRawItems/deriveItems into the abstract pair; at this
-    // point the base still declares `abstract fetchAllItems`.
-    async fetchAllItems() {
+    async fetchRawItems() {
+      return [];
+    }
+
+    async deriveItems() {
       return [];
     }
 
@@ -230,4 +237,66 @@ it("fetchNested maps to whatever type the caller asks for", async () => {
   });
 
   expect(await client.run()).toEqual([{ pair: "P:C" }]);
+});
+
+it("fetchAllItems is the base composition of fetchRawItems and deriveItems", async () => {
+  const calls: string[] = [];
+
+  class ComposeClient extends ArrClient {
+    async fetchRawItems() {
+      calls.push("raw");
+      return [
+        {
+          arrId: 1,
+          externalId: "e1",
+          imdbId: null,
+          title: "T",
+          year: null,
+          aliases: null,
+          germanTitle: null,
+          mediaType: "tv" as const,
+          expectedAuthor: null,
+        },
+      ];
+    }
+
+    async deriveItems(raw: RawArrItem[]) {
+      calls.push(`derive:${raw.length}`);
+      return [];
+    }
+  }
+
+  const client = new ComposeClient({
+    instanceId: "i",
+    instanceName: "n",
+    host: "http://arr.local",
+    apiKey: "k",
+    userAgent: "UA",
+  });
+
+  await client.fetchAllItems();
+
+  expect(calls).toEqual(["raw", "derive:1"]);
+});
+
+it("fetchRawItemByExternalId defaults to null so Lidarr and Readarr inherit an opt-out", async () => {
+  class MinimalClient extends ArrClient {
+    async fetchRawItems() {
+      return [];
+    }
+
+    async deriveItems() {
+      return [];
+    }
+  }
+
+  const client = new MinimalClient({
+    instanceId: "i",
+    instanceName: "n",
+    host: "http://arr.local",
+    apiKey: "k",
+    userAgent: "UA",
+  });
+
+  expect(await client.fetchRawItemByExternalId("123")).toBeNull();
 });

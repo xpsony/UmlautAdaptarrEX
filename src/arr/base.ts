@@ -1,6 +1,7 @@
 import { request } from "undici";
 import type { Logger } from "pino";
 import type { SearchItemDerived } from "@/domain/variations/index";
+import type { RawArrItem } from "./raw-item";
 
 // How many parent→child fetches to run in parallel inside fetchNested.
 // Small enough to stay friendly to a single Lidarr/Readarr instance; large
@@ -31,7 +32,24 @@ export abstract class ArrClient {
       }) ?? null;
   }
 
-  abstract fetchAllItems(): Promise<SearchItemDerived[]>;
+  /** The *Arr's own library listing, before any TitleProvider is consulted. */
+  abstract fetchRawItems(): Promise<RawArrItem[]>;
+
+  /** Enriches raw items with provider titles and derives every variation. */
+  abstract deriveItems(raw: RawArrItem[]): Promise<SearchItemDerived[]>;
+
+  /**
+   * A single item by its external id (tvdbid/tmdbid), for the on-demand
+   * lookup. Only Sonarr and Radarr can serve this; the default opts out so
+   * Lidarr and Readarr need no implementation.
+   */
+  async fetchRawItemByExternalId(_externalId: string): Promise<RawArrItem | null> {
+    return null;
+  }
+
+  async fetchAllItems(): Promise<SearchItemDerived[]> {
+    return this.deriveItems(await this.fetchRawItems());
+  }
 
   /**
    * Generic parent→child fetch loop shared by Lidarr (artist→album) and

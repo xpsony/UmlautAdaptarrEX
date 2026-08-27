@@ -69,10 +69,6 @@ export class SonarrClient extends ArrClient {
       });
     });
   }
-
-  async fetchAllItems(): Promise<SearchItemDerived[]> {
-    return this.deriveItems(await this.fetchRawItems());
-  }
 }
 
 function toRaw(s: SonarrSeries): RawArrItem {

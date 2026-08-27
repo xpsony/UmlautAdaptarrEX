@@ -67,8 +67,4 @@ export class ReadarrClient extends ArrClient {
       }),
     );
   }
-
-  async fetchAllItems(): Promise<SearchItemDerived[]> {
-    return this.deriveItems(await this.fetchRawItems());
-  }
 }

@@ -53,8 +53,4 @@ export class LidarrClient extends ArrClient {
       }),
     );
   }
-
-  async fetchAllItems(): Promise<SearchItemDerived[]> {
-    return this.deriveItems(await this.fetchRawItems());
-  }
 }
