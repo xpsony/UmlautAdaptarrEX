@@ -15,6 +15,7 @@ import { settingsRoutes } from "@/server/routes/admin/settings";
 import { historyRoutes } from "@/server/routes/admin/history";
 import { pluginRoutes } from "@/server/routes/admin/plugins";
 import { systemRoutes } from "@/server/routes/admin/system";
+import { titleOverrideRoutes } from "@/server/routes/admin/title-overrides";
 import { syncRoutes } from "@/server/routes/admin/sync";
 import { handleCaps } from "@/server/routes/legacy/caps";
 import { handleSearch } from "@/server/routes/legacy/search";
@@ -34,9 +35,7 @@ interface BuildOptions {
 // Mirrors the HTTP-gateway portion of `src/server/index.ts` without the TCP
 // proxy, sync scheduler, log retention, or session cleanup. Sufficient for
 // API tests that exercise routing, auth, CSRF, and the legacy dispatcher.
-export async function buildTestApp(
-  opts: BuildOptions = {},
-): Promise<FastifyInstance> {
+export async function buildTestApp(opts: BuildOptions = {}): Promise<FastifyInstance> {
   await ensureCsrfSecret();
 
   const app = Fastify({
@@ -74,17 +73,12 @@ export async function buildTestApp(
       });
       return;
     }
-    if (
-      err.code === "FST_CSRF_MISSING_SECRET" ||
-      err.code === "FST_CSRF_INVALID_TOKEN"
-    ) {
+    if (err.code === "FST_CSRF_MISSING_SECRET" || err.code === "FST_CSRF_INVALID_TOKEN") {
       void reply.code(403).send({ error: "csrf-invalid" });
       return;
     }
     const status =
-      typeof err.statusCode === "number" && err.statusCode >= 400
-        ? err.statusCode
-        : 500;
+      typeof err.statusCode === "number" && err.statusCode >= 400 ? err.statusCode : 500;
     void reply.code(status).send({
       error: status >= 500 ? "internal" : "request_error",
       message: err.message,
@@ -101,6 +95,7 @@ export async function buildTestApp(
   await historyRoutes(app);
   await pluginRoutes(app);
   await systemRoutes(app);
+  await titleOverrideRoutes(app);
 
   // Real SyncScheduler so the /sync route exercises the same orchestration
   // path as production. We never call .start() here; tests that need to run
@@ -125,16 +120,11 @@ export async function buildTestApp(
       // the legacy indexer API responds 503 for non-loopback callers so
       // Sonarr/Radarr/etc. see why the request fails. Loopback callers (the
       // co-hosted HTTP-proxy on :5006) bypass to reuse the shared handlers.
-      if (
-        getAppState().settings.operationMode === "proxy" &&
-        !isLoopbackRequest(req)
-      ) {
+      if (getAppState().settings.operationMode === "proxy" && !isLoopbackRequest(req)) {
         await reply
           .code(503)
           .header("content-type", "text/plain; charset=utf-8")
-          .send(
-            "Index Legacy Api wurde deaktiviert, bitte Einstellungen anpassen",
-          );
+          .send("Index Legacy Api wurde deaktiviert, bitte Einstellungen anpassen");
         return;
       }
       const t = (req.query as { t?: string }).t;

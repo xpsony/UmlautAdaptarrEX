@@ -44,6 +44,10 @@ export async function ensureTestDb(): Promise<void> {
 export async function cleanDb(): Promise<void> {
   const { prisma } = await import("@/lib/db");
   await prisma.session.deleteMany({});
+  // TitleOverride has no FK to SearchItem (it is keyed by mediaType +
+  // externalId), so a leftover row survives a SearchItem wipe and silently
+  // re-applies itself to the next test's items.
+  await prisma.titleOverride.deleteMany({});
   await prisma.searchItem.deleteMany({});
   await prisma.titleTranslation.deleteMany({});
   await prisma.titleApiCache.deleteMany({});
