@@ -61,6 +61,10 @@ interface AppSettings {
   historyRetentionDays: number;
   indexerRateLimitMs: number;
   indexerTimeoutSeconds: number;
+  /** Quick-sync cadence in minutes; 0 disables the quick sync. */
+  syncIntervalMinutes: number;
+  /** Full-sync cadence in hours. */
+  fullSyncIntervalHours: number;
   operationMode: OperationMode;
   blockPrivateInstanceHosts: boolean;
   pausedUntil: Date | null;
@@ -91,6 +95,8 @@ const NO_SETTINGS: AppSettings = {
   historyRetentionDays: 30,
   indexerRateLimitMs: 500,
   indexerTimeoutSeconds: 60,
+  syncIntervalMinutes: 10,
+  fullSyncIntervalHours: 24,
   operationMode: "proxy",
   blockPrivateInstanceHosts: false,
   pausedUntil: null,
@@ -260,6 +266,8 @@ export class AppState {
       historyRetentionDays: row.historyRetentionDays,
       indexerRateLimitMs: row.indexerRateLimitMs,
       indexerTimeoutSeconds: row.indexerTimeoutSeconds,
+      syncIntervalMinutes: row.syncIntervalMinutes,
+      fullSyncIntervalHours: row.fullSyncIntervalHours,
       // Defensive parse: SQLite TEXT column without CHECK; an invalid value
       // falls back cleanly to the recommended default "proxy".
       operationMode: OperationModeSchema.catch("proxy").parse(row.operationMode),

@@ -58,6 +58,20 @@ export const SettingsSchema = z.object({
   // langsame Indexer nicht sofort abgewuergt werden; Maximum 600 s, weil ein
   // Sonarr/Radarr-Search ohnehin nicht laenger blockiert sein sollte.
   indexerTimeoutSeconds: z.number().int().min(5).max(600).default(60),
+  // Quick sync: fetches the *Arr listing and processes only additions,
+  // removals and *Arr-side renames. 0 disables it; otherwise 5 minutes is the
+  // floor, because neither Sonarr nor Radarr has a changed-since endpoint, so
+  // every pass transfers the whole library listing.
+  syncIntervalMinutes: z
+    .number()
+    .int()
+    .refine((v) => v === 0 || (v >= 5 && v <= 1440), {
+      message: "0 disables the quick sync; otherwise 5-1440 minutes",
+    })
+    .default(10),
+  // Full sync: re-queries every TitleProvider, so it also picks up German
+  // titles that appeared upstream after the item was first synced.
+  fullSyncIntervalHours: z.number().int().min(1).max(168).default(24),
   titleApiHost: z.string().url().default("https://umlautadaptarr.pcjones.de/api/v1"),
   tmdbApiKey: optionalSecret,
   // TVDB v4 API: key plus optional subscriber PIN. Some v4 endpoints
@@ -104,6 +118,20 @@ export const LEGACY_RENAME_PRESET = {
   renameReleaseTagGuard: false,
   renameLegacySuffix: true,
   renameStripSpecialChars: false,
+} as const;
+
+/**
+ * The three interval combinations offered in the setup wizard and the
+ * Settings -> Suche tab. Lives next to the schema that validates them, same
+ * as the rename presets.
+ */
+export const SYNC_PRESETS = {
+  /** New default: quick sync every 10 minutes, full sync once a day. */
+  recommended: { syncIntervalMinutes: 10, fullSyncIntervalHours: 24 },
+  /** For instances on a slow or metered link to their *Arr. */
+  frugal: { syncIntervalMinutes: 60, fullSyncIntervalHours: 24 },
+  /** The 1.x behaviour: no quick sync, full sync every 12 hours. */
+  legacy: { syncIntervalMinutes: 0, fullSyncIntervalHours: 12 },
 } as const;
 
 /** The EX defaults, for the "reset to recommended" button next to the preset. */
