@@ -1,5 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "@/lib/db";
+import { canonicalImdbId } from "@/lib/imdb-id";
 import {
   getLidarrTitleForExternalId,
   getReadarrTitleForExternalId,
@@ -7,6 +8,7 @@ import {
 import { aggregateIndexerResponses, rewriteIndexerXml } from "@/domain/xml";
 import type { IndexerFetcher } from "@/server/proxy/indexer-fetcher";
 import { type AppState, type CachedSearchItem, getAppState } from "@/server/state";
+import { type OnDemandRequest, resolveOnDemand } from "@/server/on-demand/resolve";
 import {
   assertLegacyContext,
   buildIndexerUrl,
@@ -87,6 +89,65 @@ function determineSearchItem(
   }
 }
 
+/**
+ * The on-demand target for a request, or null when there is nothing to
+ * resolve: no usable id, an id we already have, or a media type without a
+ * TitleProvider (audio/book).
+ *
+ * Note the index check: the `movie` route deliberately keeps `searchItem` at
+ * null (see determineSearchItem), so without this check every movie search
+ * would trigger a lookup for a title we already know.
+ */
+function onDemandTargetFor(
+  spec: RouteSpec,
+  params: URLSearchParams,
+  state: AppState,
+): OnDemandRequest | null {
+  switch (spec.type) {
+    case "tvsearch": {
+      const tvdbid = params.get("tvdbid");
+      if (!tvdbid) return null;
+      if (state.getByExternalId("tv", tvdbid)) return null;
+      return { mediaType: "tv", externalId: tvdbid, imdbId: null };
+    }
+    case "movie": {
+      const tmdbid = params.get("tmdbid");
+      if (tmdbid) {
+        if (state.getByExternalId("movie", tmdbid)) return null;
+        return { mediaType: "movie", externalId: tmdbid, imdbId: null };
+      }
+      const imdbId = canonicalImdbId(params.get("imdbid"));
+      if (!imdbId) return null;
+      if (state.getByImdbId(imdbId)) return null;
+      return { mediaType: "movie", externalId: null, imdbId };
+    }
+    // `search` only resolves Readarr/Lidarr categories, and `music`/`book`
+    // are audio/book - no TitleProvider is consulted for either.
+    default:
+      return null;
+  }
+}
+
+/**
+ * Whether an on-demand resolved item may fill the upfront `searchItem` slot.
+ * Mirrors determineSearchItem's per-type behaviour: only `tvsearch` has such
+ * a slot today. For `movie` the resolved item still helps, via the ephemeral
+ * index that the per-item `lookup` callback reads.
+ */
+function acceptsUpfrontItem(spec: RouteSpec): boolean {
+  return spec.type === "tvsearch";
+}
+
+/**
+ * The id to record in `RenameHistory.matchedSearchItemId`. An ephemeral item
+ * has a synthetic id and no `SearchItem` row behind it, so recording it would
+ * leave a dangling reference (the column has no foreign key to catch it).
+ */
+function matchedSearchItemId(item: CachedSearchItem | null): string | null {
+  if (!item || item.ephemeral) return null;
+  return item.id;
+}
+
 // Mirrors SearchControllerBase.BaseSearch's variation list builder:
 // titleSearchVariations + (toggle q) + (add expectedTitle if missing).
 // `tailCount` reports how many of the trailing entries were APPENDED here
@@ -136,12 +197,21 @@ export async function handleSearch(
   const q = params.get("q");
 
   const state = getAppState();
-  const searchItem = determineSearchItem(spec, params, state);
+  let searchItem = determineSearchItem(spec, params, state);
   // While paused, the legacy path becomes a transparent pass-through: no
   // outbound variation fan-out and no response-XML rewriting. Logging and
   // request-history accounting stay intact because the gate sits inside the
   // rewrite callback rather than at the route entry.
   const isPaused = state.isPausedNow();
+
+  // Start the on-demand resolution now but await it together with the main
+  // fetch below: the added latency is then max(lookup, fetch) instead of the
+  // sum, which in practice is close to zero. While paused we stay a
+  // transparent pass-through and resolve nothing.
+  const onDemandTarget = searchItem || isPaused ? null : onDemandTargetFor(spec, params, state);
+  const onDemand = onDemandTarget
+    ? resolveOnDemand(onDemandTarget, { state, logger: req.log })
+    : null;
 
   const userAgent = String(req.headers["user-agent"] ?? "");
   const responses: string[] = [];
@@ -186,7 +256,7 @@ export async function handleSearch(
             mediaType: event.mediaType,
             originalTitle: event.originalTitle,
             rewrittenTitle: event.rewrittenTitle,
-            matchedSearchItemId: searchItem?.id ?? null,
+            matchedSearchItemId: matchedSearchItemId(searchItem),
             expectedTitle: searchItem?.expectedTitle ?? null,
           },
           "title rewritten",
@@ -197,7 +267,7 @@ export async function handleSearch(
               originalTitle: event.originalTitle,
               rewrittenTitle: event.rewrittenTitle,
               mediaType: event.mediaType,
-              matchedSearchItemId: searchItem?.id ?? null,
+              matchedSearchItemId: matchedSearchItemId(searchItem),
             },
           })
           .catch((dbErr) => {
@@ -208,9 +278,13 @@ export async function handleSearch(
   };
 
   try {
-    const main = await deps.fetcher.fetch(buildIndexerUrl(ctx), {
-      "user-agent": userAgent,
-    });
+    const [main, resolved] = await Promise.all([
+      deps.fetcher.fetch(buildIndexerUrl(ctx), { "user-agent": userAgent }),
+      onDemand ?? Promise.resolve(null),
+    ]);
+    if (resolved && !searchItem && acceptsUpfrontItem(spec)) {
+      searchItem = resolved;
+    }
     lastStatus = main.status;
     lastContentType = main.contentType;
     cacheHit = cacheHit && main.cacheHit;

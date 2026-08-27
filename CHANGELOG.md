@@ -8,6 +8,13 @@
   - An instance that has never had a full sync always gets one first. That is the one-time initial scan; quick syncs only take over afterwards.
   - "Sync now" in the UI is always a full sync - pressing the button should mean a real refresh.
   - Sync runs now record their `kind` (`full` / `delta`) and can be filtered by it.
+- **A title nobody synced yet is now resolved while its search is still in flight.** When a search arrives for a tvdbid, tmdbid or imdbid that isn't in the cache, UmlautAdaptarrEX asks your Sonarr or Radarr about that one title and then its title providers, and uses the answer for **that** request. This is the case a shorter sync interval cannot fix: a request in Jellyseerr or Overseerr makes Radarr create the movie and search for it in the same second, so even a 10-minute quick sync misses the window entirely. Previously the German release was simply overlooked and you had to search again later.
+  - The lookup runs **in parallel** with the indexer request it belongs to and is capped at 5 seconds, so in practice it adds no waiting time. A timeout, an unreachable \*Arr or a provider outage all leave the response exactly as it was before this feature existed - there is no path where the lookup can make a search worse.
+  - An id nobody knows is remembered as a miss for 30 minutes, concurrent searches for the same id share one lookup, and at most four resolutions run at a time. A burst of unknown ids cannot turn into a burst of outbound calls.
+  - Resolved titles live in memory only (bounded, 12 hours) and never become library entries. The next regular sync takes over and shadows them. Provider answers are cached in the database as usual, so a restart costs a database read rather than another outbound call.
+  - Series get the full treatment right away, including the search with German title variations. Films get the rewrite; the variation search for films follows separately.
+  - Searches that carry **only** an `imdbid` need a TMDB key configured, because the id has to be mapped to a TMDB id first.
+
 - **Sync-run history is cleaned up.** `SyncRun` rows were never purged. At two runs a day that went unnoticed; at the new cadence it would not. They now fall under the existing **History retention (days)** setting, alongside request and rename history.
 
 ### Internal

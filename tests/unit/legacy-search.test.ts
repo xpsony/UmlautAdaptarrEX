@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+interface RewriteOptionsLike {
+  onRename?: ((event: object) => void) | undefined;
+  onSkip?: ((event: object) => void) | undefined;
+  lookup?: ((mediaType: string, cleanTitle: string) => unknown) | undefined;
+  [key: string]: unknown;
+}
+
 const { mockRequest, mockRename } = vi.hoisted(() => ({
   mockRequest: { create: vi.fn() },
   mockRename: { create: vi.fn() },
@@ -14,6 +21,7 @@ const { mockState } = vi.hoisted(() => ({
     settings: { appApiKey: "", indexerTimeoutSeconds: 60 },
     languagePack: {},
     getByExternalId: vi.fn(),
+    getByImdbId: vi.fn(),
     findByTitle: vi.fn(),
     toRewriteSearchItem: vi.fn(),
     isPausedNow: vi.fn(() => false),
@@ -28,8 +36,19 @@ vi.mock("@/server/security/ssrf", () => ({
   isPrivateHost: () => false,
 }));
 
+const { mockResolveOnDemand } = vi.hoisted(() => ({ mockResolveOnDemand: vi.fn() }));
+
+vi.mock("@/server/on-demand/resolve", () => ({
+  resolveOnDemand: mockResolveOnDemand,
+}));
+
 const { mockRewrite, mockAggregate } = vi.hoisted(() => ({
-  mockRewrite: vi.fn((body: string) => body),
+  mockRewrite: vi.fn(
+    // The second parameter is typed loosely on purpose: tests reach into the
+    // callbacks the route passes (onRename/onSkip/lookup) without restating
+    // the full RewriteOptions shape.
+    (body: string, _opts?: RewriteOptionsLike) => body,
+  ),
   mockAggregate: vi.fn((bodies: string[]) => bodies.join("|")),
 }));
 
@@ -55,7 +74,7 @@ function makeReq(overrides: object = {}) {
     url: "/key/host.example/api?t=tvsearch&q=Realm+of+Ravens",
     params: { apiKey: "key", "*": "host.example/api" },
     headers: { "user-agent": "Sonarr/4" },
-    log: { warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
+    log: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
     ...overrides,
   };
 }
@@ -96,7 +115,10 @@ beforeEach(() => {
   mockState.settings.appApiKey = "";
   mockState.settings.indexerTimeoutSeconds = 60;
   mockState.getByExternalId.mockReset();
+  mockState.getByImdbId.mockReset();
   mockState.findByTitle.mockReset();
+  mockState.isPausedNow.mockReset().mockReturnValue(false);
+  mockResolveOnDemand.mockReset().mockResolvedValue(null);
   mockState.toRewriteSearchItem.mockReset();
   mockRewrite.mockClear();
   mockAggregate.mockClear();
@@ -496,5 +518,159 @@ describe("handleSearch validation", () => {
     );
     expect(reply._statusCode).toBe(400);
     expect(fetcher.fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("on-demand lookup wiring", () => {
+  function okFetcher(times = 8): FakeFetcher {
+    const fetcher: FakeFetcher = { fetch: vi.fn() };
+    for (let i = 0; i < times; i++) {
+      fetcher.fetch.mockResolvedValueOnce({
+        status: 200,
+        contentType: "application/xml",
+        body: Buffer.from("<rss/>"),
+        cacheHit: false,
+      });
+    }
+    return fetcher;
+  }
+
+  async function run(search: string, type: "tvsearch" | "movie", fetcher = okFetcher()) {
+    const reply = makeReply();
+    await handleSearch(
+      { ...makeReq(), url: `/key/host.example/api${search}` } as never,
+      reply as never,
+      { type },
+      { fetcher: fetcher as never },
+    );
+    return { reply, fetcher };
+  }
+
+  const RESOLVED = {
+    id: "on-demand:tv:999",
+    ephemeral: true,
+    mediaType: "tv",
+    expectedTitle: "Realm of Ravens",
+    titleSearchVariations: ["Lied der Schwarzen Raben"],
+    titleMatchVariations: ["Realm of Ravens", "Lied der Schwarzen Raben"],
+    authorMatchVariations: [],
+  };
+
+  it("fires for a tvsearch whose tvdbid is unknown", async () => {
+    mockState.getByExternalId.mockReturnValue(null);
+    await run("?t=tvsearch&tvdbid=999&q=Some+Show", "tvsearch");
+
+    expect(mockResolveOnDemand).toHaveBeenCalledWith(
+      { mediaType: "tv", externalId: "999", imdbId: null },
+      expect.anything(),
+    );
+  });
+
+  it("does not fire when the tvdbid is already indexed", async () => {
+    mockState.getByExternalId.mockReturnValue({
+      id: "i1",
+      mediaType: "tv",
+      expectedTitle: "Known",
+      titleSearchVariations: [],
+      titleMatchVariations: ["Known"],
+      authorMatchVariations: [],
+    });
+    mockState.toRewriteSearchItem.mockReturnValue({});
+    await run("?t=tvsearch&tvdbid=100&q=Known", "tvsearch");
+
+    expect(mockResolveOnDemand).not.toHaveBeenCalled();
+  });
+
+  it("uses the resolved item as the upfront search item for a tvsearch", async () => {
+    mockState.getByExternalId.mockReturnValue(null);
+    mockState.toRewriteSearchItem.mockReturnValue({});
+    mockResolveOnDemand.mockResolvedValue(RESOLVED);
+    const { fetcher } = await run("?t=tvsearch&tvdbid=999&q=Realm+of+Ravens", "tvsearch");
+
+    // A resolved item means the variation fan-out runs, so more than the one
+    // main fetch went out.
+    expect(fetcher.fetch.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it("fires for a movie search by tmdbid", async () => {
+    mockState.getByExternalId.mockReturnValue(null);
+    await run("?t=movie&tmdbid=900", "movie");
+
+    expect(mockResolveOnDemand).toHaveBeenCalledWith(
+      { mediaType: "movie", externalId: "900", imdbId: null },
+      expect.anything(),
+    );
+  });
+
+  it("does not use a resolved movie as the upfront item, keeping the lookup path", async () => {
+    mockState.getByExternalId.mockReturnValue(null);
+    mockResolveOnDemand.mockResolvedValue({ ...RESOLVED, mediaType: "movie" });
+    const { fetcher } = await run("?t=movie&tmdbid=900", "movie");
+
+    // No fan-out for movies in this plan: exactly the one main fetch.
+    expect(fetcher.fetch).toHaveBeenCalledOnce();
+  });
+
+  it("fires for a movie search by imdbid only, in canonical form", async () => {
+    mockState.getByExternalId.mockReturnValue(null);
+    mockState.getByImdbId.mockReturnValue(null);
+    await run("?t=movie&imdbid=1234567", "movie");
+
+    expect(mockResolveOnDemand).toHaveBeenCalledWith(
+      { mediaType: "movie", externalId: null, imdbId: "tt1234567" },
+      expect.anything(),
+    );
+  });
+
+  it("does not fire for a movie whose imdbid is already indexed", async () => {
+    mockState.getByExternalId.mockReturnValue(null);
+    mockState.getByImdbId.mockReturnValue({ id: "i1", mediaType: "movie" });
+    await run("?t=movie&imdbid=1234567", "movie");
+
+    expect(mockResolveOnDemand).not.toHaveBeenCalled();
+  });
+
+  it("does not fire while paused", async () => {
+    mockState.isPausedNow.mockReturnValue(true);
+    mockState.getByExternalId.mockReturnValue(null);
+    await run("?t=tvsearch&tvdbid=999&q=Some+Show", "tvsearch");
+
+    expect(mockResolveOnDemand).not.toHaveBeenCalled();
+  });
+
+  it("does not fire for a music or book search", async () => {
+    mockState.getByExternalId.mockReturnValue(null);
+    await run("?t=movie", "movie");
+
+    expect(mockResolveOnDemand).not.toHaveBeenCalled();
+  });
+
+  it("leaves the response untouched when the lookup misses", async () => {
+    mockState.getByExternalId.mockReturnValue(null);
+    mockResolveOnDemand.mockResolvedValue(null);
+    const { reply, fetcher } = await run("?t=tvsearch&tvdbid=999&q=Some+Show", "tvsearch");
+
+    expect(reply._statusCode).toBe(200);
+    expect(fetcher.fetch).toHaveBeenCalledOnce();
+  });
+
+  it("keeps an ephemeral item out of the rename history", async () => {
+    mockState.getByExternalId.mockReturnValue(null);
+    mockState.toRewriteSearchItem.mockReturnValue({});
+    mockResolveOnDemand.mockResolvedValue(RESOLVED);
+    mockRewrite.mockImplementationOnce((body: string, opts?: RewriteOptionsLike) => {
+      opts?.onRename?.({
+        originalTitle: "Lied der Schwarzen Raben S01E01",
+        rewrittenTitle: "Realm of Ravens S01E01",
+        mediaType: "tv",
+      });
+      return body;
+    });
+
+    await run("?t=tvsearch&tvdbid=999&q=Realm+of+Ravens", "tvsearch");
+
+    expect(mockRename.create).toHaveBeenCalled();
+    const data = mockRename.create.mock.calls[0]![0].data as { matchedSearchItemId: string | null };
+    expect(data.matchedSearchItemId).toBeNull();
   });
 });

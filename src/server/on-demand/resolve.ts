@@ -44,9 +44,19 @@ export interface OnDemandRequest {
   imdbId: string | null;
 }
 
+/**
+ * The logger surface this module needs, typed structurally so both pino's
+ * `Logger` and Fastify's `FastifyBaseLogger` satisfy it. A request carries the
+ * latter, and the two differ only in pino-internal fields we never touch.
+ */
+export interface OnDemandLogger {
+  info(obj: object, msg?: string): void;
+  debug(obj: object, msg?: string): void;
+}
+
 export interface OnDemandDeps {
   state: AppState;
-  logger: Logger;
+  logger: OnDemandLogger;
   timeoutMs?: number;
 }
 
@@ -114,10 +124,17 @@ async function resolveUncached(
 ): Promise<CachedSearchItem | null> {
   const started = Date.now();
   const { state, logger } = deps;
+  // The *Arr client and the TMDB helper are typed against pino's Logger.
+  // Structurally our logger satisfies what they call (info/debug/child), but
+  // pino's type carries internal fields Fastify's does not declare, so the
+  // nominal gap has to be bridged once here rather than at every call.
+  const pinoLogger = logger as unknown as Logger;
 
   const externalId =
     req.externalId ??
-    (req.imdbId ? await lookupTmdbIdByImdbId(state.settings.tmdbApiKey, req.imdbId, logger) : null);
+    (req.imdbId
+      ? await lookupTmdbIdByImdbId(state.settings.tmdbApiKey, req.imdbId, pinoLogger)
+      : null);
   if (!externalId) return null;
 
   // An imdbid that just mapped to a tmdbid may well already be synced.
@@ -141,7 +158,7 @@ async function resolveUncached(
       apiKey: instance.apiKey,
       userAgent: state.settings.userAgent,
       provider: provider as TitleProvider,
-      logger,
+      logger: pinoLogger,
     });
     const raw = await client.fetchRawItemByExternalId(externalId);
     if (!raw) continue;
