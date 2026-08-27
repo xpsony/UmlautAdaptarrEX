@@ -87,6 +87,12 @@ model Setting {
   // wenn ein Indexer langsam antwortet oder die TCP-Verbindung hängt
   // (vorher: hartkodierter undici-Default von 10s connectTimeout).
   indexerTimeoutSeconds     Int       @default(60)
+  // Schnellabgleich in Minuten: holt die *Arr-Titelliste und verarbeitet nur
+  // Neues, Entferntes und *Arr-seitig Umbenanntes. 0 schaltet ihn ab.
+  syncIntervalMinutes       Int       @default(10)
+  // Vollabgleich in Stunden: fragt zusaetzlich alle Titel-Provider neu ab und
+  // findet so nachtraeglich ergaenzte deutsche Titel.
+  fullSyncIntervalHours     Int       @default(24)
   // HMAC-Secret für CSRF-Tokens (base64). Wird beim ersten Boot via
   // `ensureCsrfSecret()` generiert und persistiert, damit Tokens
   // Container-Restarts überleben. ENV `CSRF_SECRET` überschreibt die DB.
@@ -164,6 +170,9 @@ model ArrInstance {
   enableYearMatching    Boolean      @default(true)
   yearMatchingTolerance Int          @default(1)
   lastSyncAt            DateTime?
+  // Letzter Vollabgleich. NULL bedeutet "noch nie" und erzwingt beim naechsten
+  // Tick einen Full-Sync - das ist der einmalige erste Scan.
+  lastFullSyncAt        DateTime?
   lastSyncError         String?
   createdAt             DateTime     @default(now())
   updatedAt             DateTime     @updatedAt
@@ -282,6 +291,9 @@ model SyncRun {
   arrInstanceId     String?
   arrInstance       ArrInstance? @relation(fields: [arrInstanceId], references: [id], onDelete: SetNull)
   status            String
+  // "full" | "delta". Delta-Laeufe entstehen nur, wenn wirklich etwas zu tun
+  // war, sind aber deutlich haeufiger als Full-Laeufe.
+  kind              String       @default("full")
   startedAt         DateTime     @default(now())
   finishedAt        DateTime?
   itemsCount        Int          @default(0)
