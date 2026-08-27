@@ -596,3 +596,34 @@ describe("runSync title overrides", () => {
     }
   });
 });
+
+describe("persistItems delete scope", () => {
+  it("full mode deletes stored rows the *Arr no longer lists", async () => {
+    mockPrisma.searchItem.findMany.mockResolvedValueOnce([
+      {
+        id: "row-gone",
+        externalId: "999",
+        mediaType: "tv",
+        title: "Gone",
+        expectedTitle: "Gone",
+        germanTitle: null,
+      },
+    ]);
+    mockPrisma.searchItem.findMany.mockResolvedValueOnce([]);
+    mockBuild.mockReturnValue({
+      fetchAllItems: async () => [],
+      fetchRawItems: async () => [],
+      deriveItems: async () => [],
+    });
+    mockState.providerForOrder.mockReturnValue({ name: "stub" });
+
+    await runSync({
+      logger: makeLogger() as never,
+      preparedRuns: [makePrepared("sonarr")],
+    });
+
+    expect(mockPrisma.searchItem.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ["row-gone"] } },
+    });
+  });
+});

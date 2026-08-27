@@ -418,6 +418,11 @@ export class AppState {
     this.syncIndex.removeItemsForInstance(instanceId);
   }
 
+  /** Targeted removal, for the delta sync's per-item reindex. */
+  removeItem(mediaType: MediaType, externalId: string): void {
+    this.syncIndex.removeItem(mediaType, externalId);
+  }
+
   // Drop and re-read one instance's items - used by the title-override
   // rebuild so a saved override is searchable immediately, mirroring the
   // remove-then-index pattern of the sync's persistAndReindex.

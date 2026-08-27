@@ -3,7 +3,8 @@ import { buildArrClient } from "@/arr";
 import { isMaskedSecret } from "@/lib/secrets";
 import type { ArrType, ProviderId } from "@/schemas/instance";
 import type { AppLogger } from "@/server/logging/logger";
-import { type AppState, type CachedSearchItemInput, getAppState } from "@/server/state";
+import { type AppState, getAppState } from "@/server/state";
+import { toCachedSearchItem } from "@/server/search-item";
 import { buildSearchItem, type SearchItemDerived } from "@/domain/variations";
 import type { MediaType } from "@/domain/variations/generate";
 import type { TitleProvider } from "@/providers/types";
@@ -258,7 +259,7 @@ interface PersistChangeStats {
 // emit thousands of "title synced" lines). Aggregate counts always log.
 const PER_ITEM_LOG_CAP = 50;
 
-// Batch size for upsert transactions in persistAndReindex. Splitting a large
+// Batch size for upsert transactions in persistItems. Splitting a large
 // sync into many short transactions keeps the SQLite writer lock available
 // for other concurrent instance syncs, instead of holding it for the entire
 // 5k-item library at once. Small chunks also give the sync more save points:
@@ -267,18 +268,36 @@ const PERSIST_CHUNK_SIZE = 50;
 
 // Replaces the on-disk SearchItem rows for one instance with the freshly
 // fetched items, then rebuilds the in-memory index from the new rows.
-async function persistAndReindex(
+interface PersistOptions {
+  /**
+   * externalIds to delete. `null` means "full mode": derive the stale set
+   * from the difference between the stored rows and `items`. A delta pass
+   * passes its own list, because its `items` is only a partial listing and
+   * the implicit difference would wipe the rest of the library.
+   */
+  deleteExternalIds: string[] | null;
+  /**
+   * Full mode rebuilds the whole in-memory index for the instance; delta
+   * mode updates only the touched items.
+   */
+  mode: "full" | "delta";
+}
+
+async function persistItems(
   state: AppState,
   instanceId: string,
   instanceName: string,
   items: Awaited<ReturnType<ReturnType<typeof buildArrClient>["fetchAllItems"]>>,
   logger: AppLogger,
+  opts: PersistOptions,
 ): Promise<PersistChangeStats> {
   const existing = await prisma.searchItem.findMany({
     where: { arrInstanceId: instanceId },
     select: {
       id: true,
       externalId: true,
+      // Needed by the delta path's targeted index removal.
+      mediaType: true,
       title: true,
       expectedTitle: true,
       germanTitle: true,
@@ -388,7 +407,11 @@ async function persistAndReindex(
     });
   }
 
-  const stale = existing.filter((e) => !seenExternalIds.has(e.externalId));
+  const deleteSet = opts.deleteExternalIds === null ? null : new Set(opts.deleteExternalIds);
+  const stale =
+    deleteSet === null
+      ? existing.filter((e) => !seenExternalIds.has(e.externalId))
+      : existing.filter((e) => deleteSet.has(e.externalId));
   if (stale.length > 0) {
     stats.removed = stale.length;
     for (const s of stale) {
@@ -406,28 +429,23 @@ async function persistAndReindex(
     });
   }
 
-  state.removeItemsForInstance(instanceId);
-  const fresh = await prisma.searchItem.findMany({
-    where: { arrInstanceId: instanceId },
-  });
-  for (const row of fresh) {
-    const cached: CachedSearchItemInput = {
-      id: row.id,
-      arrInstanceId: row.arrInstanceId,
-      arrId: row.arrId,
-      externalId: row.externalId,
-      imdbId: row.imdbId,
-      title: row.title,
-      expectedTitle: row.expectedTitle,
-      expectedAuthor: row.expectedAuthor,
-      germanTitle: row.germanTitle,
-      mediaType: row.mediaType as MediaType,
-      year: row.year,
-      titleSearchVariations: JSON.parse(row.titleSearchVariations) as string[],
-      titleMatchVariations: JSON.parse(row.titleMatchVariations) as string[],
-      authorMatchVariations: JSON.parse(row.authorMatchVariations) as string[],
-    };
-    state.indexItem(cached);
+  if (opts.mode === "full") {
+    state.removeItemsForInstance(instanceId);
+    const fresh = await prisma.searchItem.findMany({
+      where: { arrInstanceId: instanceId },
+    });
+    for (const row of fresh) state.indexItem(toCachedSearchItem(row));
+  } else {
+    // Targeted: a quick sync must never pay for a full-library reindex.
+    for (const s of stale) state.removeItem(s.mediaType as MediaType, s.externalId);
+    const touched = await prisma.searchItem.findMany({
+      where: { arrInstanceId: instanceId, externalId: { in: deduped.map((i) => i.externalId) } },
+    });
+    for (const row of touched) {
+      // removeItem first: indexItem is not idempotent per object identity.
+      state.removeItem(row.mediaType as MediaType, row.externalId);
+      state.indexItem(toCachedSearchItem(row));
+    }
   }
 
   return stats;
@@ -536,7 +554,10 @@ async function fetchAndPersist(
     "sync fetched items",
   );
 
-  const changeStats = await persistAndReindex(state, instance.id, instance.name, items, logger);
+  const changeStats = await persistItems(state, instance.id, instance.name, items, logger, {
+    deleteExternalIds: null,
+    mode: "full",
+  });
   logger.info(
     {
       instance: instance.name,
@@ -576,7 +597,7 @@ export async function runSync(opts: RunSyncOptions): Promise<SyncResult> {
   // Instances are independent (different arrInstanceId, separate SyncRun rows,
   // separate HTTP fetches). Running them in parallel turns wall-time from
   // sum-of-instances into max-of-instances. The SQLite writer lock still
-  // serializes the actual upsert transactions, but chunked persistAndReindex
+  // serializes the actual upsert transactions, but chunked persistItems
   // releases the lock between batches so the instances interleave instead of
   // fully serializing.
   const perInstance = await Promise.all(
