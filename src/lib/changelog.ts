@@ -26,10 +26,26 @@ export const CHANGELOG: ChangelogEntry[] = [
     version: "1.4.0",
     date: "2026-08-27",
     highlight: true,
-    title: "1.4.0: Library browser, configurable renaming & the German-title search fix",
+    title: "1.4.0: German titles for films, a 10-minute sync & the new Library browser",
     description:
-      "The biggest release since the rewrite: a new Library page finally makes the synced titles visible and lets you fix individual mismatches with manual overrides. Renaming becomes configurable in its own settings tab, and the reported case where the German title never reached the indexers is fixed. All list pages gain sorting, deep-linkable filters, detail views and CSV export. Under the hood: faster searches on large libraries, bounded search fan-out, and a full accessibility & translation pass.",
+      "The biggest release since the rewrite, and it changes both halves of the product. What gets searched: German title variations are now used for films as well, the whole search fan-out is configurable, the sync cadence drops from one pass every 12 hours to a 10-minute quick sync plus a daily full one, and a title nobody has synced yet is resolved while its search is still in flight. What you can see and fix: a new Library page finally makes the synced titles visible and lets you correct individual mismatches with manual overrides, all list pages gain sorting, deep-linkable filters, detail views and CSV export, and renaming plus search behaviour each get their own settings tab. Plus the reported case where the German title never reached the indexers, two renaming bugs, faster searches on large libraries, and a full accessibility & translation pass.",
     items: [
+      {
+        type: "feature",
+        text: "German title variations are now searched for films too. Until now only series were searched with their German titles, so a German film release that the indexer only lists under its German name was never found. Series and films are separate switches (Settings → Search), both on by default. New: “Maximum German variations per search”, default 3, replacing a hard-coded 10 - your literal search term and the original title are always searched on top and are never dropped by the cap. If your indexer enforces a tight request limit, lower the cap or switch the film search off again.",
+      },
+      {
+        type: "feature",
+        text: "The sync intervals are configurable, and the default cadence is much shorter. Instead of one full sync every 12 hours there is now a quick sync every 10 minutes plus a full sync every 24 hours. The quick sync only processes what actually changed - additions, removals and titles your *Arr renamed - and when nothing changed it writes nothing and calls no title provider, which is what makes a 10-minute cadence affordable. The full sync is still the pass that re-queries every provider, so it is the one that picks up German titles which appeared upstream later. Three presets: Recommended (10 min / 24 h), Frugal (60 min / 24 h) and Like 1.x (quick sync off / 12 h). “Sync now” is always a full sync.",
+      },
+      {
+        type: "feature",
+        text: "A title nobody synced yet is now resolved while its search is still in flight. When a search arrives for a tvdbid, tmdbid or imdbid that isn't in the cache, UmlautAdaptarrEX asks your Sonarr or Radarr about that one title and uses the answer for that very request. This is the case a shorter sync interval cannot fix: a request in Jellyseerr or Overseerr makes Radarr create the movie and search for it in the same second. The lookup runs in parallel with the indexer request and is capped at 5 seconds, so it adds no waiting time - a timeout or an unreachable *Arr leaves the response exactly as it would have been before. Searches carrying only an imdbid need a TMDB key, because the id has to be mapped first.",
+      },
+      {
+        type: "feature",
+        text: "New “Search” tab in Settings and a new “Search behaviour” step in the setup wizard hold the six controls for all of the above. Every option says what it does, shows a worked example and names its cost, in German, English, Swedish and French - the variation example is not prose but the spellings the generator actually produces, pinned by a test.",
+      },
       {
         type: "feature",
         text: "New Library page: browse every synced title (original ↔ resolved German title, all search variations) across all instances, with search, filters (instance, media type, missing German title) and pagination. This data previously lived only in the logs.",
@@ -72,11 +88,19 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "improvement",
+        text: "Indexers whose API cannot be corrected are greyed out in the Prowlarr patch dialog. The correction hooks into the Newznab/Torznab interface; an indexer that speaks the tracker's own API instead (in Prowlarr the definition-driven Cardigann ones and the native tracker clients) has no such interface, and routing it through the proxy did not just fail to correct anything - it broke the indexer, because Prowlarr saw a 404 and disabled it. Those are now reported as not patchable, with the implementation named in the tooltip, and are never tagged. An indexer that already carries the proxy tag stays clickable so you can take the tag off, and an implementation Prowlarr does not report stays selectable.",
+      },
+      {
+        type: "improvement",
+        text: "Sync-run history is cleaned up. Those rows were never purged - unnoticeable at two runs a day, not at the new cadence. They now fall under the existing “History retention (days)” setting, alongside request and rename history.",
+      },
+      {
+        type: "improvement",
         text: "Settings tabs are now independent forms: editing one tab no longer lights up the save button on the others, saves send only the fields of that tab, and the browser warns before closing with unsaved changes. Switching the UI language no longer reloads the page - and no longer discards unsaved edits.",
       },
       {
         type: "improvement",
-        text: "Faster and more predictable searches on large libraries: match variations are pre-computed instead of re-normalized on every request, variation fan-out per search is capped at 10 with a total deadline at 75% of the configured indexer timeout (your literal query and the canonical title are always searched), and the Prowlarr proxy timeouts now scale with that setting instead of a hardcoded 30s - no more Sonarr/Radarr timeouts on title-alias-heavy items.",
+        text: "Faster and more predictable searches on large libraries: match variations are pre-computed instead of re-normalized on every request, variation fan-out per search is capped by the new “Maximum German variations per search” setting (default 3) with a total deadline at 75% of the configured indexer timeout (your literal query and the canonical title are always searched), and the Prowlarr proxy timeouts now scale with that setting instead of a hardcoded 30s - no more Sonarr/Radarr timeouts on title-alias-heavy items.",
       },
       {
         type: "improvement",
@@ -92,11 +116,11 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "improvement",
-        text: "Existing installations keep their current renaming output: the two options that change what is delivered to Sonarr/Radarr are switched off for them and default to on only for fresh installs. Both are worth enabling - have a look at Settings → Renaming.",
+        text: "Three settings are now on for every installation, not just fresh ones: “Strip unwelcome characters”, “Attach external ids” (Settings → Renaming) and “Search German variations: films” (Settings → Search). They were meant as recommended defaults for new installs, which would have left most installations on the worse of the two settings for no reason other than history. All three stay switches - if you want the old behaviour, turn them off and it applies from the next search. Note that the film variation search is the one that costs indexer requests. If you ran a 1.4.0 prerelease and had switched one of them off on purpose, switch it off again: nothing records why a switch was off, so the migration cannot tell “never opted in” from “deliberately disabled”.",
       },
       {
         type: "improvement",
-        text: "The language plugins now tell you what they cost: only enable a language you actually consume. Each extra plugin adds search variations and therefore one more indexer request per search - and since the total is capped at 10, an unused language can push genuinely useful queries (including German ones) out of the budget. On top of that, TheTVDB needs one more request per title per language on every sync. TMDB returns all languages in a single call and does not scale with the plugin count.",
+        text: "The language plugins now tell you what they cost: only enable a language you actually consume. Each extra plugin adds search variations and therefore one more indexer request per search - and since the total per search is capped, an unused language can push genuinely useful queries (including German ones) out of the budget. On top of that, TheTVDB needs one more request per title per language on every sync. TMDB returns all languages in a single call and does not scale with the plugin count.",
       },
       {
         type: "fix",
@@ -117,6 +141,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         type: "fix",
         text: "TRUST_PROXY no longer accepts a hop count. Fastify disabled hop-count trust because it cannot validate the immediate peer, which would let a client reaching the app directly spoof X-Forwarded-* headers. A numeric value now trusts nothing and logs a warning at startup telling you to use “loopback” (the default) or a comma-separated list of trusted CIDRs/IPs instead. Only relevant if you set the variable yourself.",
+      },
+      {
+        type: "fix",
+        text: "A release was renamed even though it already carried the right title, and the rewrite pushed brackets into the name - reported for a numbered sequel whose title has a parenthesised subtitle. No separate German title exists for such a title, so the provider hands back the English one, brackets included; the variation generator strips them, which made the variation a different string from the stored title while naming the very same title, so the “nothing to rename here” check missed it and the rewrite put the brackets back into a scene name that was already correct. A rewrite is now declined when it would change nothing but punctuation. This also ends the cosmetic “Title.Sub.Title” → “Title:.Sub.Title” renames. Umlaut renames are unaffected - that check compares letters and digits only, on purpose.",
+      },
+      {
+        type: "fix",
+        text: "An unrelated release could be renamed onto a numbered sequel. Alias lists routinely carry a title in Japanese, Chinese, Korean or Cyrillic; for a numbered sequel, cleaning such an alias stripped every letter and left the bare sequel number behind. That numeral was stored as a match variation and, as a prefix match, claimed every unrelated release starting with the same digit whose year fell inside the year check's tolerance. Such residues are no longer generated, and the matching engine additionally ignores any variation without a single letter - so libraries that have not re-synced yet are protected too. Titles that genuinely consist of digits only keep their variations.",
+      },
+      {
+        type: "fix",
+        text: "The worked example for “Preserve release tags” (Settings → Renaming) showed a before/after in which nothing actually changed. It now uses an item whose title really differs from the release, so the 3D that the check preserves is visible.",
       },
     ],
   },
