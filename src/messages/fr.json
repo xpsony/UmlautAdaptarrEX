@@ -466,6 +466,11 @@
       "unknown": "Le test TVDB a échoué."
     },
     "userAgent": "En-tête User-Agent",
+    "userAgentHint": "Optionnel. Laisser vide signifie automatique : UmlautAdaptarrEX plus la version en cours — la valeur suit alors chaque mise à jour sans que vous touchiez au champ.",
+    "userAgentAutoHint": "Vide = automatique : {value}",
+    "forwardArrUserAgent": "Transmettre le User-Agent de l'*Arr",
+    "forwardArrUserAgentDescription": "Envoie le User-Agent de Sonarr/Radarr/Lidarr/Readarr tel quel à l'indexeur au lieu du nôtre.",
+    "forwardArrUserAgentHint": "Désactivé par défaut : l'indexeur ne voit que « {ua} » et aucune empreinte de version de votre *Arr. À activer lorsqu'un indexeur n'accepte que des User-Agents de clients connus ou limite le débit d'après eux. Si l'*Arr n'envoie aucun en-tête, le nôtre est utilisé.",
     "logRetentionDays": "Rétention des journaux (jours)",
     "logRetentionDaysHint": "Les journaux plus anciens sont supprimés par une tâche de nettoyage toutes les 6 heures. 1–30 jours.",
     "historyRetentionDays": "Rétention de l'historique (jours)",

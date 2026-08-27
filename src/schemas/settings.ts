@@ -64,7 +64,13 @@ export const SettingsSchema = z.object({
   // require the pin, so both are optional independently.
   tvdbApiKey: optionalSecret,
   tvdbPin: optionalSecret,
-  userAgent: z.string().min(1).max(256).default("UmlautAdaptarrEX/2.0"),
+  // An OVERRIDE, not the value: empty means "automatic", i.e.
+  // `UmlautAdaptarrEX/<running version>` (see src/lib/user-agent.ts). The
+  // field therefore has to accept "" — it used to require min(1) and carry
+  // the stale literal `UmlautAdaptarrEX/2.0` as its default.
+  userAgent: z.string().trim().max(256).default(""),
+  // Forward the calling *Arr's User-Agent to the indexer instead of ours.
+  forwardArrUserAgent: z.boolean().default(false),
   logRetentionDays: z.number().int().min(1).max(30).default(3),
   // Shared retention for RequestHistory + RenameHistory rows (days). The
   // cleanup job purges older rows every 6 hours.

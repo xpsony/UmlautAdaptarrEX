@@ -29,6 +29,7 @@ export const AdvancedSettingsSchema = SettingsUpdateSchema.pick({
   indexerRateLimitMs: true,
   indexerTimeoutSeconds: true,
   userAgent: true,
+  forwardArrUserAgent: true,
   logRetentionDays: true,
   historyRetentionDays: true,
   blockPrivateInstanceHosts: true,
@@ -156,6 +157,9 @@ export interface SettingsRow extends SettingsUpdate {
   // they are not stored in the DB and only change via env var + restart.
   legacyApiPort?: number;
   webUiPort?: number;
+  // What a blank `userAgent` override resolves to (`UmlautAdaptarrEX/<version>`).
+  // Display-only; rendered as the field's placeholder.
+  defaultUserAgent?: string;
   // Server-only "is the secret stored?" booleans. Returned alongside the
   // masked key fields so the UI can render a stored-state badge without
   // having access to the cleartext value.

@@ -224,6 +224,50 @@ describe("PUT /api/admin/settings live-reload", () => {
     });
   });
 
+  it("an empty userAgent override resolves to the versioned default", async () => {
+    await seedAdminUser();
+    const session = await login(app);
+
+    const r = await app.inject({
+      method: "PUT",
+      url: "/api/admin/settings",
+      payload: { userAgent: "" },
+      ...authCookies(session),
+    });
+    expect(r.statusCode).toBe(200);
+
+    const { defaultUserAgent } = await import("@/lib/user-agent");
+    // `settings.userAgent` is the EFFECTIVE value every outbound caller reads.
+    expect(getAppState().settings.userAgent).toBe(defaultUserAgent());
+    expect(getAppState().settings.userAgentOverride).toBe("");
+    // The GET echoes the raw override plus the automatic value, so the form
+    // can render it as a placeholder.
+    const get = await app.inject({
+      method: "GET",
+      url: "/api/admin/settings",
+      cookies: { uaSession: session.sessionCookie },
+    });
+    expect(get.json()).toMatchObject({
+      userAgent: "",
+      defaultUserAgent: defaultUserAgent(),
+    });
+  });
+
+  it("keeps a userAgent override and the forwarding toggle", async () => {
+    await seedAdminUser();
+    const session = await login(app);
+
+    const r = await app.inject({
+      method: "PUT",
+      url: "/api/admin/settings",
+      payload: { userAgent: "MyProxy/9.9", forwardArrUserAgent: true },
+      ...authCookies(session),
+    });
+    expect(r.statusCode).toBe(200);
+    expect(getAppState().settings.userAgent).toBe("MyProxy/9.9");
+    expect(getAppState().settings.forwardArrUserAgent).toBe(true);
+  });
+
   it("an operationMode change triggers a warn-log hint without breaking the response", async () => {
     await seedAdminUser();
     const session = await login(app);

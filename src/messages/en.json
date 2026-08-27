@@ -466,6 +466,11 @@
       "unknown": "TVDB test failed."
     },
     "userAgent": "User-Agent header",
+    "userAgentHint": "Optional. Leaving it empty means automatic: UmlautAdaptarrEX plus the running version — the value then follows every update without you touching the field.",
+    "userAgentAutoHint": "Empty = automatic: {value}",
+    "forwardArrUserAgent": "Forward the *Arr's User-Agent",
+    "forwardArrUserAgentDescription": "Sends Sonarr/Radarr/Lidarr/Readarr's User-Agent to the indexer verbatim instead of our own.",
+    "forwardArrUserAgentHint": "Off by default: the indexer sees only \"{ua}\" and no version fingerprint of your *Arr. Turn it on when an indexer only accepts known client User-Agents or rate-limits by them. If the *Arr sends no header, ours is used.",
     "logRetentionDays": "Log retention (days)",
     "logRetentionDaysHint": "Logs older than this are deleted by a cleanup job that runs every 6 hours. 1–30 days.",
     "historyRetentionDays": "History retention (days)",

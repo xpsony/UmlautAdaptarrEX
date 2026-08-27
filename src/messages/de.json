@@ -466,6 +466,11 @@
       "unknown": "TVDB-Test fehlgeschlagen."
     },
     "userAgent": "User-Agent-Header",
+    "userAgentHint": "Optional. Leer lassen heißt automatisch: UmlautAdaptarrEX plus die laufende Version — der Wert wächst dann mit jedem Update mit, ohne dass du das Feld anfassen musst.",
+    "userAgentAutoHint": "Leer = automatisch: {value}",
+    "forwardArrUserAgent": "User-Agent der *Arr durchreichen",
+    "forwardArrUserAgentDescription": "Sendet den User-Agent von Sonarr/Radarr/Lidarr/Readarr wortwörtlich an den Indexer statt unseren eigenen.",
+    "forwardArrUserAgentHint": "Standardmäßig aus: der Indexer sieht nur „{ua}“ und keinen Versions-Fingerprint deiner *Arr. Einschalten, wenn ein Indexer nur bekannte Client-User-Agents zulässt oder danach limitiert. Schickt die *Arr keinen Header, wird unser eigener verwendet.",
     "logRetentionDays": "Log-Aufbewahrung (Tage)",
     "logRetentionDaysHint": "Ältere Logs werden alle 6 Stunden vom Cleanup-Job gelöscht. 1–30 Tage.",
     "historyRetentionDays": "Verlauf-Aufbewahrung (Tage)",

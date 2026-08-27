@@ -13,6 +13,7 @@ import type { ProviderId } from "@/schemas/instance";
 import { pickMissingCandidates } from "@/server/title-cache/recheck";
 import { isMaskedSecret, maskSecret } from "@/lib/secrets";
 import { resolveLegacyApiPort, resolveProxyPortEnv, resolveWebUiPort } from "@/lib/ports";
+import { defaultUserAgent } from "@/lib/user-agent";
 import { parseOrReply } from "./_helpers";
 
 const TmdbTestSchema = z.object({
@@ -50,6 +51,7 @@ async function getSettings(): Promise<unknown> {
       tvdbApiKey: true,
       tvdbPin: true,
       userAgent: true,
+      forwardArrUserAgent: true,
       setupComplete: true,
       prowlarrHost: true,
       prowlarrApiKey: true,
@@ -86,6 +88,9 @@ async function getSettings(): Promise<unknown> {
     // bound ports without inspecting the environment.
     legacyApiPort: resolveLegacyApiPort(),
     webUiPort: resolveWebUiPort(),
+    // What an empty `userAgent` override resolves to. Display-only: the UI
+    // renders it as the field's placeholder so "automatic" is not a mystery.
+    defaultUserAgent: defaultUserAgent(),
     tmdbApiKey: maskSecret(tmdbApiKey),
     tvdbApiKey: maskSecret(tvdbApiKey),
     tvdbPin: maskSecret(tvdbPin),
@@ -158,6 +163,9 @@ async function putSettings(req: FastifyRequest, reply: FastifyReply): Promise<un
     // bound ports without inspecting the environment.
     legacyApiPort: resolveLegacyApiPort(),
     webUiPort: resolveWebUiPort(),
+    // What an empty `userAgent` override resolves to. Display-only: the UI
+    // renders it as the field's placeholder so "automatic" is not a mystery.
+    defaultUserAgent: defaultUserAgent(),
     tmdbApiKey: maskSecret(tmdbApiKey),
     tvdbApiKey: maskSecret(tvdbApiKey),
     tvdbPin: maskSecret(tvdbPin),

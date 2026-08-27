@@ -22,6 +22,7 @@ import {
 } from "@/domain/plugins";
 import { loadActivePlugins, seedPlugins } from "@/server/plugins/seed";
 import { resolveProxyPortEnv } from "@/lib/ports";
+import { defaultUserAgent, resolveUserAgent } from "@/lib/user-agent";
 
 const RELEASE_YEAR_RE = /(?<![A-Za-z0-9])(19|20)\d{2}(?![A-Za-z0-9])/g;
 
@@ -145,7 +146,16 @@ interface AppSettings {
   tmdbApiKey: string | null;
   tvdbApiKey: string | null;
   tvdbPin: string | null;
+  /**
+   * The EFFECTIVE User-Agent for outbound requests — the operator's override
+   * when set, otherwise `UmlautAdaptarrEX/<version>`. Resolved here so every
+   * consumer gets a usable value without repeating the fallback.
+   */
   userAgent: string;
+  /** The raw override as stored (empty = automatic). */
+  userAgentOverride: string;
+  /** Forward the calling *Arr's User-Agent to the indexer instead of ours. */
+  forwardArrUserAgent: boolean;
   setupComplete: boolean;
   logRetentionDays: number;
   historyRetentionDays: number;
@@ -173,7 +183,9 @@ const NO_SETTINGS: AppSettings = {
   tmdbApiKey: null,
   tvdbApiKey: null,
   tvdbPin: null,
-  userAgent: "UmlautAdaptarrEX/2.0",
+  userAgent: defaultUserAgent(),
+  userAgentOverride: "",
+  forwardArrUserAgent: false,
   setupComplete: false,
   logRetentionDays: 3,
   historyRetentionDays: 30,
@@ -342,7 +354,9 @@ export class AppState {
       tmdbApiKey: row.tmdbApiKey,
       tvdbApiKey: row.tvdbApiKey,
       tvdbPin: row.tvdbPin,
-      userAgent: row.userAgent,
+      userAgent: resolveUserAgent(row.userAgent),
+      userAgentOverride: row.userAgent,
+      forwardArrUserAgent: row.forwardArrUserAgent,
       setupComplete: row.setupComplete,
       logRetentionDays: row.logRetentionDays,
       historyRetentionDays: row.historyRetentionDays,
@@ -407,7 +421,7 @@ export class AppState {
       tmdbApiKey: tmdbKeyForProvider,
       tvdbApiKey: row.tvdbApiKey,
       tvdbPin: row.tvdbPin,
-      userAgent: row.userAgent,
+      userAgent: resolveUserAgent(row.userAgent),
     };
     this._providersByOrder.clear();
     // Default provider (for legacy paths without an instance context):

@@ -466,6 +466,11 @@
       "unknown": "TVDB-test misslyckades."
     },
     "userAgent": "User-Agent-header",
+    "userAgentHint": "Valfritt. Lämnar du fältet tomt blir det automatiskt: UmlautAdaptarrEX plus den version som körs — värdet följer då varje uppdatering utan att du rör fältet.",
+    "userAgentAutoHint": "Tomt = automatiskt: {value}",
+    "forwardArrUserAgent": "Skicka vidare *Arr:s User-Agent",
+    "forwardArrUserAgentDescription": "Skickar Sonarr/Radarr/Lidarr/Readarrs User-Agent ordagrant till indexeraren i stället för vår egen.",
+    "forwardArrUserAgentHint": "Av som standard: indexeraren ser bara ”{ua}” och inget versionsfingeravtryck från din *Arr. Slå på den när en indexerare bara accepterar kända klient-User-Agents eller begränsar utifrån dem. Skickar *Arr ingen header används vår egen.",
     "logRetentionDays": "Loggbevarande (dagar)",
     "logRetentionDaysHint": "Loggar äldre än så raderas av en städ-jobb som körs var 6:e timme. 1–30 dagar.",
     "historyRetentionDays": "Historiklagring (dagar)",

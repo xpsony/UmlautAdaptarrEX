@@ -54,7 +54,15 @@ model Setting {
   // nur mit gesetztem Pin erreichbar. Beides server-only, niemals an die UI.
   tvdbApiKey                String?
   tvdbPin                   String?
-  userAgent                 String    @default("UmlautAdaptarrEX/2.0")
+  // OVERRIDE, nicht der Wert selbst: leer = automatisch
+  // `UmlautAdaptarrEX/<Version>`, damit der User-Agent Releases folgt, ohne
+  // dass jemand das Feld pflegen muss. Auflösung in src/lib/user-agent.ts
+  // (`resolveUserAgent`).
+  userAgent                 String    @default("")
+  // Ob der User-Agent der anfragenden *Arr-Instanz an den Indexer
+  // durchgereicht wird. Aus (Default) = nur unser eigener Token; an = Header
+  // der *Arr wortwörtlich, wofür manche Indexer Allow-Lists pflegen.
+  forwardArrUserAgent       Boolean   @default(false)
   setupComplete             Boolean   @default(false)
   // Optional: persistierte Prowlarr-Verbindung. Wir nutzen sie, um den
   // Import-Dialog vorzubefüllen, damit der User die Creds nicht jedes Mal
