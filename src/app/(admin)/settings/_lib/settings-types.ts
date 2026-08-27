@@ -56,6 +56,48 @@ export type AdvancedFormInput = z.input<typeof AdvancedSettingsSchema>;
 export type AdvancedFormOutput = z.infer<typeof AdvancedSettingsSchema>;
 export type AdvancedForm = UseFormReturn<AdvancedFormInput, unknown, AdvancedFormOutput>;
 
+export const SearchSettingsSchema = SettingsUpdateSchema.pick({
+  onDemandLookup: true,
+  tvVariationSearch: true,
+  movieVariationSearch: true,
+  maxTitleVariations: true,
+  syncIntervalMinutes: true,
+  fullSyncIntervalHours: true,
+});
+
+export type SearchFormInput = z.input<typeof SearchSettingsSchema>;
+export type SearchFormOutput = z.infer<typeof SearchSettingsSchema>;
+export type SearchForm = UseFormReturn<SearchFormInput, unknown, SearchFormOutput>;
+
+/** The two fan-out toggles, in the order the UI renders them. */
+export const VARIATION_TOGGLES = [
+  "tvVariationSearch",
+  "movieVariationSearch",
+] as const satisfies ReadonlyArray<keyof SearchFormOutput>;
+
+export type VariationToggle = (typeof VARIATION_TOGGLES)[number];
+
+/**
+ * The worked example for the fan-out toggles: which extra queries actually go
+ * out. Invented titles, like RENAMING_EXAMPLES, and pinned against
+ * `generateForTvMovie` by `tests/unit/variation-examples.test.ts`.
+ *
+ * The German title deliberately carries umlauts: without them the generator
+ * produces a single variation and the example would not show what the feature
+ * is for.
+ *
+ * Not translated: a search query is data, not prose, and one copy means de/en
+ * can never disagree about what the code does.
+ */
+export const VARIATION_EXAMPLE = {
+  expectedTitle: "Roof Street",
+  germanTitle: "Straße der Dächer",
+  /** The literal query Sonarr sends. */
+  query: "Roof Street S02E01",
+  /** Extra queries the fan-out adds, in generator order. */
+  variations: ["Straße der Dächer", "Strasse der Daecher", "Strasse der Dacher"],
+} as const;
+
 export type RenamingFormInput = z.input<typeof RenamingSettingsSchema>;
 export type RenamingFormOutput = z.infer<typeof RenamingSettingsSchema>;
 export type RenamingForm = UseFormReturn<RenamingFormInput, unknown, RenamingFormOutput>;
