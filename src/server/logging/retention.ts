@@ -16,8 +16,11 @@ interface LogRetentionOptions {
 }
 
 // Retention days are read live from settings on each tick so UI changes apply
-// without a restart. One tick purges three tables: LogEntry (logRetentionDays)
-// plus RequestHistory and RenameHistory (shared historyRetentionDays).
+// without a restart. One tick purges four tables: LogEntry (logRetentionDays)
+// plus RequestHistory, RenameHistory and SyncRun (shared
+// historyRetentionDays). SyncRun joined the set when the quick sync landed:
+// at a 10-minute cadence the table grows two orders of magnitude faster than
+// it did with a 12-hour full sync.
 export class LogRetentionScheduler {
   private timer: NodeJS.Timeout | null = null;
   private running = false;
@@ -88,11 +91,18 @@ export class LogRetentionScheduler {
         prisma.renameHistory.deleteMany({ where: { createdAt: { lt: historyCutoff } } }),
         "rename-history",
       );
-      if (requestResult.count + renameResult.count > 0) {
+      // SyncRun has no createdAt; its timestamp column is startedAt.
+      const syncRunResult = await this.withTimeout(
+        prisma.syncRun.deleteMany({ where: { startedAt: { lt: historyCutoff } } }),
+        "sync-runs",
+      );
+
+      if (requestResult.count + renameResult.count + syncRunResult.count > 0) {
         this.opts.logger.info(
           {
             deletedRequests: requestResult.count,
             deletedRenames: renameResult.count,
+            deletedSyncRuns: syncRunResult.count,
             retentionDays: settings.historyRetentionDays,
           },
           "history retention cleanup",
@@ -115,7 +125,7 @@ export class LogRetentionScheduler {
         this.opts.logger.debug({ err }, "PRAGMA optimize failed after retention cleanup");
       }
 
-      return logResult.count + requestResult.count + renameResult.count;
+      return logResult.count + requestResult.count + renameResult.count + syncRunResult.count;
     } catch (err) {
       this.opts.logger.error({ err }, "log retention cleanup failed");
       return 0;

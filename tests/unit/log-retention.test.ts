@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockLog, mockReqHistory, mockRenameHistory, mockState, mockQueryRawUnsafe } = vi.hoisted(
-  () => ({
+const { mockLog, mockReqHistory, mockRenameHistory, mockSyncRun, mockState, mockQueryRawUnsafe } =
+  vi.hoisted(() => ({
     mockLog: {
       deleteMany: vi.fn(),
     },
@@ -11,18 +11,21 @@ const { mockLog, mockReqHistory, mockRenameHistory, mockState, mockQueryRawUnsaf
     mockRenameHistory: {
       deleteMany: vi.fn(),
     },
+    mockSyncRun: {
+      deleteMany: vi.fn(),
+    },
     mockState: {
       settings: { logRetentionDays: 14, historyRetentionDays: 30 },
     },
     mockQueryRawUnsafe: vi.fn(),
-  }),
-);
+  }));
 
 vi.mock("@/lib/db", () => ({
   prisma: {
     logEntry: mockLog,
     requestHistory: mockReqHistory,
     renameHistory: mockRenameHistory,
+    syncRun: mockSyncRun,
     $queryRawUnsafe: mockQueryRawUnsafe,
   },
 }));
@@ -54,7 +57,7 @@ function makeLogger(): MockLogger {
 }
 
 beforeEach(() => {
-  for (const m of [mockLog, mockReqHistory, mockRenameHistory]) {
+  for (const m of [mockLog, mockReqHistory, mockRenameHistory, mockSyncRun]) {
     m.deleteMany.mockReset();
     m.deleteMany.mockResolvedValue({ count: 0 });
   }
@@ -65,7 +68,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  for (const m of [mockLog, mockReqHistory, mockRenameHistory]) {
+  for (const m of [mockLog, mockReqHistory, mockRenameHistory, mockSyncRun]) {
     m.deleteMany.mockReset();
   }
   mockQueryRawUnsafe.mockReset();
@@ -210,5 +213,23 @@ describe("LogRetentionScheduler", () => {
     expect(deleted).toBe(3);
     expect(logger.debug).toHaveBeenCalledOnce();
     expect(logger.error).not.toHaveBeenCalled();
+  });
+});
+
+describe("SyncRun retention", () => {
+  it("purges SyncRun rows older than historyRetentionDays", async () => {
+    const sched = new LogRetentionScheduler({ logger: makeLogger() as never });
+    await sched.runNow();
+
+    expect(mockSyncRun.deleteMany).toHaveBeenCalledWith({
+      where: { startedAt: { lt: expect.any(Date) } },
+    });
+  });
+
+  it("counts purged SyncRun rows in the returned total", async () => {
+    mockSyncRun.deleteMany.mockResolvedValueOnce({ count: 7 });
+    const sched = new LogRetentionScheduler({ logger: makeLogger() as never });
+
+    expect(await sched.runNow()).toBe(7);
   });
 });
