@@ -293,3 +293,29 @@ describe("GET /api/admin/sync-runs", () => {
     expect(mockSyncRun.findMany).not.toHaveBeenCalled();
   });
 });
+
+describe("GET /api/admin/sync-runs kind filter", () => {
+  it("filters by kind=delta", async () => {
+    mockSyncRun.findMany.mockResolvedValueOnce([]);
+    mockSyncRun.count.mockResolvedValueOnce(0);
+    await app.inject({ method: "GET", url: "/api/admin/sync-runs?kind=delta" });
+    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as { where: Record<string, unknown> };
+    expect(args.where.kind).toBe("delta");
+  });
+
+  it("filters by kind=full", async () => {
+    mockSyncRun.findMany.mockResolvedValueOnce([]);
+    mockSyncRun.count.mockResolvedValueOnce(0);
+    await app.inject({ method: "GET", url: "/api/admin/sync-runs?kind=full" });
+    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as { where: Record<string, unknown> };
+    expect(args.where.kind).toBe("full");
+  });
+
+  it("ignores an unknown kind instead of returning nothing", async () => {
+    mockSyncRun.findMany.mockResolvedValueOnce([]);
+    mockSyncRun.count.mockResolvedValueOnce(0);
+    await app.inject({ method: "GET", url: "/api/admin/sync-runs?kind=nonsense" });
+    const args = mockSyncRun.findMany.mock.calls[0]?.[0] as { where: Record<string, unknown> };
+    expect(args.where).not.toHaveProperty("kind");
+  });
+});

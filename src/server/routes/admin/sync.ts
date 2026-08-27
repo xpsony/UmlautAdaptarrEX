@@ -89,6 +89,9 @@ export async function syncRoutes(app: FastifyInstance, deps: SyncRoutesDeps): Pr
       const search = q.search ? q.search.slice(0, 256) : undefined;
       const where: Record<string, unknown> = {};
       if (q.status) where.status = q.status;
+      // Same silent-fallback policy as sort/order: an unknown value means
+      // "no filter", never "no results".
+      if (q.kind === "full" || q.kind === "delta") where.kind = q.kind;
       if (search) {
         where.OR = [
           { arrInstance: { is: { name: { contains: search } } } },

@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- **Sync intervals are configurable, and the default cadence is much shorter.** Instead of one hard-coded full sync every 12 hours there are now two intervals (Settings, range-checked): a **quick sync** every 10 minutes and a **full sync** every 24 hours. The quick sync fetches the \*Arr's title listing and processes only what actually changed - additions, removals, and titles the \*Arr itself renamed. When nothing changed it writes no `SearchItem` row, creates no `SyncRun` row and never calls a title provider, which is what makes a 10-minute cadence affordable: a full pass on a 2,000-title library used to rewrite every row whether or not it had changed. The full sync is still the pass that re-queries every provider, so it remains the one that picks up German titles which appeared upstream after a title was first synced. Three presets are offered: **Recommended** (10 min / 24 h), **Frugal** (60 min / 24 h) and **Like 1.x** (quick sync off / 12 h).
+  - An instance that has never had a full sync always gets one first. That is the one-time initial scan; quick syncs only take over afterwards.
+  - "Sync now" in the UI is always a full sync - pressing the button should mean a real refresh.
+  - Sync runs now record their `kind` (`full` / `delta`) and can be filtered by it.
+- **Sync-run history is cleaned up.** `SyncRun` rows were never purged. At two runs a day that went unnoticed; at the new cadence it would not. They now fall under the existing **History retention (days)** setting, alongside request and rename history.
+
+### Internal
+
+- The \*Arr clients are split into a raw fetch (`fetchRawItems`) and a derive step (`deriveItems`), so the quick sync can diff the instance's listing without paying for a provider lookup on every title, and a single title can be resolved on its own. No change in behaviour.
+- The search-item lookup index moved out of `AppState` into its own `SearchItemIndex`, with targeted single-item removal and an IMDb-id lookup. No change in behaviour.
+
 ## 1.4.0 - 2026-08-27
 
 The biggest release since the rewrite. Headline feature: a new **Library** page that finally makes the synced title data visible - and lets you fix individual mismatches with **manual title overrides** instead of clearing the whole cache. Around it: a full table/UX overhaul (sorting, URL-persisted filters, detail views, CSV export), history pagination with configurable retention, a performance and robustness pass on the sync/search hot paths, and a complete accessibility & translation sweep.
