@@ -4,6 +4,11 @@
 
 ### Features
 
+- **All of the above is asked in the setup wizard and editable in a new Settings tab.** A new wizard step **Search behaviour** sits right after the language plugins, and a new **Search** tab in Settings holds the same six controls. Every option states what it does, shows a worked example, and names its cost, so the choice is understandable without reading a changelog:
+  - The variation example is not prose: the German spellings shown are the ones the variation generator actually produces, pinned by a test that replays them through it. If the generator changes, the test fails and the copy has to be corrected with it.
+  - The refresh intervals come with three presets (Recommended / Frugal / Like 1.x) and a note that the very first reconcile is always a full one.
+  - Copy is available in German, English, Swedish and French.
+
 - **German title variations are now searched for films too, and the whole fan-out is configurable.** Until now only series were searched with their German titles; films were left out for historical reasons, so a German film release the indexer only listed under its German name was never found. Four new settings control this:
   - **Search German variations: series** and **films**, separately. Series are on as before. Films are on for new installations and **off** for existing ones, because switching them on multiplies the indexer requests per film search - an existing setup with tight indexer limits should not run into a rate limit without being asked. The switch is in Settings.
   - **Maximum German variations per search**, default **3**, replacing a hard-coded 10. The number counts the German variations; your literal search term and the original title are always searched on top and are never dropped by the cap. So 3 means at most 5 extra indexer requests per search. Existing installations get 3 as well: it is strictly less indexer load than before.
