@@ -23,6 +23,22 @@ import {
 import { loadActivePlugins, seedPlugins } from "@/server/plugins/seed";
 import { resolveProxyPortEnv } from "@/lib/ports";
 import { defaultUserAgent, resolveUserAgent } from "@/lib/user-agent";
+import {
+  DEFAULT_INSTANCE_OPTIONS,
+  SEARCH_ITEM_SELECT,
+  toCachedSearchItem,
+  type CachedSearchItem,
+  type CachedSearchItemInput,
+  type InstanceMatchOptions,
+  type SearchItemRow,
+} from "./search-item";
+
+export type {
+  CachedSearchItem,
+  CachedSearchItemInput,
+  InstanceMatchOptions,
+  SearchItemRow,
+} from "./search-item";
 
 const RELEASE_YEAR_RE = /(?<![A-Za-z0-9])(19|20)\d{2}(?![A-Za-z0-9])/g;
 
@@ -31,16 +47,6 @@ function extractReleaseYears(title: string): number[] {
   for (const m of title.matchAll(RELEASE_YEAR_RE)) out.push(Number(m[0]));
   return out;
 }
-
-export interface InstanceMatchOptions {
-  enableYearMatching: boolean;
-  yearMatchingTolerance: number;
-}
-
-const DEFAULT_INSTANCE_OPTIONS: InstanceMatchOptions = {
-  enableYearMatching: true,
-  yearMatchingTolerance: 1,
-};
 
 // Walks the original string and returns the index after enough characters
 // have been consumed to cover `targetCount` normalized chars. Mirrors the
@@ -58,83 +64,6 @@ function mapNormalizedLengthToOriginal(
   }
   return original.length;
 }
-
-export interface CachedSearchItem {
-  id: string;
-  arrInstanceId: string;
-  arrId: number;
-  externalId: string;
-  /**
-   * IMDb id when the *Arr knows one - emitted as a newznab `imdb` attribute.
-   * Optional: only Radarr supplies it, and rows written before the
-   * `rename_options` migration have none.
-   */
-  imdbId?: string | null;
-  title: string;
-  expectedTitle: string;
-  expectedAuthor: string | null;
-  germanTitle: string | null;
-  mediaType: MediaType;
-  /** Release/first-air year used for year-mismatch rejection at lookup time. */
-  year: number | null;
-  titleSearchVariations: string[];
-  titleMatchVariations: string[];
-  /**
-   * `normalizeForComparison(variation, pack)` applied to each entry of
-   * `titleMatchVariations`, same order/length. Precomputed once in
-   * `indexItem` so per-request matching (`bestVariationMatchLen`) never
-   * re-normalizes the same variation on every lookup.
-   */
-  normalizedMatchVariations: string[];
-  authorMatchVariations: string[];
-}
-
-// Shape accepted by `indexItem` / produced by `toCachedSearchItem`: everything
-// a CachedSearchItem needs except `normalizedMatchVariations`, which only
-// `indexItem` can fill in (it requires the active LanguagePack). Keeping this
-// as a distinct type - rather than an optional field with a `!` assertion -
-// means callers that build a fresh item (sync, tests) never have to know
-// about normalization at construction time, and `indexItem`'s signature
-// documents that it's the sole place the field gets populated.
-export type CachedSearchItemInput = Omit<CachedSearchItem, "normalizedMatchVariations">;
-
-// Raw shape of the columns `toCachedSearchItem` consumes - kept in sync with
-// SEARCH_ITEM_SELECT below so `loadSearchItemsFromDb` never over-fetches.
-interface SearchItemRow {
-  id: string;
-  arrInstanceId: string;
-  arrId: number;
-  externalId: string;
-  imdbId: string | null;
-  title: string;
-  expectedTitle: string;
-  expectedAuthor: string | null;
-  germanTitle: string | null;
-  mediaType: string;
-  year: number | null;
-  titleSearchVariations: string;
-  titleMatchVariations: string;
-  authorMatchVariations: string;
-}
-
-// Prisma `select` matching SearchItemRow exactly - used by loadSearchItemsFromDb
-// so boot doesn't pull unused columns (e.g. `aliases`) for every row.
-const SEARCH_ITEM_SELECT = {
-  id: true,
-  arrInstanceId: true,
-  arrId: true,
-  externalId: true,
-  imdbId: true,
-  title: true,
-  expectedTitle: true,
-  expectedAuthor: true,
-  germanTitle: true,
-  mediaType: true,
-  year: true,
-  titleSearchVariations: true,
-  titleMatchVariations: true,
-  authorMatchVariations: true,
-} as const;
 
 interface AppSettings {
   appApiKey: string;
@@ -477,25 +406,6 @@ export class AppState {
     this._instanceOptions.delete(instanceId);
   }
 
-  private toCachedSearchItem(row: SearchItemRow): CachedSearchItemInput {
-    return {
-      id: row.id,
-      arrInstanceId: row.arrInstanceId,
-      arrId: row.arrId,
-      externalId: row.externalId,
-      imdbId: row.imdbId,
-      title: row.title,
-      expectedTitle: row.expectedTitle,
-      expectedAuthor: row.expectedAuthor,
-      germanTitle: row.germanTitle,
-      mediaType: row.mediaType as MediaType,
-      year: row.year,
-      titleSearchVariations: JSON.parse(row.titleSearchVariations) as string[],
-      titleMatchVariations: JSON.parse(row.titleMatchVariations) as string[],
-      authorMatchVariations: JSON.parse(row.authorMatchVariations) as string[],
-    };
-  }
-
   // Converts + indexes a batch of raw SearchItem rows, skipping any row whose
   // JSON variation columns fail to parse (e.g. left truncated by an aborted
   // write) instead of failing the whole load/reindex. Shared by
@@ -508,7 +418,7 @@ export class AppState {
     const samples: { rowId: string; error: string }[] = [];
     for (const row of rows) {
       try {
-        this.indexItem(this.toCachedSearchItem(row));
+        this.indexItem(toCachedSearchItem(row));
       } catch (err) {
         skipped++;
         if (samples.length < 3) {
