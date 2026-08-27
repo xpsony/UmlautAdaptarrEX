@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CHANGELOG, latestChangelog, unseenSince } from "@/lib/changelog";
+import type { ChangelogItemType } from "@/lib/changelog";
 
 describe("latestChangelog", () => {
   it("returns the first entry of the changelog array", () => {
@@ -49,4 +50,22 @@ describe("unseenSince", () => {
     const result = unseenSince(oldestVersion);
     expect(result.find((e) => e.version === oldestVersion)).toBeUndefined();
   });
+});
+
+// The dialog and the /about list render items in array order, so the array is
+// the presentation order. Grouping by type keeps every release readable
+// instead of interleaving features with fixes as items get appended.
+describe("changelog item ordering", () => {
+  const TYPE_ORDER: Record<ChangelogItemType, number> = {
+    feature: 0,
+    improvement: 1,
+    fix: 2,
+  };
+
+  for (const entry of CHANGELOG) {
+    it(`${entry.version} groups items feature -> improvement -> fix`, () => {
+      const ranks = entry.items.map((i) => TYPE_ORDER[i.type]);
+      expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
+    });
+  }
 });

@@ -63,6 +63,14 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: "Request history and rename history paginate through all stored entries (page size 25/50/100/250) with server-side search across the whole retained period — previously search only covered the newest rows. The new “History retention (days)” setting (Settings → Advanced, default 30, 1–365) cleans up old entries automatically every 6 hours. Thanks to Tom-Furrer for reporting the search limitation (#115).",
       },
       {
+        type: "feature",
+        text: "New toggle “Forward the *Arr's User-Agent” (Settings → Advanced): sends Sonarr/Radarr/Lidarr/Readarr's User-Agent to the indexer verbatim instead of ours. Off by default, so the indexer sees only UmlautAdaptarrEX and no version fingerprint of your *Arr — turn it on if an indexer only accepts known client User-Agents or rate-limits by them. This replaces the previous behaviour, which always sent both concatenated (“Sonarr/4.0.0 UmlautAdaptarrEX/2.0”) — a value that identified neither client and could defeat exactly those allow-lists.",
+      },
+      {
+        type: "feature",
+        text: 'Renaming is now configurable under Settings → Renaming, with a worked before/after example on each switch so you can see what it does. Two new options: “Strip unwelcome characters” removes : ? * " < > | / \\ from the inserted title (scene releases never carry them, and Sonarr/Radarr parse the result more reliably), and “Attach external ids” adds tvdbid / tmdbid / imdb as newznab attributes so the *Arr can match a release without parsing its title. Four more switches expose the safety rules UmlautAdaptarrEX added on top of the old .NET version (year check, ambiguous prefix, release tags, legacy suffix cut), with presets for “Like the old Umlautadaptarr” and “Recommended values”. Changes apply from the next search — no restart, no re-sync.',
+      },
+      {
         type: "improvement",
         text: "Settings tabs are now independent forms: editing one tab no longer lights up the save button on the others, saves send only the fields of that tab, and the browser warns before closing with unsaved changes. Switching the UI language no longer reloads the page — and no longer discards unsaved edits.",
       },
@@ -79,6 +87,18 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: "Accessibility & translations: complete French and Swedish UI coverage (25 missing strings translated), skip-to-content link, screen-reader labels for navigation, charts and per-instance switches, keyboard- and touch-reachable error details, and live-log streaming now reconnects automatically after a connection drop.",
       },
       {
+        type: "improvement",
+        text: "The User-Agent now follows the running version instead of the hard-coded “UmlautAdaptarrEX/2.0” — a string that had been wrong ever since the 2.0 rewrite shipped as 1.x. The field in Settings → Advanced became an optional override: leave it empty and it stays correct across updates by itself, with the automatic value shown as the field's placeholder. If you never customised it, this update switches you to automatic.",
+      },
+      {
+        type: "improvement",
+        text: "Existing installations keep their current renaming output: the two options that change what is delivered to Sonarr/Radarr are switched off for them and default to on only for fresh installs. Both are worth enabling — have a look at Settings → Renaming.",
+      },
+      {
+        type: "improvement",
+        text: "The language plugins now tell you what they cost: only enable a language you actually consume. Each extra plugin adds search variations and therefore one more indexer request per search — and since the total is capped at 10, an unused language can push genuinely useful queries (including German ones) out of the budget. On top of that, TheTVDB needs one more request per title per language on every sync. TMDB returns all languages in a single call and does not scale with the plugin count.",
+      },
+      {
         type: "fix",
         text: "A batch of silent-failure fixes: failed list or settings loads now show an error with a retry button instead of pretending to be empty, enabling/disabling an instance reports errors instead of silently snapping back, and the setup wizard shows field validation errors instead of doing nothing on an invalid submit.",
       },
@@ -93,18 +113,6 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         type: "fix",
         text: "German titles that existed only as an alias were never actually searched. If Sonarr holds a German production under its English TVDB title, the German name often only shows up in the alias list — and aliases were used to rewrite the indexer response, never to query the indexer. So only the English title went out and nothing was found, while a series whose German title came back as a proper translation worked fine. Three causes fixed: TheTVDB is now also asked for the extended record (embedded name translations, and the primary name when the original language proves it is German), Sonarr's own alternate titles are merged with the provider aliases instead of being discarded, and when no German title resolves at all, up to three Latin-script aliases are searched as well.",
-      },
-      {
-        type: "feature",
-        text: 'Renaming is now configurable under Settings → Renaming, with a worked before/after example on each switch so you can see what it does. Two new options: “Strip unwelcome characters” removes : ? * " < > | / \\ from the inserted title (scene releases never carry them, and Sonarr/Radarr parse the result more reliably), and “Attach external ids” adds tvdbid / tmdbid / imdb as newznab attributes so the *Arr can match a release without parsing its title. Four more switches expose the safety rules UmlautAdaptarrEX added on top of the old .NET version (year check, ambiguous prefix, release tags, legacy suffix cut), with presets for “Like the old Umlautadaptarr” and “Recommended values”. Changes apply from the next search — no restart, no re-sync.',
-      },
-      {
-        type: "improvement",
-        text: "Existing installations keep their current renaming output: the two options that change what is delivered to Sonarr/Radarr are switched off for them and default to on only for fresh installs. Both are worth enabling — have a look at Settings → Renaming.",
-      },
-      {
-        type: "improvement",
-        text: "The language plugins now tell you what they cost: only enable a language you actually consume. Each extra plugin adds search variations and therefore one more indexer request per search — and since the total is capped at 10, an unused language can push genuinely useful queries (including German ones) out of the budget. On top of that, TheTVDB needs one more request per title per language on every sync. TMDB returns all languages in a single call and does not scale with the plugin count.",
       },
       {
         type: "fix",
@@ -124,16 +132,16 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: "Headless mode (UMLAUTADAPTARREX_HEADLESS=1): run without the Next.js Web UI and without the self-forking supervisor — a single Node process (Fastify + TCP proxy). In Docker tests a minimally-configured container dropped from ~160 MiB (over 200 MiB with the Web UI open) to ~115 MiB headless, roughly a third / ~50–90 MB less depending on config. Only works for an already-configured instance (the setup wizard still runs exclusively in the Web UI); the container refuses to boot headless against an unconfigured database with an explanatory error. When enabled, the Web UI port (default 5007) can be dropped from the compose port mapping.",
       },
       {
+        type: "improvement",
+        text: "Dependency refresh: the whole stack bumped to current — Prisma 7.9, Next.js 16.2.11, React 19.2.8, argon2 0.45.1, nanoid 6, undici 8.9, recharts 3.10, lucide-react 1.26, next-intl 4.13.4, plus the Radix UI set and the dev tooling (ESLint 10.8, Prettier 3.9.6, Playwright 1.62). Dependabot now waits 3 days before proposing a freshly-published release.",
+      },
+      {
         type: "fix",
         text: "Settings can be saved again when the proxy port is pinned by UMLAUTADAPTARREX_PROXY_PORT: saving from any settings tab failed with a conflict error, because the form sent the read-only, environment-managed port value back to the server. The field is now left out of the request, and an unchanged value is accepted as a no-op. Setting a different port while the environment variable is active is still refused — it would have no effect anyway.",
       },
       {
         type: "fix",
         text: 'Renamed titles no longer pick up a stray bracket: when the matching title alias had no parentheses but the release name did (e.g. alias "Chronicles of Time 2005" vs. release Chronicles.of.Time.(2005).S08E08…), the closing bracket was duplicated into the result — Chronicles.of.Time.(2005).).S08E08…. Affects movie/series and book/audiobook renaming.',
-      },
-      {
-        type: "improvement",
-        text: "Dependency refresh: the whole stack bumped to current — Prisma 7.9, Next.js 16.2.11, React 19.2.8, argon2 0.45.1, nanoid 6, undici 8.9, recharts 3.10, lucide-react 1.26, next-intl 4.13.4, plus the Radix UI set and the dev tooling (ESLint 10.8, Prettier 3.9.6, Playwright 1.62). Dependabot now waits 3 days before proposing a freshly-published release.",
       },
     ],
   },
@@ -166,28 +174,8 @@ export const CHANGELOG: ChangelogEntry[] = [
       "A stability and hardening release: title-provider syncs and the supervisor no longer hang on stalled connections, the indexer proxy and the admin/setup endpoints are hardened, and several title-matching and Web UI bugs are fixed. No database changes.",
     items: [
       {
-        type: "fix",
-        text: "Operation-mode descriptions now show the actually-configured ports: the mode texts in the setup wizard and Settings → Operation mode no longer hard-code 5005/5006 but use the resolved ports (UMLAUTADAPTARREX_*_PORT override > stored/default). Thanks to xopez (github.com/xopez) for reporting (#30).",
-      },
-      {
-        type: "fix",
-        text: "Title-provider syncs are more reliable: TVDB, pcjones and TMDB requests now have timeouts, so a single unresponsive provider can no longer hang a sync indefinitely.",
-      },
-      {
-        type: "fix",
-        text: "A failing title provider is now skipped so the remaining providers still contribute, instead of one error aborting the whole lookup chain mid-sync.",
-      },
-      {
         type: "improvement",
         text: "TVDB: concurrent lookups now share a single login instead of each firing its own, removing redundant logins and a token-refresh race that could drop titles during a large sync.",
-      },
-      {
-        type: "fix",
-        text: 'Title matching: titles containing tabs or line breaks are no longer collapsed into a single word, and leading articles (Der/Die/Das/The/…) are now stripped regardless of capitalization, so lowercase titles produce the same search variations. Readarr external-ID titles now strip the configured language\'s articles, not just English "the".',
-      },
-      {
-        type: "fix",
-        text: "Startup and restart are more robust: a failed database migration launch now reports an error instead of hanging the boot forever, and a Web UI process that ignores the shutdown signal is now force-stopped so the Web UI port can no longer get stuck on restart. The admin Restart now waits for its response to be sent before tearing down.",
       },
       {
         type: "improvement",
@@ -202,12 +190,32 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: 'Lower database load on large installs: the session last-used timestamp is now updated at most once every 5 minutes instead of on every request, and "Recheck missing titles" scans the cache in bounded batches instead of loading the whole table into memory at once. Request-history entries also cap the stored domain/query length.',
       },
       {
-        type: "fix",
-        text: "Web UI: fixed a race when closing the Prowlarr-import dialog while it was still loading, a double-submit window on import, and live-log rows shifting/flickering as new lines arrive. The dashboard and instances pages now show a clear error with a retry button when a request fails, instead of looking empty.",
-      },
-      {
         type: "improvement",
         text: "Security: added a Content-Security-Policy header, and generated passwords now use only cryptographically-secure randomness (no weak fallback, no character bias). Secret-mask detection was tightened so a real stored secret is never mistaken for the mask, while Prowlarr's asterisk masking is still recognized.",
+      },
+      {
+        type: "fix",
+        text: "Operation-mode descriptions now show the actually-configured ports: the mode texts in the setup wizard and Settings → Operation mode no longer hard-code 5005/5006 but use the resolved ports (UMLAUTADAPTARREX_*_PORT override > stored/default). Thanks to xopez (github.com/xopez) for reporting (#30).",
+      },
+      {
+        type: "fix",
+        text: "Title-provider syncs are more reliable: TVDB, pcjones and TMDB requests now have timeouts, so a single unresponsive provider can no longer hang a sync indefinitely.",
+      },
+      {
+        type: "fix",
+        text: "A failing title provider is now skipped so the remaining providers still contribute, instead of one error aborting the whole lookup chain mid-sync.",
+      },
+      {
+        type: "fix",
+        text: 'Title matching: titles containing tabs or line breaks are no longer collapsed into a single word, and leading articles (Der/Die/Das/The/…) are now stripped regardless of capitalization, so lowercase titles produce the same search variations. Readarr external-ID titles now strip the configured language\'s articles, not just English "the".',
+      },
+      {
+        type: "fix",
+        text: "Startup and restart are more robust: a failed database migration launch now reports an error instead of hanging the boot forever, and a Web UI process that ignores the shutdown signal is now force-stopped so the Web UI port can no longer get stuck on restart. The admin Restart now waits for its response to be sent before tearing down.",
+      },
+      {
+        type: "fix",
+        text: "Web UI: fixed a race when closing the Prowlarr-import dialog while it was still loading, a double-submit window on import, and live-log rows shifting/flickering as new lines arrive. The dashboard and instances pages now show a clear error with a retry button when a request fails, instead of looking empty.",
       },
     ],
   },
@@ -256,20 +264,20 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: "Service ports are now read only from the branded UMLAUTADAPTARREX_LEGACYAPI_PORT / UMLAUTADAPTARREX_WEBUI_PORT / UMLAUTADAPTARREX_PROXY_PORT variables. The legacy PORT and WEB_PORT fallbacks (still accepted in 1.2.1) have been removed; the compose files and .env.example already use the branded names.",
       },
       {
-        type: "fix",
-        text: "The Web UI now reverse-proxies /api/* at runtime instead of baking the API port into the build. A custom UMLAUTADAPTARREX_LEGACYAPI_PORT no longer left /api/health and the *Arr icons failing with ECONNREFUSED, and the *Arr icons are no longer redirected to /setup during the wizard.",
-      },
-      {
-        type: "fix",
-        text: "First-run setup behind Docker NAT works again: the pre-setup instance test no longer hard-blocks private/LAN targets by default but follows the SSRF-strict toggle, so connecting to Sonarr/Radarr on the same LAN succeeds out of the box (strict mode still restores loopback-only for cloud or multi-tenant operators).",
-      },
-      {
         type: "improvement",
         text: "Security hardening: the /api/auth/me session check is now rate-limited per IP",
       },
       {
         type: "improvement",
         text: "Dependencies updated to their latest patch/minor releases (Next.js 16.2.7, React 19.2.7, TanStack Query 5.101, plus dev tooling). No behaviour changes; pnpm audit reports no known vulnerabilities.",
+      },
+      {
+        type: "fix",
+        text: "The Web UI now reverse-proxies /api/* at runtime instead of baking the API port into the build. A custom UMLAUTADAPTARREX_LEGACYAPI_PORT no longer left /api/health and the *Arr icons failing with ECONNREFUSED, and the *Arr icons are no longer redirected to /setup during the wizard.",
+      },
+      {
+        type: "fix",
+        text: "First-run setup behind Docker NAT works again: the pre-setup instance test no longer hard-blocks private/LAN targets by default but follows the SSRF-strict toggle, so connecting to Sonarr/Radarr on the same LAN succeeds out of the box (strict mode still restores loopback-only for cloud or multi-tenant operators).",
       },
     ],
   },
@@ -323,6 +331,10 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Restores the Lidarr and Readarr sync against libraries that contain albums or books with identical titles across different artists/authors, and lets Lidarr/Readarr-only setups sync without a title provider configured.",
     items: [
       {
+        type: "improvement",
+        text: "Sync persistence is hardened against duplicate items in a single fetch: duplicates are dropped with a warning instead of aborting a 50-item chunk transaction.",
+      },
+      {
         type: "fix",
         text: "Lidarr and Readarr sync no longer crashes with a unique-constraint error when the library has albums or books sharing a title across different artists or authors (Greatest Hits, Live, Best Of, Self-Titled, …). The cache key now combines artist and album (Lidarr) or book and author (Readarr) so identical titles from different artists/authors can no longer collide.",
       },
@@ -333,10 +345,6 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         type: "fix",
         text: "Setups with only Lidarr and/or Readarr instances enabled can now sync without a title provider configured. Sonarr/Radarr still require a provider as before.",
-      },
-      {
-        type: "improvement",
-        text: "Sync persistence is hardened against duplicate items in a single fetch: duplicates are dropped with a warning instead of aborting a 50-item chunk transaction.",
       },
     ],
   },
@@ -364,18 +372,6 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: "Sync writes go to the database in small chunks instead of one giant transaction, so concurrent instance syncs interleave on SQLite and a mid-sync interruption keeps most of the progress.",
       },
       {
-        type: "fix",
-        text: "Admin login now rotates the session ID, runs a constant-time check for unknown users, awaits the CSRF gate before the route handler runs, and forces Secure cookies on any HTTPS request.",
-      },
-      {
-        type: "fix",
-        text: "API keys, passwords and Prowlarr secrets are now redacted from logs (including the live log stream and legacy-route logs) and masked in admin responses; the /api/health endpoint no longer exposes process uptime.",
-      },
-      {
-        type: "fix",
-        text: "Setup wizard handles concurrent completions, rejects unknown plugin IDs up-front and no longer issues outbound probes (Prowlarr connect) before authentication is in place.",
-      },
-      {
         type: "improvement",
         text: "TMDB bulk lookups use Promise.allSettled so a single failing ID no longer aborts the batch; TVDB has a retry guard against 401 token-refresh loops; rate limiter clamps negative Retry-After values.",
       },
@@ -394,6 +390,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         type: "improvement",
         text: "Docker image rebuilds faster thanks to a reworked Dockerfile with better layer caching and refreshed base image references. The build context also includes the pnpm workspace file so the install step no longer fails inside the image.",
+      },
+      {
+        type: "fix",
+        text: "Admin login now rotates the session ID, runs a constant-time check for unknown users, awaits the CSRF gate before the route handler runs, and forces Secure cookies on any HTTPS request.",
+      },
+      {
+        type: "fix",
+        text: "API keys, passwords and Prowlarr secrets are now redacted from logs (including the live log stream and legacy-route logs) and masked in admin responses; the /api/health endpoint no longer exposes process uptime.",
+      },
+      {
+        type: "fix",
+        text: "Setup wizard handles concurrent completions, rejects unknown plugin IDs up-front and no longer issues outbound probes (Prowlarr connect) before authentication is in place.",
       },
       {
         type: "fix",
