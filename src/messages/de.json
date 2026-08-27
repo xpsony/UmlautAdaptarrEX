@@ -389,6 +389,7 @@
       "providers": "Titel-Provider",
       "prowlarr": "Prowlarr",
       "plugins": "Plugins",
+      "renaming": "Renaming",
       "advanced": "Erweitert",
       "providersHint": "Externe Dienste zur Suche deutscher Titel.",
       "advancedHint": "Behalte die Standardwerte, sofern du nicht weißt, was du tust."
@@ -574,6 +575,51 @@
       "patchResult": "{patched} gepatcht, {unpatched} zurückgesetzt, {unchanged} unverändert, {skipped} übersprungen, {failed} fehlgeschlagen.",
       "patchResultFailedDetail": "Fehlgeschlagen: {names}",
       "patchRetry": "Erneut versuchen"
+    },
+    "renaming": {
+      "hint": "Steuert, wie Release-Titel in den Indexer-Antworten umgeschrieben werden. Die Guard-Schalter sind die Schutzregeln, die UmlautAdaptarrEX gegenüber dem alten .NET-Vorgänger ergänzt hat — ausschalten macht das Umschreiben freizügiger, aber auch fehleranfälliger.",
+      "scopeHint": "Änderungen wirken sofort auf die nächste Suche, ein Neustart oder Sync ist nicht nötig. Bereits an Sonarr/Radarr ausgelieferte Releases werden nicht rückwirkend geändert.",
+      "presetsLabel": "Voreinstellungen:",
+      "presetLegacy": "Wie der alte Umlautadaptarr",
+      "presetRecommended": "Empfohlene Werte",
+      "exampleRelease": "Beispiel — Release vom Indexer:",
+      "exampleItem": "Bibliothek:",
+      "exampleOff": "Aus",
+      "exampleOn": "An",
+      "exampleNotRenamed": "wird nicht umbenannt",
+      "exampleNoteExternalIds": "Verkürzt dargestellt; die Attribute kommen zusätzlich zum bestehenden <item>-Inhalt.",
+      "exampleNotePrefixGuard": "Mit Staffel-Marker (…Silberlicht.S01E01…) wird in beiden Fällen umbenannt — die Prüfung greift nur ohne solchen Marker.",
+      "exampleNoteLegacySuffix": "Die „016“ war eigentlich das Jahr 2016 — der Schnitt hat die führende 2 verschluckt.",
+      "renameStripSpecialChars": {
+        "label": "Unerwünschte Zeichen entfernen",
+        "description": "Entfernt : ? * \" < > | / \\ aus dem eingesetzten Titel und lässt keine doppelten Trennzeichen zurück.",
+        "hint": "Scene-Releases enthalten diese Zeichen nie. „Ember:.Steel.Angel.2019…“ wird zu „Ember.Steel.Angel.2019…“, was Sonarr/Radarr zuverlässiger parsen. Das Suffix des Indexers bleibt unverändert."
+      },
+      "renameAttachExternalIds": {
+        "label": "Externe IDs anhängen",
+        "description": "Hängt tvdbid / tmdbid / imdb als newznab-Attribut an jedes zugeordnete Release.",
+        "hint": "Sonarr und Radarr können ein Release damit ohne Titel-Analyse zuordnen. Rein additiv: bereits vom Indexer gelieferte IDs werden nie überschrieben, und die IDs werden auch dann angehängt, wenn das Umschreiben abgelehnt wurde."
+      },
+      "renameYearGuard": {
+        "label": "Jahres-Prüfung",
+        "description": "Lehnt das Umschreiben ab, wenn die Jahreszahl im Release nicht zum Medium passt.",
+        "hint": "Verhindert, dass eine gleichnamige Aufzeichnung aus einem anderen Jahr auf den falschen Titel umgeschrieben wird. Die Toleranz pflegst du pro Instanz; dieser Schalter deaktiviert die Prüfung global. Der alte Umlautadaptarr hatte keine Jahres-Prüfung."
+      },
+      "renamePrefixGuard": {
+        "label": "Prüfung auf mehrdeutigen Präfix",
+        "description": "Lehnt ab, wenn der Zieltitel mit der gefundenen Variante beginnt und danach kein SxxExx bzw. keine Jahreszahl folgt.",
+        "hint": "Ohne diese Prüfung kann ein kurzer Alias ein anderes Werk kapern, das nur denselben Wortanfang hat."
+      },
+      "renameReleaseTagGuard": {
+        "label": "Release-Tags erhalten",
+        "description": "Schiebt 3D / 4K / HDR / IMAX zurück ins Suffix, wenn ein Provider-Alias sie mitgebracht hat.",
+        "hint": "Ohne diese Prüfung verschluckt ein Alias wie „Nachtwache Wiederkehr 3D“ das „3D“ des Releases, und die Qualitätsangabe fehlt danach im Titel."
+      },
+      "renameLegacySuffix": {
+        "label": "Suffix wie beim alten Umlautadaptarr schneiden",
+        "description": "Schneidet nach Rohlänge der gefundenen Variante statt nach normalisierten Zeichen — und schaltet die Token-Grenzen-Prüfung mit ab.",
+        "hint": "Nur einschalten, wenn du exakt das alte Verhalten brauchst. Endet eine Variante auf einer Ziffer, kann der Schnitt mitten in die Jahreszahl des Releases fallen und sie verstümmeln (siehe Beispiel). Ohne diesen Schalter lehnt UmlautAdaptarrEX solche Treffer stattdessen ab."
+      }
     }
   },
   "history": {

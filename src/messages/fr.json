@@ -389,6 +389,7 @@
       "providers": "Fournisseurs de titres",
       "prowlarr": "Prowlarr",
       "plugins": "Plugins",
+      "renaming": "Renommage",
       "advanced": "Avancé",
       "providersHint": "Services externes utilisés pour rechercher les titres allemands.",
       "advancedHint": "Conservez les valeurs par défaut sauf si vous savez ce que vous faites."
@@ -574,6 +575,51 @@
       "patchResult": "{patched} patché(s), {unpatched} réinitialisé(s), {unchanged} inchangé(s), {skipped} ignoré(s), {failed} échoué(s).",
       "patchResultFailedDetail": "Échec : {names}",
       "patchRetry": "Réessayer"
+    },
+    "renaming": {
+      "hint": "Contrôle la façon dont les titres de release sont réécrits dans les réponses des indexeurs. Les contrôles de sécurité sont les règles qu'UmlautAdaptarrEX a ajoutées par-dessus l'ancien prédécesseur .NET — en désactiver un rend la réécriture plus permissive, mais aussi plus sujette aux erreurs.",
+      "scopeHint": "Les modifications s'appliquent immédiatement à la prochaine recherche, sans redémarrage ni resynchronisation. Les releases déjà transmises à Sonarr/Radarr ne sont pas modifiées rétroactivement.",
+      "presetsLabel": "Préréglages :",
+      "presetLegacy": "Comme l'ancien Umlautadaptarr",
+      "presetRecommended": "Valeurs recommandées",
+      "exampleRelease": "Exemple — release de l'indexeur :",
+      "exampleItem": "Élément de la bibliothèque :",
+      "exampleOff": "Désactivé",
+      "exampleOn": "Activé",
+      "exampleNotRenamed": "n'est pas renommé",
+      "exampleNoteExternalIds": "Version abrégée ; les attributs s'ajoutent au contenu existant de <item>.",
+      "exampleNotePrefixGuard": "Avec un marqueur de saison (…Silberlicht.S01E01…) les deux cas sont renommés — le contrôle ne s'applique qu'en son absence.",
+      "exampleNoteLegacySuffix": "Ce « 016 » était l'année 2016 — la coupe a avalé le 2 initial.",
+      "renameStripSpecialChars": {
+        "label": "Supprimer les caractères indésirables",
+        "description": "Supprime : ? * \" < > | / \\ du titre inséré sans laisser de séparateurs doublés.",
+        "hint": "Les releases scene ne contiennent jamais ces caractères. « Ember:.Steel.Angel.2019… » devient « Ember.Steel.Angel.2019… », que Sonarr/Radarr analysent plus fiablement. Le suffixe de l'indexeur reste intact."
+      },
+      "renameAttachExternalIds": {
+        "label": "Ajouter les identifiants externes",
+        "description": "Ajoute tvdbid / tmdbid / imdb comme attribut newznab à chaque release associée.",
+        "hint": "Permet à Sonarr et Radarr d'associer une release sans analyser son titre. Purement additif : un identifiant déjà fourni par l'indexeur n'est jamais écrasé, et les identifiants sont ajoutés même lorsque la réécriture a été refusée."
+      },
+      "renameYearGuard": {
+        "label": "Contrôle de l'année",
+        "description": "Refuse la réécriture lorsque l'année du nom de la release ne correspond pas à l'élément.",
+        "hint": "Empêche qu'un enregistrement homonyme d'une autre année soit réécrit avec le mauvais titre. La tolérance se configure par instance ; cet interrupteur désactive le contrôle globalement. L'ancien Umlautadaptarr n'avait aucun contrôle de l'année."
+      },
+      "renamePrefixGuard": {
+        "label": "Contrôle du préfixe ambigu",
+        "description": "Refuse lorsque le titre cible commence par la variante trouvée et qu'aucun SxxExx ni année ne suit.",
+        "hint": "Sans ce contrôle, un alias court peut détourner une autre œuvre qui partage simplement les mêmes premiers mots."
+      },
+      "renameReleaseTagGuard": {
+        "label": "Conserver les tags de release",
+        "description": "Remet 3D / 4K / HDR / IMAX dans le suffixe lorsqu'un alias de fournisseur l'a apporté.",
+        "hint": "Sans ce contrôle, un alias tel que « Nachtwache Wiederkehr 3D » avale le « 3D » de la release et l'indication de qualité disparaît du titre."
+      },
+      "renameLegacySuffix": {
+        "label": "Couper le suffixe comme l'ancien Umlautadaptarr",
+        "description": "Coupe à la longueur brute de la variante trouvée au lieu de compter les caractères normalisés — et désactive du même coup le contrôle des limites de token.",
+        "hint": "À n'activer que si vous avez besoin du comportement exact de l'ancienne version. Lorsqu'une variante se termine par un chiffre, la coupe peut tomber au milieu de l'année de la release et la mutiler (voir l'exemple). Sans cet interrupteur, UmlautAdaptarrEX refuse plutôt ces correspondances."
+      }
     }
   },
   "history": {

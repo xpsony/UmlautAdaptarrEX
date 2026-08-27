@@ -42,9 +42,108 @@ export type ProvidersFormInput = z.input<typeof ProvidersSettingsSchema>;
 export type ProvidersFormOutput = z.infer<typeof ProvidersSettingsSchema>;
 export type ProvidersForm = UseFormReturn<ProvidersFormInput, unknown, ProvidersFormOutput>;
 
+export const RenamingSettingsSchema = SettingsUpdateSchema.pick({
+  renameYearGuard: true,
+  renamePrefixGuard: true,
+  renameReleaseTagGuard: true,
+  renameLegacySuffix: true,
+  renameStripSpecialChars: true,
+  renameAttachExternalIds: true,
+});
+
 export type AdvancedFormInput = z.input<typeof AdvancedSettingsSchema>;
 export type AdvancedFormOutput = z.infer<typeof AdvancedSettingsSchema>;
 export type AdvancedForm = UseFormReturn<AdvancedFormInput, unknown, AdvancedFormOutput>;
+
+export type RenamingFormInput = z.input<typeof RenamingSettingsSchema>;
+export type RenamingFormOutput = z.infer<typeof RenamingSettingsSchema>;
+export type RenamingForm = UseFormReturn<RenamingFormInput, unknown, RenamingFormOutput>;
+
+/** The toggle fields, in the order the Renaming tab renders them. */
+export const RENAMING_TOGGLES = [
+  "renameStripSpecialChars",
+  "renameAttachExternalIds",
+  "renameYearGuard",
+  "renamePrefixGuard",
+  "renameReleaseTagGuard",
+  "renameLegacySuffix",
+] as const satisfies ReadonlyArray<keyof RenamingFormOutput>;
+
+export type RenamingToggle = (typeof RENAMING_TOGGLES)[number];
+
+/**
+ * A worked before/after example per toggle, so the switch is understandable
+ * without reading the changelog.
+ *
+ * The release names are invented, and the `off`/`on` strings are the actual
+ * output of the domain functions for the given input — they are pinned by
+ * `tests/unit/renaming-examples.test.ts`, which runs each example through
+ * `renameForMoviesAndTv` and fails if the copy ever drifts from the code.
+ *
+ * Not translated on purpose: a release name is not prose, and keeping one
+ * copy means de/en can never disagree about what the code does. Only the
+ * surrounding labels come from the message catalogue.
+ */
+export interface RenamingExample {
+  /** The release name as the indexer delivers it. */
+  input: string;
+  /** Library context, when the example only makes sense with it. */
+  item?: string;
+  /** Output with the toggle off — `null` renders as "not renamed". */
+  off: string | null;
+  /** Output with the toggle on — `null` renders as "not renamed". */
+  on: string | null;
+  /** Extra one-line caveat rendered under the example, if any. */
+  noteKey?: string;
+}
+
+export const RENAMING_EXAMPLES: Record<RenamingToggle, RenamingExample> = {
+  renameStripSpecialChars: {
+    input: "Ember.Stahlengel.2019.GERMAN.1080p.BluRay.x264-GRP",
+    item: "Ember: Steel Angel",
+    off: "Ember:.Steel.Angel.2019.GERMAN.1080p.BluRay.x264-GRP",
+    on: "Ember.Steel.Angel.2019.GERMAN.1080p.BluRay.x264-GRP",
+  },
+  renameAttachExternalIds: {
+    input: "Ember.Stahlengel.2019.GERMAN.1080p",
+    item: "Ember: Steel Angel — tmdbid 800003, imdb tt7654322",
+    // The title comes out identical either way, so it is elided (`…`) to keep
+    // the line readable — what this toggle changes is the two attributes.
+    off: "<item><title>…</title></item>",
+    on:
+      "<item><title>…</title>\n" +
+      '  <newznab:attr name="tmdbid" value="800003"/>\n' +
+      '  <newznab:attr name="imdb" value="7654322"/>\n' +
+      "</item>",
+    noteKey: "exampleNoteExternalIds",
+  },
+  renameYearGuard: {
+    input: "Grand.Prix.2019.GERMAN.1080p.WEB-DL.x264-GRP",
+    item: 'GP - Der Film (2025), Alias "Grand Prix"',
+    off: "GP.-.Der.Film.2019.GERMAN.1080p.WEB-DL.x264-GRP",
+    on: null,
+  },
+  renamePrefixGuard: {
+    input: "Silberlicht.GERMAN.1080p.WEB.h264-GRP",
+    item: 'Silberlicht: Ende der Reise, Alias "Silberlicht"',
+    off: "Silberlicht:.Ende.der.Reise.GERMAN.1080p.WEB.h264-GRP",
+    on: null,
+    noteKey: "exampleNotePrefixGuard",
+  },
+  renameReleaseTagGuard: {
+    input: "Nachtwache.Wiederkehr.3D.2010.GERMAN.1080p-GRP",
+    item: 'Nachtwache Wiederkehr, Alias "Nachtwache Wiederkehr 3D"',
+    off: "Nachtwache.Wiederkehr.2010.GERMAN.1080p-GRP",
+    on: "Nachtwache.Wiederkehr.3D.2010.GERMAN.1080p-GRP",
+  },
+  renameLegacySuffix: {
+    input: "Renko.Jagd.2016.GERMAN.DL.1080p",
+    item: 'Die Renko Jagd, Alias "Renko Jagd 2"',
+    off: null,
+    on: "Die.Renko.Jagd.016.GERMAN.DL.1080p",
+    noteKey: "exampleNoteLegacySuffix",
+  },
+};
 
 export interface SettingsRow extends SettingsUpdate {
   appApiKey: string;

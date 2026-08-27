@@ -389,6 +389,7 @@
       "providers": "Title providers",
       "prowlarr": "Prowlarr",
       "plugins": "Plugins",
+      "renaming": "Renaming",
       "advanced": "Advanced",
       "providersHint": "External services used to look up German titles.",
       "advancedHint": "Use the defaults unless you know what you're doing."
@@ -574,6 +575,51 @@
       "patchResult": "{patched} patched, {unpatched} reset, {unchanged} unchanged, {skipped} skipped, {failed} failed.",
       "patchResultFailedDetail": "Failed: {names}",
       "patchRetry": "Retry"
+    },
+    "renaming": {
+      "hint": "Controls how release titles in indexer responses are rewritten. The guard switches are the safety rules UmlautAdaptarrEX added on top of the old .NET predecessor — turning one off makes rewriting more permissive, but also more error-prone.",
+      "scopeHint": "Changes apply to the next search immediately, no restart or sync required. Releases already handed to Sonarr/Radarr are not changed retroactively.",
+      "presetsLabel": "Presets:",
+      "presetLegacy": "Like the old Umlautadaptarr",
+      "presetRecommended": "Recommended values",
+      "exampleRelease": "Example — release from the indexer:",
+      "exampleItem": "Library item:",
+      "exampleOff": "Off",
+      "exampleOn": "On",
+      "exampleNotRenamed": "not renamed",
+      "exampleNoteExternalIds": "Abbreviated; the attributes are added alongside the existing <item> content.",
+      "exampleNoteLegacySuffix": "That \"016\" was the year 2016 — the cut swallowed the leading 2.",
+      "exampleNotePrefixGuard": "With a season marker (…Silberlicht.S01E01…) both cases rename — the check only applies without one.",
+      "renameStripSpecialChars": {
+        "label": "Strip unwelcome characters",
+        "description": "Removes : ? * \" < > | / \\ from the inserted title and leaves no doubled separators behind.",
+        "hint": "Scene releases never carry these characters. \"Ember:.Steel.Angel.2019…\" becomes \"Ember.Steel.Angel.2019…\", which Sonarr/Radarr parse more reliably. The indexer's own suffix is left untouched."
+      },
+      "renameAttachExternalIds": {
+        "label": "Attach external ids",
+        "description": "Appends tvdbid / tmdbid / imdb as a newznab attribute to every matched release.",
+        "hint": "Lets Sonarr and Radarr bind a release without parsing its title. Purely additive: an id the indexer already supplied is never overwritten, and ids are attached even when the rewrite was declined."
+      },
+      "renameYearGuard": {
+        "label": "Year check",
+        "description": "Declines the rewrite when the year in the release name does not match the item.",
+        "hint": "Stops a same-named recording from a different year being rewritten to the wrong title. The tolerance is configured per instance; this switch disables the check globally. The old Umlautadaptarr had no year check."
+      },
+      "renamePrefixGuard": {
+        "label": "Ambiguous-prefix check",
+        "description": "Declines when the target title starts with the matched variation and no SxxExx or year follows.",
+        "hint": "Without this check a short alias can hijack a different work that merely shares the same opening words."
+      },
+      "renameReleaseTagGuard": {
+        "label": "Preserve release tags",
+        "description": "Pushes 3D / 4K / HDR / IMAX back into the suffix when a provider alias brought it along.",
+        "hint": "Without this check an alias like \"Nachtwache Wiederkehr 3D\" swallows the release's \"3D\" and the quality marker disappears from the title."
+      },
+      "renameLegacySuffix": {
+        "label": "Cut the suffix like the old Umlautadaptarr",
+        "description": "Cuts at the matched variation's raw length instead of counting normalized characters — and turns the token-boundary check off with it.",
+        "hint": "Only enable this if you need the exact old behaviour. When a variation ends on a digit the cut can land inside the release's year and mangle it (see the example). Without this switch UmlautAdaptarrEX declines such matches instead."
+      }
     }
   },
   "history": {

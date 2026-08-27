@@ -389,6 +389,7 @@
       "providers": "Titel-leverantörer",
       "prowlarr": "Prowlarr",
       "plugins": "Plugins",
+      "renaming": "Omdöpning",
       "advanced": "Avancerat",
       "providersHint": "Externa tjänster som används för att slå upp tyska titlar.",
       "advancedHint": "Använd standardvärden om du inte vet vad du gör."
@@ -574,6 +575,51 @@
       "patchResult": "{patched} patchade, {unpatched} återställda, {unchanged} oförändrade, {skipped} överhoppade, {failed} misslyckade.",
       "patchResultFailedDetail": "Misslyckades: {names}",
       "patchRetry": "Försök igen"
+    },
+    "renaming": {
+      "hint": "Styr hur release-titlar i indexerarnas svar skrivs om. Skyddsreglerna är de säkerhetskontroller som UmlautAdaptarrEX lade till utöver den gamla .NET-föregångaren — att stänga av en gör omskrivningen mer tillåtande, men också mer felbenägen.",
+      "scopeHint": "Ändringar gäller direkt vid nästa sökning, ingen omstart och ingen ny synk behövs. Releaser som redan lämnats till Sonarr/Radarr ändras inte retroaktivt.",
+      "presetsLabel": "Förinställningar:",
+      "presetLegacy": "Som den gamla Umlautadaptarr",
+      "presetRecommended": "Rekommenderade värden",
+      "exampleRelease": "Exempel — release från indexeraren:",
+      "exampleItem": "Objekt i biblioteket:",
+      "exampleOff": "Av",
+      "exampleOn": "På",
+      "exampleNotRenamed": "byter inte namn",
+      "exampleNoteExternalIds": "Förkortat; attributen läggs till utöver det befintliga innehållet i <item>.",
+      "exampleNotePrefixGuard": "Med en säsongsmarkör (…Silberlicht.S01E01…) byter båda fallen namn — kontrollen gäller bara utan en sådan markör.",
+      "exampleNoteLegacySuffix": "Det där ”016” var årtalet 2016 — snittet svalde den inledande 2:an.",
+      "renameStripSpecialChars": {
+        "label": "Ta bort oönskade tecken",
+        "description": "Tar bort : ? * \" < > | / \\ ur den insatta titeln utan att lämna dubbla avgränsare.",
+        "hint": "Scene-releaser innehåller aldrig dessa tecken. ”Ember:.Steel.Angel.2019…” blir ”Ember.Steel.Angel.2019…”, vilket Sonarr/Radarr tolkar mer tillförlitligt. Indexerarens eget suffix lämnas orört."
+      },
+      "renameAttachExternalIds": {
+        "label": "Bifoga externa id:n",
+        "description": "Lägger till tvdbid / tmdbid / imdb som newznab-attribut på varje matchad release.",
+        "hint": "Låter Sonarr och Radarr koppla en release utan att tolka titeln. Rent additivt: ett id som indexeraren redan skickat skrivs aldrig över, och id:n bifogas även när omskrivningen avvisades."
+      },
+      "renameYearGuard": {
+        "label": "Årskontroll",
+        "description": "Avvisar omskrivningen när årtalet i release-namnet inte stämmer med objektet.",
+        "hint": "Hindrar att en likadant namngiven inspelning från ett annat år skrivs om till fel titel. Toleransen ställs in per instans; den här reglaget stänger av kontrollen globalt. Den gamla Umlautadaptarr hade ingen årskontroll."
+      },
+      "renamePrefixGuard": {
+        "label": "Kontroll av tvetydigt prefix",
+        "description": "Avvisar när måltiteln börjar med den hittade varianten och inget SxxExx eller årtal följer.",
+        "hint": "Utan den här kontrollen kan ett kort alias kapa ett annat verk som bara delar de inledande orden."
+      },
+      "renameReleaseTagGuard": {
+        "label": "Bevara release-taggar",
+        "description": "Skjuter tillbaka 3D / 4K / HDR / IMAX i suffixet när ett leverantörsalias tagit med det.",
+        "hint": "Utan den här kontrollen svaljer ett alias som ”Nachtwache Wiederkehr 3D” releasens ”3D” och kvalitetsmarkeringen försvinner ur titeln."
+      },
+      "renameLegacySuffix": {
+        "label": "Klipp suffixet som den gamla Umlautadaptarr",
+        "description": "Klipper vid den hittade variantens råa längd istället för att räkna normaliserade tecken — och stänger av tokengränskontrollen på samma gång.",
+        "hint": "Aktivera bara om du behöver exakt det gamla beteendet. Om en variant slutar på en siffra kan snittet hamna mitt i releasens årtal och förvanska det (se exemplet). Utan den här reglaget avvisar UmlautAdaptarrEX sådana träffar istället."
+      }
     }
   },
   "history": {

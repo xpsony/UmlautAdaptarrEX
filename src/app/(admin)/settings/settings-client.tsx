@@ -14,10 +14,12 @@ import { GeneralTab } from "./_components/general-tab";
 import { PluginsSection } from "./_components/plugins-section";
 import { ProvidersTab } from "./_components/providers-tab";
 import { ProwlarrSection } from "./_components/prowlarr-section";
+import { RenamingTab } from "./_components/renaming-tab";
 import {
   AdvancedSettingsSchema,
   GeneralSettingsSchema,
   ProvidersSettingsSchema,
+  RenamingSettingsSchema,
 } from "./_lib/settings-types";
 import type {
   AdvancedFormInput,
@@ -26,6 +28,8 @@ import type {
   GeneralFormOutput,
   ProvidersFormInput,
   ProvidersFormOutput,
+  RenamingFormInput,
+  RenamingFormOutput,
   SettingsRow,
 } from "./_lib/settings-types";
 
@@ -40,7 +44,7 @@ export function SettingsClient() {
     queryFn: () => apiFetch<SettingsRow>("/api/admin/settings"),
   });
 
-  // Three independent RHF instances, one per tab (Epic 6 Task 7). This
+  // Four independent RHF instances, one per tab (Epic 6 Task 7). This
   // replaces a single form that shared one dirty flag across all tabs — the
   // Epic-8 bug where editing the Providers tab kept the General tab's Save
   // button enabled too. Each form is scoped to its own field subset via
@@ -103,6 +107,28 @@ export function SettingsClient() {
   });
   const onSaveProviders = (data: ProvidersFormOutput) => providersSaveMut.mutate(data);
 
+  // --- Renaming tab ----------------------------------------------------------
+  const renamingForm = useForm<RenamingFormInput, unknown, RenamingFormOutput>({
+    resolver: zodResolver(RenamingSettingsSchema),
+  });
+  useEffect(() => {
+    if (settings.data && !renamingForm.formState.isDirty) renamingForm.reset(settings.data);
+  }, [settings.data, renamingForm]);
+  const renamingSaveMut = useMutation({
+    mutationFn: (data: RenamingFormOutput) =>
+      apiFetch("/api/admin/settings", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => {
+      toast.success(t("saved"));
+      renamingForm.reset(renamingForm.getValues());
+      void qc.invalidateQueries({ queryKey: ["settings"] });
+    },
+    onError: () => toast.error(tCommon("error")),
+  });
+  const onSaveRenaming = (data: RenamingFormOutput) => renamingSaveMut.mutate(data);
+
   // --- Advanced tab -----------------------------------------------------------
   const advancedForm = useForm<AdvancedFormInput, unknown, AdvancedFormOutput>({
     resolver: zodResolver(AdvancedSettingsSchema),
@@ -135,10 +161,10 @@ export function SettingsClient() {
     advancedSaveMut.mutate(payload);
   };
 
-  // beforeunload guard: fires when ANY of the three per-tab forms is dirty.
+  // beforeunload guard: fires when ANY of the four per-tab forms is dirty.
   // Reading `formState.isDirty` at render time subscribes this component to
   // that field on each form (RHF's proxy-based formState), so `anyDirty`
-  // recomputes and the effect below re-runs whenever any one of the three
+  // recomputes and the effect below re-runs whenever any one of the four
   // flips dirty/clean.
   //
   // We deliberately do NOT intercept in-app navigation (clicking a sidebar
@@ -150,6 +176,7 @@ export function SettingsClient() {
   const anyDirty =
     generalForm.formState.isDirty ||
     providersForm.formState.isDirty ||
+    renamingForm.formState.isDirty ||
     advancedForm.formState.isDirty;
   useEffect(() => {
     if (!anyDirty) return;
@@ -189,6 +216,7 @@ export function SettingsClient() {
             <TabsTrigger value="providers">{t("section.providers")}</TabsTrigger>
             <TabsTrigger value="prowlarr">{t("section.prowlarr")}</TabsTrigger>
             <TabsTrigger value="plugins">{t("section.plugins")}</TabsTrigger>
+            <TabsTrigger value="renaming">{t("section.renaming")}</TabsTrigger>
             <TabsTrigger value="advanced">{t("section.advanced")}</TabsTrigger>
           </TabsList>
 
@@ -217,6 +245,14 @@ export function SettingsClient() {
 
           <TabsContent value="plugins" className="space-y-6">
             <PluginsSection />
+          </TabsContent>
+
+          <TabsContent value="renaming" className="space-y-6">
+            <RenamingTab
+              form={renamingForm}
+              onSave={onSaveRenaming}
+              saving={renamingSaveMut.isPending}
+            />
           </TabsContent>
 
           <TabsContent value="advanced" className="space-y-6">
