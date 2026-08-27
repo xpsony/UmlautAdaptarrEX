@@ -36,6 +36,13 @@ export type {
   SearchItemRow,
 } from "./search-item";
 
+// Ephemeral tier sizing. 500 items is far more than a burst of interactive
+// searches produces, and 12h matches the indexer cache TTL - long enough that
+// a re-search minutes later is free, short enough that a title the sync never
+// picks up doesn't linger forever.
+const EPHEMERAL_MAX = 500;
+const EPHEMERAL_TTL_MS = 12 * 60 * 60 * 1000;
+
 interface AppSettings {
   appApiKey: string;
   proxyPort: number;
@@ -119,6 +126,19 @@ export class AppState {
   readonly indexerCache: LRUCache<string, { body: Buffer; contentType: string; status: number }>;
   /** Items written by the sync. Sole owner: the sync path. */
   private readonly syncIndex = new SearchItemIndex();
+  /**
+   * Second lookup tier: items resolved on demand for a request whose title
+   * the sync hasn't picked up yet. Held in its own index so the sync tier is
+   * never polluted, and bounded by an LRU with a TTL.
+   *
+   * The LRU owns the lifetime; `ephemeralIndex` owns the lookup structures.
+   * `dispose` keeps the two in step when an entry is evicted or expires.
+   * `noDisposeOnSet` is required: without it, overwriting a key would dispose
+   * the OLD value after `indexEphemeral` already re-indexed the new one under
+   * the same key, silently removing the fresh entry.
+   */
+  private readonly ephemeralIndex = new SearchItemIndex();
+  private readonly ephemeral: LRUCache<string, CachedSearchItem>;
   // Per-instance match options (year-matching toggle + tolerance). Loaded
   // alongside SearchItems so findByTitle / toRewriteSearchItem can apply
   // them without an extra DB hit per request.
@@ -134,6 +154,15 @@ export class AppState {
       max: 5000,
       ttl: 12 * 60 * 1000,
       ttlAutopurge: true,
+    });
+    this.ephemeral = new LRUCache({
+      max: EPHEMERAL_MAX,
+      ttl: EPHEMERAL_TTL_MS,
+      ttlAutopurge: true,
+      noDisposeOnSet: true,
+      dispose: (item) => {
+        this.ephemeralIndex.removeItem(item.mediaType, item.externalId);
+      },
     });
   }
 
@@ -431,6 +460,25 @@ export class AppState {
     this.syncIndex.removeItem(mediaType, externalId);
   }
 
+  /**
+   * Indexes an on-demand resolved item into the ephemeral tier. Returns the
+   * indexed item (with `normalizedMatchVariations` filled in).
+   */
+  indexEphemeral(item: CachedSearchItemInput): CachedSearchItem {
+    // indexItem is not idempotent per object identity, so a repeat resolution
+    // of the same key has to clear the old buckets first.
+    this.ephemeralIndex.removeItem(item.mediaType, item.externalId);
+    const indexed = this.ephemeralIndex.indexItem({ ...item, ephemeral: true }, this._languagePack);
+    this.ephemeral.set(`${indexed.mediaType}:${indexed.externalId}`, indexed);
+    return indexed;
+  }
+
+  // The index has no TTL of its own, so a hit found through it has to be
+  // confirmed against the LRU, which does.
+  private isEphemeralLive(item: CachedSearchItem): boolean {
+    return this.ephemeral.has(`${item.mediaType}:${item.externalId}`);
+  }
+
   // Drop and re-read one instance's items - used by the title-override
   // rebuild so a saved override is searchable immediately, mirroring the
   // remove-then-index pattern of the sync's persistAndReindex.
@@ -444,17 +492,35 @@ export class AppState {
   }
 
   getByExternalId(type: MediaType, externalId: string): CachedSearchItem | null {
-    return this.syncIndex.getByExternalId(type, externalId);
+    const synced = this.syncIndex.getByExternalId(type, externalId);
+    if (synced) return synced;
+    // Read through the LRU, not the index: only the LRU honours the TTL.
+    return this.ephemeral.get(`${type}:${externalId}`) ?? null;
   }
 
   getByImdbId(imdbId: string): CachedSearchItem | null {
-    return this.syncIndex.getByImdbId(imdbId);
+    const synced = this.syncIndex.getByImdbId(imdbId);
+    if (synced) return synced;
+    const hit = this.ephemeralIndex.getByImdbId(imdbId);
+    return hit && this.isEphemeralLive(hit) ? hit : null;
   }
 
   findByTitle(type: MediaType, releaseTitle: string): CachedSearchItem | null {
-    return this.syncIndex.findByTitle(type, releaseTitle, this._languagePack, (id) =>
-      this.getInstanceOptions(id),
+    const resolveOptions = (id: string): InstanceMatchOptions => this.getInstanceOptions(id);
+    const synced = this.syncIndex.findByTitle(
+      type,
+      releaseTitle,
+      this._languagePack,
+      resolveOptions,
     );
+    if (synced) return synced;
+    const hit = this.ephemeralIndex.findByTitle(
+      type,
+      releaseTitle,
+      this._languagePack,
+      resolveOptions,
+    );
+    return hit && this.isEphemeralLive(hit) ? hit : null;
   }
 
   toRewriteSearchItem(item: CachedSearchItem): RewriteSearchItem {

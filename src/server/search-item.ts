@@ -38,6 +38,12 @@ export interface CachedSearchItem {
    */
   normalizedMatchVariations: string[];
   authorMatchVariations: string[];
+  /**
+   * True for items resolved on demand and held only in memory. They have no
+   * `SearchItem` row, so their `id` is synthetic and must never be written to
+   * `RenameHistory.matchedSearchItemId`.
+   */
+  ephemeral?: boolean;
 }
 
 /**
