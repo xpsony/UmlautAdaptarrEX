@@ -104,7 +104,7 @@ export function renameForBooksAndAudio(
   let endPos = Math.max(author.endOriginal, title.endOriginal);
   // A variation without parentheses ends its span on the last alphanumeric
   // ('5' in "Deep Water (2005)"), leaving the ')' to leak into the suffix.
-  // Skip closing delimiters only — consuming an opening one would strip the
+  // Skip closing delimiters only - consuming an opening one would strip the
   // "[" that starts the quality tag in "Deep Water[MP3-128kbps]".
   while (endPos < originalTitle.length && CLOSING_DELIMS.includes(originalTitle[endPos]!)) {
     endPos++;

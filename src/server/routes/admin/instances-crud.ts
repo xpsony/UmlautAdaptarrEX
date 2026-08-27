@@ -194,7 +194,7 @@ export async function instanceCrudRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // Same as above but loads the instance server-side by id instead of taking
-  // host/apiKey from the request body — avoids round-tripping the stored
+  // host/apiKey from the request body - avoids round-tripping the stored
   // apiKey through the client just to re-test an existing connection.
   app.post("/api/admin/instances/:id/test", { preHandler: requireAuth }, async (req, reply) => {
     const id = (req.params as { id: string }).id;

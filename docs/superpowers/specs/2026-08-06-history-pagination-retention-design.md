@@ -1,4 +1,4 @@
-# History Pagination + Retention — Design
+# History Pagination + Retention - Design
 
 Date: 2026-08-06
 Status: approved (user confirmed all recommended options; localization for all four languages: de, en, fr, sv)
@@ -11,7 +11,7 @@ the most recent entries ("last hour or so"). Two root causes:
 1. The UI fetches a single page (default `take=50`) from
    `/api/admin/request-history` / `/api/admin/rename-history` and filters
    **client-side** within those 50 rows. Older rows are never loaded.
-2. `RequestHistory` and `RenameHistory` have **no retention** at all — the tables
+2. `RequestHistory` and `RenameHistory` have **no retention** at all - the tables
    grow unbounded (unlike `LogEntry`, which is purged by `LogRetentionScheduler`
    per `Setting.logRetentionDays`).
 
@@ -36,7 +36,7 @@ the most recent entries ("last hour or so"). Two root causes:
 ### 1. Retention (backend)
 
 - Prisma: `Setting.historyRetentionDays Int @default(30)` via a NEW migration
-  (`pnpm prisma:migrate` — migrations are immutable).
+  (`pnpm prisma:migrate` - migrations are immutable).
 - Zod (`src/schemas/settings.ts`):
   `historyRetentionDays: z.number().int().min(1).max(365).default(30)`.
 - `src/server/state.ts`: add field + default (30) + row mapping.
@@ -51,7 +51,7 @@ the most recent entries ("last hour or so"). Two root causes:
 
 `src/server/routes/admin/history.ts`:
 
-- `GET /api/admin/request-history`: add `search` query param —
+- `GET /api/admin/request-history`: add `search` query param -
   OR-contains over `query`, `externalId`, `domain`. Existing `type`/`domain`
   filters unchanged.
 - `GET /api/admin/rename-history`: already supports `search`; unchanged.

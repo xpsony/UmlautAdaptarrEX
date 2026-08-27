@@ -193,7 +193,7 @@ describe("LogBroadcaster.broadcast end-to-end roundtrip", () => {
           reject(err as Error);
         }
       });
-      // Fire a broadcast — it goes through the 100ms throttle window.
+      // Fire a broadcast - it goes through the 100ms throttle window.
       broadcaster.broadcast({
         level: "info",
         message: "hello-from-broadcaster",
@@ -225,7 +225,7 @@ describe("baseline fixture", () => {
   // Sanity-check the test setup. (We don't try to verify "ignores other
   // paths" via a real connection because the broadcaster correctly bails
   // without sending any response on unknown URLs, leaving the upgrade
-  // hanging until the client times out — correct behaviour but ugly to
+  // hanging until the client times out - correct behaviour but ugly to
   // assert from a test.)
   it("baseHttpUrl is an http://127.0.0.1 URL", () => {
     expect(baseHttpUrl.startsWith("http://127.0.0.1:")).toBe(true);

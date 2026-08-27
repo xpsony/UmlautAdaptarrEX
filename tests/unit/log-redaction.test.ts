@@ -34,7 +34,7 @@ function logAndCapture(
   return JSON.parse(last) as Record<string, unknown>;
 }
 
-describe("log redaction — sensitive object keys", () => {
+describe("log redaction - sensitive object keys", () => {
   it.each([
     ["password", "secret123"],
     ["passwordHash", "$argon2id$..."],
@@ -64,7 +64,7 @@ describe("log redaction — sensitive object keys", () => {
   });
 });
 
-describe("log redaction — strings", () => {
+describe("log redaction - strings", () => {
   it("redacts apikey= in URLs", () => {
     const out = logAndCapture({ url: "https://x/api?apikey=ABCDEF" });
     expect(out.url).toContain("apikey=[REDACTED]");

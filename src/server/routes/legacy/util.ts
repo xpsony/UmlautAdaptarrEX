@@ -77,12 +77,12 @@ export function isApiKeyValid(
   const expected = getAppState().settings.appApiKey;
   // Legacy behavior (byte-compatible with the .NET predecessor and covered by
   // an explicit unit test): an empty/unset appApiKey means "no auth configured"
-  // and grants open access. This is intentional wire-compat, NOT an oversight —
+  // and grants open access. This is intentional wire-compat, NOT an oversight -
   // changing it to fail-closed is a deliberate product decision that belongs in
   // an explicit opt-in setting, not a silent default flip. See SECURITY notes.
   if (!expected) return true;
   // The "_" sentinel is used by the co-hosted HTTP-proxy on :5006 when no
-  // appApiKey is configured. Accept it ONLY for loopback callers — never
+  // appApiKey is configured. Accept it ONLY for loopback callers - never
   // from the public network, where it would otherwise be a free auth bypass.
   if (provided === "_") return opts.fromLoopback === true;
   return constantTimeEquals(provided, expected);
@@ -166,7 +166,7 @@ export async function recordRequest(
       },
     });
   } catch (err) {
-    // Best-effort write — request itself already responded — but a persistent
+    // Best-effort write - request itself already responded - but a persistent
     // failure here means the History UI is silently broken; surface at debug.
     req?.log.debug(
       { err, type: params.type, domain: params.domain },
@@ -188,7 +188,7 @@ export function buildIndexerUrl(ctx: LegacyContext): string {
 
 // Newznab/Torznab ID parameters that bypass the `q` text search. Old
 // SearchControllerBase.BaseSearch removes these before issuing the German
-// title-variation queries — otherwise the indexer ignores `q` entirely.
+// title-variation queries - otherwise the indexer ignores `q` entirely.
 const ID_QUERY_PARAMS = ["tvdbid", "tvmazeid", "imdbid", "rid", "tmdbid"];
 
 export function buildVariationSearch(search: string, q: string): string {

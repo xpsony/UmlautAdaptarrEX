@@ -6,7 +6,7 @@ import type { MediaType } from "../variations/generate";
 //   Radarr  NewznabRssParser -> "tmdbid", "imdb"
 //
 // Both parse "imdb" with int.TryParse, so the value must be the NUMERIC part
-// of the IMDb id — a "tt"-prefixed value is silently dropped.
+// of the IMDb id - a "tt"-prefixed value is silently dropped.
 const NEWZNAB_NS = "http://www.newznab.com/DTD/2010/feeds/attributes/";
 
 export interface ExternalIdSource {
@@ -27,8 +27,8 @@ interface AttrNode {
  * speaks. A Torznab feed declares `xmlns:torznab` and its items carry
  * `torznab:attr`; a Newznab feed uses `newznab:attr`. Emitting the wrong
  * prefix (or an undeclared one) yields XML the *Arr reject outright, so we
- * mirror the feed and only fall back to `newznab:attr` — declaring the
- * namespace ourselves — when the feed carries no attrs at all.
+ * mirror the feed and only fall back to `newznab:attr` - declaring the
+ * namespace ourselves - when the feed carries no attrs at all.
  */
 export function resolveAttrKey(
   rssAttributes: Record<string, unknown>,
@@ -84,7 +84,7 @@ export function externalIdAttributes(
 
 /**
  * Adds the given id attributes to one parsed `<item>` under `attrKey`,
- * skipping any name the indexer already supplied — its value is
+ * skipping any name the indexer already supplied - its value is
  * authoritative and overwriting it could point the *Arr at the wrong medium.
  * Mutates `item` in place.
  */

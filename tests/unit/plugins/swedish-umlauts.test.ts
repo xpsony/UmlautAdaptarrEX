@@ -34,7 +34,7 @@ describe("swedish-umlauts plugin", () => {
 
   it("preserves case when romanizing", () => {
     const v = generateVariations("ÅÄÖ", "tv", swedishPack);
-    expect(v).toContain("AAO"); // wait — Ö → O (single), so ÅÄÖ → AAO under single map
+    expect(v).toContain("AAO"); // wait - Ö → O (single), so ÅÄÖ → AAO under single map
   });
 });
 

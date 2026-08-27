@@ -16,7 +16,7 @@ const alertVariants = cva("flex gap-2 rounded-md border [&_svg]:h-4 [&_svg]:w-4 
     // Deliberate normalization (not pixel parity with every pre-existing
     // call site): banners get the roomier `default` density, while the
     // inline test-result callouts (prowlarr connect/settings) keep their
-    // original compact density via `size="compact"` — no per-call
+    // original compact density via `size="compact"` - no per-call
     // className overrides for padding/text-size/alignment.
     size: {
       default: "items-start p-3 text-sm [&_svg]:mt-0.5",

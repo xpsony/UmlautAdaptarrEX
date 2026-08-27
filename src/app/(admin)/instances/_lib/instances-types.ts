@@ -10,7 +10,7 @@ export interface Instance extends ArrInstanceInput {
 }
 
 /** Result shape of both `POST /api/admin/instances/test` and the per-instance
- * `POST /api/admin/instances/:id/test` — mirrors `TestConnectionResult` from
+ * `POST /api/admin/instances/:id/test` - mirrors `TestConnectionResult` from
  * `src/arr/test-connection.ts` without importing that server-only module into
  * client bundles. */
 export interface TestConnectionResponse {

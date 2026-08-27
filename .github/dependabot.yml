@@ -2,7 +2,7 @@ version: 2
 updates:
   # PRs open against `dev` (the active integration branch), not the default
   # branch `main`. Updates land where development happens and ride dev->main
-  # on the next release — no back-merge from main into dev.
+  # on the next release - no back-merge from main into dev.
   #
   # NOTE: `target-branch` only applies to *version* updates. Dependabot
   # *security* updates always target the default branch (`main`); dev picks
@@ -16,20 +16,20 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Europe/Berlin"
-    # Wait 3 days after a release before proposing it — comfortably past the
+    # Wait 3 days after a release before proposing it - comfortably past the
     # explicit pnpm `minimumReleaseAge: 1440` (1 day, pnpm-workspace.yaml), so
     # Dependabot never opens a PR for a version that pnpm's release-age gate
     # would reject (ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION).
     cooldown:
       default-days: 3
     open-pull-requests-limit: 10
-    # Explicit `build(deps):` prefix — the history so far relied on Dependabot
+    # Explicit `build(deps):` prefix - the history so far relied on Dependabot
     # auto-detecting the conventional-commit style from recent commits.
     commit-message:
       prefix: "build"
       include: "scope"
     groups:
-      # Lockstep families: these packages must move together — a solo bump
+      # Lockstep families: these packages must move together - a solo bump
       # (especially a major) can never pass CI on its own. Groups deliberately
       # cover ALL update types; dependabot-automerge.yml still skips any
       # grouped PR whose highest bump is a major.
@@ -73,7 +73,7 @@ updates:
           - "minor"
           - "patch"
     ignore:
-      # better-sqlite3 has no direct importer — @prisma/adapter-better-sqlite3
+      # better-sqlite3 has no direct importer - @prisma/adapter-better-sqlite3
       # is the only consumer and pins ^12.6.0. Bumping the root dependency to
       # 13.x therefore does not upgrade anything the app runs: pnpm keeps a 12.x
       # copy for the adapter and installs 13.x as a second, unused copy whose

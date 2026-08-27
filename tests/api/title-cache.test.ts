@@ -140,7 +140,7 @@ async function seedCacheRows(): Promise<void> {
       },
     },
   });
-  // Stale negative hit: expiresAt in the past — still counted in `total`,
+  // Stale negative hit: expiresAt in the past - still counted in `total`,
   // but excluded from the "negative still inside TTL" tally.
   await prisma.titleApiCache.create({
     data: {

@@ -100,7 +100,7 @@ describe("PATCH /api/admin/plugins/:id", () => {
   it("blocks enabling a non-DE plugin when no TMDB key is available", async () => {
     const nonDe = BUILTIN_PLUGINS.find((p) => p.language !== "de");
     if (!nonDe) {
-      // No non-DE plugin in the registry — skip without failing.
+      // No non-DE plugin in the registry - skip without failing.
       return;
     }
     mockState.tmdbAvailable = false;

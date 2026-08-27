@@ -7,12 +7,12 @@ import { AsyncLocalStorage } from "node:async_hooks";
  *
  * The composite title provider records into the active context (if any) when
  * it dispatches to pcjones / TMDB. Cache hits served by `DbCachedTitleProvider`
- * never reach composite, so they implicitly don't get counted — which is the
+ * never reach composite, so they implicitly don't get counted - which is the
  * goal: the UI surfaces real API usage, not cache replays.
  *
  * Counts are *items returned by the provider*, not requests. A bulk call that
  * returns N payloads adds N. The same externalId can count toward both pcjones
- * and TMDB when both provided complementary languages for the same item — that
+ * and TMDB when both provided complementary languages for the same item - that
  * matches what the UI displays ("which providers were hit").
  */
 export interface SyncStats {

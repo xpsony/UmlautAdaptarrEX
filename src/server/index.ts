@@ -87,7 +87,7 @@ export async function bootServer(opts: BootOptions): Promise<{
     });
     await state.reloadSettings();
     logger.info(
-      "generated initial proxy password for existing installation — visit Settings → Advanced to view it",
+      "generated initial proxy password for existing installation - visit Settings → Advanced to view it",
     );
   }
   await state.loadSearchItemsFromDb();
@@ -100,7 +100,7 @@ export async function bootServer(opts: BootOptions): Promise<{
       { trustProxy: process.env.TRUST_PROXY },
       "TRUST_PROXY hop counts are no longer supported (Fastify 5.12 disabled " +
         "them: a hop count cannot validate the immediate peer, so direct " +
-        "clients could spoof X-Forwarded-*). Falling back to no trust — set " +
+        "clients could spoof X-Forwarded-*). Falling back to no trust - set " +
         'TRUST_PROXY to "loopback" or a comma-separated CIDR/IP list instead.',
     );
   }
@@ -133,7 +133,7 @@ export async function bootServer(opts: BootOptions): Promise<{
   // `x-csrf-token` to match the existing UI; cookieOpts mirror the session
   // cookie (sameSite=lax, path=/, secure derived from req.protocol via
   // trustProxy when the cookie is set). Without `userInfo: true` the token
-  // is not session-bound — that's fine because the secret cookie is itself
+  // is not session-bound - that's fine because the secret cookie is itself
   // tied to the session via httpOnly+sameSite, and stealing both halves
   // requires either XSS (game over anyway) or a cross-site bypass that
   // sameSite=lax already blocks.
@@ -222,7 +222,7 @@ export async function bootServer(opts: BootOptions): Promise<{
   broadcaster.attachToHttp(app.server);
 
   const proxyPort = opts.proxyPort ?? state.settings.proxyPort ?? 5006;
-  // operationMode is read once at boot — switching modes in Settings logs a
+  // operationMode is read once at boot - switching modes in Settings logs a
   // hint that a restart is required for port 5006. Live-switching would
   // require open() / close() of two competing servers on the same port and
   // isn't worth the complexity for what is a once-per-install decision.
@@ -259,7 +259,7 @@ export async function bootServer(opts: BootOptions): Promise<{
   if (SESSION_TTL_MS > 60 * 24 * 60 * 60 * 1000) {
     logger.warn(
       { sessionTtlDays: Math.round(SESSION_TTL_MS / (24 * 60 * 60 * 1000)) },
-      "long admin session TTL active (dev mode) — never run with this config in production",
+      "long admin session TTL active (dev mode) - never run with this config in production",
     );
   }
 
@@ -371,7 +371,7 @@ function installRequestTiming(app: FastifyInstance, _logger: AppLogger): void {
     const status = reply.statusCode;
     const slow = durationMs >= SLOW_REQUEST_MS;
     const errored = status >= 400;
-    // Skip fast successes — admin UI polls every 5s and would flood the log.
+    // Skip fast successes - admin UI polls every 5s and would flood the log.
     if (!slow && !errored) return;
     const alreadyLogged = (req as FastifyRequest & { _loggedError?: boolean })._loggedError;
     if (errored && alreadyLogged) return;

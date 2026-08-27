@@ -4,7 +4,7 @@ import { BUILTIN_PLUGINS } from "@/domain/plugins";
 // `reloadSettings()` calls `reloadPlugins()` → `seedPlugins()` on every
 // settings-PUT and plugin pause/toggle, not just at boot. The upserts are
 // idempotent no-ops after the first run (existing rows keep whatever the
-// user toggled them to), so re-running them on every request is pure waste —
+// user toggled them to), so re-running them on every request is pure waste -
 // this guard makes seeding a true once-per-process operation instead of a
 // once-per-reload one.
 let seeded = false;

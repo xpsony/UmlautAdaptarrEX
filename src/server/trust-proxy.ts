@@ -5,7 +5,7 @@
 //   - comma-separated CIDRs/IPs → trust list (e.g. "127.0.0.1,::1,10.0.0.0/8")
 //   - integer                  → REMOVED, see `isHopCountTrustProxy` below
 //
-// Default is `loopback` — safe baseline that trusts XFF only when the request
+// Default is `loopback` - safe baseline that trusts XFF only when the request
 // arrived via 127.0.0.1/::1, blocking external XFF spoofing while still working
 // behind a same-host reverse proxy. Override via env when fronted by an
 // external proxy (e.g. Traefik on a different IP).

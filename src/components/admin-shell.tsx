@@ -76,7 +76,7 @@ export function AdminShell({
   return (
     <div className="flex min-h-screen bg-background">
       <ChangelogDialog />
-      {/* Skip link — first focusable element on the page, lets keyboard users
+      {/* Skip link - first focusable element on the page, lets keyboard users
           jump past the nav straight to the main content. Hidden until focused. */}
       <a
         href="#main"
@@ -84,7 +84,7 @@ export function AdminShell({
       >
         {t("skipToContent")}
       </a>
-      {/* Desktop sidebar — md and up. */}
+      {/* Desktop sidebar - md and up. */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r bg-sidebar text-sidebar-foreground md:flex">
         <Link
           href="/dashboard"
@@ -119,7 +119,7 @@ export function AdminShell({
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b bg-background/80 px-3 backdrop-blur sm:px-4 md:px-8">
           <div className="flex min-w-0 items-center gap-2 text-sm">
-            {/* Mobile hamburger — opens the nav drawer. */}
+            {/* Mobile hamburger - opens the nav drawer. */}
             <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden" aria-label={t("openNav")}>

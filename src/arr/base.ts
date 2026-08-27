@@ -95,7 +95,7 @@ export abstract class ArrClient {
 
       if (statusCode >= 400) {
         // Read a body preview before dumping so we can log *why* the upstream
-        // is unhappy — almost always either 401 (bad apikey) or HTML from a
+        // is unhappy - almost always either 401 (bad apikey) or HTML from a
         // reverse proxy in front of the *arr instance.
         const preview = await res.body.text().catch(() => "");
         const isAuth = statusCode === 401 || statusCode === 403;
@@ -107,7 +107,7 @@ export abstract class ArrClient {
             host: this.host,
             bodyPreview: preview.slice(0, 200),
             hint: isAuth
-              ? "Upstream rejected the API key — verify the key configured for this instance."
+              ? "Upstream rejected the API key - verify the key configured for this instance."
               : undefined,
           },
           "arr request returned HTTP error",

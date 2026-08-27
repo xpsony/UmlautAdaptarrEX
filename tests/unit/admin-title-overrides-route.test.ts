@@ -198,8 +198,8 @@ describe("DELETE /api/admin/title-overrides/:mediaType/:externalId", () => {
     });
 
     // Fastify's router (find-my-way) caps URL params at 100 chars by
-    // default and answers 414 before our route handler — and its
-    // ExternalIdSchema check — ever runs. Either way the request never
+    // default and answers 414 before our route handler - and its
+    // ExternalIdSchema check - ever runs. Either way the request never
     // reaches prisma, which is the property that matters; the schema
     // check below (`ExternalIdSchema`) exercises the same bound directly
     // for callers not gated by the router (e.g. a future non-HTTP caller,

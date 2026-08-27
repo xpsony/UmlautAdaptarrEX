@@ -13,7 +13,7 @@ import { RevealableInput } from "@/components/ui/revealable-input";
 import type { AdminFormInput, TmdbTestResult, TvdbTestResult } from "../_lib/setup-wizard";
 
 // Space-separated list of ids for `aria-describedby`, skipping absent ones.
-// (Not `cn()` — that's a Tailwind class merger, not a general string joiner.)
+// (Not `cn()` - that's a Tailwind class merger, not a general string joiner.)
 function describedBy(...ids: (string | undefined)[]): string {
   return ids.filter((id): id is string => Boolean(id)).join(" ");
 }

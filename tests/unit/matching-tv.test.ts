@@ -89,7 +89,7 @@ describe("renameForMoviesAndTv", () => {
   it("preserves SxxExx when the original carries an accent that no active plugin covers", () => {
     // German plugin is the default and lists only umlauts. An "é" in the
     // original still normalizes to "e" via NFD, so the walk must credit
-    // it as 1 normalized char — otherwise the suffix slice eats the "S"
+    // it as 1 normalized char - otherwise the suffix slice eats the "S"
     // and we'd return "Coffee.House.01E01.GERMAN".
     const result = renameForMoviesAndTv("Café.S01E01.GERMAN", {
       expectedTitle: "Coffee House",

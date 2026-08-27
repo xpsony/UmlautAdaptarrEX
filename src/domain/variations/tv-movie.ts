@@ -9,14 +9,14 @@ const YEAR_AT_END_RE = /\((\d{4})\)$/;
 // Aliases normally feed `titleMatchVariations` only: they let us *recognise*
 // a German release in the indexer response, but they are never *queried*.
 // That leaves a hole when no provider could resolve a German title while the
-// alias list does carry the German name — the release exists, the indexer is
+// alias list does carry the German name - the release exists, the indexer is
 // only ever asked for the English title, and nothing is found. Reported for
 // German productions that Sonarr holds under their English TVDB translation.
 //
 // So when (and only when) there is no German title, a bounded slice of the
 // alias list is promoted to search variations. Bounded because the legacy
 // search issues ONE indexer request per search variation, hard-capped at 10
-// (see `MAX_VARIATIONS` in src/server/routes/legacy/search.ts) — an unbounded
+// (see `MAX_VARIATIONS` in src/server/routes/legacy/search.ts) - an unbounded
 // promotion would both flood the indexer and push the high-value queries out
 // of that cap.
 const SEARCH_ALIAS_FALLBACK_LIMIT = 3;

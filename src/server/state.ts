@@ -65,7 +65,7 @@ export interface CachedSearchItem {
   arrId: number;
   externalId: string;
   /**
-   * IMDb id when the *Arr knows one — emitted as a newznab `imdb` attribute.
+   * IMDb id when the *Arr knows one - emitted as a newznab `imdb` attribute.
    * Optional: only Radarr supplies it, and rows written before the
    * `rename_options` migration have none.
    */
@@ -92,13 +92,13 @@ export interface CachedSearchItem {
 // Shape accepted by `indexItem` / produced by `toCachedSearchItem`: everything
 // a CachedSearchItem needs except `normalizedMatchVariations`, which only
 // `indexItem` can fill in (it requires the active LanguagePack). Keeping this
-// as a distinct type — rather than an optional field with a `!` assertion —
+// as a distinct type - rather than an optional field with a `!` assertion -
 // means callers that build a fresh item (sync, tests) never have to know
 // about normalization at construction time, and `indexItem`'s signature
 // documents that it's the sole place the field gets populated.
 export type CachedSearchItemInput = Omit<CachedSearchItem, "normalizedMatchVariations">;
 
-// Raw shape of the columns `toCachedSearchItem` consumes — kept in sync with
+// Raw shape of the columns `toCachedSearchItem` consumes - kept in sync with
 // SEARCH_ITEM_SELECT below so `loadSearchItemsFromDb` never over-fetches.
 interface SearchItemRow {
   id: string;
@@ -117,7 +117,7 @@ interface SearchItemRow {
   authorMatchVariations: string;
 }
 
-// Prisma `select` matching SearchItemRow exactly — used by loadSearchItemsFromDb
+// Prisma `select` matching SearchItemRow exactly - used by loadSearchItemsFromDb
 // so boot doesn't pull unused columns (e.g. `aliases`) for every row.
 const SEARCH_ITEM_SELECT = {
   id: true,
@@ -147,7 +147,7 @@ interface AppSettings {
   tvdbApiKey: string | null;
   tvdbPin: string | null;
   /**
-   * The EFFECTIVE User-Agent for outbound requests — the operator's override
+   * The EFFECTIVE User-Agent for outbound requests - the operator's override
    * when set, otherwise `UmlautAdaptarrEX/<version>`. Resolved here so every
    * consumer gets a usable value without repeating the fallback.
    */
@@ -164,7 +164,7 @@ interface AppSettings {
   operationMode: OperationMode;
   blockPrivateInstanceHosts: boolean;
   pausedUntil: Date | null;
-  // Renaming behaviour — see the Setting model for what each flag does.
+  // Renaming behaviour - see the Setting model for what each flag does.
   renameYearGuard: boolean;
   renamePrefixGuard: boolean;
   renameReleaseTagGuard: boolean;
@@ -265,7 +265,7 @@ export class AppState {
 
   /**
    * True only when a usable TMDB v3 API key is configured. Sync checks this
-   * before allowing non-DE language plugins to issue outbound calls — we
+   * before allowing non-DE language plugins to issue outbound calls - we
    * never spam TMDB without an opt-in (and fail fast with a clear reason).
    */
   get tmdbAvailable(): boolean {
@@ -336,7 +336,7 @@ export class AppState {
             "Configured TMDB key looks like a v4 Read Access Token (JWT 'eyJ…'). " +
             "moviedb-promise needs a v3 API key (32-char hex). Update it in Settings → TMDB.",
         },
-        "tmdb v4 token detected — provider disabled until a v3 key is set",
+        "tmdb v4 token detected - provider disabled until a v3 key is set",
       );
       return null;
     }
@@ -432,7 +432,7 @@ export class AppState {
 
   // Note: a pack change here leaves the existing index (byTitlePrefix
   // prefixes + each item's normalizedMatchVariations) normalized against the
-  // *old* pack until a resync rebuilds it via indexItem — a known, bounded
+  // *old* pack until a resync rebuilds it via indexItem - a known, bounded
   // staleness window surfaced to the admin by the UI's requiresResync banner.
   async reloadPlugins(): Promise<void> {
     await seedPlugins();
@@ -462,7 +462,7 @@ export class AppState {
   /**
    * Returns the matching options for an Arr instance. Falls back to the
    * permissive defaults (year-matching on, tolerance 1) when the instance
-   * is unknown — keeps callers free of null-checks while preserving the
+   * is unknown - keeps callers free of null-checks while preserving the
    * documented default behaviour.
    */
   getInstanceOptions(instanceId: string): InstanceMatchOptions {
@@ -532,12 +532,12 @@ export class AppState {
     this.indexRowsSkippingCorrupt(rows);
   }
 
-  // Invariant: indexing is not idempotent per object identity — calling this
+  // Invariant: indexing is not idempotent per object identity - calling this
   // twice with equivalent input (without an intervening removeItemsForInstance
   // / removeItemsForInstance-equivalent) duplicates bucket entries, since each
   // call builds a fresh `indexed` object. Every current caller removes an
   // instance's items before re-indexing (see reindexInstance,
-  // persistAndReindex in sync/run.ts) — keep that ordering for new callers.
+  // persistAndReindex in sync/run.ts) - keep that ordering for new callers.
   indexItem(item: CachedSearchItemInput): void {
     // Normalize each match variation exactly once, reusing the result for
     // both the byTitlePrefix bucket key and the stored array that
@@ -570,7 +570,7 @@ export class AppState {
     }
   }
 
-  // Drop and re-read one instance's items — used by the title-override
+  // Drop and re-read one instance's items - used by the title-override
   // rebuild so a saved override is searchable immediately, mirroring the
   // remove-then-index pattern of the sync's persistAndReindex.
   async reindexInstance(instanceId: string): Promise<void> {

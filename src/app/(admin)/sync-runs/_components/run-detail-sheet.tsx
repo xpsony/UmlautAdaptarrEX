@@ -25,11 +25,11 @@ export function RunDetailSheet({ open, run, onClose }: RunDetailSheetProps) {
   const locale = useLocale();
 
   // The Sheet must stay mounted while `open` flips to false so Radix can run
-  // its exit animation — the parent no longer unmounts this component on
+  // its exit animation - the parent no longer unmounts this component on
   // close. `run` itself goes null the instant the parent clears its
   // selection, so keep the last-seen run around and render that while the
   // animation plays out. Adjusted during render (not in an effect) per the
-  // React docs' "adjusting state when a prop changes" pattern — refs can't be
+  // React docs' "adjusting state when a prop changes" pattern - refs can't be
   // read during render, and an effect here would render one frame behind.
   const [lastRun, setLastRun] = useState<SyncRun | null>(run);
   if (run && run !== lastRun) {
@@ -55,7 +55,7 @@ export function RunDetailSheet({ open, run, onClose }: RunDetailSheetProps) {
         <SheetHeader>
           <SheetTitle>{shown.arrInstance?.name ?? t("detailUnknownInstance")}</SheetTitle>
           <SheetDescription className="capitalize">
-            {shown.arrInstance?.type ?? <span className="text-muted-foreground">—</span>}
+            {shown.arrInstance?.type ?? <span className="text-muted-foreground">-</span>}
           </SheetDescription>
         </SheetHeader>
 
@@ -71,7 +71,7 @@ export function RunDetailSheet({ open, run, onClose }: RunDetailSheetProps) {
                 </Badge>
               </div>
             ) : (
-              <span className="text-muted-foreground">—</span>
+              <span className="text-muted-foreground">-</span>
             )}
           </dd>
 
@@ -90,14 +90,14 @@ export function RunDetailSheet({ open, run, onClose }: RunDetailSheetProps) {
             {shown.finishedAt ? (
               new Date(shown.finishedAt).toLocaleString(locale)
             ) : (
-              <span className="text-muted-foreground">—</span>
+              <span className="text-muted-foreground">-</span>
             )}
           </dd>
 
           <dt className="text-muted-foreground">{t("colDuration")}</dt>
           <dd className="tabular-nums">
             {duration === null ? (
-              <span className="text-muted-foreground">—</span>
+              <span className="text-muted-foreground">-</span>
             ) : (
               `${(duration / 1000).toFixed(1)}s`
             )}
@@ -119,7 +119,7 @@ export function RunDetailSheet({ open, run, onClose }: RunDetailSheetProps) {
         <div className="space-y-1.5">
           <p className="text-sm font-medium text-muted-foreground">{t("colError")}</p>
           <p className="text-xs break-all text-destructive">
-            {shown.errorMessage ?? <span className="text-muted-foreground">—</span>}
+            {shown.errorMessage ?? <span className="text-muted-foreground">-</span>}
           </p>
         </div>
       </SheetContent>

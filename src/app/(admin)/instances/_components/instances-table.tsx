@@ -83,7 +83,7 @@ export function InstancesTable({
                 </div>
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {inst.lastSyncAt ? new Date(inst.lastSyncAt).toLocaleString(locale) : "—"}
+                {inst.lastSyncAt ? new Date(inst.lastSyncAt).toLocaleString(locale) : "-"}
               </TableCell>
               <TableCell className="text-right">
                 <InstanceRowActions

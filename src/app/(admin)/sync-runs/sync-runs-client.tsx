@@ -23,12 +23,12 @@ import { useListUrlState } from "@/app/(admin)/_lib/use-list-url-state";
 import type { SyncRun } from "@/app/(admin)/_lib/sync-types";
 import { RunDetailSheet } from "./_components/run-detail-sheet";
 
-// Sortable columns exposed by the route — see SYNC_RUNS_SORT in
+// Sortable columns exposed by the route - see SYNC_RUNS_SORT in
 // src/server/routes/admin/sync.ts. Default matches the server's default
 // (startedAt desc).
 const SORT_KEYS = ["startedAt", "status", "itemsCount"] as const;
 
-// Status values the filter Select offers — a bogus deep-link value falls
+// Status values the filter Select offers - a bogus deep-link value falls
 // back to "all" instead of leaving the Select trigger blank.
 const STATUS_VALUES = ["running", "success", "error", "cancelled"] as const;
 
@@ -167,7 +167,7 @@ export function SyncRunsClient() {
                     </Badge>
                   </div>
                 ) : (
-                  <span className="text-muted-foreground">—</span>
+                  <span className="text-muted-foreground">-</span>
                 )}
               </TableCell>
               <TableCell>
@@ -183,10 +183,10 @@ export function SyncRunsClient() {
                 {new Date(r.startedAt).toLocaleString(locale)}
               </TableCell>
               <TableCell className="text-muted-foreground tabular-nums">
-                {duration === null ? "—" : `${(duration / 1000).toFixed(1)}s`}
+                {duration === null ? "-" : `${(duration / 1000).toFixed(1)}s`}
               </TableCell>
               <TableCell className="max-w-xs truncate text-xs text-destructive">
-                {r.errorMessage ?? <span className="text-muted-foreground">—</span>}
+                {r.errorMessage ?? <span className="text-muted-foreground">-</span>}
               </TableCell>
             </TableRow>
           );

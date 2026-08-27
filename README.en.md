@@ -94,7 +94,7 @@ Each plugin generates multiple variation maps so that releases with mixed spelli
 
 > **Only enable languages you actually consume.** Every extra plugin costs lookups:
 >
-> - **Per search**, each language variation adds one more indexer request. The total is hard-capped at 10 — surplus
+> - **Per search**, each language variation adds one more indexer request. The total is hard-capped at 10 - surplus
 >   variations are dropped, possibly including German ones. A plugin for a language you never download can therefore
 >   push genuinely useful queries out of the budget.
 > - **Per sync**, TheTVDB needs one more request per title per language (it has no bulk translations endpoint). TMDB
@@ -103,7 +103,7 @@ Each plugin generates multiple variation maps so that releases with mixed spelli
 ## Renaming
 
 How release titles in indexer responses are rewritten is configurable under **Settings → Renaming**. Changes apply from
-the next search onwards — no restart, no re-sync.
+the next search onwards - no restart, no re-sync.
 
 | Toggle                                         | Default (new) | Default (existing) | Effect                                                                                                                                        |
 | ---------------------------------------------- | :-----------: | :----------------: | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -112,13 +112,13 @@ the next search onwards — no restart, no re-sync.
 | **Year check**                                 |       ✓       |         ✓          | Declines the rewrite when the year in the release name does not match the item (tolerance is configured per instance).                        |
 | **Ambiguous-prefix check**                     |       ✓       |         ✓          | Declines when the target title starts with the matched variation and no `SxxExx` or year follows.                                             |
 | **Preserve release tags**                      |       ✓       |         ✓          | Pushes `3D` / `4K` / `HDR` / `IMAX` back into the suffix when a provider alias brought it along.                                              |
-| **Cut the suffix like the old Umlautadaptarr** |       ◯       |         ◯          | Cuts at the variation's raw length instead of counting normalized characters. With `ß`/umlauts that cuts too far — legacy compatibility only. |
+| **Cut the suffix like the old Umlautadaptarr** |       ◯       |         ◯          | Cuts at the variation's raw length instead of counting normalized characters. With `ß`/umlauts that cuts too far - legacy compatibility only. |
 
 Two preset buttons flip the four safety rules at once: **Like the old Umlautadaptarr** (all guards off, legacy suffix
 on) and **Recommended values**.
 
 > Existing installations keep their current output: the migration switches the two toggles that change the delivered
-> bytes **off** for them. Fresh installs start with them **on**. Both are worth enabling — scene releases never carry
+> bytes **off** for them. Fresh installs start with them **on**. Both are worth enabling - scene releases never carry
 > the stripped characters, and the external ids markedly improve matching in Sonarr/Radarr.
 
 ## Installation
@@ -270,9 +270,9 @@ What the script does:
 - Installs Node.js 26 + pnpm (via npm), fetches the latest release of `xpsony/UmlautAdaptarrEX`
   and runs `pnpm build:prod` + `pnpm prisma:deploy`.
 - Prompts for the three service ports during install (pre-filled with the defaults, press Enter to accept):
-  - **5007** — web UI + setup wizard (`http://<IP>:5007/setup`)
-  - **5005** — public API + indexer routes for the \*arrs
-  - **5006** — Prowlarr TCP proxy (basic auth, set during setup)
+  - **5007** - web UI + setup wizard (`http://<IP>:5007/setup`)
+  - **5005** - public API + indexer routes for the \*arrs
+  - **5006** - Prowlarr TCP proxy (basic auth, set during setup)
 - Runs the app as a systemd service (`umlautadaptarrex`). The SQLite DB lives at
   `/opt/umlautadaptarrex/data/` and is preserved across updates.
 
@@ -307,13 +307,13 @@ The `data/` DB is mounted into the container and contains the entire configurati
 
 For lean deployments, UmlautAdaptarrEX can run without the Next.js Web UI. The
 actual functionality (Prowlarr indexer proxy, legacy API, title lookup) runs
-entirely in Fastify and is independent of the UI — the \*Arrs talk to port 5005
+entirely in Fastify and is independent of the UI - the \*Arrs talk to port 5005
 directly anyway.
 
 Enable it via the `UMLAUTADAPTARREX_HEADLESS=1` environment variable. This drops
 the Next.js process **and** the self-forking supervisor layer; the container
 runs as a single Node process. In this project's measurements (minimal config) a
-container dropped from ~160 MiB — and over 200 MiB while the Web UI is open — to
+container dropped from ~160 MiB - and over 200 MiB while the Web UI is open - to
 ~115 MiB headless, roughly **a third / ~50–90 MB** less. The Fastify core
 process remains the main consumer; the saving is essentially the removed Web UI
 process, and the exact amount depends on your configuration.
@@ -531,7 +531,7 @@ src/
 
 ## Credits
 
-Based on the idea and logic of [PCJones/UmlautAdaptarr](https://github.com/PCJones/UmlautAdaptarr) —
+Based on the idea and logic of [PCJones/UmlautAdaptarr](https://github.com/PCJones/UmlautAdaptarr) -
 a detailed comparison of the two projects lives in [docs/comparison.en.md](docs/comparison.en.md).
 
 Thanks to [xopez](https://github.com/xopez) for the TrueNAS community app.

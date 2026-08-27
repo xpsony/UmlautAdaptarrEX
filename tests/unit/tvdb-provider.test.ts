@@ -218,7 +218,7 @@ describe("TvdbProvider extended-record title fallback", () => {
     const p = new TvdbProvider({ apiKey: "k", userAgent: "UA" });
     const payload = await p.fetchByExternalId("tv", "5", ["de"]);
     expect(payload?.titlesByLang["de"]).toBe("Deutscher Titel");
-    // login + translations only — no /extended roundtrip.
+    // login + translations only - no /extended roundtrip.
     expect(requestMock.mock.calls).toHaveLength(2);
   });
 });

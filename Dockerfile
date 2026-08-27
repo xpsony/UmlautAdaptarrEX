@@ -3,7 +3,7 @@
 # ── Minimal runtime base ─────────────────────────────────────────────────────
 # Trixie (glibc 2.41), not bookworm (2.36): better-sqlite3 >= 13 bundles its
 # linux prebuilds and the arm64 one is linked against GLIBC_2.38, so it fails to
-# dlopen on bookworm. Compiling from source is not an escape hatch — the
+# dlopen on bookworm. Compiling from source is not an escape hatch - the
 # package's binding.gyp turns the build into a no-op whenever a prebuild file is
 # present, and lib/binding.js loads prebuilds/ before build/Release. Don't move
 # this back to bookworm without also pinning better-sqlite3 to 12.x.
@@ -25,7 +25,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt/lists,sharing=locked \
     apt-get update \
     && apt-get install -y --no-install-recommends python3 make g++
-# `postinstall` runs `prisma generate`, which needs the schema + config — copy
+# `postinstall` runs `prisma generate`, which needs the schema + config - copy
 # them in alongside the manifests so the install step doesn't fail.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml prisma.config.ts ./
 COPY prisma ./prisma
@@ -86,7 +86,7 @@ COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 # our complete @prisma/client wins over the standalone stub, while next/react
 # (absent from this minimal set) remain from the standalone bundle.
 COPY --from=runtime-deps --chown=node:node /runtime/node_modules ./node_modules
-# public/ is NOT included in the standalone bundle — must be copied separately
+# public/ is NOT included in the standalone bundle - must be copied separately
 # so static assets (logos, *Arr icons under /arr, /brand) are served by Next.
 COPY --from=builder --chown=node:node /app/public ./public
 

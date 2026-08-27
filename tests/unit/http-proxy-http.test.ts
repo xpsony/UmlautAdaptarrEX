@@ -5,7 +5,7 @@ import pino from "pino";
 import { HttpProxyServer } from "@/server/proxy/http-proxy";
 import type { AppState } from "@/server/state";
 
-// First coverage for the plain-HTTP path of the proxy (handleHttp) — the
+// First coverage for the plain-HTTP path of the proxy (handleHttp) - the
 // CONNECT and watchdog paths have their own suites. The proxy rewrites
 // requests to http://127.0.0.1:{appPort}/{apiKey}/{host}{path}, so the
 // "app" here is a local capture server standing in for Fastify.
@@ -138,7 +138,7 @@ describe("http-proxy plain-HTTP path", () => {
 
   afterEach(async () => {
     // Guard against beforeEach throwing partway through (e.g. startProxy
-    // exhausting its EADDRINUSE retries) — proxy could be undefined while
+    // exhausting its EADDRINUSE retries) - proxy could be undefined while
     // app is set, and vitest still runs afterEach in that case. Without the
     // optional chaining, an unguarded proxy.stop() throw would skip
     // app.close(), leaking the fake HTTP server's socket.

@@ -238,7 +238,7 @@ describe("PUT /api/admin/settings", () => {
     expect(call.data).not.toHaveProperty("tvdbPin");
 
     const body = r.json() as Record<string, unknown>;
-    // Server never echoes the cleartext — the new TVDB key comes back masked
+    // Server never echoes the cleartext - the new TVDB key comes back masked
     // exactly like the untouched TMDB key, both flagged as configured.
     expect(body.tmdbApiKey).toBe("••••••••");
     expect(body.tvdbApiKey).toBe("••••••••");
@@ -455,7 +455,7 @@ describe("title-cache routes", () => {
   });
 });
 
-describe("POST /api/admin/title-cache/recheck-missing — concurrency guard", () => {
+describe("POST /api/admin/title-cache/recheck-missing - concurrency guard", () => {
   it("returns 409 while another recheck is in flight", async () => {
     let release!: (rows: never[]) => void;
     const gate = new Promise<never[]>((resolve) => {

@@ -1,4 +1,4 @@
-// UmlautAdaptarrEX 2.0 — Prisma Schema
+// UmlautAdaptarrEX 2.0 - Prisma Schema
 // SQLite, Single-File DB. Prisma ist alleiniger Owner der Datenbank.
 
 generator client {
@@ -43,7 +43,7 @@ model Setting {
   proxyPort                 Int       @default(5006)
   // Credentials für den HTTP-Proxy auf Port 5006 (Prowlarr/Indexer-Auth).
   // Default-Username = "UmlautAdaptarr"; Passwort wird beim ersten Boot
-  // mit nanoid(24) befüllt — siehe `AppState.reloadSettings`.
+  // mit nanoid(24) befüllt - siehe `AppState.reloadSettings`.
   proxyUsername             String    @default("UmlautAdaptarr")
   proxyPassword             String    @default("")
   cacheDurationMinutes      Int       @default(12)
@@ -66,12 +66,12 @@ model Setting {
   setupComplete             Boolean   @default(false)
   // Optional: persistierte Prowlarr-Verbindung. Wir nutzen sie, um den
   // Import-Dialog vorzubefüllen, damit der User die Creds nicht jedes Mal
-  // neu eingeben muss. apiKey ist sensibel — wird nie an die UI geliefert,
+  // neu eingeben muss. apiKey ist sensibel - wird nie an die UI geliefert,
   // nur ein "configured"-Flag.
   prowlarrHost              String?
   prowlarrApiKey            String?
   // Wie viele Tage Logs in der DB vorgehalten werden (Cleanup-Job kürzt alles
-  // Ältere). Default 3 — genug, um vergangene Fehler nachzusehen, ohne dass
+  // Ältere). Default 3 - genug, um vergangene Fehler nachzusehen, ohne dass
   // die Tabelle ungebremst wächst.
   logRetentionDays          Int       @default(3)
   // How long request/rename history rows are kept (days). One shared value
@@ -129,17 +129,17 @@ model Setting {
   // Suffix wie der Vorgänger per ROHLÄNGE der Variation schneiden statt per
   // normalisierter Zeichenzahl. Achtung: bei ß/Umlauten schneidet das das
   // nächste Token an ("Straße.Test.S01E01" -> ".est.S01E01"). Nur für Nutzer,
-  // die exakt das alte Verhalten wollen — deshalb Default aus.
+  // die exakt das alte Verhalten wollen - deshalb Default aus.
   renameLegacySuffix      Boolean @default(false)
   // Zeichen aus dem eingesetzten Titel entfernen, die in Release-Namen
   // unerwünscht sind (`: ? * " < > | / \`). Scene-Releases enthalten sie nie,
   // und Sonarr/Radarr parsen "Alita.Battle.Angel..." zuverlässiger als
-  // "Alita:.Battle.Angel...". Default an — für Bestandsinstallationen setzt
+  // "Alita:.Battle.Angel...". Default an - für Bestandsinstallationen setzt
   // die Migration bewusst `false`, damit sich deren Ausgabe nicht ändert.
   renameStripSpecialChars Boolean @default(true)
   // Bei jedem umgeschriebenen Item die bekannten externen IDs als
   // newznab-Attribute anhängen (tvdbid / tmdbid / imdbid), damit Sonarr/Radarr
-  // das Release ohne Titel-Parsing zuordnen können. Rein additiv. Default an —
+  // das Release ohne Titel-Parsing zuordnen können. Rein additiv. Default an -
   // Bestandsinstallationen bekommen per Migration `false`.
   renameAttachExternalIds Boolean @default(true)
 }
@@ -183,7 +183,7 @@ model SearchItem {
   arrId                 Int
   externalId            String
   // IMDb-ID (`tt…`), sofern die *Arr-Instanz sie kennt (Radarr liefert sie pro
-  // Movie). Nur für das newznab-Attribut `imdbid` beim Umschreiben gebraucht —
+  // Movie). Nur für das newznab-Attribut `imdbid` beim Umschreiben gebraucht -
   // `externalId` bleibt der Primär-Identifier (tvdbid für TV, tmdbid für Film).
   imdbId                String?
   title                 String
@@ -305,7 +305,7 @@ model SyncRun {
 // Enable-Status. Auf jedem Boot werden alle bekannten Plugin-IDs mit ihrem
 // `defaultEnabled`-Wert geseedet, falls die Zeile noch nicht existiert.
 // Unbekannte Plugin-IDs in der DB werden ignoriert (z.B. nach Plugin-
-// Entfernung) — die Zeile bleibt liegen, falls das Plugin später wieder
+// Entfernung) - die Zeile bleibt liegen, falls das Plugin später wieder
 // auftaucht.
 
 model Plugin {

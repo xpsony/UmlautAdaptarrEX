@@ -108,7 +108,7 @@ test.describe("instances dialog", () => {
     await expect(dialog).not.toBeVisible();
     await expect(page.getByText("Sonarr Real")).toBeVisible();
 
-    // Reload and confirm persistence — the row survived the round-trip.
+    // Reload and confirm persistence - the row survived the round-trip.
     await page.reload();
     await expect(page.getByText("Sonarr Real")).toBeVisible();
   });

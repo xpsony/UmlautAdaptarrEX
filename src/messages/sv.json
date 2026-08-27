@@ -69,7 +69,7 @@
     "modeBothLabel": "Båda",
     "modeBothDescription": "Både proxy ({proxyPort}) och äldre API ({legacyApiPort}) är aktiva.",
     "modeBothDetails": "Kör båda vägarna parallellt. Användbart endast under en stegvis migrering från legacy- till proxyläge. I stadigt drift fördubblar det attackytan utan fördelar.",
-    "modeBothWarning": "Rekommenderas inte — vanligtvis behövs bara en av de två vägarna åt gången.",
+    "modeBothWarning": "Rekommenderas inte - vanligtvis behövs bara en av de två vägarna åt gången.",
     "pluginsLanguage": {
       "de": "Tyska",
       "en": "Engelska",
@@ -78,7 +78,7 @@
     },
     "pluginsTitle": "Välj plugins",
     "pluginsHint": "Välj de språk-plugins som används för att skapa sökvarianter och skriva om indexer-svar. Du kan ändra detta senare i Inställningar.",
-    "pluginsCostHint": "Välj bara språk som du faktiskt konsumerar — varje extra plugin ger fler sökvarianter och därmed fler indexerarförfrågningar per sökning (tak på 10), plus ytterligare en TheTVDB-förfrågan per titel och språk vid varje synk.",
+    "pluginsCostHint": "Välj bara språk som du faktiskt konsumerar - varje extra plugin ger fler sökvarianter och därmed fler indexerarförfrågningar per sökning (tak på 10), plus ytterligare en TheTVDB-förfrågan per titel och språk vid varje synk.",
     "pluginsDefaultBadge": "Standard",
     "pluginsEmpty": "Inga plugins tillgängliga.",
     "pluginsLoadFailed": "Kunde inte läsa in plugins: {error}",
@@ -344,7 +344,7 @@
   },
   "library": {
     "title": "Bibliotek",
-    "subtitle": "Synkroniserade titlar från alla instanser — inklusive manuella overrides.",
+    "subtitle": "Synkroniserade titlar från alla instanser - inklusive manuella overrides.",
     "listTitle": "{count, plural, =0 {Inga titlar} one {# titel} other {# titlar}}",
     "listSubtitle": "Original- och tyska titlar, som de används av matchningsmotorn.",
     "emptyTitle": "Inga titlar",
@@ -378,7 +378,7 @@
     "overrideHint": "Ersätter den tyska titeln för detta medium i alla instanser. Varianter beräknas om omedelbart.",
     "overrideSave": "Spara override",
     "overrideRemove": "Ta bort override",
-    "overrideSaved": "Override sparad — varianter omberäknade.",
+    "overrideSaved": "Override sparad - varianter omberäknade.",
     "overrideRemoved": "Override borttagen."
   },
   "settings": {
@@ -397,7 +397,7 @@
     "plugins": {
       "title": "Inbyggda plugins",
       "hint": "Varje plugin bidrar med språkspecifika omvandlingar (t.ex. ä → ae) som används för att skapa sökvarianter och skriva om indexer-svar.",
-      "costHint": "Aktivera bara ett språkplugin om du faktiskt konsumerar det språket. Varje extra plugin kostar anrop: varje sökning skickar ytterligare en indexerarförfrågan per språkvariant (hårt tak på 10 — överflödiga varianter faller bort, i värsta fall även tyska), och vid varje synk behöver TheTVDB en förfrågan till per titel och språk (TMDB returnerar alla språk i ett enda anrop och skalar därför inte med antalet plugins).",
+      "costHint": "Aktivera bara ett språkplugin om du faktiskt konsumerar det språket. Varje extra plugin kostar anrop: varje sökning skickar ytterligare en indexerarförfrågan per språkvariant (hårt tak på 10 - överflödiga varianter faller bort, i värsta fall även tyska), och vid varje synk behöver TheTVDB en förfrågan till per titel och språk (TMDB returnerar alla språk i ett enda anrop och skalar därför inte med antalet plugins).",
       "defaultEnabledBadge": "På som standard",
       "resyncBanner": "Plugin-ändringar börjar gälla först efter en synk, dina biblioteksvarianter genererades med tidigare konfiguration.",
       "resyncNow": "Synkronisera nu",
@@ -466,7 +466,7 @@
       "unknown": "TVDB-test misslyckades."
     },
     "userAgent": "User-Agent-header",
-    "userAgentHint": "Valfritt. Lämnar du fältet tomt blir det automatiskt: UmlautAdaptarrEX plus den version som körs — värdet följer då varje uppdatering utan att du rör fältet.",
+    "userAgentHint": "Valfritt. Lämnar du fältet tomt blir det automatiskt: UmlautAdaptarrEX plus den version som körs - värdet följer då varje uppdatering utan att du rör fältet.",
     "userAgentAutoHint": "Tomt = automatiskt: {value}",
     "forwardArrUserAgent": "Skicka vidare *Arr:s User-Agent",
     "forwardArrUserAgentDescription": "Skickar Sonarr/Radarr/Lidarr/Readarrs User-Agent ordagrant till indexeraren i stället för vår egen.",
@@ -515,7 +515,7 @@
       "timeout": "Servern svarade inte inom 30 sekunder. Kontrollera loggarna och starta om manuellt vid behov.",
       "failed": "Omstart misslyckades: {error}",
       "unsupported": "Omstart från gränssnittet är inte tillgänglig i den här miljön (dev-läge eller utan supervisor). Starta om containern/tjänsten manuellt.",
-      "unsupportedTitle": "Omstart ej tillgänglig — starta om manuellt."
+      "unsupportedTitle": "Omstart ej tillgänglig - starta om manuellt."
     },
     "prowlarr": {
       "title": "Prowlarr-anslutning",
@@ -572,7 +572,7 @@
       "patchColStatus": "Status",
       "patchStatusPatched": "patchad",
       "patchStatusUnpatched": "inte patchad",
-      "patchNotPatchable": "Ingen redigerbar bas-URL — kan inte patchas.",
+      "patchNotPatchable": "Ingen redigerbar bas-URL - kan inte patchas.",
       "patchApply": "Tillämpa",
       "patchApplying": "Tillämpar…",
       "patchEmpty": "Inga indexerare hittades i Prowlarr.",
@@ -582,19 +582,19 @@
       "patchRetry": "Försök igen"
     },
     "renaming": {
-      "hint": "Styr hur release-titlar i indexerarnas svar skrivs om. Skyddsreglerna är de säkerhetskontroller som UmlautAdaptarrEX lade till utöver den gamla .NET-föregångaren — att stänga av en gör omskrivningen mer tillåtande, men också mer felbenägen.",
+      "hint": "Styr hur release-titlar i indexerarnas svar skrivs om. Skyddsreglerna är de säkerhetskontroller som UmlautAdaptarrEX lade till utöver den gamla .NET-föregångaren - att stänga av en gör omskrivningen mer tillåtande, men också mer felbenägen.",
       "scopeHint": "Ändringar gäller direkt vid nästa sökning, ingen omstart och ingen ny synk behövs. Releaser som redan lämnats till Sonarr/Radarr ändras inte retroaktivt.",
       "presetsLabel": "Förinställningar:",
       "presetLegacy": "Som den gamla Umlautadaptarr",
       "presetRecommended": "Rekommenderade värden",
-      "exampleRelease": "Exempel — release från indexeraren:",
+      "exampleRelease": "Exempel - release från indexeraren:",
       "exampleItem": "Objekt i biblioteket:",
       "exampleOff": "Av",
       "exampleOn": "På",
       "exampleNotRenamed": "byter inte namn",
       "exampleNoteExternalIds": "Förkortat; attributen läggs till utöver det befintliga innehållet i <item>.",
-      "exampleNotePrefixGuard": "Med en säsongsmarkör (…Silberlicht.S01E01…) byter båda fallen namn — kontrollen gäller bara utan en sådan markör.",
-      "exampleNoteLegacySuffix": "Det där ”016” var årtalet 2016 — snittet svalde den inledande 2:an.",
+      "exampleNotePrefixGuard": "Med en säsongsmarkör (…Silberlicht.S01E01…) byter båda fallen namn - kontrollen gäller bara utan en sådan markör.",
+      "exampleNoteLegacySuffix": "Det där ”016” var årtalet 2016 - snittet svalde den inledande 2:an.",
       "renameStripSpecialChars": {
         "label": "Ta bort oönskade tecken",
         "description": "Tar bort : ? * \" < > | / \\ ur den insatta titeln utan att lämna dubbla avgränsare.",
@@ -622,7 +622,7 @@
       },
       "renameLegacySuffix": {
         "label": "Klipp suffixet som den gamla Umlautadaptarr",
-        "description": "Klipper vid den hittade variantens råa längd istället för att räkna normaliserade tecken — och stänger av tokengränskontrollen på samma gång.",
+        "description": "Klipper vid den hittade variantens råa längd istället för att räkna normaliserade tecken - och stänger av tokengränskontrollen på samma gång.",
         "hint": "Aktivera bara om du behöver exakt det gamla beteendet. Om en variant slutar på en siffra kan snittet hamna mitt i releasens årtal och förvanska det (se exemplet). Utan den här reglaget avvisar UmlautAdaptarrEX sådana träffar istället."
       }
     }

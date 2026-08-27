@@ -302,7 +302,7 @@ describe("handleSearch with a searchItem", () => {
   it("keeps the appended q/expectedTitle tail alive when capping generated variations", async () => {
     // 15 generated variations + a distinct q + a distinct expectedTitle = 17
     // uncapped entries. The cap must trim from the generated head only, never
-    // from the appended tail (q, expectedTitle) — those are the highest-value
+    // from the appended tail (q, expectedTitle) - those are the highest-value
     // searches and are exactly what an umlaut-heavy title needs most.
     const generated = Array.from({ length: 15 }, (_, i) => `GenVar${i}`);
     mockState.getByExternalId.mockReturnValueOnce({

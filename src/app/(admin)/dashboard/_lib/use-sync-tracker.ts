@@ -60,7 +60,7 @@ export function useSyncTracker({ onCompleted }: UseSyncTrackerOptions = {}) {
     if (errors.length > 0) {
       toast.error(t("syncDoneWithErrors", { items: totalItems, errors: errors.length }), {
         description: errors
-          .map((e) => `${e.arrInstance?.name ?? "—"}: ${e.errorMessage ?? "unbekannt"}`)
+          .map((e) => `${e.arrInstance?.name ?? "-"}: ${e.errorMessage ?? "unbekannt"}`)
           .slice(0, 3)
           .join("\n"),
       });

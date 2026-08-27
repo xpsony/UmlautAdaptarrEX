@@ -36,15 +36,15 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "feature",
-        text: "Manual title overrides: fix a single mismatched title straight from the Library detail view. Overrides apply to all instances, survive re-syncs and item removal, and search variations recompute immediately — no more clearing the whole title cache for one bad match. Removing an override restores the provider title.",
+        text: "Manual title overrides: fix a single mismatched title straight from the Library detail view. Overrides apply to all instances, survive re-syncs and item removal, and search variations recompute immediately - no more clearing the whole title cache for one bad match. Removing an override restores the provider title.",
       },
       {
         type: "feature",
-        text: "Sortable columns on request history, rename history, sync runs and the library — and filters, page and sorting now live in the URL, so reload, back button and deep links reproduce exactly the view you had.",
+        text: "Sortable columns on request history, rename history, sync runs and the library - and filters, page and sorting now live in the URL, so reload, back button and deep links reproduce exactly the view you had.",
       },
       {
         type: "feature",
-        text: "Sync runs: server-side pagination with free-text search and a status filter — the old 200-run display cap is gone. (Also fixed: the “Successful” filter option never matched anything.)",
+        text: "Sync runs: server-side pagination with free-text search and a status filter - the old 200-run display cap is gone. (Also fixed: the “Successful” filter option never matched anything.)",
       },
       {
         type: "feature",
@@ -52,7 +52,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "feature",
-        text: "CSV export for request and rename history — respects the current filter and sorting, Excel-safe (UTF-8 BOM so umlauts survive, spreadsheet formula injection neutralized), capped at 10,000 rows.",
+        text: "CSV export for request and rename history - respects the current filter and sorting, Excel-safe (UTF-8 BOM so umlauts survive, spreadsheet formula injection neutralized), capped at 10,000 rows.",
       },
       {
         type: "feature",
@@ -60,23 +60,23 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "feature",
-        text: "Request history and rename history paginate through all stored entries (page size 25/50/100/250) with server-side search across the whole retained period — previously search only covered the newest rows. The new “History retention (days)” setting (Settings → Advanced, default 30, 1–365) cleans up old entries automatically every 6 hours. Thanks to Tom-Furrer for reporting the search limitation (#115).",
+        text: "Request history and rename history paginate through all stored entries (page size 25/50/100/250) with server-side search across the whole retained period - previously search only covered the newest rows. The new “History retention (days)” setting (Settings → Advanced, default 30, 1–365) cleans up old entries automatically every 6 hours. Thanks to Tom-Furrer for reporting the search limitation (#115).",
       },
       {
         type: "feature",
-        text: "New toggle “Forward the *Arr's User-Agent” (Settings → Advanced): sends Sonarr/Radarr/Lidarr/Readarr's User-Agent to the indexer verbatim instead of ours. Off by default, so the indexer sees only UmlautAdaptarrEX and no version fingerprint of your *Arr — turn it on if an indexer only accepts known client User-Agents or rate-limits by them. This replaces the previous behaviour, which always sent both concatenated (“Sonarr/4.0.0 UmlautAdaptarrEX/2.0”) — a value that identified neither client and could defeat exactly those allow-lists.",
+        text: "New toggle “Forward the *Arr's User-Agent” (Settings → Advanced): sends Sonarr/Radarr/Lidarr/Readarr's User-Agent to the indexer verbatim instead of ours. Off by default, so the indexer sees only UmlautAdaptarrEX and no version fingerprint of your *Arr - turn it on if an indexer only accepts known client User-Agents or rate-limits by them. This replaces the previous behaviour, which always sent both concatenated (“Sonarr/4.0.0 UmlautAdaptarrEX/2.0”) - a value that identified neither client and could defeat exactly those allow-lists.",
       },
       {
         type: "feature",
-        text: 'Renaming is now configurable under Settings → Renaming, with a worked before/after example on each switch so you can see what it does. Two new options: “Strip unwelcome characters” removes : ? * " < > | / \\ from the inserted title (scene releases never carry them, and Sonarr/Radarr parse the result more reliably), and “Attach external ids” adds tvdbid / tmdbid / imdb as newznab attributes so the *Arr can match a release without parsing its title. Four more switches expose the safety rules UmlautAdaptarrEX added on top of the old .NET version (year check, ambiguous prefix, release tags, legacy suffix cut), with presets for “Like the old Umlautadaptarr” and “Recommended values”. Changes apply from the next search — no restart, no re-sync.',
+        text: 'Renaming is now configurable under Settings → Renaming, with a worked before/after example on each switch so you can see what it does. Two new options: “Strip unwelcome characters” removes : ? * " < > | / \\ from the inserted title (scene releases never carry them, and Sonarr/Radarr parse the result more reliably), and “Attach external ids” adds tvdbid / tmdbid / imdb as newznab attributes so the *Arr can match a release without parsing its title. Four more switches expose the safety rules UmlautAdaptarrEX added on top of the old .NET version (year check, ambiguous prefix, release tags, legacy suffix cut), with presets for “Like the old Umlautadaptarr” and “Recommended values”. Changes apply from the next search - no restart, no re-sync.',
       },
       {
         type: "improvement",
-        text: "Settings tabs are now independent forms: editing one tab no longer lights up the save button on the others, saves send only the fields of that tab, and the browser warns before closing with unsaved changes. Switching the UI language no longer reloads the page — and no longer discards unsaved edits.",
+        text: "Settings tabs are now independent forms: editing one tab no longer lights up the save button on the others, saves send only the fields of that tab, and the browser warns before closing with unsaved changes. Switching the UI language no longer reloads the page - and no longer discards unsaved edits.",
       },
       {
         type: "improvement",
-        text: "Faster and more predictable searches on large libraries: match variations are pre-computed instead of re-normalized on every request, variation fan-out per search is capped at 10 with a total deadline at 75% of the configured indexer timeout (your literal query and the canonical title are always searched), and the Prowlarr proxy timeouts now scale with that setting instead of a hardcoded 30s — no more Sonarr/Radarr timeouts on title-alias-heavy items.",
+        text: "Faster and more predictable searches on large libraries: match variations are pre-computed instead of re-normalized on every request, variation fan-out per search is capped at 10 with a total deadline at 75% of the configured indexer timeout (your literal query and the canonical title are always searched), and the Prowlarr proxy timeouts now scale with that setting instead of a hardcoded 30s - no more Sonarr/Radarr timeouts on title-alias-heavy items.",
       },
       {
         type: "improvement",
@@ -88,15 +88,15 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "improvement",
-        text: "The User-Agent now follows the running version instead of the hard-coded “UmlautAdaptarrEX/2.0” — a string that had been wrong ever since the 2.0 rewrite shipped as 1.x. The field in Settings → Advanced became an optional override: leave it empty and it stays correct across updates by itself, with the automatic value shown as the field's placeholder. If you never customised it, this update switches you to automatic.",
+        text: "The User-Agent now follows the running version instead of the hard-coded “UmlautAdaptarrEX/2.0” - a string that had been wrong ever since the 2.0 rewrite shipped as 1.x. The field in Settings → Advanced became an optional override: leave it empty and it stays correct across updates by itself, with the automatic value shown as the field's placeholder. If you never customised it, this update switches you to automatic.",
       },
       {
         type: "improvement",
-        text: "Existing installations keep their current renaming output: the two options that change what is delivered to Sonarr/Radarr are switched off for them and default to on only for fresh installs. Both are worth enabling — have a look at Settings → Renaming.",
+        text: "Existing installations keep their current renaming output: the two options that change what is delivered to Sonarr/Radarr are switched off for them and default to on only for fresh installs. Both are worth enabling - have a look at Settings → Renaming.",
       },
       {
         type: "improvement",
-        text: "The language plugins now tell you what they cost: only enable a language you actually consume. Each extra plugin adds search variations and therefore one more indexer request per search — and since the total is capped at 10, an unused language can push genuinely useful queries (including German ones) out of the budget. On top of that, TheTVDB needs one more request per title per language on every sync. TMDB returns all languages in a single call and does not scale with the plugin count.",
+        text: "The language plugins now tell you what they cost: only enable a language you actually consume. Each extra plugin adds search variations and therefore one more indexer request per search - and since the total is capped at 10, an unused language can push genuinely useful queries (including German ones) out of the budget. On top of that, TheTVDB needs one more request per title per language on every sync. TMDB returns all languages in a single call and does not scale with the plugin count.",
       },
       {
         type: "fix",
@@ -112,7 +112,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "fix",
-        text: "German titles that existed only as an alias were never actually searched. If Sonarr holds a German production under its English TVDB title, the German name often only shows up in the alias list — and aliases were used to rewrite the indexer response, never to query the indexer. So only the English title went out and nothing was found, while a series whose German title came back as a proper translation worked fine. Three causes fixed: TheTVDB is now also asked for the extended record (embedded name translations, and the primary name when the original language proves it is German), Sonarr's own alternate titles are merged with the provider aliases instead of being discarded, and when no German title resolves at all, up to three Latin-script aliases are searched as well.",
+        text: "German titles that existed only as an alias were never actually searched. If Sonarr holds a German production under its English TVDB title, the German name often only shows up in the alias list - and aliases were used to rewrite the indexer response, never to query the indexer. So only the English title went out and nothing was found, while a series whose German title came back as a proper translation worked fine. Three causes fixed: TheTVDB is now also asked for the extended record (embedded name translations, and the primary name when the original language proves it is German), Sonarr's own alternate titles are merged with the provider aliases instead of being discarded, and when no German title resolves at all, up to three Latin-script aliases are searched as well.",
       },
       {
         type: "fix",
@@ -123,32 +123,32 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: "1.3.0",
     date: "2026-07-26",
-    title: "1.3.0: Headless mode — run without the Web UI to save memory",
+    title: "1.3.0: Headless mode - run without the Web UI to save memory",
     description:
       "Adds an optional headless mode for lean, UI-less deployments: setting UMLAUTADAPTARREX_HEADLESS=1 runs the container without the Next.js Web UI (and without the self-forking supervisor) as a single process. Also fixes saving the settings when the proxy port is pinned by an environment variable, and a punctuation glitch in renamed titles. Headless is opt-in and off by default, so existing installs are unaffected. No database changes.",
     items: [
       {
         type: "feature",
-        text: "Headless mode (UMLAUTADAPTARREX_HEADLESS=1): run without the Next.js Web UI and without the self-forking supervisor — a single Node process (Fastify + TCP proxy). In Docker tests a minimally-configured container dropped from ~160 MiB (over 200 MiB with the Web UI open) to ~115 MiB headless, roughly a third / ~50–90 MB less depending on config. Only works for an already-configured instance (the setup wizard still runs exclusively in the Web UI); the container refuses to boot headless against an unconfigured database with an explanatory error. When enabled, the Web UI port (default 5007) can be dropped from the compose port mapping.",
+        text: "Headless mode (UMLAUTADAPTARREX_HEADLESS=1): run without the Next.js Web UI and without the self-forking supervisor - a single Node process (Fastify + TCP proxy). In Docker tests a minimally-configured container dropped from ~160 MiB (over 200 MiB with the Web UI open) to ~115 MiB headless, roughly a third / ~50–90 MB less depending on config. Only works for an already-configured instance (the setup wizard still runs exclusively in the Web UI); the container refuses to boot headless against an unconfigured database with an explanatory error. When enabled, the Web UI port (default 5007) can be dropped from the compose port mapping.",
       },
       {
         type: "improvement",
-        text: "Dependency refresh: the whole stack bumped to current — Prisma 7.9, Next.js 16.2.11, React 19.2.8, argon2 0.45.1, nanoid 6, undici 8.9, recharts 3.10, lucide-react 1.26, next-intl 4.13.4, plus the Radix UI set and the dev tooling (ESLint 10.8, Prettier 3.9.6, Playwright 1.62). Dependabot now waits 3 days before proposing a freshly-published release.",
+        text: "Dependency refresh: the whole stack bumped to current - Prisma 7.9, Next.js 16.2.11, React 19.2.8, argon2 0.45.1, nanoid 6, undici 8.9, recharts 3.10, lucide-react 1.26, next-intl 4.13.4, plus the Radix UI set and the dev tooling (ESLint 10.8, Prettier 3.9.6, Playwright 1.62). Dependabot now waits 3 days before proposing a freshly-published release.",
       },
       {
         type: "fix",
-        text: "Settings can be saved again when the proxy port is pinned by UMLAUTADAPTARREX_PROXY_PORT: saving from any settings tab failed with a conflict error, because the form sent the read-only, environment-managed port value back to the server. The field is now left out of the request, and an unchanged value is accepted as a no-op. Setting a different port while the environment variable is active is still refused — it would have no effect anyway.",
+        text: "Settings can be saved again when the proxy port is pinned by UMLAUTADAPTARREX_PROXY_PORT: saving from any settings tab failed with a conflict error, because the form sent the read-only, environment-managed port value back to the server. The field is now left out of the request, and an unchanged value is accepted as a no-op. Setting a different port while the environment variable is active is still refused - it would have no effect anyway.",
       },
       {
         type: "fix",
-        text: 'Renamed titles no longer pick up a stray bracket: when the matching title alias had no parentheses but the release name did (e.g. alias "Chronicles of Time 2005" vs. release Chronicles.of.Time.(2005).S08E08…), the closing bracket was duplicated into the result — Chronicles.of.Time.(2005).).S08E08…. Affects movie/series and book/audiobook renaming.',
+        text: 'Renamed titles no longer pick up a stray bracket: when the matching title alias had no parentheses but the release name did (e.g. alias "Chronicles of Time 2005" vs. release Chronicles.of.Time.(2005).S08E08…), the closing bracket was duplicated into the result - Chronicles.of.Time.(2005).).S08E08…. Affects movie/series and book/audiobook renaming.',
       },
     ],
   },
   {
     version: "1.2.5",
     date: "2026-07-10",
-    title: "1.2.5: Maintenance — dependency refresh & automatic security rebuilds",
+    title: "1.2.5: Maintenance - dependency refresh & automatic security rebuilds",
     description:
       "A maintenance release: all dependencies and the build toolchain refreshed, CI and the dev container moved to Node 26 (the production image already ran Node 26), and the published Docker :latest image is now automatically rebuilt every 2 days to pick up OS security patches between releases. No database changes.",
     items: [
@@ -158,7 +158,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "improvement",
-        text: "Dependency refresh: all packages bumped to their latest patch/minor — pnpm 11.11.0, Fastify 5.10.0, Next.js 16.2.10, recharts 3.9.2, lucide-react 1.24.0, undici 8.7.0, the Radix UI set, plus dev tooling (ESLint, Vitest, Vite, Prettier, tsx, Playwright). No known vulnerabilities in the shipped runtime dependencies.",
+        text: "Dependency refresh: all packages bumped to their latest patch/minor - pnpm 11.11.0, Fastify 5.10.0, Next.js 16.2.10, recharts 3.9.2, lucide-react 1.24.0, undici 8.7.0, the Radix UI set, plus dev tooling (ESLint, Vitest, Vite, Prettier, tsx, Playwright). No known vulnerabilities in the shipped runtime dependencies.",
       },
       {
         type: "improvement",
@@ -169,7 +169,7 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: "1.2.4",
     date: "2026-06-21",
-    title: "1.2.4: Stability & hardening — providers, proxy and matching fixes",
+    title: "1.2.4: Stability & hardening - providers, proxy and matching fixes",
     description:
       "A stability and hardening release: title-provider syncs and the supervisor no longer hang on stalled connections, the indexer proxy and the admin/setup endpoints are hardened, and several title-matching and Web UI bugs are fixed. No database changes.",
     items: [
@@ -179,7 +179,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "improvement",
-        text: "Indexer proxy hardening: the plain-HTTP relay path now only allows ports 80/443 (matching the HTTPS-CONNECT path), cleans up its sockets and adds an idle timeout — closing an SSRF / open-relay gap and a socket leak.",
+        text: "Indexer proxy hardening: the plain-HTTP relay path now only allows ports 80/443 (matching the HTTPS-CONNECT path), cleans up its sockets and adds an idle timeout - closing an SSRF / open-relay gap and a socket leak.",
       },
       {
         type: "improvement",
@@ -228,7 +228,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     items: [
       {
         type: "feature",
-        text: 'UmlautAdaptarrEX is now available in the TrueNAS app catalog — search for "UmlautAdaptarrEX" under Apps → Discover Apps to install. The app is maintained by xopez (github.com/xopez), many thanks.',
+        text: 'UmlautAdaptarrEX is now available in the TrueNAS app catalog - search for "UmlautAdaptarrEX" under Apps → Discover Apps to install. The app is maintained by xopez (github.com/xopez), many thanks.',
       },
       {
         type: "improvement",

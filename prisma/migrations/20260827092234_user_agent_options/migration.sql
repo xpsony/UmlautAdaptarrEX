@@ -41,7 +41,7 @@ PRAGMA defer_foreign_keys=OFF;
 -- Free existing installations from the stale hard-coded default.
 --
 -- `userAgent` used to BE the value, defaulting to the literal
--- 'UmlautAdaptarrEX/2.0' — a string that was already wrong (the 2.0 rewrite
+-- 'UmlautAdaptarrEX/2.0' - a string that was already wrong (the 2.0 rewrite
 -- ships as 1.x) and that nobody chose. The column is now an *override*, and
 -- an empty value means "automatic: UmlautAdaptarrEX/<running version>".
 --

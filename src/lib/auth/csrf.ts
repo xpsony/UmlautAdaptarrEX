@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 
 // `ua-csrf` is the JS-readable cookie the SPA copies into the
 // `x-csrf-token` request header. The plugin's secret cookie (httpOnly,
-// signed) is `_csrf` — that one stays inaccessible to JS.
+// signed) is `_csrf` - that one stays inaccessible to JS.
 export const CSRF_COOKIE = "ua-csrf";
 export const CSRF_HEADER = "x-csrf-token";
 
@@ -18,7 +18,7 @@ let secret: Buffer | null = null;
 // Must be called once at boot before any cookie/CSRF integration runs. The
 // returned secret feeds two consumers:
 //   - `@fastify/cookie` registration's `secret` (signs all signed cookies)
-//   - `@fastify/csrf-protection` plugin (HMAC key when userInfo is enabled —
+//   - `@fastify/csrf-protection` plugin (HMAC key when userInfo is enabled -
 //     not currently used, but the same secret is reused so no second secret
 //     needs to be persisted)
 //
@@ -39,12 +39,12 @@ export async function ensureCsrfSecret(): Promise<void> {
   if (env) {
     const envBuf = Buffer.from(env, "utf8");
     if (envBuf.length < MIN_CSRF_SECRET_BYTES) {
-      // Don't crash here — that would brick boot for anyone with a misset
+      // Don't crash here - that would brick boot for anyone with a misset
       // env var. But we WARN loudly and refuse the value, so the
       // operator notices on next deploy and the secret-quality guarantee
       // isn't silently downgraded.
       console.warn(
-        `[csrf] CSRF_SECRET env var is ${envBuf.length} bytes — must be at least ${MIN_CSRF_SECRET_BYTES} bytes; ignoring and falling back to the DB-stored secret.`,
+        `[csrf] CSRF_SECRET env var is ${envBuf.length} bytes - must be at least ${MIN_CSRF_SECRET_BYTES} bytes; ignoring and falling back to the DB-stored secret.`,
       );
     } else {
       secret = envBuf;
@@ -76,7 +76,7 @@ export async function ensureCsrfSecret(): Promise<void> {
 export function getCsrfSecret(): Buffer {
   if (!secret) {
     throw new Error(
-      "CSRF secret not initialized — call ensureCsrfSecret() at boot first",
+      "CSRF secret not initialized - call ensureCsrfSecret() at boot first",
     );
   }
   return secret;

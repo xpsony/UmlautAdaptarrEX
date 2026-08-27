@@ -59,7 +59,7 @@ export function InstancesClient() {
     onError: () => {
       toast.error(tCommon("error"));
       // The Switch is bound to the query cache (no optimistic write), so no
-      // rollback is needed — refetch only to reconcile with server truth.
+      // rollback is needed - refetch only to reconcile with server truth.
       void qc.invalidateQueries({ queryKey: ["instances"] });
     },
   });
@@ -97,7 +97,7 @@ export function InstancesClient() {
   const onSync = (instance: Instance) => syncMut.mutate(instance.id);
   const openCreate = () => setEditor({ open: true, instance: null });
 
-  // `variables` is only meaningful while the mutation is in flight — used to
+  // `variables` is only meaningful while the mutation is in flight - used to
   // scope the loading/disabled state to the one row that triggered it.
   const testingId = testMut.isPending ? (testMut.variables ?? null) : null;
   const syncingId = syncMut.isPending ? (syncMut.variables ?? null) : null;

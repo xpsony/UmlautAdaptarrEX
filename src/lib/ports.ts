@@ -8,7 +8,7 @@
 // two in sync.
 
 // The floor is 1 (not 1024) so deployments can bind privileged ports like 80
-// (standard HTTP) — the Proxmox LXC installer defaults the Web UI to 80. Binding
+// (standard HTTP) - the Proxmox LXC installer defaults the Web UI to 80. Binding
 // a port below 1024 requires the process to run as root; that is the operator's
 // responsibility (true for the Proxmox LXC and Docker, which both run as root).
 const MIN_PORT = 1;
@@ -56,7 +56,7 @@ export function resolveProxyPortEnv(): number | null {
 const HEADLESS_TRUTHY = ["1", "true", "yes", "on"];
 
 // True when UMLAUTADAPTARREX_HEADLESS is set to an affirmative value. Everything
-// else — unset, empty, whitespace-only, "0", "false", anything unrecognized —
+// else - unset, empty, whitespace-only, "0", "false", anything unrecognized -
 // is false. Reads process.env at call time so tests can vary the environment.
 //
 // NOTE: start.mjs mirrors this inline (that plain-.mjs supervisor runs before

@@ -108,7 +108,7 @@
 
 /*
  * Minimal animations for shadcn/Radix overlays. We deliberately animate ONLY
- * opacity here — never `transform` — so we don't override Radix' own popper
+ * opacity here - never `transform` - so we don't override Radix' own popper
  * positioning transforms on dropdown / select / popover content.
  */
 @layer utilities {
@@ -129,7 +129,7 @@
         }
     }
 
-    /* Indeterminate progress sweep — wandert horizontal über die Schiene. */
+    /* Indeterminate progress sweep - wandert horizontal über die Schiene. */
     @keyframes progress-indeterminate {
         0% {
             transform: translateX(-100%);

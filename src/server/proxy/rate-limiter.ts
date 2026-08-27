@@ -1,7 +1,7 @@
 // Per-host rate limiter for upstream indexer fetches. Two coordinated knobs:
-//   1. baseline spacing — `minIntervalMsGetter()`, read live from Settings
+//   1. baseline spacing - `minIntervalMsGetter()`, read live from Settings
 //      so admin-UI changes apply without restart.
-//   2. dynamic backoff   — `backoff(host, untilMs)` extends the next-allowed
+//   2. dynamic backoff   - `backoff(host, untilMs)` extends the next-allowed
 //      window when an indexer returns 429/503 with `Retry-After`.
 
 export class HostRateLimiter {
@@ -24,7 +24,7 @@ export class HostRateLimiter {
         }
         this.lastFetch.set(host, Date.now());
         // Once the explicit backoff has elapsed, drop it so the limiter falls back
-        // to baseline spacing — keeping the map from growing unbounded.
+        // to baseline spacing - keeping the map from growing unbounded.
         if (explicitNext > 0 && explicitNext <= Date.now()) {
             this.nextAllowedAt.delete(host);
         }
@@ -57,7 +57,7 @@ export function parseRetryAfterMs(
     const trimmed = raw.trim();
     if (!trimmed) return 0;
     const MAX = 5 * 60_000;
-    // Numeric seconds — delta-seconds form per RFC 7231.
+    // Numeric seconds - delta-seconds form per RFC 7231.
     if (/^\d+$/.test(trimmed)) {
         return Math.min(MAX, parseInt(trimmed, 10) * 1000);
     }

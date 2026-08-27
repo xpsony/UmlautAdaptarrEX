@@ -33,7 +33,7 @@ export async function pluginRoutes(app: FastifyInstance): Promise<void> {
       const data = parseOrReply(req.body, PluginToggleSchema, reply);
       if (!data) return;
       // Block enabling a non-DE language plugin when no usable TMDB key is
-      // configured — pcjones speaks only German, so without TMDB the plugin
+      // configured - pcjones speaks only German, so without TMDB the plugin
       // would just emit no language-specific variations. Failing fast here
       // prevents the user from seeing an "active" plugin that secretly does
       // nothing.

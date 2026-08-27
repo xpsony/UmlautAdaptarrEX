@@ -79,7 +79,7 @@ function RecentRunRow({ run, locale }: { run: SyncRun; locale: string }) {
         <span className="h-5 w-5 shrink-0 rounded-full bg-muted" />
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
-        <span className="truncate font-medium">{run.arrInstance?.name ?? "—"}</span>
+        <span className="truncate font-medium">{run.arrInstance?.name ?? "-"}</span>
         <span className="flex items-center gap-2 text-xs text-muted-foreground sm:hidden">
           <span className="tabular-nums">pcjones {run.pcjonesItemsCount}</span>
           <span aria-hidden>·</span>
@@ -88,7 +88,7 @@ function RecentRunRow({ run, locale }: { run: SyncRun; locale: string }) {
           <span className="tabular-nums">TMDB {run.tmdbItemsCount}</span>
           <span aria-hidden>·</span>
           <span className="tabular-nums">
-            {duration === null ? "—" : `${(duration / 1000).toFixed(1)}s`}
+            {duration === null ? "-" : `${(duration / 1000).toFixed(1)}s`}
           </span>
         </span>
         <span className="hidden text-muted-foreground tabular-nums sm:inline">
@@ -101,7 +101,7 @@ function RecentRunRow({ run, locale }: { run: SyncRun; locale: string }) {
           TMDB {run.tmdbItemsCount}
         </span>
         <span className="hidden text-muted-foreground tabular-nums sm:inline">
-          {duration === null ? "—" : `${(duration / 1000).toFixed(1)}s`}
+          {duration === null ? "-" : `${(duration / 1000).toFixed(1)}s`}
         </span>
         <span className="hidden text-xs whitespace-nowrap text-muted-foreground md:inline">
           {new Date(run.startedAt).toLocaleString(locale)}

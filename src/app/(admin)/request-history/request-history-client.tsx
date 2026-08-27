@@ -23,7 +23,7 @@ export function RequestHistoryClient() {
   const locale = useLocale();
   const [detail, setDetail] = useState<Row | null>(null);
 
-  // Sortable columns exposed by the route — see REQUEST_HISTORY_SORT in
+  // Sortable columns exposed by the route - see REQUEST_HISTORY_SORT in
   // src/server/routes/admin/history.ts. Default matches the server's
   // default (createdAt desc).
   const url = useListUrlState({
@@ -51,7 +51,7 @@ export function RequestHistoryClient() {
   const total = data.data?.total ?? 0;
 
   // Same filters/sort as the JSON query above, plus `format=csv`. `take`/
-  // `skip` are omitted — the CSV route ignores them in favor of its own
+  // `skip` are omitted - the CSV route ignores them in favor of its own
   // fixed row cap, so there's nothing meaningful to pass.
   const exportUrl = useMemo(() => {
     const params = new URLSearchParams({
@@ -96,7 +96,7 @@ export function RequestHistoryClient() {
               size="sm"
               disabled={items.length === 0}
               // Cookie-based auth + the Next proxy streaming `/api/*` means a
-              // plain new-tab navigation to the CSV URL is enough — no need to
+              // plain new-tab navigation to the CSV URL is enough - no need to
               // fetch+blob the response client-side.
               onClick={() => window.open(exportUrl, "_blank")}
             >
@@ -142,10 +142,10 @@ export function RequestHistoryClient() {
             </TableCell>
             <TableCell className="font-mono text-xs">{r.domain}</TableCell>
             <TableCell className="max-w-xs truncate font-mono text-xs">
-              {r.query ?? <span className="text-muted-foreground">—</span>}
+              {r.query ?? <span className="text-muted-foreground">-</span>}
             </TableCell>
             <TableCell className="font-mono text-xs">
-              {r.externalId ?? <span className="text-muted-foreground">—</span>}
+              {r.externalId ?? <span className="text-muted-foreground">-</span>}
             </TableCell>
             <TableCell>
               <Badge variant={httpStatusVariant(r.status)} className="tabular-nums">
@@ -157,7 +157,7 @@ export function RequestHistoryClient() {
               {r.cacheHit ? (
                 <Badge variant="info">{t("cacheHitYes")}</Badge>
               ) : (
-                <span className="text-muted-foreground">—</span>
+                <span className="text-muted-foreground">-</span>
               )}
             </TableCell>
           </TableRow>

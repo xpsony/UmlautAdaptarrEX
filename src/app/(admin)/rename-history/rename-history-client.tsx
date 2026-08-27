@@ -65,7 +65,7 @@ export function RenameHistoryClient() {
   const tBoundaries = useTranslations("boundaries");
   const locale = useLocale();
 
-  // Sortable columns exposed by the route — see RENAME_HISTORY_SORT in
+  // Sortable columns exposed by the route - see RENAME_HISTORY_SORT in
   // src/server/routes/admin/history.ts. Default matches the server's
   // default (createdAt desc).
   const url = useListUrlState({
@@ -96,7 +96,7 @@ export function RenameHistoryClient() {
   const groups = useMemo(() => groupConsecutiveRenames(items), [items]);
 
   // Same filters/sort as the JSON query above, plus `format=csv`. `take`/
-  // `skip` are omitted — the CSV route ignores them in favor of its own
+  // `skip` are omitted - the CSV route ignores them in favor of its own
   // fixed row cap, so there's nothing meaningful to pass.
   const exportUrl = useMemo(() => {
     const params = new URLSearchParams({
@@ -147,7 +147,7 @@ export function RenameHistoryClient() {
             size="sm"
             disabled={items.length === 0}
             // Cookie-based auth + the Next proxy streaming `/api/*` means a
-            // plain new-tab navigation to the CSV URL is enough — no need to
+            // plain new-tab navigation to the CSV URL is enough - no need to
             // fetch+blob the response client-side.
             onClick={() => window.open(exportUrl, "_blank")}
           >

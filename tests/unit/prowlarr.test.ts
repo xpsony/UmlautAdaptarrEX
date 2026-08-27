@@ -7,7 +7,7 @@ describe("isMaskedSecret", () => {
         expect(isMaskedSecret("••••••••")).toBe(true);
         expect(isMaskedSecret("••••")).toBe(true);
         expect(isMaskedSecret("········")).toBe(true);
-        // Prowlarr masks API keys with asterisks — must be detected.
+        // Prowlarr masks API keys with asterisks - must be detected.
         expect(isMaskedSecret("********")).toBe(true);
         expect(isMaskedSecret("****")).toBe(true);
         expect(isMaskedSecret("")).toBe(false);

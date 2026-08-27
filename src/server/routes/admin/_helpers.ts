@@ -60,7 +60,7 @@ export function isPrismaErrorCode(err: unknown, code: string): boolean {
 /**
  * Parse a JSON-array column, returning `null` on corrupt input instead of
  * throwing. Mirrors `parseAliasesJson` in `src/server/title-overrides/rebuild.ts`
- * — a single malformed row must degrade gracefully, not 500 an entire page.
+ * - a single malformed row must degrade gracefully, not 500 an entire page.
  */
 export function parseJsonArray(raw: string | null): string[] | null {
   if (!raw) return null;
@@ -73,7 +73,7 @@ export function parseJsonArray(raw: string | null): string[] | null {
 }
 
 // A string cell starting with one of these is interpreted as a formula by
-// Excel/Sheets/LibreOffice on open (CSV/formula injection, CWE-1236) — the
+// Excel/Sheets/LibreOffice on open (CSV/formula injection, CWE-1236) - the
 // exported free-text columns (search queries, original/rewritten titles)
 // ultimately trace back to *arr search terms / indexer release names, which
 // an attacker can influence, so this can't be dismissed as "our own data".
@@ -87,7 +87,7 @@ function csvCell(value: unknown): string {
   // Only string-typed values get the anti-formula prefix: a leading `'`
   // would otherwise misrepresent legitimate negative numbers (e.g.
   // `durationMs`) as text in the spreadsheet. A leading apostrophe in a CSV
-  // cell is the standard mitigation — Excel/Sheets render it as literal text
+  // cell is the standard mitigation - Excel/Sheets render it as literal text
   // instead of evaluating the rest as a formula.
   if (typeof value === "string" && FORMULA_PREFIX.test(raw)) {
     raw = `'${raw}`;

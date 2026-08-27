@@ -75,7 +75,7 @@ export class IndexerFetcher {
     delete reqHeaders["accept-encoding"];
 
     // Either our own token or the calling *Arr's header, per the
-    // `forwardArrUserAgent` setting — never the concatenation of both, which
+    // `forwardArrUserAgent` setting - never the concatenation of both, which
     // is what this used to send and which matched neither client.
     reqHeaders["user-agent"] = outboundUserAgent(
       reqHeaders["user-agent"],
@@ -91,7 +91,7 @@ export class IndexerFetcher {
       let statusCode = 0;
       let respHeaders: Record<string, string | string[] | undefined> = {};
       let body!: Awaited<ReturnType<typeof request>>["body"];
-      // Manual redirect chain — re-checks `urlIsPrivate` at every hop so an
+      // Manual redirect chain - re-checks `urlIsPrivate` at every hop so an
       // upstream 301 → http://10.0.0.5/admin can't pivot the request into
       // an internal network. Indexer URLs themselves are guarded earlier
       // (legacy/util.ts, http-proxy.ts), but a malicious or compromised

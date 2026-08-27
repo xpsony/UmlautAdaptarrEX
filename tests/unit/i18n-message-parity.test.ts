@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from "@/lib/i18n-config";
 
 // Every locale must carry the identical key set. Adding a feature and only
-// updating de/en leaves the French and Swedish UI rendering raw key paths —
+// updating de/en leaves the French and Swedish UI rendering raw key paths -
 // which is exactly what happened while the Renaming tab was added.
 //
 // The default locale is the reference; a key that exists only in a

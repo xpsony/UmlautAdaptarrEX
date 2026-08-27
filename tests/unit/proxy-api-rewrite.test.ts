@@ -4,7 +4,7 @@ import { getRewrittenUrl, isRewrite } from "next/experimental/testing/server";
 
 // Regression for the standalone-mode port bug: API reverse-proxying used to
 // live in `next.config.ts` rewrites, whose destinations are baked into
-// routes-manifest.json at build time — freezing the API port at the
+// routes-manifest.json at build time - freezing the API port at the
 // build-time default (:5005) and ignoring the runtime API_UPSTREAM. The
 // proxy must instead resolve the upstream per request so a changed
 // UMLAUTADAPTARREX_LEGACYAPI_PORT / PORT (surfaced as API_UPSTREAM) is honored.

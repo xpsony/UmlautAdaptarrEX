@@ -100,10 +100,10 @@ export class LogRetentionScheduler {
       }
 
       // Let SQLite refresh its query-planner statistics after a bulk delete.
-      // Cheap and non-critical: a failure — or a hang, raced against the same
+      // Cheap and non-critical: a failure - or a hang, raced against the same
       // PURGE_TIMEOUT_MS deadline as the deletes above, since an un-timed-out
       // PRAGMA would wedge `this.running` exactly like a hung deleteMany
-      // would — must not fail the cleanup run that already deleted rows
+      // would - must not fail the cleanup run that already deleted rows
       // successfully, so it's logged at debug and swallowed rather than
       // propagated to the outer catch.
       try {

@@ -21,7 +21,7 @@ const TVDB_HOST = "api4.thetvdb.com";
 const TVDB_BASE = `https://${TVDB_HOST}/v4`;
 
 // TVDB v4 publishes no explicit rate ceiling, just a "don't spam" guideline.
-// 100 ms between request starts caps us at 10 req/s — conservative for a
+// 100 ms between request starts caps us at 10 req/s - conservative for a
 // service that handles millions of calls per day across all users, but well
 // below anything that could be construed as spam from a single integration.
 // Each fetchByExternalId issues 1–3 calls (resolve + translations [+ extended
@@ -294,7 +294,7 @@ export class TvdbProvider implements TitleProvider {
     //         answers for languages that actually carry a *translation
     //         record*. A German production is routinely stored with the
     //         German title in `name` (originalLanguage = "deu") and only an
-    //         `eng` name translation on top — which is exactly what Sonarr
+    //         `eng` name translation on top - which is exactly what Sonarr
     //         then displays. Without this fallback such a series ends up with
     //         germanTitle = null and the search never asks the indexer for
     //         the German name at all.
@@ -481,7 +481,7 @@ export class TvdbProvider implements TitleProvider {
         this.remoteIdCache.set(tmdbId, null);
         return null;
       }
-      this.log?.warn({ tmdbId, status, err }, "tvdb remoteid lookup failed — skipping movie");
+      this.log?.warn({ tmdbId, status, err }, "tvdb remoteid lookup failed - skipping movie");
       return null;
     }
   }
@@ -553,7 +553,7 @@ export class TvdbProvider implements TitleProvider {
     };
 
     // Explicit attempt counter so a future change can't accidentally make
-    // this recursive — if the first 401 retry also returns 401 we surface
+    // this recursive - if the first 401 retry also returns 401 we surface
     // the error to the caller instead of looping.
     const MAX_ATTEMPTS = 2;
     let lastErr: unknown;
@@ -564,7 +564,7 @@ export class TvdbProvider implements TitleProvider {
         lastErr = err;
         const status = (err as { __status?: number }).__status;
         if (status === 401 && attempt < MAX_ATTEMPTS) {
-          // Re-login on the next attempt — token may have expired. Clear both
+          // Re-login on the next attempt - token may have expired. Clear both
           // the cached token and any in-flight login promise so the next
           // ensureToken() starts a fresh single-flight login.
           this.token = null;

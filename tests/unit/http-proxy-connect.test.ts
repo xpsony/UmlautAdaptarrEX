@@ -6,7 +6,7 @@ import type { AppState } from "@/server/state";
 
 // We exercise the public TCP surface of HttpProxyServer rather than calling
 // private methods, so the test catches any future regression that leaves
-// `net.connect` reachable for non-allow-listed CONNECT targets — which is the
+// `net.connect` reachable for non-allow-listed CONNECT targets - which is the
 // open-relay case we just closed.
 
 interface ProxyHandle {
@@ -56,7 +56,7 @@ async function startProxy(state: AppState): Promise<ProxyHandle> {
     const port = await grabFreePort();
     const proxy = new HttpProxyServer({
       port,
-      appPort: 1, // unused — these tests never reach handleHttp.
+      appPort: 1, // unused - these tests never reach handleHttp.
       state,
       logger: pino({ level: "silent" }),
     });
@@ -166,7 +166,7 @@ describe("http-proxy auth gating (regression: empty password ≠ open proxy)", (
       handle.port,
       "CONNECT example.com:443 HTTP/1.1",
     );
-    // Hits the allow-list 403, not 407. Confirms auth is bypassed —
+    // Hits the allow-list 403, not 407. Confirms auth is bypassed -
     // documented as part of the limitation we're explicitly mitigating
     // with the CONNECT allow-list until Layer 2 lands.
     expect(status).toBe("HTTP/1.1 403 Forbidden");

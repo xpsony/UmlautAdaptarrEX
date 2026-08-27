@@ -63,7 +63,7 @@ describe("renameForBooksAndAudio", () => {
   });
 
   // The outer "[...]" in the expectations below is the formatter's own suffix
-  // wrapper — the inner brackets come from the release name.
+  // wrapper - the inner brackets come from the release name.
   it("skips a trailing closing paren before the quality tag", () => {
     // The matched variation carries no parentheses, so the span ends on '5'
     // and the ")" used to leak into the suffix as "-[) [MP3-128kbps]]".

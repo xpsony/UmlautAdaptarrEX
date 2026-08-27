@@ -31,7 +31,7 @@ const optionalSecret = z.preprocess((v) => {
 }, z.string().min(1).max(256).nullable().optional());
 
 // Empty password keeps the stored value (the UI shows the current one in
-// plain text — submitting the form unchanged shouldn't wipe it). Therefore
+// plain text - submitting the form unchanged shouldn't wipe it). Therefore
 // we treat "" as "leave it alone" in the admin route, not as a value to save.
 const proxyPasswordInput = z
   .preprocess(
@@ -66,7 +66,7 @@ export const SettingsSchema = z.object({
   tvdbPin: optionalSecret,
   // An OVERRIDE, not the value: empty means "automatic", i.e.
   // `UmlautAdaptarrEX/<running version>` (see src/lib/user-agent.ts). The
-  // field therefore has to accept "" — it used to require min(1) and carry
+  // field therefore has to accept "" - it used to require min(1) and carry
   // the stale literal `UmlautAdaptarrEX/2.0` as its default.
   userAgent: z.string().trim().max(256).default(""),
   // Forward the calling *Arr's User-Agent to the indexer instead of ours.
@@ -94,7 +94,7 @@ export const SettingsSchema = z.object({
 });
 
 /**
- * The legacy preset — the rename behaviour of the .NET predecessor, which had
+ * The legacy preset - the rename behaviour of the .NET predecessor, which had
  * none of the EX guard rules. Exposed here (rather than hard-coded in the UI)
  * so the values live next to the schema that validates them.
  */

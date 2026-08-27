@@ -24,7 +24,7 @@ export function LocaleToggle({ current }: { current: Locale }) {
     document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}`;
     // router.refresh() re-runs the server layout/page tree (getLocale/getMessages
     // in the root layout read the cookie fresh), swapping next-intl messages
-    // without a full page reload — client state elsewhere on the page survives.
+    // without a full page reload - client state elsewhere on the page survives.
     startTransition(() => {
       router.refresh();
     });

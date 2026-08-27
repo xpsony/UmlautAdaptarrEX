@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 // Hits real Fastify; the values come from whatever the setup wizard wrote.
 // We intentionally do NOT assert on specific values (those are the API
-// tests' job) — only on the navigational shape: tabs, headings, key
+// tests' job) - only on the navigational shape: tabs, headings, key
 // inputs that admins reach for.
 test.describe("settings tabs", () => {
   test("renders all six tab triggers and the General tab by default", async ({ page }) => {

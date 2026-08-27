@@ -122,7 +122,7 @@ export function PluginsSection() {
         </Alert>
 
         {showTmdbWarning ? (
-          // Standing condition (missing TMDB key), not a transient event —
+          // Standing condition (missing TMDB key), not a transient event -
           // role="status" instead of the warning variant's default "alert".
           <Alert variant="warning" role="status">
             <Plug className="h-4 w-4" />

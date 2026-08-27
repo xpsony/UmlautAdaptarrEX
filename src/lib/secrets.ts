@@ -13,7 +13,7 @@ export function isMaskedSecret(value: string): boolean {
     // Recognize two masking conventions: our own bullet/middot sentinel
     // (MASKED_SECRET) and Prowlarr's asterisk masking (e.g. "********"), which
     // the Prowlarr import / test-connection paths rely on. The literal dot `.`
-    // is deliberately excluded — it is not used as a mask anywhere, so a
+    // is deliberately excluded - it is not used as a mask anywhere, so a
     // legitimate dot-containing secret is never mistaken for the mask and
     // silently dropped on a settings round-trip.
     if (trimmed === MASKED_SECRET) return true;

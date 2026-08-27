@@ -54,7 +54,7 @@ export type SetupInput = z.infer<typeof SetupSchema>;
 export const LoginSchema = z.object({
   username: z.string().min(1).max(64),
   // Argon2 verify cost is constant w.r.t. input length, but pino-logging
-  // and JSON parsing aren't — cap to avoid CPU/memory burn on a 5MB body.
+  // and JSON parsing aren't - cap to avoid CPU/memory burn on a 5MB body.
   password: z.string().min(1).max(256),
 });
 export type LoginInput = z.infer<typeof LoginSchema>;

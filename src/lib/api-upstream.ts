@@ -7,7 +7,7 @@ import { LOCALE_COOKIE } from "@/lib/i18n-config";
  * Trusted Fastify base URL for server-side fetches from RSCs / Route Handlers.
  *
  * Why not derive from the request `host` header? In production behind a
- * reverse proxy that header is attacker-controlled — using it for an outgoing
+ * reverse proxy that header is attacker-controlled - using it for an outgoing
  * fetch is a host-header SSRF foothold. Resolve from `API_UPSTREAM` instead,
  * with the in-process Fastify default; this matches what `src/proxy.ts`
  * uses to reverse-proxy the `/api/admin`, `/api/auth`, `/api/health` paths.
@@ -23,7 +23,7 @@ export function apiUrl(path: string): string {
 }
 
 /**
- * Forward the incoming admin session/CSRF cookies (only those — never the
+ * Forward the incoming admin session/CSRF cookies (only those - never the
  * full cookie jar) to a server-side fetch. Returned as a single header
  * string suitable for `fetch(... { headers: { cookie } })`.
  */

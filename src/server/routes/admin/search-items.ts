@@ -4,7 +4,7 @@ import { requireAuth } from "@/server/auth/middleware";
 import { clampInt, parseJsonArray, resolveSort, type SortWhitelist } from "./_helpers";
 
 // Sortable columns exposed to the library table. A `sort` outside this map
-// (or an invalid `order`) silently falls back to `expectedTitle asc` — no
+// (or an invalid `order`) silently falls back to `expectedTitle asc` - no
 // 400s. The `id asc` tiebreaker below is always appended regardless of the
 // chosen column, matching the pre-existing default-sort behavior.
 const SEARCH_ITEMS_SORT: SortWhitelist = {
@@ -18,7 +18,7 @@ const SEARCH_ITEMS_DEFAULT_ORDER = "asc" as const;
 
 // Bind-parameter budget for the override filter's `in` lists. Prisma clamps a
 // single statement at ~999 parameters (well below SQLite's own 32766) and
-// throws P2029 above it, which would 500 the whole listing — so the key fetch
+// throws P2029 above it, which would 500 the whole listing - so the key fetch
 // is capped instead. The filter degrades to the first N overrides past this
 // point; the warn below is the operator's signal. Same no-unbounded-read
 // principle as CSV_ROW_CAP in history.ts.
@@ -28,7 +28,7 @@ export async function searchItemRoutes(app: FastifyInstance): Promise<void> {
   app.get("/api/admin/search-items", { preHandler: requireAuth }, async (req: FastifyRequest) => {
     const q = (req.query as Record<string, string | undefined>) ?? {};
     // Design spec called for a default of 25; 50 matches the repo-wide
-    // listing convention (request-history et al.) — deliberate deviation.
+    // listing convention (request-history et al.) - deliberate deviation.
     const take = clampInt(q.take, 50, 1, 250);
     const skip = clampInt(q.skip, 0, 0, 1_000_000);
     // Cap the free-text term: every LIKE '%…%' is a full table scan, so
@@ -47,9 +47,9 @@ export async function searchItemRoutes(app: FastifyInstance): Promise<void> {
       ];
     }
 
-    // Override filter. SearchItem has no Prisma relation to TitleOverride —
+    // Override filter. SearchItem has no Prisma relation to TitleOverride -
     // the override is keyed by mediaType+externalId and deliberately outlives
-    // its item (see prisma/schema.prisma) — so the filter is a key lookup
+    // its item (see prisma/schema.prisma) - so the filter is a key lookup
     // folded into the where clause. Unknown values fall back to "no filter",
     // matching how sort/order treat bad input.
     const overrideMode = q.override === "with" || q.override === "without" ? q.override : null;
@@ -57,7 +57,7 @@ export async function searchItemRoutes(app: FastifyInstance): Promise<void> {
       const keys = await prisma.titleOverride.findMany({
         select: { mediaType: true, externalId: true },
         // Ordered so that *which* keys survive the cap is deterministic rather
-        // than left to storage order — same reason history.ts orders its
+        // than left to storage order - same reason history.ts orders its
         // CSV_ROW_CAP read.
         orderBy: { id: "asc" },
         take: OVERRIDE_KEY_CAP,
@@ -65,7 +65,7 @@ export async function searchItemRoutes(app: FastifyInstance): Promise<void> {
       if (keys.length === OVERRIDE_KEY_CAP) {
         req.log.warn(
           { cap: OVERRIDE_KEY_CAP, mode: overrideMode },
-          "override filter hit the key cap — results are approximate",
+          "override filter hit the key cap - results are approximate",
         );
       }
       // Group by mediaType: N overrides become one branch per media type with
@@ -102,13 +102,13 @@ export async function searchItemRoutes(app: FastifyInstance): Promise<void> {
       prisma.searchItem.findMany({
         where,
         // The same medium synced from two instances can share a sort value
-        // (e.g. expectedTitle) by construction — order by id too so ties
+        // (e.g. expectedTitle) by construction - order by id too so ties
         // resolve deterministically and pagination can't duplicate/skip rows
         // at page boundaries, whichever column the user chose to sort by.
         orderBy: [{ [field]: order }, { id: "asc" }],
         take,
         skip,
-        // Deliberate projection: arrInstance carries apiKey + host —
+        // Deliberate projection: arrInstance carries apiKey + host -
         // never spread the relation into an admin response.
         include: {
           arrInstance: { select: { id: true, name: true, type: true } },
@@ -118,7 +118,7 @@ export async function searchItemRoutes(app: FastifyInstance): Promise<void> {
     ]);
 
     // Rows from multiple instances can share the same mediaType+externalId
-    // (the same library title synced from two Sonarr instances, say) — dedupe
+    // (the same library title synced from two Sonarr instances, say) - dedupe
     // the OR terms by key so we don't send redundant clauses to Prisma. Keyed
     // on a Map (not string-split) since externalId is provider-controlled and
     // could itself contain ":".

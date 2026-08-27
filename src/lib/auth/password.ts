@@ -10,7 +10,7 @@ const HASH_OPTIONS = {
 // Pre-generated argon2id hash matching HASH_OPTIONS, used for the
 // constant-time dummy verify on unknown-username login attempts so the
 // timing channel doesn't leak which usernames exist. The plaintext is
-// irrelevant — this hash is never compared against anything real.
+// irrelevant - this hash is never compared against anything real.
 const DUMMY_HASH =
     "$argon2id$v=19$m=19456,t=2,p=1$joZT9Ll/7LGcWhRChAha0w$7lVflMt4lqCBhlV7YIuy1nuhBYW5lcxixtkosy0OV6s";
 
@@ -40,6 +40,6 @@ export async function dummyVerifyPassword(plain: string): Promise<void> {
     try {
         await argon2.verify(DUMMY_HASH, plain);
     } catch {
-        /* intentional — only burning cycles to mask timing */
+        /* intentional - only burning cycles to mask timing */
     }
 }

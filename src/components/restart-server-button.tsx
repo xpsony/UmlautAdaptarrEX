@@ -30,7 +30,7 @@ interface RestartButtonProps {
 // Self-contained restart trigger: confirms, calls the API, polls /api/health
 // until the server is back, then forces a full reload so React-Query state
 // and websocket subscriptions reset cleanly. The button is gated on the
-// `/api/admin/system/capabilities.canRestart` flag — when running under
+// `/api/admin/system/capabilities.canRestart` flag - when running under
 // `tsx watch` (dev) it stays disabled because nothing would respawn the
 // process.
 export function RestartServerButton(props: RestartButtonProps) {
@@ -63,7 +63,7 @@ export function RestartServerButton(props: RestartButtonProps) {
             return;
           }
         } catch {
-          /* still down — keep polling */
+          /* still down - keep polling */
         }
       }
       toast.error(t("timeout"));

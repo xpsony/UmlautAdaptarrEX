@@ -25,7 +25,7 @@ interface RouteSpec {
   type: SearchType;
 }
 
-// Mirrors the old SearchController constants — used by the generic `?t=search`
+// Mirrors the old SearchController constants - used by the generic `?t=search`
 // route to decide whether the query is for Readarr (book) or Lidarr (audio).
 const READARR_CATEGORY_IDS = new Set([
   "3030",
@@ -49,7 +49,7 @@ const LIDARR_CATEGORY_IDS = new Set(["3000", "3010", "3020", "3040", "3050"]);
 const MAX_VARIATIONS = 10;
 
 // Reproduces SearchController's per-action upfront lookup. Returning null
-// means "no upfront searchItem" — rewrites still happen via per-item title
+// means "no upfront searchItem" - rewrites still happen via per-item title
 // lookup against the cache (matches old `useCacheService = searchItem == null`
 // path in TitleMatchingService.RenameTitlesInContent).
 function determineSearchItem(
@@ -91,7 +91,7 @@ function determineSearchItem(
 // titleSearchVariations + (toggle q) + (add expectedTitle if missing).
 // `tailCount` reports how many of the trailing entries were APPENDED here
 // (the user's literal `q` and/or the canonical `expectedTitle`) as opposed to
-// generated titleSearchVariations — the cap in handleSearch needs this to
+// generated titleSearchVariations - the cap in handleSearch needs this to
 // avoid trimming away exactly these two highest-value searches.
 function buildVariationList(
   searchItem: CachedSearchItem,

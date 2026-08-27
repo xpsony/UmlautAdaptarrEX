@@ -8,7 +8,7 @@ interface PaginatedModel {
   count: (args: object) => Promise<number>;
 }
 
-// Row cap for `?format=csv` exports — a file download has no pagination UI to
+// Row cap for `?format=csv` exports - a file download has no pagination UI to
 // page through, so this is the hard ceiling instead of `maxTake`. Chosen well
 // above any realistic manual export while still bounding worst-case memory/
 // response size for an unfiltered history table.
@@ -45,7 +45,7 @@ async function paginatedList(
           sortOptions.defaultOrder,
         );
         // Low-cardinality columns (status, type, domain, mediaType, …)
-        // produce large tie groups when used as the sole ORDER BY — append
+        // produce large tie groups when used as the sole ORDER BY - append
         // an id tiebreaker so pagination can't duplicate/skip rows across
         // page boundaries. Mirrors the orderBy tiebreaker in search-items.ts.
         return [{ [field]: order }, { id: "asc" as const }];
@@ -60,7 +60,7 @@ async function paginatedList(
 
 /**
  * Stream a `?format=csv` export: same `search`/filter and `sort`/`order`
- * handling as `paginatedList`, but — unlike the JSON list — it never runs the
+ * handling as `paginatedList`, but - unlike the JSON list - it never runs the
  * `count` query (there's no pagination total to report for a file download)
  * and ignores `take`/`skip` in favor of the fixed `CSV_ROW_CAP`.
  */
@@ -82,7 +82,7 @@ async function csvExport(
     sortOptions.defaultKey,
     sortOptions.defaultOrder,
   );
-  // Same id tiebreaker as paginatedList/search-items.ts — a low-cardinality
+  // Same id tiebreaker as paginatedList/search-items.ts - a low-cardinality
   // sort column would otherwise leave row order within a tie group
   // undefined, which for a capped export can silently drop/duplicate rows
   // relative to what the JSON list (paginated through the same tie groups)
@@ -98,20 +98,20 @@ async function csvExport(
     .header("content-type", "text/csv; charset=utf-8")
     .header("content-disposition", `attachment; filename="${filename}"`);
   // The row count hit the cap: there may be more matching rows than were
-  // exported, so callers must not read a full file as "that's everything" —
+  // exported, so callers must not read a full file as "that's everything" -
   // same no-silent-caps principle as the JSON list's `take`/`total` pair,
   // just without a total to compare against here.
   if (items.length === CSV_ROW_CAP) reply.header("x-truncated", "true");
   // Prefix with a UTF-8 BOM: without it, Excel on Windows opens the file in
   // the system ANSI codepage instead of UTF-8, so umlaut titles like
-  // "Männer" render as "MÃ¤nner". `toCsv` itself stays BOM-free/pure — the
+  // "Männer" render as "MÃ¤nner". `toCsv` itself stays BOM-free/pure - the
   // BOM is a transport concern, not part of the CSV content.
   return reply.send(`﻿${csv}`);
 }
 
 // Sortable columns exposed to the request-history table. `sort` values that
 // don't match a key here (and any invalid `order`) silently fall back to the
-// default below — no 400s for an unrecognized sort/order combination.
+// default below - no 400s for an unrecognized sort/order combination.
 const REQUEST_HISTORY_SORT: SortOptions = {
   whitelist: {
     createdAt: "createdAt",
@@ -133,7 +133,7 @@ const RENAME_HISTORY_SORT: SortOptions = {
   defaultOrder: "desc",
 };
 
-// Column set for `?format=csv` — the visible list columns (see the `columns`
+// Column set for `?format=csv` - the visible list columns (see the `columns`
 // prop in the two history clients) plus `id`.
 const REQUEST_HISTORY_CSV_COLUMNS = [
   "id",
@@ -247,7 +247,7 @@ export async function historyRoutes(app: FastifyInstance): Promise<void> {
   app.get("/api/admin/stats", { preHandler: requireAuth }, async () => {
     const now = Date.now();
     // Hourly buckets for the last 24h (requests). The bucket is the start of
-    // the hour in *local server time* — the UI just plots them, we don't try
+    // the hour in *local server time* - the UI just plots them, we don't try
     // to be timezone-aware here.
     const since24h = new Date(now - 24 * 60 * 60 * 1000);
     const since14d = new Date(now - 14 * 24 * 60 * 60 * 1000);

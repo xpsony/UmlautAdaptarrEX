@@ -74,7 +74,7 @@ export function HistoryPageSkeleton() {
   );
 }
 
-/** Shared scaffold for admin list/history pages — header + card + filter + table. */
+/** Shared scaffold for admin list/history pages - header + card + filter + table. */
 export function HistoryPage(props: HistoryPageProps) {
   return (
     <div className="space-y-4">

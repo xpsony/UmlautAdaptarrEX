@@ -51,7 +51,7 @@ export function DashboardActionsMenu({
          * Radix's MenuItem drops `disabled` items from roving focus AND
          * arrow-key/typeahead navigation entirely (`focusable: !disabled`,
          * plus `getItems().filter((item) => !item.disabled)` for keyboard
-         * nav) — a disabled item is unreachable by keyboard, so its helper
+         * nav) - a disabled item is unreachable by keyboard, so its helper
          * text below would never be read either. Instead we keep the item
          * itself focusable (no `disabled` prop), mark it `aria-disabled` +
          * style it inert manually, and block the actual action in

@@ -28,7 +28,7 @@ export async function loginRoutes(app: FastifyInstance): Promise<void> {
           max: 5,
           timeWindow: "5 minutes",
           keyGenerator: (req) => req.ip,
-          // Surface bruteforce hits — without this the only signal is a 429
+          // Surface bruteforce hits - without this the only signal is a 429
           // status the user never sees in the log stream.
           onExceeded: (req) => {
             req.log.warn(

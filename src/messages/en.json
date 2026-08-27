@@ -69,7 +69,7 @@
     "modeBothLabel": "Both",
     "modeBothDescription": "Both the proxy ({proxyPort}) and the legacy API ({legacyApiPort}) are active.",
     "modeBothDetails": "Run both paths in parallel. Only useful during a staged migration from legacy to proxy mode. In steady-state operation it doubles the attack surface for no benefit.",
-    "modeBothWarning": "Not recommended — usually only one of the two paths is needed at a time.",
+    "modeBothWarning": "Not recommended - usually only one of the two paths is needed at a time.",
     "pluginsLanguage": {
       "de": "German",
       "en": "English",
@@ -78,7 +78,7 @@
     },
     "pluginsTitle": "Select plugins",
     "pluginsHint": "Choose the language plugins used to generate search variations and rewrite indexer responses. You can change this later in Settings.",
-    "pluginsCostHint": "Only pick languages you actually consume — every extra plugin generates extra search variations, and therefore extra indexer requests per search (capped at 10), plus one more TheTVDB request per title per language on every sync.",
+    "pluginsCostHint": "Only pick languages you actually consume - every extra plugin generates extra search variations, and therefore extra indexer requests per search (capped at 10), plus one more TheTVDB request per title per language on every sync.",
     "pluginsDefaultBadge": "Default",
     "pluginsEmpty": "No plugins available.",
     "pluginsLoadFailed": "Failed to load plugins: {error}",
@@ -344,7 +344,7 @@
   },
   "library": {
     "title": "Library",
-    "subtitle": "Synced titles across all instances — including manual overrides.",
+    "subtitle": "Synced titles across all instances - including manual overrides.",
     "listTitle": "{count, plural, =0 {No titles} one {# title} other {# titles}}",
     "listSubtitle": "Original and German titles as used by the matching engine.",
     "emptyTitle": "No titles",
@@ -378,7 +378,7 @@
     "overrideHint": "Replaces this medium's German title across all instances. Variations are recomputed immediately.",
     "overrideSave": "Save override",
     "overrideRemove": "Remove override",
-    "overrideSaved": "Override saved — variations recomputed.",
+    "overrideSaved": "Override saved - variations recomputed.",
     "overrideRemoved": "Override removed."
   },
   "settings": {
@@ -397,7 +397,7 @@
     "plugins": {
       "title": "Built-in plugins",
       "hint": "Each plugin contributes a set of language-specific transformations (e.g. ä → ae) used to generate search variations and rewrite indexer responses.",
-      "costHint": "Only enable a language plugin if you actually consume content in that language. Every extra plugin costs lookups: each search sends one additional indexer request per language variation (hard-capped at 10 — surplus variations are dropped, possibly including German ones), and on every sync TheTVDB needs one more request per title per language (TMDB returns all languages in a single call and therefore does not scale with the plugin count).",
+      "costHint": "Only enable a language plugin if you actually consume content in that language. Every extra plugin costs lookups: each search sends one additional indexer request per language variation (hard-capped at 10 - surplus variations are dropped, possibly including German ones), and on every sync TheTVDB needs one more request per title per language (TMDB returns all languages in a single call and therefore does not scale with the plugin count).",
       "defaultEnabledBadge": "Default on",
       "resyncBanner": "Plugin changes only take effect after a sync, your library variations were generated with the previous configuration.",
       "resyncNow": "Sync now",
@@ -466,7 +466,7 @@
       "unknown": "TVDB test failed."
     },
     "userAgent": "User-Agent header",
-    "userAgentHint": "Optional. Leaving it empty means automatic: UmlautAdaptarrEX plus the running version — the value then follows every update without you touching the field.",
+    "userAgentHint": "Optional. Leaving it empty means automatic: UmlautAdaptarrEX plus the running version - the value then follows every update without you touching the field.",
     "userAgentAutoHint": "Empty = automatic: {value}",
     "forwardArrUserAgent": "Forward the *Arr's User-Agent",
     "forwardArrUserAgentDescription": "Sends Sonarr/Radarr/Lidarr/Readarr's User-Agent to the indexer verbatim instead of our own.",
@@ -515,7 +515,7 @@
       "timeout": "Server did not respond within 30 seconds. Please check logs and restart manually if needed.",
       "failed": "Restart failed: {error}",
       "unsupported": "Restart from the UI is not available in this environment (dev mode or no supervisor). Please restart the container/service manually.",
-      "unsupportedTitle": "Restart not available — please restart manually."
+      "unsupportedTitle": "Restart not available - please restart manually."
     },
     "prowlarr": {
       "title": "Prowlarr connection",
@@ -572,7 +572,7 @@
       "patchColStatus": "Status",
       "patchStatusPatched": "patched",
       "patchStatusUnpatched": "not patched",
-      "patchNotPatchable": "No editable base URL — cannot be patched.",
+      "patchNotPatchable": "No editable base URL - cannot be patched.",
       "patchApply": "Apply",
       "patchApplying": "Applying…",
       "patchEmpty": "No indexers found in Prowlarr.",
@@ -582,19 +582,19 @@
       "patchRetry": "Retry"
     },
     "renaming": {
-      "hint": "Controls how release titles in indexer responses are rewritten. The guard switches are the safety rules UmlautAdaptarrEX added on top of the old .NET predecessor — turning one off makes rewriting more permissive, but also more error-prone.",
+      "hint": "Controls how release titles in indexer responses are rewritten. The guard switches are the safety rules UmlautAdaptarrEX added on top of the old .NET predecessor - turning one off makes rewriting more permissive, but also more error-prone.",
       "scopeHint": "Changes apply to the next search immediately, no restart or sync required. Releases already handed to Sonarr/Radarr are not changed retroactively.",
       "presetsLabel": "Presets:",
       "presetLegacy": "Like the old Umlautadaptarr",
       "presetRecommended": "Recommended values",
-      "exampleRelease": "Example — release from the indexer:",
+      "exampleRelease": "Example - release from the indexer:",
       "exampleItem": "Library item:",
       "exampleOff": "Off",
       "exampleOn": "On",
       "exampleNotRenamed": "not renamed",
       "exampleNoteExternalIds": "Abbreviated; the attributes are added alongside the existing <item> content.",
-      "exampleNoteLegacySuffix": "That \"016\" was the year 2016 — the cut swallowed the leading 2.",
-      "exampleNotePrefixGuard": "With a season marker (…Silberlicht.S01E01…) both cases rename — the check only applies without one.",
+      "exampleNoteLegacySuffix": "That \"016\" was the year 2016 - the cut swallowed the leading 2.",
+      "exampleNotePrefixGuard": "With a season marker (…Silberlicht.S01E01…) both cases rename - the check only applies without one.",
       "renameStripSpecialChars": {
         "label": "Strip unwelcome characters",
         "description": "Removes : ? * \" < > | / \\ from the inserted title and leaves no doubled separators behind.",
@@ -622,7 +622,7 @@
       },
       "renameLegacySuffix": {
         "label": "Cut the suffix like the old Umlautadaptarr",
-        "description": "Cuts at the matched variation's raw length instead of counting normalized characters — and turns the token-boundary check off with it.",
+        "description": "Cuts at the matched variation's raw length instead of counting normalized characters - and turns the token-boundary check off with it.",
         "hint": "Only enable this if you need the exact old behaviour. When a variation ends on a digit the cut can land inside the release's year and mangle it (see the example). Without this switch UmlautAdaptarrEX declines such matches instead."
       }
     }

@@ -71,7 +71,7 @@ export function InstancesMobileList({
               <InstanceStatusBadge enabled={inst.enabled} lastSyncError={inst.lastSyncError} />
             </div>
             <span className="ml-auto text-xs text-muted-foreground">
-              {inst.lastSyncAt ? new Date(inst.lastSyncAt).toLocaleString(locale) : "—"}
+              {inst.lastSyncAt ? new Date(inst.lastSyncAt).toLocaleString(locale) : "-"}
             </span>
           </div>
           {inst.lastSyncError ? (

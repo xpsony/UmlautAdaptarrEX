@@ -260,7 +260,7 @@ describe("DELETE /api/admin/instances/:id", () => {
   });
 });
 
-describe("PATCH /api/admin/instances/:id — Prisma error mapping", () => {
+describe("PATCH /api/admin/instances/:id - Prisma error mapping", () => {
   it("returns 404 when the instance does not exist (P2025)", async () => {
     mockArr.update.mockRejectedValueOnce({ code: "P2025" });
     const r = await app.inject({
@@ -284,7 +284,7 @@ describe("PATCH /api/admin/instances/:id — Prisma error mapping", () => {
   });
 });
 
-describe("DELETE /api/admin/instances/:id — Prisma error mapping", () => {
+describe("DELETE /api/admin/instances/:id - Prisma error mapping", () => {
   it("returns 404 when the instance does not exist (P2025)", async () => {
     mockArr.delete.mockRejectedValueOnce({ code: "P2025" });
     const r = await app.inject({

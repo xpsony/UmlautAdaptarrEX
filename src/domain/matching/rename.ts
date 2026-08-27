@@ -32,7 +32,7 @@ export interface RenameOptions {
   /**
    * Refuse the rewrite when the release name carries a 4-digit year outside
    * the item's tolerance window. `false` skips the check regardless of
-   * `yearMatchingTolerance` — the .NET predecessor had no year check at all.
+   * `yearMatchingTolerance` - the .NET predecessor had no year check at all.
    */
   yearGuard?: boolean;
   /**
@@ -102,7 +102,7 @@ export interface RenameResult {
 
 const ALPHANUMERIC_RE = /[A-Za-z0-9]/;
 // Closing delimiters that can trail a matched title inside a release name.
-// Opening counterparts are excluded on purpose — see the skip loop below.
+// Opening counterparts are excluded on purpose - see the skip loop below.
 const CLOSING_DELIM_RE = /[)\]}]/;
 const YEAR_TOKEN_RE = /(?<![A-Za-z0-9])(19|20)\d{2}(?![A-Za-z0-9])/g;
 // Release-format tags that title providers occasionally bake into alias
@@ -183,7 +183,7 @@ export function renameForMoviesAndTv(
     if (opts.legacySuffix) {
       // Predecessor behaviour: cut at the variation's raw length. Wrong
       // whenever a character expands or folds during normalization, which is
-      // exactly why the counted walk below exists — kept only for operators
+      // exactly why the counted walk below exists - kept only for operators
       // who want the old output byte for byte.
       endIdx = Math.min(variation.length, originalTitle.length);
     } else {
@@ -201,7 +201,7 @@ export function renameForMoviesAndTv(
     // When the variation matched without trailing punctuation (e.g. variation
     // "Chronicles of Time 2005" against original "Chronicles of Time (2005) -
     // S08E08..."), targetCount is reached on the last alphanumeric character
-    // ('5'), leaving the ')' unconsumed — it would leak into the suffix and the
+    // ('5'), leaving the ')' unconsumed - it would leak into the suffix and the
     // rewrite would emit "Chronicles.of.Time.(2005).).S08E08...". Advance
     // endIdx over it.
     //
@@ -251,7 +251,7 @@ export function renameForMoviesAndTv(
     let suffix = originalTitle.slice(endIdx);
 
     // When expectedTitle starts with the variation (e.g. "Sigrid"), only
-    // rewrite if a strong release-marker follows directly — SxxExx for TV,
+    // rewrite if a strong release-marker follows directly - SxxExx for TV,
     // a 4-digit year for movies. Otherwise the prefix is ambiguous (could
     // be a different work that just shares the prefix).
     if (

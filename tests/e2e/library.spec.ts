@@ -3,7 +3,7 @@ import { authedRequest } from "./_setup/api-helpers";
 
 // Hits real Fastify + SQLite (no mocked routes). The e2e DB is only ever
 // populated by a real Sonarr/Radarr/etc. sync, which this suite cannot
-// trigger, so `total` is almost always 0 here — the override-flow test
+// trigger, so `total` is almost always 0 here - the override-flow test
 // guards on that and skips itself when there is nothing to click on.
 interface SearchItemRow {
   mediaType: string;
@@ -52,13 +52,13 @@ test.describe("library page", () => {
     expect(listRes.ok()).toBe(true);
     const { items, total } = (await listRes.json()) as SearchItemsResponse;
 
-    test.skip(total === 0, "e2e DB has no SearchItem rows — nothing to override");
+    test.skip(total === 0, "e2e DB has no SearchItem rows - nothing to override");
 
     const target = items.find((i) => i.override === null);
     if (!target) {
       test.skip(
         true,
-        "every fetched row already carries an override — skipping to avoid clobbering existing data",
+        "every fetched row already carries an override - skipping to avoid clobbering existing data",
       );
       return;
     }
@@ -80,7 +80,7 @@ test.describe("library page", () => {
       await overrideInput.fill(OVERRIDE_VALUE);
       await sheet.getByRole("button", { name: "Save override" }).click();
 
-      await expect(page.getByText("Override saved — variations recomputed.")).toBeVisible();
+      await expect(page.getByText("Override saved - variations recomputed.")).toBeVisible();
       await expect(sheet).not.toBeVisible();
       overrideSet = true;
 

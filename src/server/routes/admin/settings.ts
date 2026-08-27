@@ -34,7 +34,7 @@ const RECHECK_DEFAULTS: Record<"tv" | "movie", ProviderId[]> = {
 };
 
 async function getSettings(): Promise<unknown> {
-  // `prowlarrApiKey` and `csrfSecret` are server-side only — never echo
+  // `prowlarrApiKey` and `csrfSecret` are server-side only - never echo
   // them back. The dedicated /api/admin/instances/prowlarr/config route
   // exposes a `configured` boolean for the UI's status display.
   const setting = await prisma.setting.findUnique({
@@ -73,7 +73,7 @@ async function getSettings(): Promise<unknown> {
   if (!setting) return null;
   const { prowlarrApiKey, tmdbApiKey, tvdbApiKey, tvdbPin, ...rest } = setting;
   // Third-party API keys/PINs are stored secrets the operator already
-  // entered — masking them stops a leaked admin session (or browser
+  // entered - masking them stops a leaked admin session (or browser
   // devtools snapshot) from exfiltrating the cleartext value. The settings
   // schema treats `••••••••` as "leave alone" so a round-trip save keeps
   // the stored secret. `appApiKey` and `proxyPassword` stay in cleartext
@@ -124,7 +124,7 @@ async function putSettings(req: FastifyRequest, reply: FastifyReply): Promise<un
   });
   await getAppState().reloadSettings();
   // Audit-trail: redaction of sensitive values is handled by the logger's
-  // SENSITIVE_KEY_LITERALS list — we log the *names* of changed keys, not
+  // SENSITIVE_KEY_LITERALS list - we log the *names* of changed keys, not
   // the values. operationMode is non-sensitive so it stays inline.
   req.log.info(
     {
@@ -140,11 +140,11 @@ async function putSettings(req: FastifyRequest, reply: FastifyReply): Promise<un
   if (data.operationMode && data.operationMode !== previousMode) {
     req.log.warn(
       { previousMode, newMode: data.operationMode },
-      "operationMode changed — restart required to switch port 5006 listener",
+      "operationMode changed - restart required to switch port 5006 listener",
     );
   }
   // Strip server-side secrets before returning to the UI. Third-party keys
-  // come back masked, identical to GET — see getSettings() for the
+  // come back masked, identical to GET - see getSettings() for the
   // rationale and the schema preprocess that round-trips the mask.
   const {
     prowlarrApiKey,
@@ -305,7 +305,7 @@ async function recheckBucket(
 // independently of any specific instance.
 // The recheck fans out to every configured title provider; a second
 // concurrent run doubles the outbound calls for zero benefit. In-process
-// flag is sufficient — the route only exists in the single API process.
+// flag is sufficient - the route only exists in the single API process.
 let recheckInFlight = false;
 
 async function postRecheckMissing(

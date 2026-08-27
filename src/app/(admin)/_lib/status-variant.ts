@@ -2,7 +2,7 @@
  * Badge-variant mapping shared by the admin views that render a status
  * column: sync runs (string status from `SyncRun.status`) and request
  * history (numeric HTTP status code). The two domains are deliberately kept
- * as separate functions rather than merged — they classify different value
+ * as separate functions rather than merged - they classify different value
  * spaces and happen to only share their output type.
  */
 

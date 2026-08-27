@@ -20,7 +20,7 @@ export const ProvidersSettingsSchema = SettingsUpdateSchema.pick({
   tvdbApiKey: true,
   tvdbPin: true,
 });
-// operationMode is intentionally excluded — OperationModeCard owns its own
+// operationMode is intentionally excluded - OperationModeCard owns its own
 // save path (a dedicated PUT of just `{ operationMode }`), independent of
 // the Advanced form.
 export const AdvancedSettingsSchema = SettingsUpdateSchema.pick({
@@ -77,7 +77,7 @@ export type RenamingToggle = (typeof RENAMING_TOGGLES)[number];
  * without reading the changelog.
  *
  * The release names are invented, and the `off`/`on` strings are the actual
- * output of the domain functions for the given input — they are pinned by
+ * output of the domain functions for the given input - they are pinned by
  * `tests/unit/renaming-examples.test.ts`, which runs each example through
  * `renameForMoviesAndTv` and fails if the copy ever drifts from the code.
  *
@@ -90,9 +90,9 @@ export interface RenamingExample {
   input: string;
   /** Library context, when the example only makes sense with it. */
   item?: string;
-  /** Output with the toggle off — `null` renders as "not renamed". */
+  /** Output with the toggle off - `null` renders as "not renamed". */
   off: string | null;
-  /** Output with the toggle on — `null` renders as "not renamed". */
+  /** Output with the toggle on - `null` renders as "not renamed". */
   on: string | null;
   /** Extra one-line caveat rendered under the example, if any. */
   noteKey?: string;
@@ -107,9 +107,9 @@ export const RENAMING_EXAMPLES: Record<RenamingToggle, RenamingExample> = {
   },
   renameAttachExternalIds: {
     input: "Ember.Stahlengel.2019.GERMAN.1080p",
-    item: "Ember: Steel Angel — tmdbid 800003, imdb tt7654322",
+    item: "Ember: Steel Angel - tmdbid 800003, imdb tt7654322",
     // The title comes out identical either way, so it is elided (`…`) to keep
-    // the line readable — what this toggle changes is the two attributes.
+    // the line readable - what this toggle changes is the two attributes.
     off: "<item><title>…</title></item>",
     on:
       "<item><title>…</title>\n" +

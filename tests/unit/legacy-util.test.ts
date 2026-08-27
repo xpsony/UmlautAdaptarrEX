@@ -26,7 +26,7 @@ describe("buildIndexerUrl", () => {
 
 describe("buildVariationSearch", () => {
   // Old SearchControllerBase.BaseSearch removes ID params before issuing
-  // German-variation queries — otherwise the indexer ignores `q` entirely.
+  // German-variation queries - otherwise the indexer ignores `q` entirely.
   it("strips tvdbid/tmdbid/imdbid/rid/tvmazeid and replaces q", () => {
     const out = buildVariationSearch(
       "t=tvsearch&tvdbid=121361&tvmazeid=42&imdbid=tt000&rid=1&tmdbid=2&q=Realm+of+Ravens&season=1",

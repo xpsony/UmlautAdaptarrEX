@@ -6,7 +6,7 @@ import { nanoid } from "nanoid";
 // resolves the token back to the real key without ever shipping it to the
 // browser.
 //
-// In-memory only — entries auto-expire after 15 minutes so a leaked browser
+// In-memory only - entries auto-expire after 15 minutes so a leaked browser
 // snapshot can't be replayed forever, and the map is bounded so a flood of
 // preview calls can't OOM the process.
 
@@ -26,7 +26,7 @@ function sweep(): void {
   for (const [key, entry] of vault) {
     if (entry.expiresAt <= now) vault.delete(key);
   }
-  // Hard cap — drop oldest if still over.
+  // Hard cap - drop oldest if still over.
   if (vault.size > MAX_ENTRIES) {
     const overflow = vault.size - MAX_ENTRIES;
     const it = vault.keys();
@@ -60,7 +60,7 @@ export function resolveVaultToken(token: string): string | null {
   return entry.apiKey;
 }
 
-// Test-only utility — clear the vault between tests.
+// Test-only utility - clear the vault between tests.
 export function _clearVaultForTests(): void {
   if (process.env.NODE_ENV === "production") {
     throw new Error("vault clear must not be called in production");

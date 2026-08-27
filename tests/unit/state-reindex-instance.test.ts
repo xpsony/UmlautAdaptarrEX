@@ -42,7 +42,7 @@ describe("AppState.reindexInstance", () => {
     await state.reindexInstance("inst1");
     expect(state.getByExternalId("tv", "42")?.germanTitle).toBe("Dunkel");
 
-    // Second reindex returns an updated row — the old index entry must be gone.
+    // Second reindex returns an updated row - the old index entry must be gone.
     mockSearchItem.findMany.mockResolvedValueOnce([
       dbRow({ germanTitle: "Finster", titleMatchVariations: JSON.stringify(["Finster"]) }),
     ]);
@@ -82,7 +82,7 @@ describe("AppState.reindexInstance", () => {
   // list keyed by normalized-title prefix rather than a single-key Map. A
   // reindexInstance that forgot removeItemsForInstance() would leave the
   // stale "Dunkel" variation matchable forever alongside the fresh "Finster"
-  // one — getByExternalId alone (a Map overwrite) can't detect that leak.
+  // one - getByExternalId alone (a Map overwrite) can't detect that leak.
   it("drops stale title-match variations so findByTitle stops matching the old title", async () => {
     const state = new AppState();
     mockSearchItem.findMany.mockResolvedValueOnce([

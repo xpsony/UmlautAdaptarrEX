@@ -476,7 +476,7 @@ describe("runSync title overrides", () => {
 
     const item = created.get("99");
     expect(item?.germanTitle).toBe("Anderer-Titel");
-    // Unchanged from the fake fixture array — proves no re-derivation ran
+    // Unchanged from the fake fixture array - proves no re-derivation ran
     // for this item (a real buildSearchItem call over "Other" would not
     // round-trip to exactly ["Other"]).
     expect(JSON.parse(item?.titleSearchVariations as string)).toEqual(["Other"]);
@@ -511,8 +511,8 @@ describe("runSync title overrides", () => {
 
   it("carries expectedAuthor through re-derivation for overridden audio/book items", async () => {
     // Lidarr/Readarr items never carry a provider germanTitle. With an
-    // override present, re-derivation persists one — expected and
-    // acceptable (see run.ts comment) — but expectedAuthor must still flow
+    // override present, re-derivation persists one - expected and
+    // acceptable (see run.ts comment) - but expectedAuthor must still flow
     // through so the books/audio variation path keeps its author variations.
     mockPrisma.titleOverride.findMany.mockResolvedValueOnce([
       { mediaType: "audio", externalId: "a1", germanTitle: "Album Override" },
@@ -541,7 +541,7 @@ describe("runSync title overrides", () => {
   it("sources titlesByLang from the TitleApiCache so non-DE plugin variations survive an override", async () => {
     // Activate the Swedish plugin alongside the default German one so a
     // real (non-mocked) buildSearchItem call actually emits an sv variation
-    // when fed titlesByLang.sv — proving the fix end-to-end via the
+    // when fed titlesByLang.sv - proving the fix end-to-end via the
     // persisted variations, not just via a spy on the call args.
     const originalPack = getActiveLanguagePack();
     setActiveLanguagePack(aggregatePlugins([germanUmlauts, swedishUmlauts]));
@@ -583,7 +583,7 @@ describe("runSync title overrides", () => {
 
       const item = created.get("42");
       const variations = JSON.parse(item?.titleSearchVariations as string) as string[];
-      // The override wins the "de" slot — the stale cached German title
+      // The override wins the "de" slot - the stale cached German title
       // never appears...
       expect(item?.germanTitle).toBe("Override-Titel");
       expect(variations).not.toContain("Cache-DE");

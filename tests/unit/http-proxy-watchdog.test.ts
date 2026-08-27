@@ -8,7 +8,7 @@ import type { AppState } from "@/server/state";
 // These tests simulate an unexpected listener death by closing the internal
 // server directly (without going through HttpProxyServer.stop()) and verify
 // the proxy rebinds on the same port. Accessing the private field via cast
-// is the pragmatic compromise — the alternative would be exposing an
+// is the pragmatic compromise - the alternative would be exposing an
 // internal-only hook just for tests.
 
 function buildState(): AppState {
@@ -76,7 +76,7 @@ describe("http-proxy watchdog", () => {
   beforeEach(async () => {
     // The reserve→close→rebind window is racy under parallel vitest workers
     // (another worker can claim the port in between), so retry with a fresh
-    // port on EADDRINUSE instead of failing the test — same pattern as
+    // port on EADDRINUSE instead of failing the test - same pattern as
     // http-proxy-connect.test.ts / http-proxy-http.test.ts.
     let lastErr: unknown;
     for (let attempt = 0; attempt < 5; attempt++) {

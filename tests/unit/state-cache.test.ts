@@ -126,7 +126,7 @@ describe("AppState in-memory item index", () => {
   it("indexItem applies the language pack's comparisonMap, not just ASCII lowercasing", () => {
     const state = new AppState();
     // "ß" has no NFD decomposition, so it only folds to "ss" via the German
-    // plugin's comparisonMap — unlike "ä", which the generic accent-stripper
+    // plugin's comparisonMap - unlike "ä", which the generic accent-stripper
     // would flatten to "a" even with an empty/wrong pack. This variation
     // therefore genuinely exercises normalizeForComparison's non-ASCII path
     // and the active pack's mapping, not the ASCII fast path every other
@@ -148,7 +148,7 @@ describe("AppState in-memory item index", () => {
     // "Dacher") that only lines up with the stored variation because both
     // sides fold ß->"ss" and ä->"a" through the same comparisonMap. A pack
     // that failed to apply ß->"ss" (e.g. stale/empty comparisonMap) would
-    // strip the bare "ß" as a special char instead, yielding "strae..." —
+    // strip the bare "ß" as a special char instead, yielding "strae..." -
     // which would NOT prefix-match this query, so this catches that
     // regression end to end.
     const result = state.findByTitle("tv", "Strasse der Dacher S01E01 Pilot");

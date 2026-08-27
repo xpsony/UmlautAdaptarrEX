@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/db";
 
-// No "__Host-" prefix — that would require HTTPS+Secure, which self-hosted
+// No "__Host-" prefix - that would require HTTPS+Secure, which self-hosted
 // deployments behind home networks often don't have.
 export const SESSION_COOKIE = "uaSession";
 // Production: 14 days. Dev (NODE_ENV === "development"): 365 days, so a
@@ -9,7 +9,7 @@ export const SESSION_COOKIE = "uaSession";
 // development and DB resets are at most a one-time inconvenience.
 //
 // Whitelisting "development" (rather than blacklisting "production") means
-// an unset NODE_ENV defaults to the strict prod TTL — otherwise a missed
+// an unset NODE_ENV defaults to the strict prod TTL - otherwise a missed
 // env var in production would silently extend sessions to a full year.
 export const SESSION_TTL_MS =
   process.env.NODE_ENV === "development"

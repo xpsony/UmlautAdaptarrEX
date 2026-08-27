@@ -36,7 +36,7 @@ const TMDB_BULK_CONCURRENCY = 10;
 const TMDB_REQUEST_TIMEOUT_MS = 15_000;
 
 // TMDB API expects a v3 API key (32-char hex). v4 Read Access Tokens (JWT
-// "eyJ…") are *not* supported by `moviedb-promise` — sending one as the
+// "eyJ…") are *not* supported by `moviedb-promise` - sending one as the
 // constructor arg fails at request time. We detect by prefix here so the
 // caller can warn the user and avoid constructing the provider at all.
 const V4_TOKEN_PREFIX_RE = /^eyJ[A-Za-z0-9_-]+\./;
@@ -69,7 +69,7 @@ export type TmdbProbeResult =
 export async function probeTmdbKey(apiKey: string): Promise<TmdbProbeResult> {
   if (!apiKey) return { ok: false, code: "missing" };
   if (looksLikeTmdbV4Token(apiKey)) return { ok: false, code: "v4_token" };
-  // Loose lower-bound — TMDB has historically issued slightly different
+  // Loose lower-bound - TMDB has historically issued slightly different
   // shapes; let the upstream call decide if it's the wrong key, but reject
   // clearly bogus values without burning a network roundtrip.
   if (apiKey.length < 16) return { ok: false, code: "invalid_format" };
@@ -168,7 +168,7 @@ export class TmdbProvider implements TitleProvider {
     if (looksLikeTmdbV4Token(opts.apiKey)) {
       throw new Error(
         "TMDB provider requires a v3 API key (32-char hex). The configured " +
-          "key looks like a v4 Read Access Token (JWT 'eyJ…') — please " +
+          "key looks like a v4 Read Access Token (JWT 'eyJ…') - please " +
           "replace it with the v3 key from your TMDB account settings.",
       );
     }
@@ -177,7 +177,7 @@ export class TmdbProvider implements TitleProvider {
   }
 
   // TMDB Translations endpoints return *all* localized titles in one shot,
-  // so we don't filter by language at the request level — Composite asks
+  // so we don't filter by language at the request level - Composite asks
   // and the provider returns whatever it has.
   supportedLanguages(): readonly string[] {
     return ["*"];
@@ -261,7 +261,7 @@ export class TmdbProvider implements TitleProvider {
             : status
               ? "other"
               : "network";
-      // 404 is a normal "TMDB doesn't know this id" — debug, not warn.
+      // 404 is a normal "TMDB doesn't know this id" - debug, not warn.
       const logMethod = outcome === "notFound" ? "debug" : "warn";
       this.log?.[logMethod](
         {
@@ -276,7 +276,7 @@ export class TmdbProvider implements TitleProvider {
               ? "TMDB rejected the v3 API key (401). Verify the key in Settings."
               : outcome === "notFound"
                 ? undefined
-                : "TMDB request failed — see error details.",
+                : "TMDB request failed - see error details.",
         },
         "tmdb lookup error",
       );
@@ -312,7 +312,7 @@ export class TmdbProvider implements TitleProvider {
       const lang = t.iso_639_1?.toLowerCase();
       if (!lang) continue;
       // Skip translations not requested (when caller specified langs and "*"
-      // isn't included). This keeps the cache lean — we still pay the bulk
+      // isn't included). This keeps the cache lean - we still pay the bulk
       // request, but we don't persist 50 languages we will never read.
       if (langs && !langs.includes(lang) && !langs.includes("*")) continue;
       const title = pickTranslationTitle(t);
@@ -333,7 +333,7 @@ export class TmdbProvider implements TitleProvider {
     const titleLangs = Object.keys(titlesByLang);
     if (titleLangs.length === 0 && Object.keys(aliasesByLang).length === 0) {
       // Even when no *requested* language matched, TMDB may have returned
-      // titles in other languages — surface one so the operator can identify
+      // titles in other languages - surface one so the operator can identify
       // which work was queried (e.g. "we asked for DE+SV on tmdb:550 but only
       // EN/JA came back" instead of just "tmdb:550 returned nothing").
       const fallback =
@@ -355,7 +355,7 @@ export class TmdbProvider implements TitleProvider {
 
     // Representative title for the log line: prefer English (most operators
     // can read it), then German (our primary target audience), then any
-    // available language. This is for debug output only — the payload itself
+    // available language. This is for debug output only - the payload itself
     // carries every language we kept.
     const representative =
       titlesByLang["en"] ??
@@ -385,7 +385,7 @@ export class TmdbProvider implements TitleProvider {
   }
 
   async fetchByTitle(): Promise<TitlePayload | null> {
-    // Title-based search not implemented — Composite uses externalId-based
+    // Title-based search not implemented - Composite uses externalId-based
     // lookups exclusively for sync, and `fetchByTitle` is reserved for
     // future ad-hoc queries against pcjones (which has the better DE search).
     return null;
@@ -425,7 +425,7 @@ export class TmdbProvider implements TitleProvider {
     };
     // Per-language coverage = how many of the bulk items returned at least
     // one title in that language. The most useful debug signal for "why is
-    // half my library missing German titles?" — beats the binary withTitles.
+    // half my library missing German titles?" - beats the binary withTitles.
     const titlesByLang: Record<string, number> = {};
     let processed = 0;
     // Progress milestones logged once per batch boundary for libraries >= 200.
@@ -442,7 +442,7 @@ export class TmdbProvider implements TitleProvider {
             out.set(id, result.payload);
             // Stream the per-id result so callers (DbCachedTitleProvider) can
             // checkpoint progress to the cache immediately. Persist failures
-            // are logged inside the callback, never rethrown — a broken cache
+            // are logged inside the callback, never rethrown - a broken cache
             // must not abort a sync.
             if (opts?.onItem) {
               try {
@@ -497,12 +497,12 @@ export class TmdbProvider implements TitleProvider {
       titlesByLang,
     };
 
-    // Heuristic: if the API key is wrong, every single request returns 401 —
+    // Heuristic: if the API key is wrong, every single request returns 401 -
     // that's both more actionable AND more diagnostic than "withTitles: 0".
     if (outcomeCounts.unauthorized === total && total > 0) {
       this.log?.error(
         summary,
-        "tmdb bulk: every request returned 401 — API key invalid or revoked",
+        "tmdb bulk: every request returned 401 - API key invalid or revoked",
       );
     } else if (
       outcomeCounts.network + outcomeCounts.other === total &&
@@ -510,12 +510,12 @@ export class TmdbProvider implements TitleProvider {
     ) {
       this.log?.error(
         summary,
-        "tmdb bulk: every request failed with network/other errors — TMDB unreachable?",
+        "tmdb bulk: every request failed with network/other errors - TMDB unreachable?",
       );
     } else if (outcomeCounts.ok === 0 && total > 0) {
       this.log?.warn(
         summary,
-        "tmdb bulk: 0 items resolved with titles — check API key, network, or external IDs",
+        "tmdb bulk: 0 items resolved with titles - check API key, network, or external IDs",
       );
     } else {
       this.log?.info(summary, "tmdb bulk done");

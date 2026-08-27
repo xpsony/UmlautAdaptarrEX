@@ -39,7 +39,7 @@ interface HttpProxyOptions {
 //   - HTTPS CONNECT tunnels are passed through only for known hosts
 //   - Proxy-Authorization: Basic checked against the per-install proxy
 //     credentials (Setting.proxyUsername / proxyPassword). Auth is only
-//     enforced when both fields are populated — empty values disable it.
+//     enforced when both fields are populated - empty values disable it.
 export class HttpProxyServer {
   private server: net.Server | null = null;
   private readonly knownHosts = new Set(KNOWN_HTTPS_HOSTS);
@@ -261,7 +261,7 @@ export class HttpProxyServer {
     }
 
     // Hard-enforce the static CONNECT allow-list. Without this the proxy is
-    // an open TCP relay for any public host on any port — auth is optional
+    // an open TCP relay for any public host on any port - auth is optional
     // (empty Setting.proxyPassword disables it) and isPrivateHost() only
     // blocks internal targets, so the only thing standing between an
     // attacker on the LAN and arbitrary outbound TCP is this list.
@@ -275,7 +275,7 @@ export class HttpProxyServer {
       socket.end("HTTP/1.1 403 Forbidden\r\n\r\n");
       return;
     }
-    // Pin to 443 — the allow-list entries are public HTTPS endpoints, so
+    // Pin to 443 - the allow-list entries are public HTTPS endpoints, so
     // any other port (25, 465, 6667, 22, …) would be the relay-abuse case
     // we just ruled out by host.
     if (port !== 443) {
@@ -341,7 +341,7 @@ export class HttpProxyServer {
         return;
       }
       url = new URL(urlStr);
-      // Legacy wire behavior: every proxied request is forced to GET — the
+      // Legacy wire behavior: every proxied request is forced to GET - the
       // .NET predecessor did the same (HttpProxyService.cs, HttpMethod.Get)
       // and the legacy API only registers GET routes. Say so out loud
       // instead of silently degrading; a POST body, if any, is dropped.
@@ -358,7 +358,7 @@ export class HttpProxyServer {
       }
       // Block SSRF before we relay anything, even though the target is
       // routed through our own legacy handler (which now also blocks
-      // private hosts) — defense-in-depth keeps both layers honest.
+      // private hosts) - defense-in-depth keeps both layers honest.
       if (isPrivateHost(url.host)) {
         this.opts.logger.warn(
           { host: url.host, remoteAddress: socket.remoteAddress },
@@ -369,7 +369,7 @@ export class HttpProxyServer {
       }
       // Pin to the standard web ports. Without this the HTTP path is an open
       // relay to any public host:port (25, 465, 6667, 22, …), the same
-      // relay-abuse case the CONNECT path rules out — keep the two symmetric.
+      // relay-abuse case the CONNECT path rules out - keep the two symmetric.
       const targetPort = url.port ? parseInt(url.port, 10) : url.protocol === "https:" ? 443 : 80;
       if (targetPort !== 80 && targetPort !== 443) {
         this.opts.logger.warn(
@@ -383,7 +383,7 @@ export class HttpProxyServer {
         socket.end("HTTP/1.1 403 Forbidden\r\n\r\n");
         return;
       }
-      // Note: we deliberately do NOT add `url.host` to `knownHosts` —
+      // Note: we deliberately do NOT add `url.host` to `knownHosts` -
       // self-allow-listing would let an indexer escape the static
       // CONNECT allow-list by first making an HTTP request.
 
@@ -393,7 +393,7 @@ export class HttpProxyServer {
 
       // The target is our own buffering legacy route: headers arrive only when
       // the search completes, so both timeouts must cover the route's worst
-      // case — its soft deadline (0.75×T) can overshoot by one in-flight fetch
+      // case - its soft deadline (0.75×T) can overshoot by one in-flight fetch
       // (≈ +T) plus rate-limit slack. Budget: 1.75×T + 5s.
       const timeoutSeconds = this.opts.state.settings.indexerTimeoutSeconds || 60;
       const proxyTimeoutMs = Math.ceil(timeoutSeconds * 1.75) * 1000 + 5_000;

@@ -266,13 +266,13 @@ describe("GET /api/admin/search-items", () => {
     const tvRowInst2 = dbRow({
       id: "s2",
       arrInstance: { id: "inst2", name: "Sonarr 2", type: "sonarr" },
-    }); // tv:42 again, from a second instance — same key as row 1
+    }); // tv:42 again, from a second instance - same key as row 1
     const movieRow = dbRow({
       id: "s3",
       externalId: "42",
       mediaType: "movie",
       arrInstance: { id: "inst3", name: "Radarr", type: "radarr" },
-    }); // movie:42 — same externalId, different mediaType
+    }); // movie:42 - same externalId, different mediaType
     mockSearchItem.findMany.mockResolvedValueOnce([tvRowInst1, tvRowInst2, movieRow]);
     mockSearchItem.count.mockResolvedValueOnce(3);
     mockTitleOverride.findMany.mockResolvedValueOnce([
@@ -311,7 +311,7 @@ describe("GET /api/admin/search-items", () => {
     await app.inject({ method: "GET", url: "/api/admin/search-items?override=with" });
 
     const args = mockSearchItem.findMany.mock.calls[0]?.[0] as { where: { AND: unknown[] } };
-    // One branch per mediaType, each with an `in` list — not one branch per override.
+    // One branch per mediaType, each with an `in` list - not one branch per override.
     expect(args.where.AND).toEqual([
       {
         OR: [

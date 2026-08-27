@@ -155,7 +155,7 @@ function buildComposite(order: ("pcjones" | "tvdb" | "tmdb")[]) {
   });
 }
 
-describe("CompositeTitleProvider — User-Order Routing", () => {
+describe("CompositeTitleProvider - User-Order Routing", () => {
   beforeEach(() => {
     callOrder.length = 0;
   });

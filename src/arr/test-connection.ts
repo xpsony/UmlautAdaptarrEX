@@ -60,7 +60,7 @@ export async function testConnection(
   if (urlIsPrivate(host) && !privateHostsAllowedForArrInstance()) {
     log?.warn(
       { host },
-      "test-connection: refused — host resolves to a private/loopback target",
+      "test-connection: refused - host resolves to a private/loopback target",
     );
     return {
       ok: false,

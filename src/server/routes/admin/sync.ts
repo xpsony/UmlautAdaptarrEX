@@ -5,7 +5,7 @@ import type { SyncScheduler } from "@/server/sync/scheduler";
 import { clampInt, resolveSort, type SortWhitelist } from "./_helpers";
 
 // Sortable columns exposed to the sync-runs table. A `sort` outside this map
-// (or an invalid `order`) silently falls back to `startedAt desc` — no 400s.
+// (or an invalid `order`) silently falls back to `startedAt desc` - no 400s.
 const SYNC_RUNS_SORT: SortWhitelist = {
   startedAt: "startedAt",
   status: "status",
@@ -105,7 +105,7 @@ export async function syncRoutes(app: FastifyInstance, deps: SyncRoutesDeps): Pr
         prisma.syncRun.findMany({
           where,
           // Low-cardinality columns (status, itemsCount) produce large tie
-          // groups when used as the sole ORDER BY — append an id tiebreaker
+          // groups when used as the sole ORDER BY - append an id tiebreaker
           // so pagination can't duplicate/skip rows across page boundaries.
           // Mirrors the orderBy tiebreaker in history.ts/search-items.ts.
           orderBy: [{ [field]: order }, { id: "asc" }],

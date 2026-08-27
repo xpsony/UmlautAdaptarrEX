@@ -79,7 +79,7 @@ describe("operationMode = 'proxy'", () => {
     expect(r.statusCode).toBe(503);
     expect(r.headers["content-type"]).toMatch(/text\/plain/);
     expect(r.body).toContain("Index Legacy Api");
-    // The fetcher must NOT be called when the gate triggers — otherwise the
+    // The fetcher must NOT be called when the gate triggers - otherwise the
     // proxy mode would still hit the indexer.
     expect(fetchMock).not.toHaveBeenCalled();
   });

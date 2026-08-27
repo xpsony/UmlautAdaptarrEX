@@ -47,7 +47,7 @@ export async function requireAuth(
   if (!SAFE_METHODS.has(req.method)) {
     // `@fastify/csrf-protection` invokes its hook with the standard
     // (err, _req, _reply, next) signature. Wrap it in a promise so we
-    // observe the actual outcome instead of inspecting a sync flag — the
+    // observe the actual outcome instead of inspecting a sync flag - the
     // plugin can resolve asynchronously (and a future upgrade might also
     // make the validate path async). The global error handler turns the
     // FST_CSRF_* codes into `{error: "csrf-invalid"}`.

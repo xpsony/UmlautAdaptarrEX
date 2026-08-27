@@ -40,7 +40,7 @@ export function LibraryClient() {
   const tBoundaries = useTranslations("boundaries");
   const locale = useLocale();
 
-  // Sortable columns exposed by the route — see SEARCH_ITEMS_SORT in
+  // Sortable columns exposed by the route - see SEARCH_ITEMS_SORT in
   // src/server/routes/admin/search-items.ts. Default matches the server's
   // default (expectedTitle asc).
   const url = useListUrlState({
@@ -229,7 +229,7 @@ export function LibraryClient() {
                     {item.germanTitle}
                   </span>
                 ) : (
-                  <span className="text-muted-foreground">—</span>
+                  <span className="text-muted-foreground">-</span>
                 )}
                 {item.override !== null && <Badge variant="info">{t("overrideBadge")}</Badge>}
               </div>
@@ -238,7 +238,7 @@ export function LibraryClient() {
               <Badge variant="outline">{typeLabel(item.mediaType)}</Badge>
             </TableCell>
             <TableCell className="tabular-nums">
-              {item.year ?? <span className="text-muted-foreground">—</span>}
+              {item.year ?? <span className="text-muted-foreground">-</span>}
             </TableCell>
             <TableCell>{item.instance.name}</TableCell>
             <TableCell className="whitespace-nowrap text-muted-foreground">

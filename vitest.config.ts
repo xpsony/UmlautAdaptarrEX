@@ -25,12 +25,12 @@ export default defineConfig({
         "src/domain/plugins/types.ts",
         "src/domain/xml/index.ts",
         // Next.js runtime-coupled helpers: depend on `next/headers`,
-        // `next-intl/server`, etc. — exercised by Playwright via real
+        // `next-intl/server`, etc. - exercised by Playwright via real
         // request lifecycles.
         "src/lib/api-upstream.ts",
         "src/lib/i18n.ts",
         // Pino logger config with transport streams that hook into the WS
-        // broadcaster — the wiring is exercised live by the Playwright
+        // broadcaster - the wiring is exercised live by the Playwright
         // server boot, not in isolation.
         "src/server/logging/logger.ts",
       ],

@@ -47,7 +47,7 @@ export function ProwlarrConnectStep({
   const tProw = useTranslations("instances.prowlarr");
 
   // Only treat the live field as a link target when it parses as an http(s)
-  // URL — otherwise an attacker-influenced value like "javascript:..." could
+  // URL - otherwise an attacker-influenced value like "javascript:..." could
   // become the anchor href. Falls back to plain text below.
   const settingsHref = ((): string | null => {
     const trimmed = hostValue.replace(/\/+$/, "");

@@ -157,7 +157,7 @@ describe("getSession", () => {
       id: "good",
       userId: "user-2",
       expiresAt: new Date(Date.now() + 60_000),
-      // Refreshed a few seconds ago — well inside the throttle window.
+      // Refreshed a few seconds ago - well inside the throttle window.
       lastUsed: new Date(Date.now() - 5_000),
     });
 

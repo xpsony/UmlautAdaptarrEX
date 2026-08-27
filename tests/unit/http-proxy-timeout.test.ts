@@ -6,13 +6,13 @@ import type { AppState } from "@/server/state";
 // Focused coverage for the handleHttp timeout-wiring fix: bodyTimeout and
 // headersTimeout must both be derived from indexerTimeoutSeconds via
 // `ceil(T * 1.75) * 1000 + 5_000` (the legacy route buffers its whole
-// response, so headers only arrive once the search — worst case ~1.75×T —
+// response, so headers only arrive once the search - worst case ~1.75×T -
 // completes; a 30s headersTimeout cap would make the fix a no-op).
 //
 // undici is mocked so the exact options object passed to `request()` can be
 // asserted directly, instead of inferring the timeout from a real slow
 // response (flaky and slow). This is a separate file from
-// http-proxy-http.test.ts on purpose — that suite relies on undici actually
+// http-proxy-http.test.ts on purpose - that suite relies on undici actually
 // performing the HTTP round-trip against its fake app server, which a
 // file-wide `vi.mock("undici", ...)` would break.
 const { mockRequest } = vi.hoisted(() => ({
@@ -56,7 +56,7 @@ async function startProxy(state: AppState): Promise<{ port: number; stop: () => 
 
     const proxy = new HttpProxyServer({
       port,
-      appPort: 1, // never dialed for real — undiciRequest is mocked.
+      appPort: 1, // never dialed for real - undiciRequest is mocked.
       state,
       logger: captureLogger(),
     });

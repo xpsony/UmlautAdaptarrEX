@@ -48,7 +48,7 @@ describe("systemRoutes", () => {
     // Observe the supervisor hand-off instead of stubbing global.setTimeout:
     // a blunt setTimeout stub swallows avvio's internal ready-timeout timer
     // (scheduled on nextTick since avvio 9.3.0) and deadlocks app.close().
-    // The emit is harmless here — nothing in this worker listens for it
+    // The emit is harmless here - nothing in this worker listens for it
     // except this test.
     const emitted = vi.fn();
     (process as NodeJS.EventEmitter).once("umlautadaptarrex:restart", emitted);

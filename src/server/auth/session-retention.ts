@@ -44,7 +44,7 @@ export class SessionRetentionScheduler {
     if (this.running) return 0;
     this.running = true;
     try {
-      // Hard timeout against a stuck DB lock — without it a hung deleteMany
+      // Hard timeout against a stuck DB lock - without it a hung deleteMany
       // would freeze `this.running=true` forever and silently disable all
       // future ticks.
       const result = await Promise.race([

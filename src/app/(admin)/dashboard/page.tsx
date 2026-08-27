@@ -28,7 +28,7 @@ export default async function DashboardPage() {
 
   // Prefetch the four queries the dashboard mounts with. Failures are
   // swallowed individually so a single broken upstream doesn't block the
-  // page render — useQuery on the client will retry.
+  // page render - useQuery on the client will retry.
   await Promise.allSettled([
     queryClient.prefetchQuery({
       queryKey: ["instances"],

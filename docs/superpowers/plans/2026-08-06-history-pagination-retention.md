@@ -12,8 +12,8 @@
 
 Repo gotchas that apply to every task:
 
-- Migrations are immutable — schema changes ONLY via `pnpm prisma:migrate` (a PreToolUse hook blocks edits under `prisma/migrations/`).
-- A PostToolUse hook runs prettier on every edited file — re-Read files before chained edits.
+- Migrations are immutable - schema changes ONLY via `pnpm prisma:migrate` (a PreToolUse hook blocks edits under `prisma/migrations/`).
+- A PostToolUse hook runs prettier on every edited file - re-Read files before chained edits.
 - Code comments in English; user-visible strings stay in the file's language.
 - Test fixtures never use real media titles (use invented ones, "Galaxy Wars" style).
 
@@ -36,7 +36,7 @@ In `prisma/schema.prisma`, after the `logRetentionDays Int @default(3)` line ins
   historyRetentionDays Int     @default(30)
 ```
 
-(Comment language: the surrounding Setting model uses German comments — match them.)
+(Comment language: the surrounding Setting model uses German comments - match them.)
 
 - [ ] **Step 2: Create the migration**
 
@@ -95,12 +95,12 @@ describe("SettingsSchema.historyRetentionDays", () => {
 });
 ```
 
-Note: if `SettingsSchema.parse({})` fails because other fields lack defaults, check the schema first — every field in `SettingsSchema` has a `.default()` or is optional (verify by reading `src/schemas/settings.ts`). If some field has no default, build the minimal valid object instead; the assertion stays `parsed.historyRetentionDays === 30`.
+Note: if `SettingsSchema.parse({})` fails because other fields lack defaults, check the schema first - every field in `SettingsSchema` has a `.default()` or is optional (verify by reading `src/schemas/settings.ts`). If some field has no default, build the minimal valid object instead; the assertion stays `parsed.historyRetentionDays === 30`.
 
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `pnpm vitest run tests/unit/schemas-settings.test.ts`
-Expected: FAIL — `historyRetentionDays` is `undefined` (unknown keys are stripped).
+Expected: FAIL - `historyRetentionDays` is `undefined` (unknown keys are stripped).
 
 - [ ] **Step 3: Add the field to the Zod schema**
 
@@ -121,19 +121,19 @@ Expected: PASS
 
 In `src/server/state.ts` make three edits:
 
-1. `interface AppSettings` — after `logRetentionDays: number;` add:
+1. `interface AppSettings` - after `logRetentionDays: number;` add:
 
 ```ts
 historyRetentionDays: number;
 ```
 
-2. `const NO_SETTINGS: AppSettings` — after `logRetentionDays: 3,` add:
+2. `const NO_SETTINGS: AppSettings` - after `logRetentionDays: 3,` add:
 
 ```ts
   historyRetentionDays: 30,
 ```
 
-3. `toSettingsSnapshot()` — after `logRetentionDays: row.logRetentionDays,` add:
+3. `toSettingsSnapshot()` - after `logRetentionDays: row.logRetentionDays,` add:
 
 ```ts
       historyRetentionDays: row.historyRetentionDays,
@@ -147,7 +147,7 @@ In `src/server/routes/admin/settings.ts`, inside `getSettings()`'s `select: { ..
       historyRetentionDays: true,
 ```
 
-(PUT needs no change — `SettingsUpdateSchema` now accepts the field and `prisma.setting.update` writes it; the update response returns the full row.)
+(PUT needs no change - `SettingsUpdateSchema` now accepts the field and `prisma.setting.update` writes it; the update response returns the full row.)
 
 - [ ] **Step 7: Run the settings test suites + typecheck**
 
@@ -169,7 +169,7 @@ git commit -m "feat(settings): add historyRetentionDays setting (1-365, default 
 
 - Modify: `tests/unit/log-retention.test.ts`
 - Modify: `src/server/logging/retention.ts`
-- Modify: `src/server/index.ts` (only if you rename — we do NOT rename; class stays `LogRetentionScheduler`)
+- Modify: `src/server/index.ts` (only if you rename - we do NOT rename; class stays `LogRetentionScheduler`)
 
 The scheduler keeps its name and wiring; one tick now purges three tables. Per-table deletes each race the existing 30s timeout. The whole purge stays inside one try/catch (matches current error semantics: any failure logs `error` and returns 0).
 
@@ -556,7 +556,7 @@ git commit -m "feat(api): free-text search param on /api/admin/request-history"
 
 - Modify: `src/messages/de.json`, `src/messages/en.json`, `src/messages/fr.json`, `src/messages/sv.json`
 
-There is a locale-parity test (`tests/unit/i18n-config.test.ts`) — all four files must receive the same keys or CI fails.
+There is a locale-parity test (`tests/unit/i18n-config.test.ts`) - all four files must receive the same keys or CI fails.
 
 - [ ] **Step 1: Add the keys to every locale file**
 
@@ -642,7 +642,7 @@ Add a `pagination` object inside the existing `common` object, and two keys insi
 }
 ```
 
-(These JSON snippets show the keys to MERGE into the existing objects — do not replace the whole `common`/`settings` objects.)
+(These JSON snippets show the keys to MERGE into the existing objects - do not replace the whole `common`/`settings` objects.)
 
 - [ ] **Step 2: Run the i18n parity test**
 
@@ -665,7 +665,7 @@ git commit -m "feat(i18n): pagination + history retention strings (de, en, fr, s
 - Create: `src/components/ui/table-pagination.tsx`
 - Modify: `src/components/ui/history-page.tsx`
 
-UI components are Playwright-tested, not vitest-covered (coverage excludes `src/app/**` and `src/components/**` deliberately) — verification here is typecheck + lint; behavior is exercised in Tasks 7/8.
+UI components are Playwright-tested, not vitest-covered (coverage excludes `src/app/**` and `src/components/**` deliberately) - verification here is typecheck + lint; behavior is exercised in Tasks 7/8.
 
 - [ ] **Step 1: Create the component**
 
@@ -753,7 +753,7 @@ export function TablePagination({
 }
 ```
 
-Before finalizing, check `src/components/ui/button.tsx` for the exact `variant`/`size` prop values (`"outline"` / `"sm"` are the shadcn defaults — confirm they exist).
+Before finalizing, check `src/components/ui/button.tsx` for the exact `variant`/`size` prop values (`"outline"` / `"sm"` are the shadcn defaults - confirm they exist).
 
 - [ ] **Step 2: Add the footer slot to HistoryPage**
 
@@ -843,7 +843,7 @@ export function useDebouncedValue<T>(value: T, delayMs = 300): T {
 
 - [ ] **Step 2: Rewire the request-history client**
 
-Replace the body of `src/app/(admin)/request-history/request-history-client.tsx` — imports, state, query and the `HistoryPage` call change; the row rendering (`statusVariant`, table cells) stays identical:
+Replace the body of `src/app/(admin)/request-history/request-history-client.tsx` - imports, state, query and the `HistoryPage` call change; the row rendering (`statusVariant`, table cells) stays identical:
 
 ```tsx
 "use client";
@@ -950,10 +950,10 @@ export function RequestHistoryClient() {
           </TableCell>
           <TableCell className="font-mono text-xs">{r.domain}</TableCell>
           <TableCell className="max-w-xs truncate font-mono text-xs">
-            {r.query ?? <span className="text-muted-foreground">—</span>}
+            {r.query ?? <span className="text-muted-foreground">-</span>}
           </TableCell>
           <TableCell className="font-mono text-xs">
-            {r.externalId ?? <span className="text-muted-foreground">—</span>}
+            {r.externalId ?? <span className="text-muted-foreground">-</span>}
           </TableCell>
           <TableCell>
             <Badge variant={statusVariant(r.status)} className="tabular-nums">
@@ -965,7 +965,7 @@ export function RequestHistoryClient() {
             {r.cacheHit ? (
               <Badge variant="info">{t("cacheHitYes")}</Badge>
             ) : (
-              <span className="text-muted-foreground">—</span>
+              <span className="text-muted-foreground">-</span>
             )}
           </TableCell>
         </TableRow>
@@ -987,7 +987,7 @@ export function RequestHistoryClient() {
 }
 ```
 
-Note the em-dash-looking `—` characters in the table cells are pre-existing UI copy (typographic dash for empty cells), keep them.
+Note the em-dash-looking `-` characters in the table cells are pre-existing UI copy (typographic dash for empty cells), keep them.
 
 - [ ] **Step 3: Typecheck + lint**
 
@@ -1164,7 +1164,7 @@ In `advanced-tab.tsx`, directly after the closing `</div>` of the `logRetentionD
 </div>
 ```
 
-No changes needed in `settings-types.ts` — `SettingsRow extends SettingsUpdate`, which now includes the field via the Zod schema.
+No changes needed in `settings-types.ts` - `SettingsRow extends SettingsUpdate`, which now includes the field via the Zod schema.
 
 - [ ] **Step 2: Typecheck + lint**
 

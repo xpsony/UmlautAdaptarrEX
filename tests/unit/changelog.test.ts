@@ -43,7 +43,7 @@ describe("unseenSince", () => {
 
   // unseenSince(oldest) must NOT include the oldest entry itself (that's the
   // "seen" mark), so the result equals "everything before the oldest" which
-  // is empty by definition — regardless of how many entries CHANGELOG has.
+  // is empty by definition - regardless of how many entries CHANGELOG has.
   it("does not include the oldest entry when it is passed as seen", () => {
     const oldestVersion = CHANGELOG.at(-1)?.version;
     expect(oldestVersion).toBeDefined();

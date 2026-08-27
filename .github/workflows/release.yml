@@ -93,7 +93,7 @@ jobs:
           # Push by content digest only; the merge job assembles the
           # multi-arch manifest with the actual tags.
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
-          # Per-platform cache scopes — amd64 and arm64 produce different
+          # Per-platform cache scopes - amd64 and arm64 produce different
           # layers, sharing a scope would just thrash.
           cache-from: |
             type=gha,scope=release-${{ steps.prep.outputs.pair }}

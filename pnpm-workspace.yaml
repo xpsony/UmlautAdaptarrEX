@@ -22,7 +22,7 @@ overrides:
 # instead of failing.
 minimumReleaseAge: 1440
 
-# Deliberately held-back majors — protects `pnpm update --latest` from
+# Deliberately held-back majors - protects `pnpm update --latest` from
 # crossing them. In-range patches for these still arrive via Dependabot
 # (which only ignores their semver-major updates, see .github/dependabot.yml).
 updateConfig:

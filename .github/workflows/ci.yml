@@ -74,7 +74,7 @@ jobs:
           echo "--------------------------"
 
           if docker logs uax-smoke 2>&1 | grep -q "ERR_MODULE_NOT_FOUND"; then
-            echo "::error::ERR_MODULE_NOT_FOUND — a server runtime dependency is missing from docker/runtime-deps.names.json"
+            echo "::error::ERR_MODULE_NOT_FOUND - a server runtime dependency is missing from docker/runtime-deps.names.json"
             exit 1
           fi
 

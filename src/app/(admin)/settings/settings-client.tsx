@@ -45,7 +45,7 @@ export function SettingsClient() {
   });
 
   // Four independent RHF instances, one per tab (Epic 6 Task 7). This
-  // replaces a single form that shared one dirty flag across all tabs — the
+  // replaces a single form that shared one dirty flag across all tabs - the
   // Epic-8 bug where editing the Providers tab kept the General tab's Save
   // button enabled too. Each form is scoped to its own field subset via
   // `SettingsUpdateSchema.pick(...)` (see settings-types.ts) and PUTs only
@@ -171,7 +171,7 @@ export function SettingsClient() {
   // link, browser back/forward within the app): Next.js App Router has no
   // stable, cancelable router-transition event to hook a confirm dialog
   // into. `beforeunload` only covers the tab/window-close and hard-navigation
-  // case, which is the one irrecoverable data-loss scenario — that's a
+  // case, which is the one irrecoverable data-loss scenario - that's a
   // deliberate scope limit, not an oversight.
   const anyDirty =
     generalForm.formState.isDirty ||

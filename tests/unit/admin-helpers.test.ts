@@ -144,7 +144,7 @@ describe("toCsv", () => {
   // CSV/formula injection (CWE-1236): a string cell starting with =, +, -, or
   // @ is interpreted as a formula by Excel/Sheets/LibreOffice on open. These
   // columns carry free text that ultimately traces back to *arr search
-  // queries / indexer release titles, which an attacker can influence — so a
+  // queries / indexer release titles, which an attacker can influence - so a
   // crafted release name must not turn into an executing formula for the
   // admin who opens the export.
   it.each(["=1+1", "+1+1", "-1+1", "@SUM(A1:A2)", "=cmd|'/c calc'!A1", "\t=1+1"])(

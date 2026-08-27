@@ -58,12 +58,12 @@ function triggerAutoLogout(): void {
   try {
     sessionStorage.setItem(SESSION_EXPIRED_FLAG, "1");
   } catch {
-    /* sessionStorage can throw in private tabs — non-fatal */
+    /* sessionStorage can throw in private tabs - non-fatal */
   }
   const next = encodeURIComponent(here + window.location.search);
   // Hard navigation on purpose: the session is dead, so a full reload must
   // drop all in-memory client state (react-query caches etc.) instead of a
-  // soft router.push(). Absolute URL — relative destinations trip the
+  // soft router.push(). Absolute URL - relative destinations trip the
   // @next/next/no-location-assign-relative-destination rule.
   window.location.assign(new URL(`/login?next=${next}`, window.location.origin));
 }

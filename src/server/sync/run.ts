@@ -70,7 +70,7 @@ function parseProviderOrder(csv: string | null): ProviderId[] | null {
 }
 
 // Mark a run failed and propagate the message to the instance row so the UI
-// can surface it. Always returns a perInstance entry the caller can collect —
+// can surface it. Always returns a perInstance entry the caller can collect -
 // a status-write failure (e.g. DB locked) must not lose the in-memory result
 // that the sync already computed, so writes are best-effort and logged rather
 // than propagated.
@@ -192,7 +192,7 @@ function checkTmdbPreflight(state: AppState): string | null {
 //
 // titlesByLang is sourced from the TitleApiCache (same source the route-
 // triggered rebuild helper in title-overrides/rebuild.ts uses), not just
-// `{ de: overrideTitle }` — that keeps non-DE plugin variations (sv/fr/...)
+// `{ de: overrideTitle }` - that keeps non-DE plugin variations (sv/fr/...)
 // intact for overridden items across every sync instead of dropping them.
 async function applyTitleOverrides(items: SearchItemDerived[]): Promise<SearchItemDerived[]> {
   const overrides = await prisma.titleOverride.findMany();
@@ -440,7 +440,7 @@ async function syncOneInstance(
 ): Promise<PerInstanceResult> {
   const { instance } = prepared;
   const order = parseProviderOrder(instance.providerOrder);
-  // Lidarr/Readarr don't need a TitleProvider — their fetchAllItems paths
+  // Lidarr/Readarr don't need a TitleProvider - their fetchAllItems paths
   // ignore it anyway. Sonarr/Radarr without an order = config error, so we
   // fail loudly instead of silently running through.
   const needsProvider = instance.type === "sonarr" || instance.type === "radarr";
@@ -514,7 +514,7 @@ async function fetchAndPersist(
   });
 
   const withGermanTitle = items.filter((i) => i.germanTitle).length;
-  // First few titles without a German title — most useful diagnostic when an
+  // First few titles without a German title - most useful diagnostic when an
   // operator asks "why didn't movie X get translated?". Capped at 5 so a
   // 4k-library sync doesn't dump 4k titles into the log line.
   const missingGermanSample = items

@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useQuery } from "@tanstack/react-query";
 import { useSyncTracker } from "./_lib/use-sync-tracker";
 
-// recharts is ~120 KB gzipped — load it after First Contentful Paint so the
+// recharts is ~120 KB gzipped - load it after First Contentful Paint so the
 // KPI cards above the fold render without waiting on the chart library.
 // ssr: false prevents SSR rendering, which recharts doesn't support reliably
 // anyway (depends on layout measurements).
@@ -168,7 +168,7 @@ export function DashboardClient() {
             <CardDescription>{t("charts.requestsHint")}</CardDescription>
           </CardHeader>
           <CardContent className="h-64">
-            {/* No isLoading conditional here — switching the rendered subtree
+            {/* No isLoading conditional here - switching the rendered subtree
                 while the dynamic chunk is mid-resolve causes WebKit's
                 "insertBefore: object can not be found here" race. The
                 dynamic loading fallback covers chunk-load; recharts handles

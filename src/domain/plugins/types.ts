@@ -29,7 +29,7 @@ export interface VariationPlugin {
 
   /**
    * Each map produces one variation by applying every substitution within it.
-   * E.g. for German: one map maps ä→ae, another maps ä→a — yielding two
+   * E.g. for German: one map maps ä→ae, another maps ä→a - yielding two
    * distinct variations per input title.
    */
   variationMaps: ReadonlyArray<Readonly<Record<string, string>>>;

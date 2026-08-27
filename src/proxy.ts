@@ -5,7 +5,7 @@ import { type NextRequest, NextResponse } from "next/server";
 //  1. Reverse-proxy the API surface the browser calls (`/api/admin`,
 //     `/api/auth`, `/api/health`) to the Fastify gateway at runtime. These
 //     used to be `next.config.ts` rewrites, but `output: "standalone"` bakes
-//     rewrite destinations into routes-manifest.json at *build* time — so a
+//     rewrite destinations into routes-manifest.json at *build* time - so a
 //     runtime-configured API port (UMLAUTADAPTARREX_LEGACYAPI_PORT / PORT,
 //     surfaced as API_UPSTREAM by start.mjs) was ignored and the proxy kept
 //     hitting the build-time default :5005. Proxy runs in the Node.js runtime
@@ -42,7 +42,7 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
     if (!res.ok) {
       // Reachable but couldn't report state (e.g. transient 5xx, or a 429 if
       // the endpoint is throttled). Treat "can't determine" the same as
-      // "unreachable" below — fail open and let the request through. The
+      // "unreachable" below - fail open and let the request through. The
       // earlier behavior left setupComplete=false on any non-2xx, which turned
       // a single hiccup into a site-wide redirect into the setup wizard.
       return NextResponse.next();
@@ -80,7 +80,7 @@ export const config = {
   matcher: [
     // Page routes (job 2): everything except API, Next internals, and static
     // assets. These respect the setup gate. `arr/` and `brand/` are the only
-    // two public/ asset dirs — both must be excluded, otherwise the setup
+    // two public/ asset dirs - both must be excluded, otherwise the setup
     // gate redirects e.g. /arr/sonarr.svg to /setup and the *Arr icons render
     // as broken images during the wizard.
     "/((?!api/|_next/|arr/|brand/|favicon\\.ico).*)",

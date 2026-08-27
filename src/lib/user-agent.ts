@@ -1,5 +1,5 @@
 // The repo manifest is not one of the layers `no-restricted-imports` guards,
-// and there is no @/* alias for a file outside src/ — src/app/(admin)/about
+// and there is no @/* alias for a file outside src/ - src/app/(admin)/about
 // reads the version the same way (that path is exempt from the rule wholesale).
 // eslint-disable-next-line no-restricted-imports
 import pkg from "../../package.json";
@@ -25,7 +25,7 @@ export function defaultUserAgent(): string {
 
 /**
  * The effective User-Agent for outbound requests. A blank `Setting.userAgent`
- * means "auto" — the column carries an *override*, not the value itself, so
+ * means "auto" - the column carries an *override*, not the value itself, so
  * the version tracks releases without the operator having to edit it.
  */
 export function resolveUserAgent(configured: string | null | undefined): string {
@@ -43,7 +43,7 @@ export function resolveUserAgent(configured: string | null | undefined): string 
  * used so the request never goes out without a User-Agent.
  *
  * Note this replaces the previous behaviour, which always CONCATENATED the
- * two ("Sonarr/4.0.0 UmlautAdaptarrEX/2.0") — a value that matched neither
+ * two ("Sonarr/4.0.0 UmlautAdaptarrEX/2.0") - a value that matched neither
  * client and could defeat exactly the UA allow-lists forwarding is for.
  */
 export function outboundUserAgent(

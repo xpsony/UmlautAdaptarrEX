@@ -74,7 +74,7 @@ describe("alias search fallback (no German title)", () => {
     // The Latin alias survives; the apostrophe is stripped by getCleanTitle
     // like any other special character.
     expect(out.titleSearchVariations).toContain("Ember Ange dAcier");
-    // Match variations are unfiltered — a release named in any script can
+    // Match variations are unfiltered - a release named in any script can
     // still be recognised.
     expect(out.titleMatchVariations.join(" | ")).toContain("Ember Ange dAcier");
   });

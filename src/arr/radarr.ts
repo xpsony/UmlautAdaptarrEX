@@ -49,8 +49,8 @@ export class RadarrClient extends ArrClient {
     const movies = await this.getJson<RadarrMovie[]>("/api/v3/movie");
     if (!movies) return [];
 
-    // We always ask the provider — even when Radarr already has a German
-    // alternate title — because non-DE languages requested by active plugins
+    // We always ask the provider - even when Radarr already has a German
+    // alternate title - because non-DE languages requested by active plugins
     // (sv, fr, …) cannot be served by Radarr's local data. The German title
     // from Radarr is still preferred (avoids a roundtrip), but we still need
     // sv/fr from TMDB for plugin variations.

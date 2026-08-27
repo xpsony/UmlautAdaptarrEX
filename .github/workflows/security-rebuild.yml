@@ -2,7 +2,7 @@ name: Security rebuild
 
 # Periodically rebuilds the latest STABLE release image so it picks up OS /
 # base-image security patches without a code change. A rebuild of a fixed
-# commit can only refresh OS layers — npm dependencies are pinned by
+# commit can only refresh OS layers - npm dependencies are pinned by
 # pnpm-lock.yaml and reach the image via the normal release cycle (Dependabot
 # merges into `dev`, then dev->main->release). Pushes `:latest` and an
 # immutable-per-release `:<version>-<sha>` variant; the plain `:<version>` tag
@@ -55,7 +55,7 @@ jobs:
         run: |
           set -euo pipefail
           # `releases/latest` is the newest published, non-draft,
-          # non-prerelease release — exactly the stable line `:latest` tracks.
+          # non-prerelease release - exactly the stable line `:latest` tracks.
           if [ -n "${INPUT_TAG:-}" ]; then
             tag="$INPUT_TAG"
           else

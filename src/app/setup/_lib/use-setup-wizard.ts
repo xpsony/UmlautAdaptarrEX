@@ -451,7 +451,7 @@ export function useSetupWizard(initialStatus: SetupStatus) {
   };
 
   // Patch-indexers step (runs AFTER finalSubmit, so the proxy + tag exist and
-  // the session cookie is set — hence the /api/admin endpoints).
+  // the session cookie is set - hence the /api/admin endpoints).
   const loadPatchIndexers = async () => {
     setPatchLoading(true);
     try {

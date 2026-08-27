@@ -43,7 +43,7 @@ function applyPreset(
 
 /**
  * Worked before/after example for one toggle. Release names stay verbatim
- * (they are data, not prose — see RENAMING_EXAMPLES); only the labels are
+ * (they are data, not prose - see RENAMING_EXAMPLES); only the labels are
  * translated. `overflow-x-auto` keeps a long release name from widening the
  * card on narrow screens.
  */

@@ -74,7 +74,7 @@ describe("renameForMoviesAndTv: yearGuard", () => {
 
 describe("renameForMoviesAndTv: prefixGuard", () => {
   // expectedTitle starts with the matched variation and no SxxExx / year
-  // follows — the EX guard refuses, the predecessor did not.
+  // follows - the EX guard refuses, the predecessor did not.
   const item = {
     expectedTitle: "Silberlicht: Ende der Reise",
     titleMatchVariations: ["Silberlicht"],
@@ -125,7 +125,7 @@ describe("renameForMoviesAndTv: releaseTagGuard", () => {
 describe("renameForMoviesAndTv: legacySuffix", () => {
   // The predecessor cut the suffix at the matched variation's RAW length and
   // had no token-boundary check. Both are one optimisation in EX, so the
-  // toggle turns both off — otherwise the wrong cut point would be fed to the
+  // toggle turns both off - otherwise the wrong cut point would be fed to the
   // boundary check and the toggle would just decline renames at random.
   const digitTailItem = {
     expectedTitle: "Die Renko Jagd",
@@ -136,7 +136,7 @@ describe("renameForMoviesAndTv: legacySuffix", () => {
 
   it("off (default) declines when the variation ends mid-token", () => {
     // Variation "Renko Jagd 2" normalizes into the start of
-    // "Renko.Jagd.2016…" — the boundary check refuses rather than eating the
+    // "Renko.Jagd.2016…" - the boundary check refuses rather than eating the
     // leading "2" of the year.
     const r = renameForMoviesAndTv(digitTailRelease, digitTailItem);
     expect(r.rewrittenTitle).toBeNull();

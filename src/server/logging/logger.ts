@@ -9,7 +9,7 @@ const REDACT_RE = /\b(apikey|api[_-]?key|token|password|secret)=[^&\s"]+/gi;
 const HEADER_REDACT_RE =
   /(api[_-]?key|x-api-key|authorization|cookie|set-cookie|proxy-authorization)\s*:\s*\S+/gi;
 
-// Explicit blocklist for full key names — these win regardless of regex match,
+// Explicit blocklist for full key names - these win regardless of regex match,
 // so future fields here are safe even if the heuristic misses.
 const SENSITIVE_KEY_LITERALS = new Set(
   [
@@ -142,7 +142,7 @@ export function createLogger(deps: LoggerDeps = {}): pino.Logger {
     serializers: {
       err: stdSerializers.err,
       error: stdSerializers.err,
-      // No req/res serializers — per-request hooks log only the relevant fields.
+      // No req/res serializers - per-request hooks log only the relevant fields.
     },
     formatters: {
       log(obj) {

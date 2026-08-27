@@ -47,7 +47,7 @@ PRAGMA defer_foreign_keys=OFF;
 -- never carry `:` and Sonarr/Radarr bind a release far more reliably from a
 -- newznab id attribute than from a parsed title. Both do however change the
 -- bytes we hand back to the *Arr, so an existing install must not be flipped
--- silently — it keeps today's output until the operator opts in.
+-- silently - it keeps today's output until the operator opts in.
 --
 -- The RedefineTables block above copies only rows that were already present,
 -- so any row visible here belongs to a pre-existing install. On a fresh

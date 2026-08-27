@@ -255,7 +255,7 @@ describe("GET /api/admin/sync-runs", () => {
       url: "/api/admin/sync-runs?take=99999",
       ...sessionCookieOnly(session),
     });
-    // The route clamps `take` at 500 (the old 200-row hardcap is gone) —
+    // The route clamps `take` at 500 (the old 200-row hardcap is gone) -
     // assert we got at most that many rows back. With 5 seeded, that's just 5.
     const body = r.json() as { items: unknown[]; take: number };
     expect(body.items.length).toBeLessThanOrEqual(500);

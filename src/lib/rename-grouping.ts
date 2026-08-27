@@ -2,7 +2,7 @@
  * Presentational grouping for the rename-history table: collapse consecutive
  * rows with an identical (mediaType, originalTitle, rewrittenTitle) triple
  * into one display row with a counter and time range. Operates on the loaded
- * page only — a run may split across a page boundary, and totals/CSV keep
+ * page only - a run may split across a page boundary, and totals/CSV keep
  * counting raw rows (accepted trade-off, see the design spec).
  */
 

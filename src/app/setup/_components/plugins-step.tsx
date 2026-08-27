@@ -42,14 +42,14 @@ export function PluginsStep({
           <CardDescription>{t("pluginsHint")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Per-plugin query cost — shown before the checkboxes so the
+          {/* Per-plugin query cost - shown before the checkboxes so the
               trade-off is visible while choosing, not after. */}
           <Alert role="status">
             <Info className="h-4 w-4" />
             <AlertDescription>{t("pluginsCostHint")}</AlertDescription>
           </Alert>
           {!tmdbConfigured ? (
-            // Standing condition (missing TMDB key), not a transient event —
+            // Standing condition (missing TMDB key), not a transient event -
             // role="status" instead of the warning variant's default "alert".
             <Alert variant="warning" role="status">
               <Plug className="h-4 w-4" />
@@ -228,6 +228,6 @@ function PluginLanguageGroup({
 function languageLabel(t: (key: string) => string, lang: string): string {
   const key = `pluginsLanguage.${lang}`;
   const value = t(key);
-  // next-intl returns the key itself when missing — fall back to the raw code.
+  // next-intl returns the key itself when missing - fall back to the raw code.
   return value === key ? lang.toUpperCase() : value;
 }

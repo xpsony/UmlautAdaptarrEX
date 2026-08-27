@@ -39,7 +39,7 @@ export class SonarrClient extends ArrClient {
         // TVDB alias list) and the provider aliases each carry names the
         // other lacks. The previous `payload?.aliases ?? sonarr` dropped
         // Sonarr's list outright as soon as a provider returned a single
-        // alias — and Sonarr's list is often where the German name hides for
+        // alias - and Sonarr's list is often where the German name hides for
         // a series whose expectedTitle is the English TVDB translation.
         // Radarr has always merged both (see radarr.ts); this aligns Sonarr.
         const aliases = Array.from(

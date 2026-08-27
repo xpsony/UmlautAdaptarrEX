@@ -11,7 +11,7 @@ import { makeTitlePayload, type TitlePayload, type TitleProvider } from "./types
  *     temporarily broken provider does not get persisted as "not found"
  *     forever.
  *
- * `fetchByTitle` is not cached — the cache targets bulk sync lookups by id.
+ * `fetchByTitle` is not cached - the cache targets bulk sync lookups by id.
  */
 const NEGATIVE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -72,7 +72,7 @@ function coversAllLangs(row: CachedRow, langs: readonly string[] | undefined): b
 }
 
 /**
- * Structural subset of a logger's `error` method — matches pino's `Logger`
+ * Structural subset of a logger's `error` method - matches pino's `Logger`
  * (and any test double) without importing pino into a provider module.
  */
 export interface DbCacheErrorLogger {
@@ -157,7 +157,7 @@ export class DbCachedTitleProvider implements TitleProvider {
           out.set(externalId, payload);
         }
         // Negative hits (no titles in any requested lang) are kept out of the
-        // result map — match legacy behavior.
+        // result map - match legacy behavior.
       } else {
         missing.push(externalId);
       }
@@ -168,7 +168,7 @@ export class DbCachedTitleProvider implements TitleProvider {
     // Stream per-id persistence: each time the inner chain resolves an id, we
     // write it to the cache immediately. This way a crash mid-sync (TMDB
     // sequential calls, pcjones chunks, TVDB sequential) does not discard the
-    // items already fetched — re-running the sync picks up where it left off.
+    // items already fetched - re-running the sync picks up where it left off.
     const persisted = new Set<string>();
     const onItem = async (externalId: string, payload: TitlePayload): Promise<void> => {
       await this.persist(cacheKey(type, externalId), payload, langs);
@@ -180,7 +180,7 @@ export class DbCachedTitleProvider implements TitleProvider {
     });
     for (const externalId of missing) {
       const payload = fromInner.get(externalId) ?? null;
-      // Skip ids the streaming callback already persisted — its last call
+      // Skip ids the streaming callback already persisted - its last call
       // carried the cumulative merged payload, which matches what the result
       // map holds. Only ids that the inner chain never resolved still need a
       // write here, to land a negative-cache row with a TTL.
@@ -208,7 +208,7 @@ export class DbCachedTitleProvider implements TitleProvider {
       expiresAt: isPositive ? null : new Date(Date.now() + NEGATIVE_TTL_MS),
     };
     // Persist one TitleTranslation row per language we either *got* or
-    // *requested but didn't get* — the latter is a per-lang negative cache
+    // *requested but didn't get* - the latter is a per-lang negative cache
     // entry (title = null), so the next call skips the outbound roundtrip.
     const allLangs = new Set<string>([...Object.keys(titlesByLang), ...Object.keys(aliasesByLang)]);
     if (requestedLangs && !requestedLangs.includes("*")) {

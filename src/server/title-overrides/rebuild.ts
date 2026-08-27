@@ -3,7 +3,7 @@ import { buildSearchItem, type SearchItemInput } from "@/domain/variations";
 import type { MediaType } from "@/domain/variations/generate";
 import { getAppState } from "@/server/state";
 
-// Mirrors `parseAliasesJson` in `src/providers/db-cache.ts` — a corrupt
+// Mirrors `parseAliasesJson` in `src/providers/db-cache.ts` - a corrupt
 // `aliases` column must never abort the rebuild (and must not be parsed
 // while holding the SQLite writer lock inside `$transaction`).
 function parseAliasesJson(raw: string | null): string[] | null {
@@ -46,7 +46,7 @@ async function doRebuild(
     if (t.title) titlesByLang[t.lang] = t.title;
   }
   const germanTitle = override?.germanTitle ?? titlesByLang["de"] ?? null;
-  // The override must win everywhere the "de" title is consumed — without
+  // The override must win everywhere the "de" title is consumed - without
   // this, generateForTvMovie's `inputDe = titlesByLang?.de` would fall back
   // to the cached provider title and re-introduce it into the variations.
   if (override) titlesByLang["de"] = override.germanTitle;
@@ -94,7 +94,7 @@ async function doRebuild(
 
 // Rebuilds mutate the shared in-memory index (remove → re-read → re-index);
 // two interleaved runs could leave stale or duplicate entries. Serialize
-// them through a queue — callers just await their turn. Note this only
+// them through a queue - callers just await their turn. Note this only
 // serializes rebuilds against each other, NOT against a running sync's
 // persist phase: a PUT landing in that seconds-wide window can be
 // overwritten with pre-override titles until the next sync re-applies the

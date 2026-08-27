@@ -10,7 +10,7 @@ export interface SearchItemInput {
   externalId: string;
   /**
    * IMDb id, when the *Arr client has one (Radarr does per movie). Carried
-   * through untouched — it takes no part in variation generation, it is only
+   * through untouched - it takes no part in variation generation, it is only
    * persisted so the rewrite can emit a newznab `imdb` attribute.
    */
   imdbId?: string | null;

@@ -24,11 +24,11 @@ export function RequestDetailSheet({ open, item, onClose }: RequestDetailSheetPr
   const locale = useLocale();
 
   // The Sheet must stay mounted while `open` flips to false so Radix can run
-  // its exit animation — the parent no longer unmounts this component on
+  // its exit animation - the parent no longer unmounts this component on
   // close. `item` itself goes null the instant the parent clears its
   // selection, so keep the last-seen item around and render that while the
   // animation plays out. Adjusted during render (not in an effect) per the
-  // React docs' "adjusting state when a prop changes" pattern — refs can't be
+  // React docs' "adjusting state when a prop changes" pattern - refs can't be
   // read during render, and an effect here would render one frame behind.
   const [lastItem, setLastItem] = useState<RequestHistoryRow | null>(item);
   if (item && item !== lastItem) {
@@ -63,7 +63,7 @@ export function RequestDetailSheet({ open, item, onClose }: RequestDetailSheetPr
 
           <dt className="text-muted-foreground">{t("externalId")}</dt>
           <dd className="font-mono text-xs break-all">
-            {shown.externalId ?? <span className="text-muted-foreground">—</span>}
+            {shown.externalId ?? <span className="text-muted-foreground">-</span>}
           </dd>
 
           <dt className="text-muted-foreground">{t("status")}</dt>
@@ -81,7 +81,7 @@ export function RequestDetailSheet({ open, item, onClose }: RequestDetailSheetPr
             {shown.cacheHit ? (
               <Badge variant="info">{t("cacheHitYes")}</Badge>
             ) : (
-              <span className="text-muted-foreground">—</span>
+              <span className="text-muted-foreground">-</span>
             )}
           </dd>
 
@@ -92,7 +92,7 @@ export function RequestDetailSheet({ open, item, onClose }: RequestDetailSheetPr
         <div className="space-y-1.5">
           <p className="text-sm font-medium text-muted-foreground">{t("query")}</p>
           <p className="font-mono text-xs break-all">
-            {shown.query ?? <span className="text-muted-foreground">—</span>}
+            {shown.query ?? <span className="text-muted-foreground">-</span>}
           </p>
         </div>
       </SheetContent>

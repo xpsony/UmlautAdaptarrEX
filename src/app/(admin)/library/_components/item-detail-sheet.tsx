@@ -51,11 +51,11 @@ export function ItemDetailSheet({ open, item, onClose }: ItemDetailSheetProps) {
   const qc = useQueryClient();
 
   // The Sheet must stay mounted while `open` flips to false so Radix can run
-  // its exit animation — the parent no longer unmounts this component on
+  // its exit animation - the parent no longer unmounts this component on
   // close. `item` itself goes null the instant the parent clears its
   // selection, so keep the last-seen item around and render that while the
   // animation plays out. Adjusted during render (not in an effect) per the
-  // React docs' "adjusting state when a prop changes" pattern — refs can't
+  // React docs' "adjusting state when a prop changes" pattern - refs can't
   // be read during render, and an effect here would render one frame behind.
   const [lastItem, setLastItem] = useState<Item | null>(item);
   if (item && item !== lastItem) {
@@ -66,7 +66,7 @@ export function ItemDetailSheet({ open, item, onClose }: ItemDetailSheetProps) {
   // Reset the override field exactly once per "sheet opened for item X"
   // transition, using the same render-time-adjustment pattern. Deliberately
   // NOT re-syncing on every background-refetched `item.override` while the
-  // sheet stays open for the same item — that would clobber in-progress
+  // sheet stays open for the same item - that would clobber in-progress
   // typing. Trade-off: an override edited elsewhere while this sheet is open
   // won't be picked up until it is reopened.
   const openKey = open && item ? item.id : null;
@@ -150,12 +150,12 @@ export function ItemDetailSheet({ open, item, onClose }: ItemDetailSheetProps) {
           {showAuthor && (
             <>
               <dt className="text-muted-foreground">{t("detailAuthor")}</dt>
-              <dd>{shown.expectedAuthor ?? <span className="text-muted-foreground">—</span>}</dd>
+              <dd>{shown.expectedAuthor ?? <span className="text-muted-foreground">-</span>}</dd>
             </>
           )}
 
           <dt className="text-muted-foreground">{t("colGermanTitle")}</dt>
-          <dd>{shown.germanTitle ?? <span className="text-muted-foreground">—</span>}</dd>
+          <dd>{shown.germanTitle ?? <span className="text-muted-foreground">-</span>}</dd>
 
           <dt className="text-muted-foreground">{t("detailExternalId")}</dt>
           <dd className="font-mono text-xs">{shown.externalId}</dd>

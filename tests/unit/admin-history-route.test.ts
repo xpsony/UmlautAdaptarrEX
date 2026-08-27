@@ -253,7 +253,7 @@ describe("GET /api/admin/request-history", () => {
         method: "GET",
         url: "/api/admin/request-history?format=csv",
       });
-      // Body is BOM-prefixed (see below) — strip it before splitting on rows.
+      // Body is BOM-prefixed (see below) - strip it before splitting on rows.
       const lines = r.body.slice(1).split("\r\n");
       expect(lines[0]).toBe("id,createdAt,type,domain,query,externalId,status,durationMs,cacheHit");
       expect(lines[1]).toBe('r1,2026-01-02T03:04:05.000Z,caps,example.com,"a, b",,200,12,true');
@@ -405,7 +405,7 @@ describe("GET /api/admin/rename-history", () => {
         method: "GET",
         url: "/api/admin/rename-history?format=csv",
       });
-      // Body is BOM-prefixed (see below) — strip it before splitting on rows.
+      // Body is BOM-prefixed (see below) - strip it before splitting on rows.
       const lines = r.body.slice(1).split("\r\n");
       expect(lines[0]).toBe("id,createdAt,mediaType,originalTitle,rewrittenTitle");
       expect(lines[1]).toBe('n1,2026-01-02T03:04:05.000Z,movie,Die Hard,"Stirb ""langsam"""');

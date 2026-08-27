@@ -10,7 +10,7 @@ export interface TitleDiffSegment {
 }
 
 // Release names are < ~100 tokens; anything beyond this cap is not a release
-// name and not worth an O(n·m) DP — fall back to whole-string segments.
+// name and not worth an O(n·m) DP - fall back to whole-string segments.
 const TOKEN_CAP = 500;
 
 /** Split a release name into tokens, keeping separators as their own tokens. */

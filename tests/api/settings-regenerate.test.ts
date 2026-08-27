@@ -60,7 +60,7 @@ describe("POST /api/admin/settings/regenerate-apikey", () => {
     const setting = await prisma.setting.findUnique({ where: { id: 1 } });
     expect(setting?.appApiKey).toBe(body.appApiKey);
 
-    // Live state was reloaded — legacy /:apiKey/* uses this for auth.
+    // Live state was reloaded - legacy /:apiKey/* uses this for auth.
     expect(getAppState().settings.appApiKey).toBe(body.appApiKey);
   });
 

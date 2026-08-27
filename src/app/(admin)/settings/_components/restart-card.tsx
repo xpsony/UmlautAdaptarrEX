@@ -20,7 +20,7 @@ export function RestartCard() {
       </CardHeader>
       <CardContent className="space-y-3">
         {!canRestart ? (
-          // Standing condition (platform capability), not a transient event —
+          // Standing condition (platform capability), not a transient event -
           // role="status" instead of the warning variant's default "alert".
           <Alert variant="warning" role="status">
             <AlertTriangle className="h-4 w-4" />

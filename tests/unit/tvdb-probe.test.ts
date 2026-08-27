@@ -53,7 +53,7 @@ describe("probeTvdbKey", () => {
   });
 });
 
-describe("TvdbProvider — token re-login on 401", () => {
+describe("TvdbProvider - token re-login on 401", () => {
   it("re-logs in once when an authed call returns 401", async () => {
     requestMock
       // initial login

@@ -78,7 +78,7 @@
     },
     "pluginsTitle": "Plugins auswählen",
     "pluginsHint": "Wähle die Sprach-Plugins, die für Suchvarianten und das Umschreiben der Indexer-Antworten verwendet werden. Du kannst diese Auswahl später in den Einstellungen ändern.",
-    "pluginsCostHint": "Wähle nur Sprachen, die du tatsächlich konsumierst — jedes zusätzliche Plugin erzeugt zusätzliche Suchvarianten und damit zusätzliche Indexer-Anfragen pro Suche (Obergrenze 10) sowie eine weitere TheTVDB-Anfrage pro Titel und Sprache bei jedem Sync.",
+    "pluginsCostHint": "Wähle nur Sprachen, die du tatsächlich konsumierst - jedes zusätzliche Plugin erzeugt zusätzliche Suchvarianten und damit zusätzliche Indexer-Anfragen pro Suche (Obergrenze 10) sowie eine weitere TheTVDB-Anfrage pro Titel und Sprache bei jedem Sync.",
     "pluginsDefaultBadge": "Standard",
     "pluginsEmpty": "Keine Plugins verfügbar.",
     "pluginsLoadFailed": "Plugins konnten nicht geladen werden: {error}",
@@ -344,7 +344,7 @@
   },
   "library": {
     "title": "Bibliothek",
-    "subtitle": "Synchronisierte Titel aller Instanzen — inklusive manueller Overrides.",
+    "subtitle": "Synchronisierte Titel aller Instanzen - inklusive manueller Overrides.",
     "listTitle": "{count, plural, =0 {Keine Titel} one {# Titel} other {# Titel}}",
     "listSubtitle": "Original- und deutscher Titel, wie sie im Matching verwendet werden.",
     "emptyTitle": "Keine Titel",
@@ -378,7 +378,7 @@
     "overrideHint": "Ersetzt den deutschen Titel dieses Mediums in allen Instanzen. Varianten werden sofort neu berechnet.",
     "overrideSave": "Override speichern",
     "overrideRemove": "Override entfernen",
-    "overrideSaved": "Override gespeichert — Varianten neu berechnet.",
+    "overrideSaved": "Override gespeichert - Varianten neu berechnet.",
     "overrideRemoved": "Override entfernt."
   },
   "settings": {
@@ -397,7 +397,7 @@
     "plugins": {
       "title": "Eingebaute Plugins",
       "hint": "Jedes Plugin liefert sprachspezifische Transformationen (z.B. ä → ae), die in Suchvarianten und beim Umschreiben der Indexer-Antworten verwendet werden.",
-      "costHint": "Aktiviere ein Sprach-Plugin nur, wenn du Inhalte in dieser Sprache tatsächlich konsumierst. Jedes zusätzliche Plugin kostet Abfragen: pro Suche geht eine zusätzliche Anfrage je Sprachvariante an die Indexer (hart begrenzt auf 10 — überzählige Varianten fallen weg, im Zweifel auch deutsche), und beim Sync stellt TheTVDB pro Titel eine weitere Anfrage je Sprache (TMDB liefert alle Sprachen in einem Aufruf und skaliert daher nicht mit).",
+      "costHint": "Aktiviere ein Sprach-Plugin nur, wenn du Inhalte in dieser Sprache tatsächlich konsumierst. Jedes zusätzliche Plugin kostet Abfragen: pro Suche geht eine zusätzliche Anfrage je Sprachvariante an die Indexer (hart begrenzt auf 10 - überzählige Varianten fallen weg, im Zweifel auch deutsche), und beim Sync stellt TheTVDB pro Titel eine weitere Anfrage je Sprache (TMDB liefert alle Sprachen in einem Aufruf und skaliert daher nicht mit).",
       "defaultEnabledBadge": "Standardmäßig an",
       "resyncBanner": "Plugin-Änderungen wirken erst nach dem nächsten Sync, die gespeicherten Varianten wurden mit der vorigen Konfiguration berechnet.",
       "resyncNow": "Jetzt synchronisieren",
@@ -466,7 +466,7 @@
       "unknown": "TVDB-Test fehlgeschlagen."
     },
     "userAgent": "User-Agent-Header",
-    "userAgentHint": "Optional. Leer lassen heißt automatisch: UmlautAdaptarrEX plus die laufende Version — der Wert wächst dann mit jedem Update mit, ohne dass du das Feld anfassen musst.",
+    "userAgentHint": "Optional. Leer lassen heißt automatisch: UmlautAdaptarrEX plus die laufende Version - der Wert wächst dann mit jedem Update mit, ohne dass du das Feld anfassen musst.",
     "userAgentAutoHint": "Leer = automatisch: {value}",
     "forwardArrUserAgent": "User-Agent der *Arr durchreichen",
     "forwardArrUserAgentDescription": "Sendet den User-Agent von Sonarr/Radarr/Lidarr/Readarr wortwörtlich an den Indexer statt unseren eigenen.",
@@ -515,7 +515,7 @@
       "timeout": "Server hat nach 30 Sekunden noch nicht geantwortet. Bitte Logs prüfen und ggf. manuell neu starten.",
       "failed": "Neustart fehlgeschlagen: {error}",
       "unsupported": "Neustart aus dem UI ist in dieser Umgebung nicht verfügbar (Dev-Modus oder Setup ohne Supervisor). Bitte den Container/Service manuell neu starten.",
-      "unsupportedTitle": "Neustart nicht verfügbar — bitte manuell neu starten."
+      "unsupportedTitle": "Neustart nicht verfügbar - bitte manuell neu starten."
     },
     "prowlarr": {
       "title": "Prowlarr-Verbindung",
@@ -572,7 +572,7 @@
       "patchColStatus": "Status",
       "patchStatusPatched": "gepatcht",
       "patchStatusUnpatched": "nicht gepatcht",
-      "patchNotPatchable": "Keine editierbare Basis-URL — kann nicht gepatcht werden.",
+      "patchNotPatchable": "Keine editierbare Basis-URL - kann nicht gepatcht werden.",
       "patchApply": "Anwenden",
       "patchApplying": "Wird angewendet…",
       "patchEmpty": "Keine Indexer in Prowlarr gefunden.",
@@ -582,19 +582,19 @@
       "patchRetry": "Erneut versuchen"
     },
     "renaming": {
-      "hint": "Steuert, wie Release-Titel in den Indexer-Antworten umgeschrieben werden. Die Guard-Schalter sind die Schutzregeln, die UmlautAdaptarrEX gegenüber dem alten .NET-Vorgänger ergänzt hat — ausschalten macht das Umschreiben freizügiger, aber auch fehleranfälliger.",
+      "hint": "Steuert, wie Release-Titel in den Indexer-Antworten umgeschrieben werden. Die Guard-Schalter sind die Schutzregeln, die UmlautAdaptarrEX gegenüber dem alten .NET-Vorgänger ergänzt hat - ausschalten macht das Umschreiben freizügiger, aber auch fehleranfälliger.",
       "scopeHint": "Änderungen wirken sofort auf die nächste Suche, ein Neustart oder Sync ist nicht nötig. Bereits an Sonarr/Radarr ausgelieferte Releases werden nicht rückwirkend geändert.",
       "presetsLabel": "Voreinstellungen:",
       "presetLegacy": "Wie der alte Umlautadaptarr",
       "presetRecommended": "Empfohlene Werte",
-      "exampleRelease": "Beispiel — Release vom Indexer:",
+      "exampleRelease": "Beispiel - Release vom Indexer:",
       "exampleItem": "Bibliothek:",
       "exampleOff": "Aus",
       "exampleOn": "An",
       "exampleNotRenamed": "wird nicht umbenannt",
       "exampleNoteExternalIds": "Verkürzt dargestellt; die Attribute kommen zusätzlich zum bestehenden <item>-Inhalt.",
-      "exampleNotePrefixGuard": "Mit Staffel-Marker (…Silberlicht.S01E01…) wird in beiden Fällen umbenannt — die Prüfung greift nur ohne solchen Marker.",
-      "exampleNoteLegacySuffix": "Die „016“ war eigentlich das Jahr 2016 — der Schnitt hat die führende 2 verschluckt.",
+      "exampleNotePrefixGuard": "Mit Staffel-Marker (…Silberlicht.S01E01…) wird in beiden Fällen umbenannt - die Prüfung greift nur ohne solchen Marker.",
+      "exampleNoteLegacySuffix": "Die „016“ war eigentlich das Jahr 2016 - der Schnitt hat die führende 2 verschluckt.",
       "renameStripSpecialChars": {
         "label": "Unerwünschte Zeichen entfernen",
         "description": "Entfernt : ? * \" < > | / \\ aus dem eingesetzten Titel und lässt keine doppelten Trennzeichen zurück.",
@@ -622,7 +622,7 @@
       },
       "renameLegacySuffix": {
         "label": "Suffix wie beim alten Umlautadaptarr schneiden",
-        "description": "Schneidet nach Rohlänge der gefundenen Variante statt nach normalisierten Zeichen — und schaltet die Token-Grenzen-Prüfung mit ab.",
+        "description": "Schneidet nach Rohlänge der gefundenen Variante statt nach normalisierten Zeichen - und schaltet die Token-Grenzen-Prüfung mit ab.",
         "hint": "Nur einschalten, wenn du exakt das alte Verhalten brauchst. Endet eine Variante auf einer Ziffer, kann der Schnitt mitten in die Jahreszahl des Releases fallen und sie verstümmeln (siehe Beispiel). Ohne diesen Schalter lehnt UmlautAdaptarrEX solche Treffer stattdessen ab."
       }
     }

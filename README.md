@@ -97,7 +97,7 @@ einen "Strip-All"-Pfad, der den diakritischen Buchstaben komplett entfernt.
 > **Aktiviere nur Sprachen, die du tatsächlich konsumierst.** Jedes zusätzliche Plugin kostet Abfragen:
 >
 > - **Pro Suche** entsteht je Sprachvariante eine zusätzliche Anfrage an die Indexer. Die Gesamtzahl ist hart auf 10
->   begrenzt — überzählige Varianten fallen weg, im Zweifel auch deutsche. Ein Plugin, dessen Sprache du nie
+>   begrenzt - überzählige Varianten fallen weg, im Zweifel auch deutsche. Ein Plugin, dessen Sprache du nie
 >   herunterlädst, verdrängt also potenziell nützliche Suchen.
 > - **Pro Sync** stellt TheTVDB eine weitere Anfrage je Titel und Sprache (es gibt dort keinen Bulk-Endpoint für
 >   Übersetzungen). TMDB liefert alle Sprachen in einem Aufruf und skaliert daher nicht mit der Plugin-Anzahl.
@@ -105,7 +105,7 @@ einen "Strip-All"-Pfad, der den diakritischen Buchstaben komplett entfernt.
 ## Renaming
 
 Wie Release-Titel in den Indexer-Antworten umgeschrieben werden, ist unter **Settings → Renaming** konfigurierbar.
-Änderungen wirken ab der nächsten Suche — kein Neustart, kein Re-Sync.
+Änderungen wirken ab der nächsten Suche - kein Neustart, kein Re-Sync.
 
 | Schalter                                 | Default (neu) | Default (bestehend) | Wirkung                                                                                                                                                |
 | ---------------------------------------- | :-----------: | :-----------------: | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -114,13 +114,13 @@ Wie Release-Titel in den Indexer-Antworten umgeschrieben werden, ist unter **Set
 | **Jahres-Prüfung**                       |       ✓       |          ✓          | Lehnt das Umschreiben ab, wenn die Jahreszahl im Release nicht zum Medium passt (Toleranz pro Instanz konfigurierbar).                                 |
 | **Prüfung auf mehrdeutigen Präfix**      |       ✓       |          ✓          | Lehnt ab, wenn der Zieltitel mit der gefundenen Variante beginnt und danach kein `SxxExx` bzw. keine Jahreszahl folgt.                                 |
 | **Release-Tags erhalten**                |       ✓       |          ✓          | Schiebt `3D` / `4K` / `HDR` / `IMAX` zurück ins Suffix, wenn ein Provider-Alias sie mitgebracht hat.                                                   |
-| **Suffix wie beim alten Umlautadaptarr** |       ◯       |          ◯          | Schneidet nach Rohlänge der Variante statt nach normalisierten Zeichen. Bei `ß`/Umlauten schneidet das zu weit — nur für exakte Legacy-Kompatibilität. |
+| **Suffix wie beim alten Umlautadaptarr** |       ◯       |          ◯          | Schneidet nach Rohlänge der Variante statt nach normalisierten Zeichen. Bei `ß`/Umlauten schneidet das zu weit - nur für exakte Legacy-Kompatibilität. |
 
 Zwei Preset-Buttons setzen die vier Schutzregeln auf einmal: **Wie der alte Umlautadaptarr** (alle Schutzregeln aus,
 Legacy-Suffix an) und **Empfohlene Werte**.
 
 > Bestandsinstallationen behalten ihre bisherige Ausgabe: die Migration setzt die beiden Schalter, die die
-> ausgelieferten Bytes verändern, für sie auf **aus**. Neuinstallationen starten mit **an**. Beide lohnen sich —
+> ausgelieferten Bytes verändern, für sie auf **aus**. Neuinstallationen starten mit **an**. Beide lohnen sich -
 > Scene-Releases enthalten die entfernten Zeichen nie, und die externen IDs verbessern die Zuordnung in Sonarr/Radarr
 > deutlich.
 
@@ -276,9 +276,9 @@ Was das Skript tut:
 - Installiert Node.js 26 + pnpm (via npm), holt das neueste Release von `xpsony/UmlautAdaptarrEX`
   und führt `pnpm build:prod` + `pnpm prisma:deploy` aus.
 - Fragt während der Installation die drei Service-Ports ab (vorbelegt mit den Defaults, Enter übernimmt):
-  - **5007** — Web-UI + Setup-Wizard (`http://<IP>:5007/setup`)
-  - **5005** — Public API + Indexer-Routen für die \*arrs
-  - **5006** — Prowlarr-TCP-Proxy (Basic-Auth, wird im Setup gesetzt)
+  - **5007** - Web-UI + Setup-Wizard (`http://<IP>:5007/setup`)
+  - **5005** - Public API + Indexer-Routen für die \*arrs
+  - **5006** - Prowlarr-TCP-Proxy (Basic-Auth, wird im Setup gesetzt)
 - Startet die App als systemd-Dienst (`umlautadaptarrex`). Die SQLite-DB liegt unter
   `/opt/umlautadaptarrex/data/` und bleibt über Updates erhalten.
 
@@ -313,18 +313,19 @@ Die `data/`-DB wird in den Container gemountet und enthält die gesamte Konfigur
 
 Für schlanke Deployments lässt sich UmlautAdaptarrEX ohne die Next.js-Web-UI
 betreiben. Die eigentliche Funktion (Prowlarr-Indexer-Proxy, Legacy-API,
-Titel-Lookup) läuft vollständig in Fastify und ist von der UI unabhängig — die
+Titel-Lookup) läuft vollständig in Fastify und ist von der UI unabhängig - die
 \*Arrs sprechen ohnehin direkt mit Port 5005.
 
 Aktivierung über die Umgebungsvariable `UMLAUTADAPTARREX_HEADLESS=1`. Dann
 entfällt der Next.js-Prozess **und** die selbst-forkende Supervisor-Schicht;
 der Container läuft in einem einzigen Node-Prozess. In Messungen dieses
 Projekts (minimale Konfiguration) sank der Container-Verbrauch von ca. 160 MiB
-— und über 200 MiB, während die Web-UI geöffnet ist — auf ca. 115 MiB im
-Headless-Betrieb, also grob **ein Drittel bzw. ~50–90 MB** weniger. Der
-Fastify-/Core-Prozess bleibt der Hauptverbraucher; eingespart wird im
-Wesentlichen der wegfallende Web-UI-Prozess. Der genaue Betrag hängt von deiner
-Konfiguration ab.
+
+- und über 200 MiB, während die Web-UI geöffnet ist - auf ca. 115 MiB im
+  Headless-Betrieb, also grob **ein Drittel bzw. ~50–90 MB** weniger. Der
+  Fastify-/Core-Prozess bleibt der Hauptverbraucher; eingespart wird im
+  Wesentlichen der wegfallende Web-UI-Prozess. Der genaue Betrag hängt von deiner
+  Konfiguration ab.
 
 **Wichtig:** Der Headless-Modus funktioniert nur für eine **bereits
 eingerichtete** Instanz. Der Einrichtungs-Assistent läuft ausschließlich in der
@@ -468,7 +469,7 @@ API-Key wird normal gesetzt. Den `apiKey` für UmlautAdaptarrEX erzeugst du im W
 Die vollständige HTTP-API (Admin, Auth, Legacy, WebSocket, TCP-Proxy) ist in [docs/api.md](docs/api.md) dokumentiert.
 Die Release-Rename-Pipeline ist in [docs/renaming.md](docs/renaming.md) beschrieben. Wer das Projekt forken und auf
 eigenen GitHub-Owner / Docker-Hub-Namespace umflaggen will, findet die Anleitung in
-[docs/forking.md](docs/forking.md) — inkl. `scripts/rebrand.sh` für die statischen Defaults und der drei Runtime-Hebel
+[docs/forking.md](docs/forking.md) - inkl. `scripts/rebrand.sh` für die statischen Defaults und der drei Runtime-Hebel
 (`DOCKERHUB_IMAGE`, `UMLAUTADAPTARREX_IMAGE`, `NEXT_PUBLIC_GITHUB_OWNER` / `NEXT_PUBLIC_GITHUB_REPO`).
 
 ## Local Development
@@ -540,7 +541,7 @@ src/
 
 ## Credits
 
-Basiert auf der Idee und Logik von [PCJones/UmlautAdaptarr](https://github.com/PCJones/UmlautAdaptarr) —
+Basiert auf der Idee und Logik von [PCJones/UmlautAdaptarr](https://github.com/PCJones/UmlautAdaptarr) -
 ein ausführlicher Vergleich beider Projekte steht in [docs/comparison.de.md](docs/comparison.de.md).
 
 Danke an [xopez](https://github.com/xopez) für die TrueNAS-Community-App.

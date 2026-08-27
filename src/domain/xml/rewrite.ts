@@ -25,7 +25,7 @@ export interface RewriteSearchItem {
   authorMatchVariations: string[];
   mediaType: MediaType;
   /**
-   * The *Arr-side primary id — tvdbid for tv, tmdbid for movie. Emitted as a
+   * The *Arr-side primary id - tvdbid for tv, tmdbid for movie. Emitted as a
    * newznab id attribute when `attachExternalIds` is on. Optional so the
    * pure-domain tests and older callers keep compiling.
    */
@@ -76,7 +76,7 @@ export interface RewriteOptions {
   pack?: LanguagePack | undefined;
   /**
    * Operator-configurable rename behaviour (Settings -> Renaming). Omitted
-   * means "today's defaults" — see `RenameOptions`.
+   * means "today's defaults" - see `RenameOptions`.
    */
   rename?: RenameOptions | undefined;
   /**
@@ -231,7 +231,7 @@ export function rewriteIndexerXml(xml: string, options: RewriteOptions): string 
     }
 
     // Id attributes are attached to every item we could resolve a search
-    // item for — including the ones the rename declined. The id is correct
+    // item for - including the ones the rename declined. The id is correct
     // either way, and a refused rename is exactly the case where Sonarr
     // benefits most from not having to parse the title.
     if (attrTarget && searchItem.externalId) {

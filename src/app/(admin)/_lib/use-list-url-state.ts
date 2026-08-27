@@ -29,14 +29,14 @@ export interface UseListUrlStateResult {
   /** Free-text search term as committed to the URL (`q`), defaulting to `""`. */
   q: string;
   /**
-   * Controlled value for the search input — updates on every keystroke so
+   * Controlled value for the search input - updates on every keystroke so
    * typing feels instant. Use this (not `q`) as the `<Input value>`.
    */
   searchInput: string;
   /** `onChange` handler for the search input; pass the raw event value. */
   setSearchInput: (next: string) => void;
   /**
-   * Debounced, trimmed echo of `searchInput` — this is what eventually lands
+   * Debounced, trimmed echo of `searchInput` - this is what eventually lands
    * in `q` (and resets `page`) once typing settles. Use this directly in
    * fetch params/query keys instead of `q` so requests don't lag an extra
    * render behind the debounce commit.
@@ -50,7 +50,7 @@ export interface UseListUrlStateResult {
   sort: SortState;
   /**
    * Reads a page-specific string filter param, defaulting to `fallback` when
-   * absent OR (if `validValues` is given) not one of them — a bogus deep-link
+   * absent OR (if `validValues` is given) not one of them - a bogus deep-link
    * value falls back cleanly instead of e.g. rendering a blank Select.
    */
   getParam: (key: string, fallback: string, validValues?: readonly string[]) => string;
@@ -78,7 +78,7 @@ export interface UseListUrlStateOptions {
   defaultSort: SortState;
   /**
    * Whitelist of sort keys this page's route accepts. An unrecognized `sort`
-   * value in the URL sanitizes to `defaultSort` client-side — the server
+   * value in the URL sanitizes to `defaultSort` client-side - the server
    * would silently fall back too, but this keeps the header's active-column
    * indicator honest. Omit to accept any non-empty `sort` value as-is.
    */
@@ -93,7 +93,7 @@ export interface UseListUrlStateOptions {
  * filters all live in the query string instead of component state.
  *
  * Writes go through `router.replace` (never `router.push`), so filter/sort/
- * page changes never spam browser history — this is a deliberate choice:
+ * page changes never spam browser history - this is a deliberate choice:
  * Back should return to whatever page the user came from, not click back
  * through every intermediate filter tweak on this same list. `replace` still
  * composes fine with real navigations elsewhere in the app; Back across an
@@ -101,7 +101,7 @@ export interface UseListUrlStateOptions {
  *
  * Callers MUST render the component using this hook inside a `<Suspense>`
  * boundary (`useSearchParams` bails out to the nearest one during static
- * rendering) — see `nextjs-use-search-params-suspense`.
+ * rendering) - see `nextjs-use-search-params-suspense`.
  */
 export function useListUrlState(options: UseListUrlStateOptions): UseListUrlStateResult {
   const { defaultSort, validSortKeys, searchDebounceMs } = options;
@@ -139,7 +139,7 @@ export function useListUrlState(options: UseListUrlStateOptions): UseListUrlStat
 
   // Low-level writer shared by every setter below. Any key present in
   // `updates` is written verbatim (or deleted, for a default/empty/false
-  // value); any key ABSENT from `updates` is left alone — except `page`,
+  // value); any key ABSENT from `updates` is left alone - except `page`,
   // which is dropped whenever the caller isn't explicitly setting it. That
   // single rule is what implements "changing q/filters/sort resets the page"
   // without every call site having to repeat it.
@@ -189,8 +189,8 @@ export function useListUrlState(options: UseListUrlStateOptions): UseListUrlStat
 
   // `searchInput` is a local echo of `q` so typing feels instant instead of
   // re-navigating on every keystroke. When `q` changes for a reason OTHER
-  // than our own debounced commit below — Back/Forward, a deep link, a
-  // filter reset — `searchInput` must catch up. That's done here during
+  // than our own debounced commit below - Back/Forward, a deep link, a
+  // filter reset - `searchInput` must catch up. That's done here during
   // render (React's documented "adjusting state when a prop changes"
   // pattern: https://react.dev/learn/you-might-not-need-an-effect), not in a
   // useEffect, since setState-in-effect triggers an avoidable extra
@@ -209,7 +209,7 @@ export function useListUrlState(options: UseListUrlStateOptions): UseListUrlStat
   const debouncedSearch = useDebouncedValue(searchInput.trim(), searchDebounceMs);
   useEffect(() => {
     // This effect's only job is committing to the URL (a `router.replace`
-    // call, not a React setState), so it doesn't fall under the same rule —
+    // call, not a React setState), so it doesn't fall under the same rule -
     // it's the intended use of an effect: synchronizing React state with an
     // external system (the URL).
     if (debouncedSearch !== q) setQuery(debouncedSearch);
