@@ -20,7 +20,7 @@ export class LidarrClient extends ArrClient {
   }
 
   async fetchAllItems(): Promise<SearchItemDerived[]> {
-    return this.fetchNested<LidarrArtist, LidarrAlbum>({
+    return this.fetchNested<LidarrArtist, LidarrAlbum, SearchItemDerived>({
       parentPath: "/api/v1/artist",
       childPath: "/api/v1/album",
       childParams: (artist) => ({ artistId: String(artist.id) }),

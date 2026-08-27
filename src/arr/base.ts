@@ -44,23 +44,20 @@ export abstract class ArrClient {
    * the *arr instance with one request per parent simultaneously. Parent
    * order is preserved in the output.
    */
-  protected async fetchNested<Parent, Child>(args: {
+  protected async fetchNested<Parent, Child, Out>(args: {
     parentPath: string;
     childPath: string;
     childParams: (parent: Parent) => Record<string, string>;
-    map: (parent: Parent, child: Child) => SearchItemDerived;
-  }): Promise<SearchItemDerived[]> {
+    map: (parent: Parent, child: Child) => Out;
+  }): Promise<Out[]> {
     const parents = await this.getJson<Parent[]>(args.parentPath);
     if (!parents) return [];
-    const out: SearchItemDerived[] = [];
+    const out: Out[] = [];
     for (let i = 0; i < parents.length; i += NESTED_CONCURRENCY) {
       const batch = parents.slice(i, i + NESTED_CONCURRENCY);
       const batchResults = await Promise.all(
         batch.map(async (parent) => {
-          const children = await this.getJson<Child[]>(
-            args.childPath,
-            args.childParams(parent),
-          );
+          const children = await this.getJson<Child[]>(args.childPath, args.childParams(parent));
           if (!children) return [];
           return children.map((child) => args.map(parent, child));
         }),

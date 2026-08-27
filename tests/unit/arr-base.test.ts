@@ -29,9 +29,7 @@ class TestClient extends ArrClient {
     childParams: (parent: P) => Record<string, string>;
     map: (parent: P, child: C) => unknown;
   }) {
-    return this.fetchNested<P, C>(
-      args as Parameters<TestClient["fetchNested"]>[0],
-    );
+    return this.fetchNested<P, C, unknown>(args as Parameters<TestClient["fetchNested"]>[0]);
   }
 }
 
@@ -196,4 +194,40 @@ describe("ArrClient.fetchNested", () => {
 
     expect(out).toEqual([{ pid: 2, n: "ok" }]);
   });
+});
+
+it("fetchNested maps to whatever type the caller asks for", async () => {
+  requestMock.mockResolvedValueOnce(jsonResponse([{ id: 1, name: "P" }]));
+  requestMock.mockResolvedValueOnce(jsonResponse([{ id: 10, label: "C" }]));
+
+  class ShapeClient extends ArrClient {
+    // Task 6 turns fetchRawItems/deriveItems into the abstract pair; at this
+    // point the base still declares `abstract fetchAllItems`.
+    async fetchAllItems() {
+      return [];
+    }
+
+    async run(): Promise<{ pair: string }[]> {
+      return this.fetchNested<
+        { id: number; name: string },
+        { id: number; label: string },
+        { pair: string }
+      >({
+        parentPath: "/p",
+        childPath: "/c",
+        childParams: (parent) => ({ parentId: String(parent.id) }),
+        map: (parent, child) => ({ pair: `${parent.name}:${child.label}` }),
+      });
+    }
+  }
+
+  const client = new ShapeClient({
+    instanceId: "i",
+    instanceName: "n",
+    host: "http://arr.local",
+    apiKey: "k",
+    userAgent: "UA",
+  });
+
+  expect(await client.run()).toEqual([{ pair: "P:C" }]);
 });

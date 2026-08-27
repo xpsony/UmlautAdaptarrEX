@@ -32,7 +32,7 @@ export class ReadarrClient extends ArrClient {
   }
 
   async fetchAllItems(): Promise<SearchItemDerived[]> {
-    return this.fetchNested<ReadarrAuthor, ReadarrBook>({
+    return this.fetchNested<ReadarrAuthor, ReadarrBook, SearchItemDerived>({
       parentPath: "/api/v1/author",
       childPath: "/api/v1/book",
       childParams: (author) => ({ authorId: String(author.id) }),
