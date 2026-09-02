@@ -311,24 +311,25 @@ describe("handleSearch with a searchItem", () => {
     // 1 main fetch + capped at MAX_VARIATIONS (10) variation fetches, not 15.
     expect(fetcher.fetch).toHaveBeenCalledTimes(11);
     expect(reply._statusCode).toBe(200);
-    const warnCalls = req.log.warn.mock.calls.filter(
-      (call: unknown[]) => call[1] === "legacy search variation fan-out capped or deadline reached",
+    // A cap doing its job is expected traffic, not an anomaly: it logs at
+    // debug so it cannot flood LogEntry once the default cap is 1.
+    expect(req.log.warn).not.toHaveBeenCalled();
+    const debugCalls = req.log.debug.mock.calls.filter(
+      (call: unknown[]) => call[1] === "legacy search variation fan-out capped",
     );
-    expect(warnCalls).toHaveLength(1);
-    const [payload] = warnCalls[0]! as [
+    expect(debugCalls).toHaveLength(1);
+    const [payload] = debugCalls[0]! as [
       {
         requested: number;
         fetched: number;
-        capped: boolean;
-        deadlineHit: boolean;
+        cap: number;
         durationMs: number;
       },
     ];
     expect(payload).toMatchObject({
       requested: 15,
       fetched: 10,
-      capped: true,
-      deadlineHit: false,
+      cap: 10,
     });
     expect(typeof payload.durationMs).toBe("number");
   });
@@ -436,8 +437,7 @@ describe("handleSearch with a searchItem", () => {
       expect(reply._statusCode).toBe(200);
       expect(mockAggregate).toHaveBeenCalledWith(["<rss/>", "<rss/>", "<rss/>"]);
       const warnCalls = req.log.warn.mock.calls.filter(
-        (call: unknown[]) =>
-          call[1] === "legacy search variation fan-out capped or deadline reached",
+        (call: unknown[]) => call[1] === "legacy search variation fan-out hit the deadline",
       );
       expect(warnCalls).toHaveLength(1);
       expect(warnCalls[0]![0]).toMatchObject({
@@ -763,6 +763,26 @@ describe("variation cap", () => {
     );
 
     expect(fetcher.fetch).toHaveBeenCalledTimes(4);
+  });
+
+  it("drops every German variation at a cap of zero, keeping only q and expectedTitle", async () => {
+    mockState.settings.maxTitleVariations = 0;
+    mockState.getByExternalId.mockReturnValue(itemWithVariations());
+    mockState.toRewriteSearchItem.mockReturnValue({});
+
+    const { fetcher } = await runSearch(
+      "?t=tvsearch&tvdbid=100&q=Some+Other+Query",
+      "tvsearch",
+      okFetcher(20),
+    );
+
+    // 1 main + q + expectedTitle = 3. Zero is "no aliases", not "no fan-out";
+    // switching the fan-out off entirely is what the two toggles are for.
+    expect(fetcher.fetch).toHaveBeenCalledTimes(3);
+    const queries = fetcher.fetch.mock.calls
+      .slice(1)
+      .map((c) => new URLSearchParams(new URL(String(c[0])).search).get("q"));
+    expect(queries).toEqual(["Some Other Query", "Realm of Ravens"]);
   });
 
   it("never trims q or expectedTitle away", async () => {

@@ -647,7 +647,7 @@
       "tvVariationSearch": "Serien",
       "movieVariationSearch": "Filme",
       "capLabel": "Höchstens Varianten",
-      "capHint": "Zählt die deutschen Varianten. Dein Suchwort und der Originaltitel kommen obendrauf und werden nie weggelassen.",
+      "capHint": "Zählt die deutschen Varianten. Dein Suchwort und der Originaltitel kommen obendrauf und werden nie weggelassen. 0 sucht ganz ohne deutsche Varianten.",
       "exampleQuery": "Sonarr sucht nach",
       "exampleExtra": "Zusätzlich wird gesucht nach:",
       "cost": "Ergibt bis zu {max} zusätzliche Indexer-Anfragen pro Suche. Bei knappen Indexer-Limits vorsichtig einsetzen."

@@ -404,7 +404,7 @@ describe("POST /api/auth/setup search behaviour", () => {
     expect(setting?.onDemandLookup).toBe(true);
     expect(setting?.tvVariationSearch).toBe(true);
     expect(setting?.movieVariationSearch).toBe(true);
-    expect(setting?.maxTitleVariations).toBe(3);
+    expect(setting?.maxTitleVariations).toBe(1);
     expect(setting?.syncIntervalMinutes).toBe(10);
     expect(setting?.fullSyncIntervalHours).toBe(24);
   });

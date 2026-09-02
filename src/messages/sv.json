@@ -647,7 +647,7 @@
       "tvVariationSearch": "Serier",
       "movieVariationSearch": "Filmer",
       "capLabel": "Högst antal varianter",
-      "capHint": "Räknar de tyska varianterna. Ditt sökord och originaltiteln söks utöver dessa och tas aldrig bort.",
+      "capHint": "Räknar de tyska varianterna. Ditt sökord och originaltiteln söks utöver dessa och tas aldrig bort. 0 söker helt utan tyska varianter.",
       "exampleQuery": "Sonarr söker efter",
       "exampleExtra": "Dessa söks också:",
       "cost": "Ger upp till {max} extra indexerar-förfrågningar per sökning. Använd med försiktighet om dina indexerar-gränser är snäva."

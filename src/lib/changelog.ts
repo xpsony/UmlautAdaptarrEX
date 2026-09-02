@@ -32,7 +32,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     items: [
       {
         type: "feature",
-        text: "German title variations are now searched for films too. Until now only series were searched with their German titles, so a German film release that the indexer only lists under its German name was never found. Series and films are separate switches (Settings → Search), both on by default. New: “Maximum German variations per search”, default 3, replacing a hard-coded 10 - your literal search term and the original title are always searched on top and are never dropped by the cap. If your indexer enforces a tight request limit, lower the cap or switch the film search off again.",
+        text: "German title variations are now searched for films too. Until now only series were searched with their German titles, so a German film release that the indexer only lists under its German name was never found. Series and films are separate switches (Settings → Search), both on by default. New: “Maximum German variations per search”, default 1, replacing a hard-coded 10 - your literal search term and the original title are always searched on top and are never dropped by the cap, and 0 means no German variations at all. If your indexer enforces a tight request limit, leave the cap where it is or switch the film search off again; raise it if you want broader coverage.",
       },
       {
         type: "feature",
@@ -100,7 +100,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "improvement",
-        text: "Faster and more predictable searches on large libraries: match variations are pre-computed instead of re-normalized on every request, variation fan-out per search is capped by the new “Maximum German variations per search” setting (default 3) with a total deadline at 75% of the configured indexer timeout (your literal query and the canonical title are always searched), and the Prowlarr proxy timeouts now scale with that setting instead of a hardcoded 30s - no more Sonarr/Radarr timeouts on title-alias-heavy items.",
+        text: "Faster and more predictable searches on large libraries: match variations are pre-computed instead of re-normalized on every request, variation fan-out per search is capped by the new “Maximum German variations per search” setting (default 1) with a total deadline at 75% of the configured indexer timeout (your literal query and the canonical title are always searched), and the Prowlarr proxy timeouts now scale with that setting instead of a hardcoded 30s - no more Sonarr/Radarr timeouts on title-alias-heavy items.",
       },
       {
         type: "improvement",

@@ -103,7 +103,7 @@ export function SearchBehaviourFields({ values, onChange }: SearchBehaviourField
           <Input
             id="maxTitleVariations"
             type="number"
-            min={1}
+            min={0}
             max={20}
             value={values.maxTitleVariations}
             onChange={(e) => onChange("maxTitleVariations", Number(e.target.value))}

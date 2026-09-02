@@ -647,7 +647,7 @@
       "tvVariationSearch": "Series",
       "movieVariationSearch": "Films",
       "capLabel": "At most variations",
-      "capHint": "Counts the German variations. Your search term and the original title are searched on top and are never dropped.",
+      "capHint": "Counts the German variations. Your search term and the original title are searched on top and are never dropped. 0 searches without any German variations.",
       "exampleQuery": "Sonarr searches for",
       "exampleExtra": "These are searched as well:",
       "cost": "Results in up to {max} extra indexer requests per search. Use with care if your indexer limits are tight."

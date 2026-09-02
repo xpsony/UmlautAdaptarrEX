@@ -114,7 +114,7 @@ const NO_SETTINGS: AppSettings = {
   onDemandLookup: true,
   tvVariationSearch: true,
   movieVariationSearch: true,
-  maxTitleVariations: 3,
+  maxTitleVariations: 1,
   operationMode: "proxy",
   blockPrivateInstanceHosts: false,
   pausedUntil: null,

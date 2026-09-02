@@ -14,16 +14,20 @@ describe("search behaviour settings", () => {
     expect(full.movieVariationSearch).toBe(true);
   });
 
-  it("defaults the variation cap to three", () => {
-    expect(SettingsSchema.parse({}).maxTitleVariations).toBe(3);
+  it("defaults the variation cap to one", () => {
+    expect(SettingsSchema.parse({}).maxTitleVariations).toBe(1);
   });
 
   it("accepts a cap of one", () => {
     expect(partial.parse({ maxTitleVariations: 1 }).maxTitleVariations).toBe(1);
   });
 
-  it("rejects a cap of zero - that is what the toggles are for", () => {
-    expect(() => partial.parse({ maxTitleVariations: 0 })).toThrow();
+  it("accepts a cap of zero - no German variations, tail still searched", () => {
+    expect(partial.parse({ maxTitleVariations: 0 }).maxTitleVariations).toBe(0);
+  });
+
+  it("rejects a negative cap", () => {
+    expect(() => partial.parse({ maxTitleVariations: -1 })).toThrow();
   });
 
   it("rejects a cap above twenty", () => {

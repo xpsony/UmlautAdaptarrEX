@@ -647,7 +647,7 @@
       "tvVariationSearch": "Séries",
       "movieVariationSearch": "Films",
       "capLabel": "Nombre maximal de variantes",
-      "capHint": "Compte les variantes allemandes. Votre terme de recherche et le titre original sont recherchés en plus et ne sont jamais écartés.",
+      "capHint": "Compte les variantes allemandes. Votre terme de recherche et le titre original sont recherchés en plus et ne sont jamais écartés. 0 recherche sans aucune variante allemande.",
       "exampleQuery": "Sonarr recherche",
       "exampleExtra": "Ces requêtes sont également envoyées :",
       "cost": "Génère jusqu'à {max} requêtes supplémentaires par recherche. À utiliser avec prudence si les limites de vos indexeurs sont serrées."

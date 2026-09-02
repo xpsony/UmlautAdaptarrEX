@@ -81,10 +81,12 @@ export const SettingsSchema = z.object({
   movieVariationSearch: z.boolean().default(true),
   // Counts GERMAN VARIATIONS, not total requests: the literal query and the
   // canonical title are appended on top, so the worst case is N+2 extra
-  // indexer requests. A cap of 0 is rejected - switching the fan-out off is
-  // what the two toggles above are for, and 0 would be a second, silent way
-  // to express the same thing.
-  maxTitleVariations: z.number().int().min(1).max(20).default(3),
+  // indexer requests. 0 means "no German variations at all" and still searches
+  // those two; dropping the fan-out entirely is what the two toggles above are
+  // for. The default is deliberately low - one alias covers the common case
+  // (an indexer listing the release under its German name) at a third of the
+  // outbound cost, and an operator who wants broader coverage raises it.
+  maxTitleVariations: z.number().int().min(0).max(20).default(1),
   titleApiHost: z.string().url().default("https://umlautadaptarr.pcjones.de/api/v1"),
   tmdbApiKey: optionalSecret,
   // TVDB v4 API: key plus optional subscriber PIN. Some v4 endpoints

@@ -104,7 +104,7 @@ model Setting {
   movieVariationSearch      Boolean   @default(true)
   // Obergrenze der deutschen Titelvarianten pro Suche. Das literale Suchwort
   // und der Originaltitel kommen obendrauf, der Worst Case ist also N+2.
-  maxTitleVariations        Int       @default(3)
+  maxTitleVariations        Int       @default(1)
   // HMAC-Secret für CSRF-Tokens (base64). Wird beim ersten Boot via
   // `ensureCsrfSecret()` generiert und persistiert, damit Tokens
   // Container-Restarts überleben. ENV `CSRF_SECRET` überschreibt die DB.

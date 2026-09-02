@@ -379,7 +379,11 @@ export async function handleSearch(
           responses.push(rewriteResponse(extra.body.toString("utf8")));
         }
       }
-      if (capped || deadlineHit) {
+      // A cap that simply did what it was configured to do is not a warning -
+      // with the default of 1 it is the normal outcome for any item with more
+      // than one German variation, and every warn line becomes a LogEntry row.
+      // A missed deadline is the genuine anomaly and keeps the warn level.
+      if (deadlineHit) {
         req.log.warn(
           {
             domain: ctx.domain,
@@ -391,7 +395,20 @@ export async function handleSearch(
             deadlineHit,
             durationMs: Date.now() - start,
           },
-          "legacy search variation fan-out capped or deadline reached",
+          "legacy search variation fan-out hit the deadline",
+        );
+      } else if (capped) {
+        req.log.debug(
+          {
+            domain: ctx.domain,
+            route: spec.type,
+            query: q,
+            requested,
+            fetched,
+            cap,
+            durationMs: Date.now() - start,
+          },
+          "legacy search variation fan-out capped",
         );
       }
       responses.push(initialBody);
