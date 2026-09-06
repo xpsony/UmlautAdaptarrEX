@@ -1,6 +1,6 @@
 # Changelog
 
-## 1.4.0 - 2026-08-27
+## 1.4.0 - 2026-09-06
 
 The biggest release since the rewrite, and it changes both halves of the product: what gets searched, and what you can see and fix.
 

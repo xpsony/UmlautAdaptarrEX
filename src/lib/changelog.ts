@@ -24,7 +24,7 @@ export interface ChangelogEntry {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     version: "1.4.0",
-    date: "2026-08-27",
+    date: "2026-09-06",
     highlight: true,
     title: "1.4.0: German titles for films, a 10-minute sync & the new Library browser",
     description:
