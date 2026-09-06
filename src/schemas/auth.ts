@@ -21,6 +21,21 @@ export const SetupSchema = z.object({
   /** How UmlautAdaptarr should run. Wizard default = "proxy" (recommended);
    *  migrations leave the DB default "both" in place. */
   operationMode: OperationModeSchema.optional(),
+  /** Search-behaviour choices from the wizard's `search` step. All optional:
+   *  a client that predates the step gets the recommended defaults, same
+   *  policy as `operationMode`. */
+  onDemandLookup: z.boolean().optional(),
+  tvVariationSearch: z.boolean().optional(),
+  movieVariationSearch: z.boolean().optional(),
+  maxTitleVariations: z.number().int().min(0).max(20).optional(),
+  syncIntervalMinutes: z
+    .number()
+    .int()
+    .refine((v) => v === 0 || (v >= 5 && v <= 1440), {
+      message: "0 disables the quick sync; otherwise 5-1440 minutes",
+    })
+    .optional(),
+  fullSyncIntervalHours: z.number().int().min(1).max(168).optional(),
   /** Sonarr/Radarr/Lidarr/Readarr instances collected from Prowlarr in step 3. */
   prowlarrInstances: z.array(ArrInstanceSchema).optional(),
   /** HTTP-Proxy Basic-Auth credentials configured in step 4. */
@@ -54,7 +69,7 @@ export type SetupInput = z.infer<typeof SetupSchema>;
 export const LoginSchema = z.object({
   username: z.string().min(1).max(64),
   // Argon2 verify cost is constant w.r.t. input length, but pino-logging
-  // and JSON parsing aren't — cap to avoid CPU/memory burn on a 5MB body.
+  // and JSON parsing aren't - cap to avoid CPU/memory burn on a 5MB body.
   password: z.string().min(1).max(256),
 });
 export type LoginInput = z.infer<typeof LoginSchema>;

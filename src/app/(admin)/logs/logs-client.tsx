@@ -55,7 +55,11 @@ export function LogsClient({ apiPort }: { apiPort: number }) {
                 stream.connected ? "animate-pulse bg-emerald-500" : "bg-muted-foreground",
               )}
             />
-            {stream.connected ? t("live") : t("noConnection")}
+            {stream.connected
+              ? t("live")
+              : stream.reconnecting
+                ? t("reconnecting")
+                : t("noConnection")}
           </Badge>
           <Button
             size="sm"

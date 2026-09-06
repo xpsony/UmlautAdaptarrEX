@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { ProwlarrIndexerPatchDialog } from "@/components/instances/prowlarr-indexer-patch-dialog";
 import { ProwlarrInstallProxyDialog } from "@/components/instances/prowlarr-install-proxy-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -25,7 +26,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RevealableInput } from "@/components/ui/revealable-input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 import { useProwlarrConfig } from "../_lib/use-prowlarr-config";
 
 export function ProwlarrSection() {
@@ -71,21 +71,14 @@ export function ProwlarrSection() {
               </Button>
             </div>
             {w.testResult ? (
-              <div
-                className={cn(
-                  "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
-                  w.testResult.ok
-                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                    : "border-destructive/40 bg-destructive/10 text-destructive",
-                )}
-              >
+              <Alert variant={w.testResult.ok ? "success" : "destructive"} size="compact">
                 {w.testResult.ok ? (
                   <CheckCircle2 className="h-4 w-4" />
                 ) : (
                   <XCircle className="h-4 w-4" />
                 )}
-                <span>{w.testResult.message}</span>
-              </div>
+                <AlertDescription>{w.testResult.message}</AlertDescription>
+              </Alert>
             ) : null}
           </>
         ) : (
@@ -128,21 +121,14 @@ export function ProwlarrSection() {
             </div>
 
             {w.testResult ? (
-              <div
-                className={cn(
-                  "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
-                  w.testResult.ok
-                    ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                    : "border-destructive/40 bg-destructive/10 text-destructive",
-                )}
-              >
+              <Alert variant={w.testResult.ok ? "success" : "destructive"} size="compact">
                 {w.testResult.ok ? (
                   <CheckCircle2 className="h-4 w-4" />
                 ) : (
                   <XCircle className="h-4 w-4" />
                 )}
-                <span>{w.testResult.message}</span>
-              </div>
+                <AlertDescription>{w.testResult.message}</AlertDescription>
+              </Alert>
             ) : null}
           </form>
         )}

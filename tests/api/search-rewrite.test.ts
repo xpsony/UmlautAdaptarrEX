@@ -178,7 +178,7 @@ describe("legacy /:apiKey/api?t=tvsearch end-to-end rewrite", () => {
   });
 
   it("leaves the body untouched when no SearchItem matches the query", async () => {
-    // No seed — determineSearchItem returns null, no rewrites, no rename
+    // No seed - determineSearchItem returns null, no rewrites, no rename
     // events. Body comes back exactly as the indexer sent it.
     fetchMock.mockResolvedValue({
       status: 200,

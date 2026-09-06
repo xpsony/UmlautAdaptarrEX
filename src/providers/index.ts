@@ -83,7 +83,7 @@ export class CompositeTitleProvider implements TitleProvider {
       } catch (err) {
         this.log?.warn(
           { err },
-          "tmdb provider rejected the configured key — running without TMDB",
+          "tmdb provider rejected the configured key - running without TMDB",
         );
         this.tmdb = null;
       }
@@ -101,7 +101,7 @@ export class CompositeTitleProvider implements TitleProvider {
       } catch (err) {
         this.log?.warn(
           { err },
-          "tvdb provider failed to initialize — running without TVDB",
+          "tvdb provider failed to initialize - running without TVDB",
         );
         this.tvdb = null;
       }
@@ -199,7 +199,7 @@ export class CompositeTitleProvider implements TitleProvider {
         // providers. Log and move on to the next provider in user order.
         this.log?.warn(
           { provider: id, type, count: remainingIds.length, err },
-          "provider fetchBulk failed — skipping provider",
+          "provider fetchBulk failed - skipping provider",
         );
         continue;
       }

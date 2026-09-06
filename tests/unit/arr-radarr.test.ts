@@ -60,9 +60,7 @@ describe("RadarrClient.fetchAllItems", () => {
           id: 1,
           tmdbId: 9999,
           title: "The Movie",
-          alternateTitles: [
-            { title: "Der Film", language: { id: 4, name: "German" } },
-          ],
+          alternateTitles: [{ title: "Der Film", language: { id: 4, name: "German" } }],
         },
       ]),
     );
@@ -171,8 +169,179 @@ describe("RadarrClient.fetchAllItems", () => {
 
     const items = await client.fetchAllItems();
     expect(items.find((i) => i.externalId === "1")?.germanTitle).toBe("By id");
-    expect(items.find((i) => i.externalId === "2")?.germanTitle).toBe(
-      "By name",
+    expect(items.find((i) => i.externalId === "2")?.germanTitle).toBe("By name");
+  });
+});
+
+describe("RadarrClient.fetchRawItems", () => {
+  it("picks the German alternate title into germanTitle and keeps the imdbId", async () => {
+    requestMock.mockResolvedValueOnce(
+      jsonResponse([
+        {
+          id: 4,
+          tmdbId: 900,
+          imdbId: "tt0000900",
+          title: "Winter Harbour",
+          year: 2021,
+          alternateTitles: [
+            { title: "Hafen im Winter", language: { id: 4, name: "German" } },
+            { title: "Port d'hiver", language: { id: 2, name: "French" } },
+          ],
+        },
+        { id: 5, title: "No TMDB Id Here" },
+      ]),
     );
+    const provider = makeProvider();
+    const client = new RadarrClient({
+      instanceId: "i",
+      instanceName: "n",
+      host: "http://radarr.local",
+      apiKey: "k",
+      userAgent: "UA",
+      provider,
+    });
+
+    const raw = await client.fetchRawItems();
+
+    expect(raw).toEqual([
+      {
+        arrId: 4,
+        externalId: "900",
+        imdbId: "tt0000900",
+        title: "Winter Harbour",
+        year: 2021,
+        aliases: ["Hafen im Winter", "Port d'hiver"],
+        germanTitle: "Hafen im Winter",
+        mediaType: "movie",
+        expectedAuthor: null,
+      },
+    ]);
+    expect(provider.fetchBulk).not.toHaveBeenCalled();
+  });
+});
+
+describe("RadarrClient.deriveItems", () => {
+  it("skips the provider for items that already have a German title when only DE is wanted", async () => {
+    const provider = makeProvider();
+    const client = new RadarrClient({
+      instanceId: "i",
+      instanceName: "n",
+      host: "http://radarr.local",
+      apiKey: "k",
+      userAgent: "UA",
+      provider,
+    });
+
+    await client.deriveItems([
+      {
+        arrId: 4,
+        externalId: "900",
+        imdbId: null,
+        title: "Winter Harbour",
+        year: 2021,
+        aliases: ["Hafen im Winter"],
+        germanTitle: "Hafen im Winter",
+        mediaType: "movie",
+        expectedAuthor: null,
+      },
+    ]);
+
+    expect(provider.fetchBulk).not.toHaveBeenCalled();
+  });
+
+  it("keeps the *Arr's German title and its aliases when the provider is skipped", async () => {
+    // germanTitle present + only DE wanted means deriveItems never asks the
+    // provider for this item, so nothing of the provider's can leak in.
+    const provider = makeProvider(
+      new Map([
+        [
+          "901",
+          makeTitlePayload({
+            titlesByLang: { de: "Provider Titel" },
+            aliasesByLang: { de: ["Provider Alias"] },
+          }),
+        ],
+      ]),
+    );
+    const client = new RadarrClient({
+      instanceId: "i",
+      instanceName: "n",
+      host: "http://radarr.local",
+      apiKey: "k",
+      userAgent: "UA",
+      provider,
+    });
+
+    const [item] = await client.deriveItems([
+      {
+        arrId: 5,
+        externalId: "901",
+        imdbId: "tt0000901",
+        title: "Winter Harbour",
+        year: 2021,
+        aliases: ["Arr Alias"],
+        germanTitle: "Hafen im Winter",
+        mediaType: "movie",
+        expectedAuthor: null,
+      },
+    ]);
+
+    expect(item?.germanTitle).toBe("Hafen im Winter");
+    expect(item?.aliases).toEqual(["Arr Alias"]);
+    expect(item?.imdbId).toBe("tt0000901");
+  });
+
+  it("merges aliases local-first when the provider is consulted", async () => {
+    const provider = makeProvider(
+      new Map([
+        [
+          "902",
+          makeTitlePayload({
+            titlesByLang: { de: "Provider Titel" },
+            aliasesByLang: { de: ["Provider Alias"] },
+          }),
+        ],
+      ]),
+    );
+    const client = new RadarrClient({
+      instanceId: "i",
+      instanceName: "n",
+      host: "http://radarr.local",
+      apiKey: "k",
+      userAgent: "UA",
+      provider,
+    });
+
+    const [item] = await client.deriveItems([
+      {
+        arrId: 6,
+        externalId: "902",
+        imdbId: null,
+        title: "Winter Harbour",
+        year: 2021,
+        aliases: ["Arr Alias"],
+        germanTitle: null,
+        mediaType: "movie",
+        expectedAuthor: null,
+      },
+    ]);
+
+    expect(item?.germanTitle).toBe("Provider Titel");
+    expect(item?.aliases).toEqual(["Arr Alias", "Provider Alias"]);
+  });
+
+  it("skips the provider entirely for an empty input", async () => {
+    const provider = makeProvider();
+    const client = new RadarrClient({
+      instanceId: "i",
+      instanceName: "n",
+      host: "http://radarr.local",
+      apiKey: "k",
+      userAgent: "UA",
+      provider,
+    });
+
+    expect(await client.deriveItems([])).toEqual([]);
+    expect(provider.fetchBulk).not.toHaveBeenCalled();
   });
 });

@@ -66,7 +66,7 @@ describe("HostRateLimiter", () => {
         await vi.advanceTimersByTimeAsync(500);
         expect(resolved).toBe(true);
 
-        // Drop the interval — the next call should pass through immediately.
+        // Drop the interval - the next call should pass through immediately.
         interval = 0;
         const start = Date.now();
         await lim.wait("a.example");
@@ -101,7 +101,7 @@ describe("HostRateLimiter", () => {
         const lim = new HostRateLimiter(() => 0);
         const long = Date.now() + 10_000;
         lim.backoff("a.example", long);
-        lim.backoff("a.example", Date.now() + 1000); // shorter — must be ignored
+        lim.backoff("a.example", Date.now() + 1000); // shorter - must be ignored
         // Internal state isn't observable, so verify via behavior.
         let resolved = false;
         void lim.wait("a.example").then(() => {

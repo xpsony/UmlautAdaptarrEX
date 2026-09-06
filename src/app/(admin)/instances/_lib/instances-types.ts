@@ -1,10 +1,5 @@
 import type { z } from "zod";
-import type {
-  ArrInstanceInput,
-  ArrInstanceSchema,
-  ArrType,
-  ProviderId,
-} from "@/schemas/instance";
+import type { ArrInstanceInput, ArrInstanceSchema, ArrType, ProviderId } from "@/schemas/instance";
 
 export type ArrInstanceFormInput = z.input<typeof ArrInstanceSchema>;
 
@@ -12,6 +7,16 @@ export interface Instance extends ArrInstanceInput {
   id: string;
   lastSyncAt: string | null;
   lastSyncError: string | null;
+}
+
+/** Result shape of both `POST /api/admin/instances/test` and the per-instance
+ * `POST /api/admin/instances/:id/test` - mirrors `TestConnectionResult` from
+ * `src/arr/test-connection.ts` without importing that server-only module into
+ * client bundles. */
+export interface TestConnectionResponse {
+  ok: boolean;
+  version?: string;
+  error?: string;
 }
 
 export const ARR_TYPES = ["sonarr", "radarr", "lidarr", "readarr"] as const;

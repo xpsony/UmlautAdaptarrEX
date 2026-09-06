@@ -51,7 +51,7 @@ const resolvePort = (candidates, fallback) => {
 const PORT = resolvePort([process.env.UMLAUTADAPTARREX_LEGACYAPI_PORT], 5005);
 const WEB_PORT = resolvePort([process.env.UMLAUTADAPTARREX_WEBUI_PORT], 5007);
 
-// Mirrors resolveHeadless() in src/lib/ports.ts — this plain-.mjs supervisor
+// Mirrors resolveHeadless() in src/lib/ports.ts - this plain-.mjs supervisor
 // runs before the TS build is importable, so the logic is duplicated here.
 // Affirmative (case-insensitive, trimmed): "1", "true", "yes", "on".
 const resolveHeadless = () => {
@@ -66,7 +66,7 @@ const SUPERVISOR_ENV = "UMLAUTADAPTARREX_SUPERVISED";
 
 // ── Parent (self-supervising loop) ───────────────────────────────────────────
 // Headless runs in a single process: no parent monitor to fork (the UI restart
-// button — the only reason for the self-fork — does not exist without the UI),
+// button - the only reason for the self-fork - does not exist without the UI),
 // so fall straight through to the work path below.
 if (!HEADLESS && process.env[SUPERVISOR_ENV] !== "1") {
   // Forward SIGTERM/SIGINT to the active child so it can shut down cleanly.
@@ -103,7 +103,7 @@ if (!HEADLESS && process.env[SUPERVISOR_ENV] !== "1") {
         return;
       }
       if (code === RESTART_EXIT_CODE) {
-        console.log("[supervisor] child requested restart — respawning…");
+        console.log("[supervisor] child requested restart - respawning…");
         setTimeout(spawnChild, 250);
         return;
       }
@@ -197,7 +197,7 @@ if (!HEADLESS && process.env[SUPERVISOR_ENV] !== "1") {
     shuttingDown = true;
     console.log(
       code === RESTART_EXIT_CODE
-        ? "[supervisor] graceful restart requested — shutting down child…"
+        ? "[supervisor] graceful restart requested - shutting down child…"
         : "[supervisor] shutting down…",
     );
     try {
@@ -210,7 +210,7 @@ if (!HEADLESS && process.env[SUPERVISOR_ENV] !== "1") {
       await new Promise((r) => setTimeout(r, 2000));
       // Force-kill only if the child has not actually exited yet. `nextProc.killed`
       // is already true after the SIGTERM above, so checking it here would never
-      // fire — `nextExited` reflects the real exit, avoiding an orphaned port 5007.
+      // fire - `nextExited` reflects the real exit, avoiding an orphaned port 5007.
       if (!nextExited) nextProc.kill("SIGKILL");
     }
     process.exit(code);
@@ -218,7 +218,7 @@ if (!HEADLESS && process.env[SUPERVISOR_ENV] !== "1") {
 
   // Restart trigger from the admin API. Fastify runs in-process, so the
   // endpoint just emits this event on the shared `process` EventEmitter and
-  // we run the full shutdown() — SIGTERM the Next.js child, close Fastify,
+  // we run the full shutdown() - SIGTERM the Next.js child, close Fastify,
   // then exit 75 so the parent supervisor respawns. Without this hook a
   // direct `process.exit(75)` would leave the Next.js subprocess orphaned
   // and holding port 5007, so the respawn would fail with EADDRINUSE and
@@ -239,7 +239,7 @@ if (!HEADLESS && process.env[SUPERVISOR_ENV] !== "1") {
       console.log(`[supervisor] starting Fastify gateway on :${PORT}…`);
       await startFastify();
       if (HEADLESS) {
-        console.log("[supervisor] headless mode — Web UI disabled");
+        console.log("[supervisor] headless mode - Web UI disabled");
       } else {
         console.log(`[supervisor] starting Next.js standalone on :${WEB_PORT}…`);
         startNext();
@@ -247,9 +247,9 @@ if (!HEADLESS && process.env[SUPERVISOR_ENV] !== "1") {
       console.log("[supervisor] ready");
     } catch (err) {
       // The HEADLESS_SETUP_INCOMPLETE marker is set by bootServer in
-      // src/server/index.ts — keep the string in sync with that throw site.
+      // src/server/index.ts - keep the string in sync with that throw site.
       if (err && err.code === "HEADLESS_SETUP_INCOMPLETE") {
-        // Expected, actionable misconfiguration — print the message, no stack.
+        // Expected, actionable misconfiguration - print the message, no stack.
         console.error(`[supervisor] ${err.message}`);
       } else {
         console.error("[supervisor] fatal startup error:", err);

@@ -1,34 +1,22 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { SettingsUpdate } from "@/schemas/settings";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SaveBar } from "./save-bar";
 import { TmdbKeyField } from "./tmdb-key-field";
 import { TvdbKeyField } from "./tvdb-key-field";
-import type { SettingsForm, SettingsRow } from "../_lib/settings-types";
+import type { ProvidersForm, ProvidersFormOutput, SettingsRow } from "../_lib/settings-types";
 
 interface ProvidersTabProps {
-  form: SettingsForm;
+  form: ProvidersForm;
   data: SettingsRow | undefined;
-  onSave: (data: SettingsUpdate) => void;
+  onSave: (data: ProvidersFormOutput) => void;
   saving: boolean;
 }
 
-export function ProvidersTab({
-  form,
-  data,
-  onSave,
-  saving,
-}: ProvidersTabProps) {
+export function ProvidersTab({ form, data, onSave, saving }: ProvidersTabProps) {
   const t = useTranslations("settings");
   // `*Configured` flags come from the server (see admin/settings.ts GET) so
   // the UI can render a "stored" state without ever holding the cleartext
@@ -38,11 +26,7 @@ export function ProvidersTab({
   const tvdbConfigured = data?.tvdbConfigured === true;
   const tvdbPinConfigured = data?.tvdbPinConfigured === true;
   return (
-    <form
-      id="providers-form"
-      onSubmit={form.handleSubmit(onSave)}
-      className="space-y-6"
-    >
+    <form id="providers-form" onSubmit={form.handleSubmit(onSave)} className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="text-base">{t("section.providers")}</CardTitle>
@@ -55,11 +39,7 @@ export function ProvidersTab({
           </div>
           <div className="space-y-2">
             <Label htmlFor="tmdbApiKey">{t("tmdbApiKey")}</Label>
-            <TmdbKeyField
-              key={`tmdb-${tmdbConfigured}`}
-              form={form}
-              configured={tmdbConfigured}
-            />
+            <TmdbKeyField key={`tmdb-${tmdbConfigured}`} form={form} configured={tmdbConfigured} />
             <p className="text-xs text-muted-foreground">
               {t("tmdbApiKeyHint")}{" "}
               <a
@@ -94,11 +74,7 @@ export function ProvidersTab({
           </div>
         </CardContent>
       </Card>
-      <SaveBar
-        form="providers-form"
-        pending={saving}
-        dirty={form.formState.isDirty}
-      />
+      <SaveBar form="providers-form" pending={saving} dirty={form.formState.isDirty} />
     </form>
   );
 }

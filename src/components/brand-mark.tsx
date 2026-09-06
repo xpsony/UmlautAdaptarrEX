@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 interface BrandMarkProps {
   variant?: "mark" | "wordmark" | "wordmark-wide";
-  /** height in px — width scales to preserve aspect ratio. */
+  /** height in px - width scales to preserve aspect ratio. */
   height?: number;
   className?: string;
   priority?: boolean;

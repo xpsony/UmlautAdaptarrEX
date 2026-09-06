@@ -4,12 +4,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { buildTestApp } from "./_setup/app";
 import { cleanDb, ensureTestDb } from "./_setup/db";
-import {
-  authCookies,
-  login,
-  seedAdminUser,
-  sessionCookieOnly,
-} from "./_setup/auth-helpers";
+import { authCookies, login, seedAdminUser, sessionCookieOnly } from "./_setup/auth-helpers";
 import { getAppState } from "@/server/state";
 
 let app: FastifyInstance;
@@ -65,7 +60,7 @@ describe("POST /api/admin/settings/regenerate-apikey", () => {
     const setting = await prisma.setting.findUnique({ where: { id: 1 } });
     expect(setting?.appApiKey).toBe(body.appApiKey);
 
-    // Live state was reloaded — legacy /:apiKey/* uses this for auth.
+    // Live state was reloaded - legacy /:apiKey/* uses this for auth.
     expect(getAppState().settings.appApiKey).toBe(body.appApiKey);
   });
 
@@ -183,6 +178,94 @@ describe("PUT /api/admin/settings live-reload", () => {
     });
     expect(r.statusCode).toBe(200);
     expect(getAppState().settings.cacheDurationMinutes).toBe(before + 5);
+  });
+
+  it("round-trips the renaming toggles into state.renameOptions", async () => {
+    await seedAdminUser();
+    const session = await login(app);
+
+    const r = await app.inject({
+      method: "PUT",
+      url: "/api/admin/settings",
+      payload: {
+        renameYearGuard: false,
+        renamePrefixGuard: false,
+        renameReleaseTagGuard: false,
+        renameLegacySuffix: true,
+        renameStripSpecialChars: true,
+        renameAttachExternalIds: true,
+      },
+      ...authCookies(session),
+    });
+    expect(r.statusCode).toBe(200);
+
+    // The getter the legacy search route reads per response.
+    expect(getAppState().renameOptions).toEqual({
+      yearGuard: false,
+      prefixGuard: false,
+      releaseTagGuard: false,
+      legacySuffix: true,
+      stripSpecialChars: true,
+    });
+    // attachExternalIds is read straight off the settings snapshot.
+    expect(getAppState().settings.renameAttachExternalIds).toBe(true);
+
+    // ...and the GET echoes them so the Renaming tab can hydrate its form.
+    const get = await app.inject({
+      method: "GET",
+      url: "/api/admin/settings",
+      cookies: { uaSession: session.sessionCookie },
+    });
+    expect(get.json()).toMatchObject({
+      renameYearGuard: false,
+      renameLegacySuffix: true,
+      renameStripSpecialChars: true,
+      renameAttachExternalIds: true,
+    });
+  });
+
+  it("an empty userAgent override resolves to the versioned default", async () => {
+    await seedAdminUser();
+    const session = await login(app);
+
+    const r = await app.inject({
+      method: "PUT",
+      url: "/api/admin/settings",
+      payload: { userAgent: "" },
+      ...authCookies(session),
+    });
+    expect(r.statusCode).toBe(200);
+
+    const { defaultUserAgent } = await import("@/lib/user-agent");
+    // `settings.userAgent` is the EFFECTIVE value every outbound caller reads.
+    expect(getAppState().settings.userAgent).toBe(defaultUserAgent());
+    expect(getAppState().settings.userAgentOverride).toBe("");
+    // The GET echoes the raw override plus the automatic value, so the form
+    // can render it as a placeholder.
+    const get = await app.inject({
+      method: "GET",
+      url: "/api/admin/settings",
+      cookies: { uaSession: session.sessionCookie },
+    });
+    expect(get.json()).toMatchObject({
+      userAgent: "",
+      defaultUserAgent: defaultUserAgent(),
+    });
+  });
+
+  it("keeps a userAgent override and the forwarding toggle", async () => {
+    await seedAdminUser();
+    const session = await login(app);
+
+    const r = await app.inject({
+      method: "PUT",
+      url: "/api/admin/settings",
+      payload: { userAgent: "MyProxy/9.9", forwardArrUserAgent: true },
+      ...authCookies(session),
+    });
+    expect(r.statusCode).toBe(200);
+    expect(getAppState().settings.userAgent).toBe("MyProxy/9.9");
+    expect(getAppState().settings.forwardArrUserAgent).toBe(true);
   });
 
   it("an operationMode change triggers a warn-log hint without breaking the response", async () => {

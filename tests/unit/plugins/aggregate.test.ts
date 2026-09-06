@@ -24,7 +24,7 @@ describe("aggregatePlugins", () => {
     it("German + Swedish: variation maps concatenated (4), word chars deduped", () => {
         const pack = aggregatePlugins([germanUmlauts, swedishUmlauts]);
         expect(pack.variationMaps).toHaveLength(4);
-        // Ä and Ö overlap between DE and SE — must appear only once in word chars.
+        // Ä and Ö overlap between DE and SE - must appear only once in word chars.
         const chars = pack.wordCharsEscaped.split("");
         const aUmlautCount = chars.filter((c) => c === "Ä").length;
         expect(aUmlautCount).toBe(1);

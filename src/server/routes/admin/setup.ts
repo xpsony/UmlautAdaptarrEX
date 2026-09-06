@@ -46,7 +46,7 @@ const SETUP_RATE_LIMIT = {
   // render) through the co-hosted proxy, so to Fastify every UI request shares
   // one key: 127.0.0.1. A 20/5min bucket keyed on that single IP is drained
   // within a handful of page loads, after which `setup-status` starts returning
-  // 429 — the proxy then reads `setupComplete=false` and traps every user back
+  // 429 - the proxy then reads `setupComplete=false` and traps every user back
   // in the setup wizard. (Regression: this route gained the rate limit in
   // 1.2.4.) Direct hits to the public Fastify port that bypass the proxy are
   // non-loopback and stay limited, so external brute-force protection is intact.
@@ -281,7 +281,7 @@ async function postInstancesTest(req: FastifyRequest, reply: FastifyReply): Prom
   // post-setup path (`blockPrivateInstanceHosts`, also honoring the
   // UA_BLOCK_PRIVATE_INSTANCE_HOSTS / UA_ALLOW_PRIVATE_INSTANCE_HOSTS env
   // overrides). It defaults to OFF because self-hosted installs reach
-  // Sonarr/Radarr on the same LAN or Docker network — and behind Docker's
+  // Sonarr/Radarr on the same LAN or Docker network - and behind Docker's
   // NAT the operator's own browser arrives as a non-loopback gateway IP,
   // so a loopback-only check would block the canonical setup flow. Cloud /
   // multi-tenant operators that enable strict mode get the pre-auth probe
@@ -292,7 +292,7 @@ async function postInstancesTest(req: FastifyRequest, reply: FastifyReply): Prom
   if (strict && !fromLoopback && urlIsPrivate(data.host)) {
     req.log.warn(
       { host: data.host, ip: req.ip },
-      "setup: pre-setup test refused — non-loopback caller probing a private host",
+      "setup: pre-setup test refused - non-loopback caller probing a private host",
     );
     return reply.code(403).send({
       ok: false,

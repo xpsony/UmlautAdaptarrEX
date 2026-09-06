@@ -27,7 +27,7 @@ export interface TitlePayload {
  * `DbCachedTitleProvider` uses this to checkpoint sync progress, so a crash
  * mid-bulk does not discard the items already fetched.
  *
- * Providers do NOT fire `onItem` for items that returned no payload — negative
+ * Providers do NOT fire `onItem` for items that returned no payload - negative
  * cache handling is left to the caller, which knows the requested-langs set.
  */
 export type BulkFetchOnItem = (

@@ -13,21 +13,12 @@ import {
   SkipForward,
   XCircle,
 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
-import type {
-  ProwlarrConnectionTestResult,
-  ProwlarrFormInput,
-} from "../_lib/setup-wizard";
+import type { ProwlarrConnectionTestResult, ProwlarrFormInput } from "../_lib/setup-wizard";
 
 interface ProwlarrConnectStepProps {
   form: UseFormReturn<ProwlarrFormInput>;
@@ -56,7 +47,7 @@ export function ProwlarrConnectStep({
   const tProw = useTranslations("instances.prowlarr");
 
   // Only treat the live field as a link target when it parses as an http(s)
-  // URL — otherwise an attacker-influenced value like "javascript:..." could
+  // URL - otherwise an attacker-influenced value like "javascript:..." could
   // become the anchor href. Falls back to plain text below.
   const settingsHref = ((): string | null => {
     const trimmed = hostValue.replace(/\/+$/, "");
@@ -115,9 +106,7 @@ export function ProwlarrConnectStep({
               ) : null}
             </div>
             {form.formState.errors.host ? (
-              <p className="text-xs text-destructive">
-                {form.formState.errors.host.message}
-              </p>
+              <p className="text-xs text-destructive">{form.formState.errors.host.message}</p>
             ) : null}
           </div>
           <div className="space-y-2">
@@ -130,31 +119,20 @@ export function ProwlarrConnectStep({
               {...form.register("apiKey")}
             />
             {form.formState.errors.apiKey ? (
-              <p className="text-xs text-destructive">
-                {form.formState.errors.apiKey.message}
-              </p>
+              <p className="text-xs text-destructive">{form.formState.errors.apiKey.message}</p>
             ) : (
-              <p className="text-xs text-muted-foreground">
-                {tProw("apiKeyHint")}
-              </p>
+              <p className="text-xs text-muted-foreground">{tProw("apiKeyHint")}</p>
             )}
           </div>
           {testResult ? (
-            <div
-              className={cn(
-                "flex items-center gap-2 rounded-md border px-3 py-2 text-xs",
-                testResult.ok
-                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                  : "border-destructive/40 bg-destructive/10 text-destructive",
-              )}
-            >
+            <Alert variant={testResult.ok ? "success" : "destructive"} size="compact">
               {testResult.ok ? (
                 <CheckCircle2 className="h-4 w-4" />
               ) : (
                 <XCircle className="h-4 w-4" />
               )}
-              <span>{testResult.message}</span>
-            </div>
+              <AlertDescription>{testResult.message}</AlertDescription>
+            </Alert>
           ) : null}
         </CardContent>
       </Card>
@@ -174,11 +152,7 @@ export function ProwlarrConnectStep({
             onClick={onTest}
             disabled={testing || previewLoading}
           >
-            {testing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Plug className="h-4 w-4" />
-            )}
+            {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
             {t("testProwlarr")}
           </Button>
           <Button type="submit" disabled={previewLoading || testing}>

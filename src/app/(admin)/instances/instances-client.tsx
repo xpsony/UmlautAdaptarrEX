@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Database, Download, Plus, Trash2 } from "lucide-react";
 import { apiFetch } from "@/app/_lib/api-client";
+import { describeError } from "@/lib/error-format";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -15,7 +16,7 @@ import { ProwlarrImportDialog } from "@/components/instances/prowlarr-import-dia
 import { InstanceDialog } from "./_components/instance-dialog";
 import { InstancesMobileList } from "./_components/instances-mobile-list";
 import { InstancesTable } from "./_components/instances-table";
-import type { Instance } from "./_lib/instances-types";
+import type { Instance, TestConnectionResponse } from "./_lib/instances-types";
 
 export function InstancesClient() {
   const t = useTranslations("instances");
@@ -55,12 +56,51 @@ export function InstancesClient() {
         body: JSON.stringify({ enabled }),
       }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["instances"] }),
+    onError: () => {
+      toast.error(tCommon("error"));
+      // The Switch is bound to the query cache (no optimistic write), so no
+      // rollback is needed - refetch only to reconcile with server truth.
+      void qc.invalidateQueries({ queryKey: ["instances"] });
+    },
+  });
+
+  const testMut = useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<TestConnectionResponse>(`/api/admin/instances/${id}/test`, {
+        method: "POST",
+      }),
+    onSuccess: (result) => {
+      if (result.ok) toast.success(t("testOk", { version: result.version ?? "?" }));
+      else toast.error(t("testFail", { error: result.error ?? "" }));
+    },
+    onError: (err) => toast.error(t("testFail", { error: describeError(err) })),
+  });
+
+  const syncMut = useMutation({
+    mutationFn: (id: string) =>
+      apiFetch<{ ok: boolean; runIds: string[]; instanceCount: number }>("/api/admin/sync", {
+        method: "POST",
+        body: JSON.stringify({ instanceId: id }),
+      }),
+    onSuccess: () => {
+      toast.success(t("syncStarted"));
+      void qc.invalidateQueries({ queryKey: ["sync-runs"] });
+      void qc.invalidateQueries({ queryKey: ["instances"] });
+    },
+    onError: (err) => toast.error(describeError(err)),
   });
 
   const onEdit = (instance: Instance) => setEditor({ open: true, instance });
   const onDelete = (instance: Instance) => setDeleteTarget(instance);
   const onToggle = (id: string, enabled: boolean) => toggleMut.mutate({ id, enabled });
+  const onTest = (instance: Instance) => testMut.mutate(instance.id);
+  const onSync = (instance: Instance) => syncMut.mutate(instance.id);
   const openCreate = () => setEditor({ open: true, instance: null });
+
+  // `variables` is only meaningful while the mutation is in flight - used to
+  // scope the loading/disabled state to the one row that triggered it.
+  const testingId = testMut.isPending ? (testMut.variables ?? null) : null;
+  const syncingId = syncMut.isPending ? (syncMut.variables ?? null) : null;
 
   return (
     <div className="space-y-6">
@@ -92,7 +132,7 @@ export function InstancesClient() {
               <Skeleton className="h-9 w-full" />
               <Skeleton className="h-9 w-full" />
             </div>
-          ) : list.isError ? (
+          ) : list.isLoadingError ? (
             // A failed fetch must not masquerade as "no instances"; show a
             // distinct error with a retry affordance instead.
             <div
@@ -100,7 +140,11 @@ export function InstancesClient() {
               className="flex flex-col items-center gap-3 p-10 text-center text-sm text-destructive"
             >
               <span>{tCommon("error")}</span>
-              <Button variant="outline" onClick={() => void list.refetch()}>
+              <Button
+                variant="outline"
+                disabled={list.isFetching}
+                onClick={() => void list.refetch()}
+              >
                 {tBoundaries("retry")}
               </Button>
             </div>
@@ -127,6 +171,10 @@ export function InstancesClient() {
                 onToggle={onToggle}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onTest={onTest}
+                onSync={onSync}
+                testingId={testingId}
+                syncingId={syncingId}
               />
               <InstancesTable
                 instances={list.data}
@@ -134,6 +182,10 @@ export function InstancesClient() {
                 onToggle={onToggle}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onTest={onTest}
+                onSync={onSync}
+                testingId={testingId}
+                syncingId={syncingId}
               />
             </>
           )}

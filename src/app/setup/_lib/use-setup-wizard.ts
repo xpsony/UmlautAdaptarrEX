@@ -1,12 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { type SetupInput } from "@/schemas/auth";
+import {
+  SEARCH_DEFAULTS,
+  type SearchBehaviourValues,
+} from "@/app/(admin)/settings/_lib/settings-types";
 import type {
   ProwlarrIndexerView,
   ProwlarrParsedApp,
@@ -46,6 +50,15 @@ export function useSetupWizard(initialStatus: SetupStatus) {
 
   const [admin, setAdmin] = useState<AdminFormInput | null>(null);
   const [operationMode, setOperationMode] = useState<OperationMode>("proxy");
+  // The wizard's `search` step. Seeded from SEARCH_DEFAULTS so the wizard and
+  // the Settings tab can never disagree about what "recommended" means.
+  const [searchBehaviour, setSearchBehaviour] = useState<SearchBehaviourValues>(SEARCH_DEFAULTS);
+  const setSearchBehaviourField = useCallback(
+    <K extends keyof SearchBehaviourValues>(key: K, value: SearchBehaviourValues[K]) => {
+      setSearchBehaviour((prev) => ({ ...prev, [key]: value }));
+    },
+    [],
+  );
 
   const [pluginList, setPluginList] = useState<PluginListEntry[] | null>(null);
   const [pluginEnabled, setPluginEnabled] = useState<Map<string, boolean>>(new Map());
@@ -451,7 +464,7 @@ export function useSetupWizard(initialStatus: SetupStatus) {
   };
 
   // Patch-indexers step (runs AFTER finalSubmit, so the proxy + tag exist and
-  // the session cookie is set — hence the /api/admin endpoints).
+  // the session cookie is set - hence the /api/admin endpoints).
   const loadPatchIndexers = async () => {
     setPatchLoading(true);
     try {
@@ -550,6 +563,7 @@ export function useSetupWizard(initialStatus: SetupStatus) {
         installProxyInProwlarr: args.install ?? undefined,
         plugins: pluginSelection,
         operationMode,
+        ...searchBehaviour,
       };
       const result = await apiFetch<{
         ok: boolean;
@@ -615,6 +629,7 @@ export function useSetupWizard(initialStatus: SetupStatus) {
       { key: "admin", label: t("step1Title") },
       { key: "mode", label: t("modeTitle") },
       { key: "plugins", label: t("pluginsTitle") },
+      { key: "search", label: t("searchStepTitle") },
       { key: "prowlarr-connect", label: t("step2Title") },
     ];
     if (prowlarrConnected) {
@@ -661,6 +676,8 @@ export function useSetupWizard(initialStatus: SetupStatus) {
     // mode
     operationMode,
     setOperationMode,
+    searchBehaviour,
+    setSearchBehaviourField,
     // plugins
     pluginList,
     pluginEnabled,

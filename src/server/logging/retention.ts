@@ -16,7 +16,11 @@ interface LogRetentionOptions {
 }
 
 // Retention days are read live from settings on each tick so UI changes apply
-// without a restart.
+// without a restart. One tick purges four tables: LogEntry (logRetentionDays)
+// plus RequestHistory, RenameHistory and SyncRun (shared
+// historyRetentionDays). SyncRun joined the set when the quick sync landed:
+// at a 10-minute cadence the table grows two orders of magnitude faster than
+// it did with a 12-hour full sync.
 export class LogRetentionScheduler {
   private timer: NodeJS.Timeout | null = null;
   private running = false;
@@ -45,32 +49,83 @@ export class LogRetentionScheduler {
     }, INTERVAL_MS);
   }
 
+  // Race a delete against a hard timeout so a stuck DB lock can't
+  // permanently disable cleanup.
+  private withTimeout(p: Promise<{ count: number }>, label: string): Promise<{ count: number }> {
+    return Promise.race([
+      p,
+      new Promise<never>((_, reject) =>
+        setTimeout(
+          () => reject(new Error(`${label} retention purge timed out after ${PURGE_TIMEOUT_MS}ms`)),
+          PURGE_TIMEOUT_MS,
+        ).unref?.(),
+      ),
+    ]);
+  }
+
   private async purge(): Promise<number> {
     if (this.running) return 0;
     this.running = true;
     try {
-      const days = getAppState().settings.logRetentionDays;
-      const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-      // Race the actual delete against a hard timeout so a stuck DB
-      // lock can't permanently disable cleanup.
-      const result = await Promise.race([
-        prisma.logEntry.deleteMany({
-          where: { createdAt: { lt: cutoff } },
-        }),
-        new Promise<never>((_, reject) =>
-          setTimeout(
-            () => reject(new Error(`log retention purge timed out after ${PURGE_TIMEOUT_MS}ms`)),
-            PURGE_TIMEOUT_MS,
-          ).unref?.(),
-        ),
-      ]);
-      if (result.count > 0) {
+      const settings = getAppState().settings;
+      const dayMs = 24 * 60 * 60 * 1000;
+      const logCutoff = new Date(Date.now() - settings.logRetentionDays * dayMs);
+      const historyCutoff = new Date(Date.now() - settings.historyRetentionDays * dayMs);
+
+      const logResult = await this.withTimeout(
+        prisma.logEntry.deleteMany({ where: { createdAt: { lt: logCutoff } } }),
+        "log",
+      );
+      if (logResult.count > 0) {
         this.opts.logger.info(
-          { deleted: result.count, retentionDays: days },
+          { deleted: logResult.count, retentionDays: settings.logRetentionDays },
           "log retention cleanup",
         );
       }
-      return result.count;
+
+      const requestResult = await this.withTimeout(
+        prisma.requestHistory.deleteMany({ where: { createdAt: { lt: historyCutoff } } }),
+        "request-history",
+      );
+      const renameResult = await this.withTimeout(
+        prisma.renameHistory.deleteMany({ where: { createdAt: { lt: historyCutoff } } }),
+        "rename-history",
+      );
+      // SyncRun has no createdAt; its timestamp column is startedAt.
+      const syncRunResult = await this.withTimeout(
+        prisma.syncRun.deleteMany({ where: { startedAt: { lt: historyCutoff } } }),
+        "sync-runs",
+      );
+
+      if (requestResult.count + renameResult.count + syncRunResult.count > 0) {
+        this.opts.logger.info(
+          {
+            deletedRequests: requestResult.count,
+            deletedRenames: renameResult.count,
+            deletedSyncRuns: syncRunResult.count,
+            retentionDays: settings.historyRetentionDays,
+          },
+          "history retention cleanup",
+        );
+      }
+
+      // Let SQLite refresh its query-planner statistics after a bulk delete.
+      // Cheap and non-critical: a failure - or a hang, raced against the same
+      // PURGE_TIMEOUT_MS deadline as the deletes above, since an un-timed-out
+      // PRAGMA would wedge `this.running` exactly like a hung deleteMany
+      // would - must not fail the cleanup run that already deleted rows
+      // successfully, so it's logged at debug and swallowed rather than
+      // propagated to the outer catch.
+      try {
+        await this.withTimeout(
+          prisma.$queryRawUnsafe("PRAGMA optimize;").then(() => ({ count: 0 })),
+          "pragma-optimize",
+        );
+      } catch (err) {
+        this.opts.logger.debug({ err }, "PRAGMA optimize failed after retention cleanup");
+      }
+
+      return logResult.count + requestResult.count + renameResult.count + syncRunResult.count;
     } catch (err) {
       this.opts.logger.error({ err }, "log retention cleanup failed");
       return 0;

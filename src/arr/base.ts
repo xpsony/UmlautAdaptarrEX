@@ -1,6 +1,7 @@
 import { request } from "undici";
 import type { Logger } from "pino";
 import type { SearchItemDerived } from "@/domain/variations/index";
+import type { RawArrItem } from "./raw-item";
 
 // How many parent→child fetches to run in parallel inside fetchNested.
 // Small enough to stay friendly to a single Lidarr/Readarr instance; large
@@ -31,7 +32,24 @@ export abstract class ArrClient {
       }) ?? null;
   }
 
-  abstract fetchAllItems(): Promise<SearchItemDerived[]>;
+  /** The *Arr's own library listing, before any TitleProvider is consulted. */
+  abstract fetchRawItems(): Promise<RawArrItem[]>;
+
+  /** Enriches raw items with provider titles and derives every variation. */
+  abstract deriveItems(raw: RawArrItem[]): Promise<SearchItemDerived[]>;
+
+  /**
+   * A single item by its external id (tvdbid/tmdbid), for the on-demand
+   * lookup. Only Sonarr and Radarr can serve this; the default opts out so
+   * Lidarr and Readarr need no implementation.
+   */
+  async fetchRawItemByExternalId(_externalId: string): Promise<RawArrItem | null> {
+    return null;
+  }
+
+  async fetchAllItems(): Promise<SearchItemDerived[]> {
+    return this.deriveItems(await this.fetchRawItems());
+  }
 
   /**
    * Generic parent→child fetch loop shared by Lidarr (artist→album) and
@@ -44,23 +62,20 @@ export abstract class ArrClient {
    * the *arr instance with one request per parent simultaneously. Parent
    * order is preserved in the output.
    */
-  protected async fetchNested<Parent, Child>(args: {
+  protected async fetchNested<Parent, Child, Out>(args: {
     parentPath: string;
     childPath: string;
     childParams: (parent: Parent) => Record<string, string>;
-    map: (parent: Parent, child: Child) => SearchItemDerived;
-  }): Promise<SearchItemDerived[]> {
+    map: (parent: Parent, child: Child) => Out;
+  }): Promise<Out[]> {
     const parents = await this.getJson<Parent[]>(args.parentPath);
     if (!parents) return [];
-    const out: SearchItemDerived[] = [];
+    const out: Out[] = [];
     for (let i = 0; i < parents.length; i += NESTED_CONCURRENCY) {
       const batch = parents.slice(i, i + NESTED_CONCURRENCY);
       const batchResults = await Promise.all(
         batch.map(async (parent) => {
-          const children = await this.getJson<Child[]>(
-            args.childPath,
-            args.childParams(parent),
-          );
+          const children = await this.getJson<Child[]>(args.childPath, args.childParams(parent));
           if (!children) return [];
           return children.map((child) => args.map(parent, child));
         }),
@@ -95,7 +110,7 @@ export abstract class ArrClient {
 
       if (statusCode >= 400) {
         // Read a body preview before dumping so we can log *why* the upstream
-        // is unhappy — almost always either 401 (bad apikey) or HTML from a
+        // is unhappy - almost always either 401 (bad apikey) or HTML from a
         // reverse proxy in front of the *arr instance.
         const preview = await res.body.text().catch(() => "");
         const isAuth = statusCode === 401 || statusCode === 403;
@@ -107,7 +122,7 @@ export abstract class ArrClient {
             host: this.host,
             bodyPreview: preview.slice(0, 200),
             hint: isAuth
-              ? "Upstream rejected the API key — verify the key configured for this instance."
+              ? "Upstream rejected the API key - verify the key configured for this instance."
               : undefined,
           },
           "arr request returned HTTP error",

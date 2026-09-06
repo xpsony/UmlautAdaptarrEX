@@ -31,7 +31,7 @@ const optionalSecret = z.preprocess((v) => {
 }, z.string().min(1).max(256).nullable().optional());
 
 // Empty password keeps the stored value (the UI shows the current one in
-// plain text — submitting the form unchanged shouldn't wipe it). Therefore
+// plain text - submitting the form unchanged shouldn't wipe it). Therefore
 // we treat "" as "leave it alone" in the admin route, not as a value to save.
 const proxyPasswordInput = z
   .preprocess(
@@ -40,7 +40,7 @@ const proxyPasswordInput = z
   )
   .optional();
 
-const SettingsSchema = z.object({
+export const SettingsSchema = z.object({
   proxyPort: z.number().int().min(1024).max(65535).default(5006),
   proxyUsername: z
     .string()
@@ -58,23 +58,105 @@ const SettingsSchema = z.object({
   // langsame Indexer nicht sofort abgewuergt werden; Maximum 600 s, weil ein
   // Sonarr/Radarr-Search ohnehin nicht laenger blockiert sein sollte.
   indexerTimeoutSeconds: z.number().int().min(5).max(600).default(60),
-  titleApiHost: z
-    .string()
-    .url()
-    .default("https://umlautadaptarr.pcjones.de/api/v1"),
+  // Quick sync: fetches the *Arr listing and processes only additions,
+  // removals and *Arr-side renames. 0 disables it; otherwise 5 minutes is the
+  // floor, because neither Sonarr nor Radarr has a changed-since endpoint, so
+  // every pass transfers the whole library listing.
+  syncIntervalMinutes: z
+    .number()
+    .int()
+    .refine((v) => v === 0 || (v >= 5 && v <= 1440), {
+      message: "0 disables the quick sync; otherwise 5-1440 minutes",
+    })
+    .default(10),
+  // Full sync: re-queries every TitleProvider, so it also picks up German
+  // titles that appeared upstream after the item was first synced.
+  fullSyncIntervalHours: z.number().int().min(1).max(168).default(24),
+  // ── Suchverhalten ──────────────────────────────────────────────────────────
+  // Resolve a title that isn't in the index yet, in the moment its search
+  // arrives. The one case a shorter sync interval cannot cover.
+  onDemandLookup: z.boolean().default(true),
+  // Search with the German title variations too, per media type.
+  tvVariationSearch: z.boolean().default(true),
+  movieVariationSearch: z.boolean().default(true),
+  // Counts GERMAN VARIATIONS, not total requests: the literal query and the
+  // canonical title are appended on top, so the worst case is N+2 extra
+  // indexer requests. 0 means "no German variations at all" and still searches
+  // those two; dropping the fan-out entirely is what the two toggles above are
+  // for. The default is deliberately low - one alias covers the common case
+  // (an indexer listing the release under its German name) at a third of the
+  // outbound cost, and an operator who wants broader coverage raises it.
+  maxTitleVariations: z.number().int().min(0).max(20).default(1),
+  titleApiHost: z.string().url().default("https://umlautadaptarr.pcjones.de/api/v1"),
   tmdbApiKey: optionalSecret,
   // TVDB v4 API: key plus optional subscriber PIN. Some v4 endpoints
   // require the pin, so both are optional independently.
   tvdbApiKey: optionalSecret,
   tvdbPin: optionalSecret,
-  userAgent: z.string().min(1).max(256).default("UmlautAdaptarrEX/2.0"),
+  // An OVERRIDE, not the value: empty means "automatic", i.e.
+  // `UmlautAdaptarrEX/<running version>` (see src/lib/user-agent.ts). The
+  // field therefore has to accept "" - it used to require min(1) and carry
+  // the stale literal `UmlautAdaptarrEX/2.0` as its default.
+  userAgent: z.string().trim().max(256).default(""),
+  // Forward the calling *Arr's User-Agent to the indexer instead of ours.
+  forwardArrUserAgent: z.boolean().default(false),
   logRetentionDays: z.number().int().min(1).max(30).default(3),
+  // Shared retention for RequestHistory + RenameHistory rows (days). The
+  // cleanup job purges older rows every 6 hours.
+  historyRetentionDays: z.number().int().min(1).max(365).default(30),
   operationMode: OperationModeSchema.default("proxy"),
   // Strict SSRF mode for *Arr/Prowlarr hosts. Default false (self-hosted,
   // private/loopback allowed). Set to true for default-strict, which makes
   // sense for publicly reachable UmlautAdaptarrEX instances.
   blockPrivateInstanceHosts: z.boolean().default(false),
+  // ── Renaming ───────────────────────────────────────────────────────────────
+  // See the Setting model in prisma/schema.prisma for what each flag does.
+  // The `*Guard` defaults reproduce today's EX behaviour; the last two default
+  // to the better fresh-install behaviour and are pinned to `false` for
+  // existing installs by the rename_options migration.
+  renameYearGuard: z.boolean().default(true),
+  renamePrefixGuard: z.boolean().default(true),
+  renameReleaseTagGuard: z.boolean().default(true),
+  renameLegacySuffix: z.boolean().default(false),
+  renameStripSpecialChars: z.boolean().default(true),
+  renameAttachExternalIds: z.boolean().default(true),
 });
+
+/**
+ * The legacy preset - the rename behaviour of the .NET predecessor, which had
+ * none of the EX guard rules. Exposed here (rather than hard-coded in the UI)
+ * so the values live next to the schema that validates them.
+ */
+export const LEGACY_RENAME_PRESET = {
+  renameYearGuard: false,
+  renamePrefixGuard: false,
+  renameReleaseTagGuard: false,
+  renameLegacySuffix: true,
+  renameStripSpecialChars: false,
+} as const;
+
+/**
+ * The three interval combinations offered in the setup wizard and the
+ * Settings -> Suche tab. Lives next to the schema that validates them, same
+ * as the rename presets.
+ */
+export const SYNC_PRESETS = {
+  /** New default: quick sync every 10 minutes, full sync once a day. */
+  recommended: { syncIntervalMinutes: 10, fullSyncIntervalHours: 24 },
+  /** For instances on a slow or metered link to their *Arr. */
+  frugal: { syncIntervalMinutes: 60, fullSyncIntervalHours: 24 },
+  /** The 1.x behaviour: no quick sync, full sync every 12 hours. */
+  legacy: { syncIntervalMinutes: 0, fullSyncIntervalHours: 12 },
+} as const;
+
+/** The EX defaults, for the "reset to recommended" button next to the preset. */
+export const DEFAULT_RENAME_PRESET = {
+  renameYearGuard: true,
+  renamePrefixGuard: true,
+  renameReleaseTagGuard: true,
+  renameLegacySuffix: false,
+  renameStripSpecialChars: true,
+} as const;
 
 export const SettingsUpdateSchema = SettingsSchema.partial();
 export type SettingsUpdate = z.infer<typeof SettingsUpdateSchema>;

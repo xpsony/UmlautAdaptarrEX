@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import { Controller } from "react-hook-form";
 import { Settings as SettingsIcon } from "lucide-react";
-import type { SettingsUpdate } from "@/schemas/settings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FieldHint } from "@/components/ui/field-hint";
 import { Input } from "@/components/ui/input";
@@ -12,18 +11,21 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { SaveBar } from "./save-bar";
 import { TitleCacheSection } from "./title-cache-section";
-import type { SettingsForm, SettingsRow } from "../_lib/settings-types";
+import type { AdvancedForm, AdvancedFormOutput, SettingsRow } from "../_lib/settings-types";
 
 interface AdvancedTabProps {
-  form: SettingsForm;
+  form: AdvancedForm;
   data: SettingsRow | undefined;
-  onSave: (data: SettingsUpdate) => void;
+  onSave: (data: AdvancedFormOutput) => void;
   saving: boolean;
 }
 
 export function AdvancedTab({ form, data, onSave, saving }: AdvancedTabProps) {
   const t = useTranslations("settings");
   const proxyPortEnvManaged = data?.proxyPortEnvManaged === true;
+  // What the indexer actually sees when forwarding is off: the operator's
+  // override if they set one, otherwise the automatic value.
+  const effectiveUserAgent = data?.userAgent?.trim() || (data?.defaultUserAgent ?? "");
   return (
     <div className="space-y-6">
       <form id="advanced-form" onSubmit={form.handleSubmit(onSave)} className="space-y-6">
@@ -107,6 +109,21 @@ export function AdvancedTab({ form, data, onSave, saving }: AdvancedTabProps) {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-1.5">
+                  <Label htmlFor="historyRetentionDays">{t("historyRetentionDays")}</Label>
+                  <FieldHint text={t("historyRetentionDaysHint")} />
+                </div>
+                <Input
+                  id="historyRetentionDays"
+                  type="number"
+                  min={1}
+                  max={365}
+                  {...form.register("historyRetentionDays", {
+                    valueAsNumber: true,
+                  })}
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5">
                   <Label htmlFor="indexerTimeoutSeconds">{t("indexerTimeoutSeconds")}</Label>
                   <FieldHint text={t("indexerTimeoutSecondsHint")} />
                 </div>
@@ -153,8 +170,45 @@ export function AdvancedTab({ form, data, onSave, saving }: AdvancedTabProps) {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="userAgent">{t("userAgent")}</Label>
-              <Input id="userAgent" {...form.register("userAgent")} />
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="userAgent">{t("userAgent")}</Label>
+                <FieldHint text={t("userAgentHint")} />
+              </div>
+              <Input
+                id="userAgent"
+                placeholder={data?.defaultUserAgent ?? ""}
+                {...form.register("userAgent")}
+              />
+              <p className="text-xs text-muted-foreground">
+                {t("userAgentAutoHint", {
+                  value: data?.defaultUserAgent ?? "",
+                })}
+              </p>
+            </div>
+            <div className="flex items-start justify-between gap-4 rounded-md border p-3">
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <Label htmlFor="forwardArrUserAgent" className="text-sm font-medium">
+                    {t("forwardArrUserAgent")}
+                  </Label>
+                  <FieldHint text={t("forwardArrUserAgentHint", { ua: effectiveUserAgent })} />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t("forwardArrUserAgentDescription")}
+                </p>
+              </div>
+              <Controller
+                control={form.control}
+                name="forwardArrUserAgent"
+                render={({ field }) => (
+                  <Switch
+                    id="forwardArrUserAgent"
+                    checked={field.value ?? false}
+                    onCheckedChange={field.onChange}
+                    aria-label={t("forwardArrUserAgent")}
+                  />
+                )}
+              />
             </div>
             <div className="flex items-center justify-between gap-4 rounded-md border p-3">
               <div className="flex items-center gap-1.5">

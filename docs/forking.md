@@ -3,7 +3,7 @@
 This page explains how to retarget the GitHub owner, repository name and
 Docker Hub image so the project builds, runs and documents itself under
 your namespace instead of the upstream one. The three values are
-independent — the Docker Hub namespace often differs from the GitHub
+independent - the Docker Hub namespace often differs from the GitHub
 owner (e.g. `github:xpsony` vs `dockerhub:lexfi`), so each has its own
 mechanism.
 
@@ -64,7 +64,7 @@ The substitution order inside the script (image first, then
 `owner/repo`, then owner alone) avoids partial matches when the new
 values happen to share substrings with the old ones. Files that do not
 contain any of the three defaults are listed as `skip (missing)` but
-that is just diagnostic output — nothing is skipped silently.
+that is just diagnostic output - nothing is skipped silently.
 
 The script is **not** idempotent against running it twice with the same
 arguments (the second run becomes a no-op because the old strings are
@@ -73,8 +73,8 @@ the top of the script, or revert and rerun.
 
 ## Runtime-only rebrand (no source edit)
 
-If you do not want to commit a diff — e.g. you just want CI to push
-under your namespace while keeping the upstream README in place — set
+If you do not want to commit a diff - e.g. you just want CI to push
+under your namespace while keeping the upstream README in place - set
 these instead of running the script:
 
 1. **GitHub repository variable** (Settings → Secrets and variables →
@@ -101,7 +101,7 @@ these instead of running the script:
    UMLAUTADAPTARREX_IMAGE=johndoe/myfork:latest
    ```
 
-3. **Web UI "About" page** — set the build-time vars before
+3. **Web UI "About" page** - set the build-time vars before
    `pnpm build` / `docker build`:
 
    ```
@@ -114,16 +114,16 @@ these instead of running the script:
 
 ## Things the script does **not** touch
 
-- `package.json` `name` field (`umlautadaptarrex`) — this is the product
+- `package.json` `name` field (`umlautadaptarrex`) - this is the product
   name, not the fork identity.
 - The product name `UmlautAdaptarrEX` as it appears throughout the UI,
-  README headlines and code comments — rebranding the product is a
+  README headlines and code comments - rebranding the product is a
   separate exercise and intentionally not automated.
-- `PCJones/UmlautAdaptarr` references — these are upstream credit links
+- `PCJones/UmlautAdaptarr` references - these are upstream credit links
   in the About page and the README that should stay regardless of the
   fork ([README.md](../README.md), [src/app/(admin)/about/page.tsx](<../src/app/(admin)/about/page.tsx>)).
 - Docker Hub credentials, container names, network ports, volume paths.
-- The Proxmox community scripts under `proxmox/community-scripts/` — the
+- The Proxmox community scripts under `proxmox/community-scripts/` - the
   installer hard-codes `xpsony/UmlautAdaptarrEX` raw-GitHub URLs (the
   one-line `curl` command, the install script, and the JSON/README). A fork
   that wants its own LXC installer must edit those occurrences by hand;

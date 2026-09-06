@@ -1,28 +1,141 @@
 # Changelog
 
-## 1.3.0 — 2026-07-26
+## 1.4.0 - 2026-09-06
+
+The biggest release since the rewrite, and it changes both halves of the product: what gets searched, and what you can see and fix.
+
+On the search side: German title variations are now used for **films** as well, the whole search fan-out became configurable, the sync cadence dropped from one hard-coded pass every 12 hours to a **10-minute quick sync** plus a daily full sync, and a title nobody has synced yet is now resolved **while its search is still in flight** - the case a shorter interval cannot fix. On the UI side: a new **Library** page finally makes the synced title data visible and lets you fix individual mismatches with **manual title overrides** instead of clearing the whole cache, surrounded by a full table/UX overhaul (sorting, URL-persisted filters, detail views, CSV export), history pagination with configurable retention, and a complete accessibility & translation sweep.
+
+Also in this release: the reported **"the German title is never sent to the indexers"** case is fixed, and **renaming and search behaviour are configurable** in two new Settings tabs. Eight database migrations run automatically on first start. This release does change what an existing installation delivers: three settings that were previously recommended for fresh installs only are now on for everyone - see the upgrade notes.
+
+### Features
+
+- **German title variations are now searched for films too, and the whole fan-out is configurable.** Until now only series were searched with their German titles; films were left out for historical reasons, so a German film release the indexer only listed under its German name was never found. Four new settings control this:
+  - **Search German variations: series** and **films**, separately. Both are on by default, for fresh and existing installations alike - which means a film search now costs more indexer requests than it did in 1.3.0 (see the upgrade notes). Switching the film search off again is one click in Settings → Search.
+  - **Maximum German variations per search**, default **1**, replacing a hard-coded 10. The number counts the German variations; your literal search term and the original title are always searched on top and are never dropped by the cap. So 1 means at most 3 extra indexer requests per search, and **0** means no German variations at all while still searching those two. One alias covers the common case, an indexer that lists the release only under its German name, at a third of the outbound cost; raise the cap in Settings → Search if you want broader coverage. Existing installations get 1 as well: the setting is new in this release, so there is no earlier choice to preserve, and it is far less indexer load than the hard-coded 10 they run today.
+  - **On-demand lookup** can be switched off, for anyone who does not want the extra call.
+  - The rewrite path for films is unchanged: releases of other films in the same response are still matched individually, so nothing that used to be renamed stops being renamed.
+- **Sync intervals are configurable, and the default cadence is much shorter.** Instead of one hard-coded full sync every 12 hours there are now two intervals (Settings, range-checked): a **quick sync** every 10 minutes and a **full sync** every 24 hours. The quick sync fetches the \*Arr's title listing and processes only what actually changed - additions, removals, and titles the \*Arr itself renamed. When nothing changed it writes no `SearchItem` row, creates no `SyncRun` row and never calls a title provider, which is what makes a 10-minute cadence affordable: a full pass on a 2,000-title library used to rewrite every row whether or not it had changed. The full sync is still the pass that re-queries every provider, so it remains the one that picks up German titles which appeared upstream after a title was first synced. Three presets are offered: **Recommended** (10 min / 24 h), **Frugal** (60 min / 24 h) and **Like 1.x** (quick sync off / 12 h).
+  - An instance that has never had a full sync always gets one first. That is the one-time initial scan; quick syncs only take over afterwards.
+  - "Sync now" in the UI is always a full sync - pressing the button should mean a real refresh.
+  - Sync runs now record their `kind` (`full` / `delta`) and can be filtered by it.
+- **A title nobody synced yet is now resolved while its search is still in flight.** When a search arrives for a tvdbid, tmdbid or imdbid that isn't in the cache, UmlautAdaptarrEX asks your Sonarr or Radarr about that one title and then its title providers, and uses the answer for **that** request. This is the case a shorter sync interval cannot fix: a request in Jellyseerr or Overseerr makes Radarr create the movie and search for it in the same second, so even a 10-minute quick sync misses the window entirely. Previously the German release was simply overlooked and you had to search again later.
+  - The lookup runs **in parallel** with the indexer request it belongs to and is capped at 5 seconds, so in practice it adds no waiting time. A timeout, an unreachable \*Arr or a provider outage all leave the response exactly as it was before this feature existed - there is no path where the lookup can make a search worse.
+  - An id nobody knows is remembered as a miss for 30 minutes, concurrent searches for the same id share one lookup, and at most four resolutions run at a time. A burst of unknown ids cannot turn into a burst of outbound calls.
+  - Resolved titles live in memory only (bounded, 12 hours) and never become library entries. The next regular sync takes over and shadows them. Provider answers are cached in the database as usual, so a restart costs a database read rather than another outbound call.
+  - Series get the full treatment right away, including the search with German title variations. Films get the rewrite; the variation search for films follows separately.
+  - Searches that carry **only** an `imdbid` need a TMDB key configured, because the id has to be mapped to a TMDB id first.
+- **All of the above is asked in the setup wizard and editable in a new Settings tab.** A new wizard step **Search behaviour** sits right after the language plugins, and a new **Search** tab in Settings holds the same six controls. Every option states what it does, shows a worked example, and names its cost, so the choice is understandable without reading a changelog:
+  - The variation example is not prose: the German spellings shown are the ones the variation generator actually produces, pinned by a test that replays them through it. If the generator changes, the test fails and the copy has to be corrected with it.
+  - The refresh intervals come with three presets (Recommended / Frugal / Like 1.x) and a note that the very first reconcile is always a full one.
+  - Copy is available in German, English, Swedish and French.
+- **Library page (`/library`):** browse every synced title across all instances - original title, resolved German title and all generated search variations, with server-side search, filters (instance, media type, "missing German title only") and pagination. This is the data the matching engine actually works with; previously it was only visible in log lines.
+- **Manual title overrides:** fix a single mismatched title from the Library detail view. An override is stored per medium (`mediaType` + external id), applies to **all** instances, survives re-syncs and library removal/re-add, and recomputes the search variations immediately - the fix is searchable at once, not after the next sync. Removing an override restores the provider-resolved title (or re-resolves on the next sync). Sync runs apply overrides at assembly time, sourcing multi-language variations from the title cache so non-German language plugins keep their variations.
+- **Sortable columns** on request history, rename history, sync runs and the library. Sorting is server-side against a per-endpoint whitelist, with a stable id tiebreaker so page boundaries never duplicate or skip rows.
+- **Filters, page and sorting live in the URL** on all four list pages: reload, browser back and deep links reproduce exactly the view you had. Default values are kept out of the URL.
+- **Sync runs list rebuilt:** server-side pagination, free-text search (instance name, error message), a status filter and a run-kind filter replace the old 200-run display cap.
+- **Row detail views** for request history and sync runs: full untruncated query strings and error messages, per-provider item counters, localized timestamps. An open sync-run sheet live-updates while the run progresses.
+- **CSV export** for request and rename history: respects the current filter and sort order, RFC-4180 quoting, UTF-8 BOM (umlauts survive Excel), spreadsheet formula injection neutralized, capped at 10,000 rows (`x-truncated` response header when the cap hits).
+- **Per-instance actions in the instances list:** "Test connection" and "Sync now" directly from the row menu (desktop table and mobile cards). Connection tests run through a new server-side endpoint (`POST /api/admin/instances/:id/test`), so the stored API key never round-trips through the browser.
+- **History pagination & retention:** request and rename history paginate through all stored entries (page size 25/50/100/250) with server-side search across the whole retained period, and the new setting **History retention (days)** (Settings → Advanced, default 30, range 1–365) cleans up older entries automatically every 6 hours. Previously these tables grew without limit, and search only covered the newest rows ([#115](https://github.com/xpsony/UmlautAdaptarrEX/issues/115) - thanks [@Tom-Furrer](https://github.com/Tom-Furrer) for the report).
+- **Per-tab settings forms:** each settings tab is an independent form - dirty state no longer leaks across tabs, saves send only that tab's fields, and the browser warns before unloading with unsaved changes.
+- **Language switch without reload:** switching the UI language now refreshes in place (React Server Component refresh) - form state and scroll position survive.
+- **Renaming is configurable** (Settings → Renaming). Six toggles, each shown with a worked before/after example on an invented release name so the effect is visible without reading docs:
+  - _Strip unwelcome characters_ - removes `: ? * " < > | / \` from the inserted title without leaving a doubled separator. Scene releases never carry them, and Sonarr/Radarr parse the result more reliably. The indexer's own suffix is left verbatim. **On by default, for existing installations too** - see the upgrade notes.
+  - _Attach external ids_ - appends `tvdbid` / `tmdbid` / `imdb` as a newznab attribute to every matched item, so the \*Arr can bind a release without parsing its title. Purely additive: an id the indexer already sent is never overwritten, the feed's own attribute prefix (`newznab:` / `torznab:`) is mirrored, and ids are attached even when the rewrite itself was declined - which is exactly the case where they help most. **On by default, for existing installations too** - see the upgrade notes.
+  - _Year check_, _ambiguous-prefix check_, _preserve release tags_, _legacy suffix cut_ - the four safety rules UmlautAdaptarrEX added on top of the .NET predecessor, now individually switchable. Two preset buttons flip them all at once: **Like the old Umlautadaptarr** and **Recommended values**.
+  - Changes take effect on the next search; no restart and no re-sync needed.
+- **Indexers whose API cannot be corrected are greyed out in the patch dialog.** The correction hooks into the Newznab/Torznab interface: UmlautAdaptarrEX reads those search parameters and rewrites the titles in the response XML. An indexer that speaks the tracker's own API instead - in Prowlarr the definition-driven ones (implementation `Cardigann`) and the native tracker clients - has no such interface, and routing it through the proxy does not just fail to correct anything, it breaks the indexer: the proxy hands every request to the Newznab route, which has nothing to answer a request that carries no `t` parameter, so Prowlarr sees a 404 and disables the indexer. The dialog now reports those as not patchable, with the implementation named in the tooltip, and never tags them.
+  - An indexer that already carries the proxy tag stays clickable even when greyed out, so the tag can be taken off from the same dialog - un-tagging also restores its `https` base URL.
+  - The gate fails open: an indexer whose implementation Prowlarr does not report stays selectable, so an older Prowlarr cannot end up with all of its indexers greyed out.
+- **Forward the \*Arr's User-Agent** (Settings → Advanced, off by default). Sends Sonarr/Radarr/Lidarr/Readarr's User-Agent to the indexer verbatim instead of ours, for indexers that only accept known client User-Agents or rate-limit by them. With it off the indexer sees only our token and no version fingerprint of your \*Arr.
+- **Language plugins now state their cost** in Settings → Plugins and in the setup wizard: only enable a language you actually consume. Each extra plugin adds search variations, hence one more indexer request per search, plus one more TheTVDB request per title per language on every sync. TMDB returns all languages in a single call and does not scale with the plugin count.
+
+### Performance & robustness
+
+- **Search hot path:** match variations are pre-normalized at index time instead of re-normalized on every incoming search request.
+- **Bounded search fan-out:** variation searches per request are capped by **Maximum German variations per search** (default 1) with a total deadline at 75% of the configured indexer timeout. The literal query and the canonical title always survive the cap; partial results are aggregated and returned normally. Previously an alias-heavy title against a slow indexer could make Sonarr/Radarr time out with nothing.
+- **Proxy timeouts follow settings:** the Prowlarr proxy's HTTP timeouts now scale with `indexerTimeoutSeconds` (sized to cover the search route's worst case) instead of hardcoded 30s/60s values that could abort long-running searches the app would still have answered.
+- **Sync-run history is cleaned up.** `SyncRun` rows were never purged. At two runs a day that went unnoticed; at the new cadence it would not. They now fall under the existing **History retention (days)** setting, alongside request and rename history.
+- **First-sync cache writes batched:** each title's cache writes run in one transaction (~4× fewer SQLite commits on a 5,000-item first sync), and cache write failures are now logged through the structured logger instead of `console.error`.
+- **Composite database indexes** for the filtered history/log listings (`[level, createdAt]`, `[type, createdAt]`, `[domain, createdAt]`, `[mediaType, createdAt]`).
+- **Boot hardening:** a corrupt search-item row no longer prevents startup or reindexing - bad rows are skipped and logged with samples; the boot query also fetches only the columns it needs.
+- **Sync status hardening:** a failed status write (e.g. locked database) no longer discards a completed sync result; plugin seeding runs once per boot instead of on every settings save; the retention job runs `PRAGMA optimize` after cleanup.
+- The proxy logs a warning when an indexer sends a non-GET request (which is forced to GET, matching long-standing wire behavior) instead of silently dropping the request body.
+
+### Accessibility & i18n
+
+- **Complete French and Swedish UI coverage:** 25 previously untranslated strings (Prowlarr patch flow, sync-runs filter) are now translated - all four locales carry the identical key set.
+- Skip-to-content link, labeled navigation/stepper/charts, per-instance switch labels, keyboard- and touch-reachable error details (status badges, action-menu hints), `aria-describedby` on setup fields, `aria-sort` on sortable columns, and a shared alert primitive with correct `role="alert"`/`role="status"` semantics.
+
+### Dependencies & internals
+
+- Whole dependency stack refreshed within the supply-chain gate (`minimumReleaseAge`): Next 16.3.3, Fastify 5.12.1, Prisma 7.10.0, ESLint 10.9.1, Vitest 4.1.11, typescript-eslint 8.68.0, `@tanstack/react-query` 5.102.4 and others. Prisma stays on 7.x: its `latest` dist-tag currently points at an 8.0.0 release candidate.
+- **The User-Agent follows the running version.** It was the hard-coded literal `UmlautAdaptarrEX/2.0` in three places - wrong ever since the 2.0 rewrite shipped as 1.x. `Setting.userAgent` is now an optional _override_: blank means `UmlautAdaptarrEX/<version>`, resolved exactly like the version shown in the Web UI, and the automatic value appears as the field's placeholder. The migration clears the untouched historical default so those installs move onto the automatic value; a customised User-Agent is left alone.
+- **Behaviour change:** the outbound User-Agent is no longer the concatenation of the \*Arr's header and ours (`Sonarr/4.0.0 UmlautAdaptarrEX/2.0`). That value identified neither client and could defeat the very indexer allow-lists it looked like it was serving. It is now either ours (default) or the \*Arr's verbatim, controlled by the new toggle.
+- **The dev image now shows which release it is built on.** Its version read `vDEV-6a0974e` and named the commit alone; it now reads **`v1.4.0 DEV-6A0974E`**. The version string itself stays a single token (`1.4.0-dev-6a0974e`), because it doubles as the outbound User-Agent, where a space would be invalid - only the display splits the channel off. Release images, security rebuilds and prerelease tags render exactly as before.
+- The \*Arr clients are split into a raw fetch (`fetchRawItems`) and a derive step (`deriveItems`), so the quick sync can diff the instance's listing without paying for a provider lookup on every title, and a single title can be resolved on its own. No change in behaviour.
+- The search-item lookup index moved out of `AppState` into its own `SearchItemIndex`, with targeted single-item removal and an IMDb-id lookup. No change in behaviour.
+- Fastify's deprecated top-level `disableRequestLogging` (removed in Fastify 6) replaced with `LogController`, clearing a warning on every boot.
+- The manual title override is now covered end-to-end against a real SQLite: save → override row → variations re-derived → in-memory index refreshed → the overridden title is what gets _queried_ → and a release named after it gets rewritten; delete restores the cached provider title. Two harness gaps closed along the way: `cleanDb()` never truncated `TitleOverride` (an override leaked into later tests), and the four message catalogues are now checked for key parity so a feature can no longer ship with an untranslated French/Swedish UI.
+
+### Fixes
+
+- **Silent failures:** failed list/settings loads now render an error state with a retry button instead of masquerading as "no entries" / an empty form; enabling/disabling an instance shows an error toast instead of silently snapping back; the setup wizard's admin step shows field validation errors instead of doing nothing on invalid input.
+- **Sync-runs "Successful" filter never matched:** the filter sent `ok` while the database stores `success`. It works now.
+- **Live logs reconnect automatically:** the WebSocket stream reconnects with exponential backoff (1s → 30s) after a server restart or dropped connection, with a "Reconnecting…" badge - previously the page silently sat on a dead stream until reload.
+- **Instances API returns proper status codes:** PATCH/DELETE on a missing instance return 404, renaming onto an existing type+name returns 409 (previously both were 500).
+- **Concurrent title-cache rechecks** are rejected with 409 instead of doubling all outbound provider calls.
+- **Switching the UI language no longer discards unsaved settings edits** (the settings form no longer resets from a background refetch while dirty).
+- **Version display under About** is trustworthy again: source builds no longer show an empty version, and the 2-day `:latest` security rebuild no longer changes the displayed string to `1.3.0-<sha>` even though the code is identical to the release ([#86](https://github.com/xpsony/UmlautAdaptarrEX/issues/86) - thanks [@Tom-Furrer](https://github.com/Tom-Furrer) for the report).
+- **Spurious `FST_CSRF_MISSING_SECRET` 403 warnings:** the CSRF cookie could expire before the login session (e.g. after a browser restart), making the next action fail with a 403 and a scary-looking warning in the logs. CSRF cookies now live exactly as long as the session, and CSRF rejections are logged at debug level instead of warn ([#87](https://github.com/xpsony/UmlautAdaptarrEX/issues/87) - thanks [@Tom-Furrer](https://github.com/Tom-Furrer) for the report).
+- **German titles that only exist as an alias were never searched.** A German production that Sonarr holds under its English TVDB translation ended up with no German title at all, and the alias list that _did_ carry the German name was only used to rewrite the response - never to query the indexer. Result: the indexers only ever saw the English title and found nothing, while a series whose German title came back as a proper translation worked fine. Three separate causes, all fixed:
+  - The TVDB provider only read `/series/{id}/translations/deu`. It now also consults `/{type}/{id}/extended` for a still-missing language: the embedded `nameTranslations`, and - when `originalLanguage` proves it - the record's own primary `name`. The extra call is shared with the existing alias fallback, so a fully-resolved item costs nothing more.
+  - Sonarr's own `alternateTitles` were discarded outright as soon as a provider returned a single alias (`??` instead of a merge). Both lists are now unioned, matching what Radarr has always done.
+  - When no German title resolves at all, up to three Latin-script aliases are now promoted to _search_ variations. Bounded on purpose: the search issues one indexer request per variation, and alias lists routinely carry a dozen non-Latin translations that would be pure noise and would push the useful queries out of the cap.
+- **A release was renamed even though it already carried the right title, and the rewrite pushed brackets into the name.** Reported for a numbered sequel whose title has a parenthesised subtitle - with invented names: `Ember.Ascending.3.Final.Descent.2015.1080p.BluRay.x264-RIVET` came back as `Ember.Ascending.3.(Final.Descent).2015.1080p.BluRay.x264-RIVET`. Cause: no separate German title exists for such a title, so the provider hands back the English one, brackets included. The variation generator strips those brackets, which makes the variation a different _string_ from the stored title while naming the very same title - so the "nothing to rename here" check, which compared the two raw strings, did not catch it and the rewrite re-inserted `(` and `)` into a scene name that was already correct. A rewrite is now declined when it would change nothing but punctuation. The check deliberately compares letters and digits only, not the internal comparison form: restoring `ä`/`ö`/`ü`/`ß` is the whole point of the product, and those fold onto their base letter, so a comparison-form check would have declared every umlaut rename a no-op.
+  - This also ends the cosmetic renames of the `Title.Sub.Title` → `Title:.Sub.Title` kind. `Strip unwelcome characters` (Settings → Renaming) is unaffected and still governs what happens to a colon inside a title that _is_ genuinely being rewritten.
+- **An unrelated release could be renamed onto a numbered sequel.** Alias lists routinely carry a title in Japanese, Chinese, Korean or Cyrillic; for a numbered sequel, cleaning such an alias strips every letter and leaves the bare sequel number behind (`"<non-Latin title> 3"` → `"3"`). That numeral was stored as a match variation, and as a prefix match it claimed every unrelated release starting with `3.` whose year happened to fall inside the year check's tolerance - renaming, staying with the invented names, `3.Tage.im.Nebel.2014...` into `Ember.Ascending.3.(Final.Descent).Tage.im.Nebel.2014...`. Such residues are no longer generated, and the matching engine additionally ignores a variation without a single letter, so libraries that have not re-synced yet are protected too. A title that genuinely consists of digits only keeps its variations - nothing was lost there in the first place.
+- **`TRUST_PROXY` hop counts are no longer silently ignored.** Fastify 5.12 disabled hop-count trust (a hop count cannot validate the immediate peer, so a client reaching the origin directly could spoof `X-Forwarded-*`). A numeric `TRUST_PROXY` now fails closed _and_ logs a warning at startup telling you to switch to `loopback` or a CIDR/IP list, instead of quietly trusting nothing.
+- The worked example for **Preserve release tags** (Settings → Renaming) showed a before/after in which nothing actually changed. It now uses an item whose title really differs from the release, so the `3D` that the check preserves is visible.
+- Docs: corrected the (false) global-rate-limit claim in `docs/api.md` and refreshed the per-route limits table against the code.
+
+### Upgrade notes
+
+- **Eight new database migrations run automatically on first start** - history retention setting, title overrides table, composite history indexes, renaming options, User-Agent options, sync intervals, the one that switches the recommended defaults on, and the one that sets the variation cap to 1. No manual action needed.
+- **Three settings that were previously off for existing installations are now on for everyone:** **Strip unwelcome characters** and **Attach external ids** (Settings → Renaming) and **Search German variations: films** (Settings → Search). They were meant as recommended defaults for fresh installs, which would have left the majority of installations on the worse of the two settings for no reason other than history. All three remain switches: anyone who wants the old behaviour turns them off in Settings, and it takes effect from the next search.
+- **If you ran a 1.4.0 prerelease and switched one of those three off on purpose, switch it off again after the update.** Nothing records _why_ a switch was off, so "never opted in" and "deliberately disabled" are indistinguishable in the database - the migration cannot tell them apart and flips both. The same applies to **Maximum German variations per search**: it is set to 1 for every installation, so a value you picked by hand in a prerelease has to be picked again.
+- **The film variation search is the one that costs requests.** Films are now searched with their German title variations, the way series always have been. The number of variations per search is capped by **Maximum German variations per search** (default 1), so the worst case is three indexer requests per film search instead of one. If your indexer enforces a tight request limit, either lower that cap or switch the film search off again - both are in Settings → Search.
+- **The default sync cadence changed** from one full sync every 12 hours to a quick sync every 10 minutes plus a full sync every 24 hours. The quick sync only touches what actually changed, so it is cheaper than the old pass, but it does mean regular short calls to your \*Arr. The **Like 1.x** preset in Settings → Search restores the old behaviour exactly.
+- `SearchItem.imdbId` is filled by the next Radarr sync; until then movie items simply emit no `imdb` attribute.
+- If your indexers were allow-listing or rate-limiting on the Sonarr/Radarr User-Agent, enable **Forward the \*Arr's User-Agent** in Settings → Advanced: outbound requests now carry only our own token by default.
+- If you set `TRUST_PROXY` to a number, change it: use `loopback` (the default) or a comma-separated CIDR/IP list. The startup log now says so explicitly.
+- The bounded search fan-out is a deliberate behavior improvement over the unbounded fan-out of earlier versions (and of the original UmlautAdaptarr); if you ever need to diagnose it, a variation phase that runs out of time logs a warning with counts, and a cap that merely trimmed surplus variations logs the same counts at debug level - with a default of 1 that is the normal outcome for most titles and has no business being a warning.
+- New: a German/English comparison of UmlautAdaptarr vs. UmlautAdaptarrEX lives in `docs/comparison.de.md` / `docs/comparison.en.md`.
+
+## 1.3.0 - 2026-07-26
 
 Adds an optional headless mode for lean, UI-less deployments, fixes two rename/settings bugs, and refreshes the whole dependency stack. Headless is opt-in and off by default, so existing installs are unaffected. No schema changes, no configuration changes.
 
 ### Features
 
-- **Headless mode:** setting `UMLAUTADAPTARREX_HEADLESS=1` runs the container without the Next.js Web UI and without the self-forking supervisor — a single Node process (Fastify + TCP proxy). In this project's Docker tests a minimally-configured container dropped from ~160 MiB (over 200 MiB with the Web UI open) to ~115 MiB headless, roughly a third / ~50-90 MB less depending on config. Only works for an already-configured instance (the setup wizard still runs exclusively in the Web UI); the container refuses to boot headless against an unconfigured database, with an explanatory error. When enabled, the Web UI port (default 5007) can be dropped from the compose port mapping.
+- **Headless mode:** setting `UMLAUTADAPTARREX_HEADLESS=1` runs the container without the Next.js Web UI and without the self-forking supervisor - a single Node process (Fastify + TCP proxy). In this project's Docker tests a minimally-configured container dropped from ~160 MiB (over 200 MiB with the Web UI open) to ~115 MiB headless, roughly a third / ~50-90 MB less depending on config. Only works for an already-configured instance (the setup wizard still runs exclusively in the Web UI); the container refuses to boot headless against an unconfigured database, with an explanatory error. When enabled, the Web UI port (default 5007) can be dropped from the compose port mapping.
 
 ### Fixes
 
-- **Settings could no longer be saved when the proxy port is pinned by the environment:** with `UMLAUTADAPTARREX_PROXY_PORT` set, every save from the Settings page — on any tab, not just Advanced — was rejected with a `proxy-port-env-managed` conflict, because the form round-tripped the read-only, env-managed port value back to the server. The Web UI now omits the field entirely when the port is env-managed, and the server treats an unchanged value as a no-op instead of a conflict. Sending a *different* value while the env var is set is still rejected with 409, so the "your edit would silently have no effect" guard stays intact.
-- **Trailing punctuation leaked into renamed titles:** when the title variation that matched carried no parentheses but the release name did (e.g. variation "Chronicles of Time 2005" against `Chronicles.of.Time.(2005).S08E08...`), the closing `)` was left unconsumed and the rewrite emitted a doubled character — `Chronicles.of.Time.(2005).).S08E08...`. Closing delimiters (`)`, `]`, `}`) directly after the matched title are now skipped. Applies to both the movie/TV and the book/audiobook rename path; opening delimiters are deliberately left alone so a release named `Chronicles of Time(2005)...` still renames correctly.
+- **Settings could no longer be saved when the proxy port is pinned by the environment:** with `UMLAUTADAPTARREX_PROXY_PORT` set, every save from the Settings page - on any tab, not just Advanced - was rejected with a `proxy-port-env-managed` conflict, because the form round-tripped the read-only, env-managed port value back to the server. The Web UI now omits the field entirely when the port is env-managed, and the server treats an unchanged value as a no-op instead of a conflict. Sending a _different_ value while the env var is set is still rejected with 409, so the "your edit would silently have no effect" guard stays intact.
+- **Trailing punctuation leaked into renamed titles:** when the title variation that matched carried no parentheses but the release name did (e.g. variation "Chronicles of Time 2005" against `Chronicles.of.Time.(2005).S08E08...`), the closing `)` was left unconsumed and the rewrite emitted a doubled character - `Chronicles.of.Time.(2005).).S08E08...`. Closing delimiters (`)`, `]`, `}`) directly after the matched title are now skipped. Applies to both the movie/TV and the book/audiobook rename path; opening delimiters are deliberately left alone so a release named `Chronicles of Time(2005)...` still renames correctly.
 
 ### Security & maintenance
 
-- **Dependency refresh:** the full stack bumped to current — Prisma `7.8.0` → `7.9.0` (client, CLI and the better-sqlite3 adapter), Next.js `16.2.10` → `16.2.11`, React `19.2.7` → `19.2.8`, argon2 `0.44.0` → `0.45.1`, nanoid `5.1.16` → `6.0.0`, better-sqlite3 `12.11.1` → `13.0.1`, undici `8.7.0` → `8.9.0`, recharts `3.9.2` → `3.10.0`, lucide-react `1.24.0` → `1.26.0`, react-hook-form `7.81.0` → `7.83.0`, next-intl `4.13.1` → `4.13.4`, fast-xml-parser `5.9.3` → `5.10.1`, ws `8.21.0` → `8.21.1`, `@fastify/cookie` `11.1.0` → `11.1.2`, `@tanstack/react-query` `5.101.2` → `5.101.4`, the Radix UI set, plus dev tooling (ESLint `10.8.0`, Prettier `3.9.6`, typescript-eslint `8.65.0`, Playwright `1.62.0`, Vite `8.1.5`, Tailwind `4.3.3`, postcss `8.5.23`, tsx `4.23.1`, autoprefixer `10.5.4`, concurrently `10.0.4`). TypeScript stays on the 6.x line (7.0 breaks the current type-check).
-- **CI & dependency automation:** `actions/setup-node` bumped to v7. Dependabot now applies a 3-day cooldown on all ecosystems, so freshly-published releases are not pulled in immediately, and auto-merge no longer needs a PR approval — it gates on the status check alone.
+- **Dependency refresh:** the full stack bumped to current - Prisma `7.8.0` → `7.9.0` (client, CLI and the better-sqlite3 adapter), Next.js `16.2.10` → `16.2.11`, React `19.2.7` → `19.2.8`, argon2 `0.44.0` → `0.45.1`, nanoid `5.1.16` → `6.0.0`, better-sqlite3 `12.11.1` → `13.0.1`, undici `8.7.0` → `8.9.0`, recharts `3.9.2` → `3.10.0`, lucide-react `1.24.0` → `1.26.0`, react-hook-form `7.81.0` → `7.83.0`, next-intl `4.13.1` → `4.13.4`, fast-xml-parser `5.9.3` → `5.10.1`, ws `8.21.0` → `8.21.1`, `@fastify/cookie` `11.1.0` → `11.1.2`, `@tanstack/react-query` `5.101.2` → `5.101.4`, the Radix UI set, plus dev tooling (ESLint `10.8.0`, Prettier `3.9.6`, typescript-eslint `8.65.0`, Playwright `1.62.0`, Vite `8.1.5`, Tailwind `4.3.3`, postcss `8.5.23`, tsx `4.23.1`, autoprefixer `10.5.4`, concurrently `10.0.4`). TypeScript stays on the 6.x line (7.0 breaks the current type-check).
+- **CI & dependency automation:** `actions/setup-node` bumped to v7. Dependabot now applies a 3-day cooldown on all ecosystems, so freshly-published releases are not pulled in immediately, and auto-merge no longer needs a PR approval - it gates on the status check alone.
 
 ### Upgrade notes
 
-- No action needed — this release has no schema changes and no configuration changes. Headless mode is opt-in and off by default; to use it, complete the setup wizard once with the Web UI enabled, then set `UMLAUTADAPTARREX_HEADLESS=1` and restart. Remove the variable temporarily whenever you need to change configuration in the Web UI.
+- No action needed - this release has no schema changes and no configuration changes. Headless mode is opt-in and off by default; to use it, complete the setup wizard once with the Web UI enabled, then set `UMLAUTADAPTARREX_HEADLESS=1` and restart. Remove the variable temporarily whenever you need to change configuration in the Web UI.
 
-## 1.2.5 — 2026-07-10
+## 1.2.5 - 2026-07-10
 
 A maintenance release: all dependencies and the build toolchain are refreshed, CI and the dev container move to Node 26 (the production image already ran Node 26), and an automated Docker security rebuild keeps the published `:latest` image patched with OS/base-image security updates between releases. No schema changes, no configuration changes.
 
@@ -32,29 +145,29 @@ A maintenance release: all dependencies and the build toolchain are refreshed, C
 
 ### Security & maintenance
 
-- **Dependency refresh:** all dependencies bumped to their latest patch/minor — pnpm `11.3.0` → `11.11.0`, Fastify `5.8.5` → `5.10.0`, Next.js `16.2.9` → `16.2.10`, recharts `3.8.1` → `3.9.2`, lucide-react `1.21.0` → `1.24.0`, undici `8.5.0` → `8.7.0`, the Radix UI set, plus dev tooling (ESLint `10.6.0`, Vitest `4.1.10`, Vite `8.1.4`, Prettier `3.9.4`, tsx `4.23.0`, typescript-eslint `8.63.0`, Playwright `1.61.1`). TypeScript stays on the 6.x line (7.0 breaks the current type-check). `pnpm audit --prod` reports no known vulnerabilities in the shipped runtime dependencies.
+- **Dependency refresh:** all dependencies bumped to their latest patch/minor - pnpm `11.3.0` → `11.11.0`, Fastify `5.8.5` → `5.10.0`, Next.js `16.2.9` → `16.2.10`, recharts `3.8.1` → `3.9.2`, lucide-react `1.21.0` → `1.24.0`, undici `8.5.0` → `8.7.0`, the Radix UI set, plus dev tooling (ESLint `10.6.0`, Vitest `4.1.10`, Vite `8.1.4`, Prettier `3.9.4`, tsx `4.23.0`, typescript-eslint `8.63.0`, Playwright `1.61.1`). TypeScript stays on the 6.x line (7.0 breaks the current type-check). `pnpm audit --prod` reports no known vulnerabilities in the shipped runtime dependencies.
 - **Node 26 across the board:** CI and the dev container now run on Node 26, matching the production image; the server bundle now targets Node 24. GitHub Actions bumped (`actions/checkout` v7, `actions/cache` v6).
-- **Dependency PRs target `dev`:** Dependabot now opens against the `dev` branch instead of `main`, so updates land on the active branch and auto-merge after CI (patch/minor; majors stay manual) — removing the `main`→`dev` back-merge.
+- **Dependency PRs target `dev`:** Dependabot now opens against the `dev` branch instead of `main`, so updates land on the active branch and auto-merge after CI (patch/minor; majors stay manual) - removing the `main`→`dev` back-merge.
 
 ### Upgrade notes
 
-No action needed — this release has no schema changes and no configuration changes.
+No action needed - this release has no schema changes and no configuration changes.
 
-## 1.2.4 — 2026-06-21
+## 1.2.4 - 2026-06-21
 
 A stability and hardening release: title-provider syncs and the supervisor no longer hang on stalled connections, the indexer proxy and the admin/setup endpoints are hardened, and several title-matching and Web UI bugs are fixed. No schema changes.
 
 ### Fixes
 
 - **Operation-mode descriptions show the configured ports** ([#30](https://github.com/xpsony/UmlautAdaptarrEX/issues/30)): the operation-mode texts in the setup wizard and Settings → Operation mode hard-coded `5005`/`5006` even when the ports had been remapped via `UMLAUTADAPTARREX_LEGACYAPI_PORT` / `UMLAUTADAPTARREX_PROXY_PORT`. They now interpolate the resolved ports (env override > stored/default). Thanks to [xopez](https://github.com/xopez) for reporting.
-- **Sync no longer hangs on a stalled provider:** TVDB, pcjones and TMDB requests now carry request timeouts (`bodyTimeout`/`headersTimeout`), so a single unresponsive title provider can no longer block one of the bulk lookup slots — and therefore the whole sync — indefinitely.
+- **Sync no longer hangs on a stalled provider:** TVDB, pcjones and TMDB requests now carry request timeouts (`bodyTimeout`/`headersTimeout`), so a single unresponsive title provider can no longer block one of the bulk lookup slots - and therefore the whole sync - indefinitely.
 - **One bad provider no longer aborts the chain:** each provider in the configured order is now isolated; a provider that throws (e.g. pcjones on a network error) is logged and skipped so the remaining providers still contribute, instead of discarding already-merged results.
 - **Title matching:** titles containing tabs or line breaks are no longer collapsed into a single word (whitespace is normalized before stripping), and leading articles (`Der`/`Die`/`Das`/`The`/…) are now stripped case-insensitively, so lowercase or all-caps titles produce the same search variations as title-cased ones. `getReadarrTitleForExternalId` now strips the active language pack's articles instead of only the English "the".
 - **Boot & restart robustness:** `runPrismaMigrate` now attaches an `error` handler (and uses `process.execPath`), so a failed `prisma migrate deploy` launch surfaces an error instead of hanging the boot forever. The supervisor now tracks the Next.js child's real exit, so a process that ignores `SIGTERM` is actually `SIGKILL`-ed within the grace window and can no longer orphan the Web UI port on restart. The admin Restart endpoint now ties teardown to the response being flushed instead of a fixed 250 ms timer.
 
 ### Improvements
 
-- **Indexer proxy hardening:** the plain-HTTP relay path now restricts targets to ports 80/443 (matching the HTTPS-CONNECT allow-list), destroys upstream/client sockets on error or clean close, and adds a 120 s idle timeout — closing an SSRF / open-relay gap and a socket leak.
+- **Indexer proxy hardening:** the plain-HTTP relay path now restricts targets to ports 80/443 (matching the HTTPS-CONNECT allow-list), destroys upstream/client sockets on error or clean close, and adds a 120 s idle timeout - closing an SSRF / open-relay gap and a socket leak.
 - **Reduced database load on large installs:** the per-request session `lastUsed` write is now throttled to at most once every 5 minutes (it previously wrote on every authenticated request, including the UI's polling), and "Recheck missing titles" scans the title cache in bounded id-cursor batches instead of loading the entire table (with translations) into memory at once. Request-history rows now cap the stored `domain`/`query` length.
 - **O(n) variation dedup & regex reuse** in the title-variation hot path; minor allocation cleanups.
 
@@ -73,15 +186,15 @@ A stability and hardening release: title-provider syncs and the supervisor no lo
 
 ### Upgrade notes
 
-No action needed — this release has no schema changes and no configuration changes.
+No action needed - this release has no schema changes and no configuration changes.
 
-## 1.2.3 — 2026-06-06
+## 1.2.3 - 2026-06-06
 
 Lets the container run fully unprivileged and ships as a TrueNAS Community app. Until now the image required root at startup; root is now used only for the one-time `/data` ownership fix and the application process never runs as root. No schema changes.
 
 ### Features
 
-- **TrueNAS Community app:** UmlautAdaptarrEX is now available in the TrueNAS app catalog ([apps.truenas.com/catalog/umlautadaptarrex_community](https://apps.truenas.com/catalog/umlautadaptarrex_community/)) — search for "UmlautAdaptarrEX" under Apps → Discover Apps to install. The app is maintained by [xopez](https://github.com/xopez), many thanks.
+- **TrueNAS Community app:** UmlautAdaptarrEX is now available in the TrueNAS app catalog ([apps.truenas.com/catalog/umlautadaptarrex_community](https://apps.truenas.com/catalog/umlautadaptarrex_community/)) - search for "UmlautAdaptarrEX" under Apps → Discover Apps to install. The app is maintained by [xopez](https://github.com/xopez), many thanks.
 
 ### Improvements
 
@@ -95,7 +208,7 @@ Lets the container run fully unprivileged and ships as a TrueNAS Community app. 
 
 No action needed for the default Docker / compose setup. To run unprivileged, pre-own the `/data` volume with your target UID/GID and start the container with that user (e.g. `--user 1000:1000`); `PUID`/`PGID` are ignored in that mode since the orchestrator already sets the UID/GID.
 
-## 1.2.2 — 2026-06-05
+## 1.2.2 - 2026-06-05
 
 Adds a Proxmox LXC community-script, surfaces the actual service ports in the UI, and fixes API proxying plus the setup flow behind Docker NAT. Includes one additive database migration (`AdminUser.lastSeenChangelog`), applied automatically on start.
 
@@ -117,13 +230,13 @@ Adds a Proxmox LXC community-script, surfaces the actual service ports in the UI
 ### Security & maintenance
 
 - **Auth-surface hardening:** `/api/auth/me` is now rate-limited per IP (60 / min)
-- **Dependencies updated:** All pnpm packages bumped to their latest patch/minor releases — Next.js `16.2.7`, React / React-DOM `19.2.7`, `@tanstack/react-query` `5.101.0`, plus dev tooling (`eslint-config-next`, `typescript-eslint`, `concurrently`, `@types/react`). No behaviour changes; `pnpm audit` reports no known vulnerabilities.
+- **Dependencies updated:** All pnpm packages bumped to their latest patch/minor releases - Next.js `16.2.7`, React / React-DOM `19.2.7`, `@tanstack/react-query` `5.101.0`, plus dev tooling (`eslint-config-next`, `typescript-eslint`, `concurrently`, `@types/react`). No behaviour changes; `pnpm audit` reports no known vulnerabilities.
 
 ### Upgrade notes
 
 The new `AdminUser.lastSeenChangelog` column is applied automatically by `prisma migrate deploy` on start. If you relied on the `PORT` or `WEB_PORT` environment variables, switch to `UMLAUTADAPTARREX_LEGACYAPI_PORT` / `UMLAUTADAPTARREX_WEBUI_PORT`.
 
-## 1.2.1 — 2026-06-02
+## 1.2.1 - 2026-06-02
 
 Lets you set all three service ports through environment variables before the first start, so Docker users can avoid host port clashes without editing the app. No schema changes.
 
@@ -135,7 +248,7 @@ Lets you set all three service ports through environment variables before the fi
 
 - **Env-managed proxy port:** When `UMLAUTADAPTARREX_PROXY_PORT` is set it overrides the stored proxy port at every start, and the proxy-port field under Settings → Advanced is shown read-only with a hint so the value cannot drift out of sync. The live-log view and the proxy URL advertised to Prowlarr both follow the configured ports automatically.
 
-## 1.2.0 — 2026-06-02
+## 1.2.0 - 2026-06-02
 
 Adds the Prowlarr indexer-patch dialog, plus a dependency refresh and a Docker healthcheck fix. No schema changes.
 
@@ -162,7 +275,7 @@ Adds the Prowlarr indexer-patch dialog, plus a dependency refresh and a Docker h
 - `vite` `8.0.14` → `8.0.16`, `vitest` / `@vitest/coverage-v8` `4.1.7` → `4.1.8`
 - `tsx` `4.22.3` → `4.22.4`
 
-## 1.1.1 — 2026-05-25
+## 1.1.1 - 2026-05-25
 
 ### Fixes
 
@@ -174,7 +287,7 @@ Adds the Prowlarr indexer-patch dialog, plus a dependency refresh and a Docker h
 
 No manual resync required. On the next sync (automatic or via "Sync now" in the dashboard) the stale rows with old externalIds are removed
 
-## 1.1.0 — 2026-05-25
+## 1.1.0 - 2026-05-25
 
 ### Providers & Settings
 

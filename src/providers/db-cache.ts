@@ -1,10 +1,6 @@
 import { prisma } from "@/lib/db";
 import type { MediaType } from "@/domain/variations/generate";
-import {
-  makeTitlePayload,
-  type TitlePayload,
-  type TitleProvider,
-} from "./types";
+import { makeTitlePayload, type TitlePayload, type TitleProvider } from "./types";
 
 /**
  * TitleProvider decorator that persists responses in `TitleApiCache` (parent,
@@ -15,7 +11,7 @@ import {
  *     temporarily broken provider does not get persisted as "not found"
  *     forever.
  *
- * `fetchByTitle` is not cached — the cache targets bulk sync lookups by id.
+ * `fetchByTitle` is not cached - the cache targets bulk sync lookups by id.
  */
 const NEGATIVE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -58,16 +54,12 @@ function rowToPayload(row: CachedRow, externalId: string): TitlePayload {
   }
   return makeTitlePayload({
     titlesByLang,
-    aliasesByLang:
-      Object.keys(aliasesByLang).length > 0 ? aliasesByLang : undefined,
+    aliasesByLang: Object.keys(aliasesByLang).length > 0 ? aliasesByLang : undefined,
     externalId,
   });
 }
 
-function coversAllLangs(
-  row: CachedRow,
-  langs: readonly string[] | undefined,
-): boolean {
+function coversAllLangs(row: CachedRow, langs: readonly string[] | undefined): boolean {
   if (!langs || langs.length === 0 || langs.includes("*")) {
     // No specific languages requested → fresh row is automatically OK.
     return true;
@@ -79,10 +71,21 @@ function coversAllLangs(
   return langs.every((l) => haveByLang.has(l));
 }
 
+/**
+ * Structural subset of a logger's `error` method - matches pino's `Logger`
+ * (and any test double) without importing pino into a provider module.
+ */
+export interface DbCacheErrorLogger {
+  error: (obj: unknown, msg?: string) => void;
+}
+
 export class DbCachedTitleProvider implements TitleProvider {
   readonly name: string;
 
-  constructor(private readonly inner: TitleProvider) {
+  constructor(
+    private readonly inner: TitleProvider,
+    private readonly logger?: DbCacheErrorLogger,
+  ) {
     this.name = `db-cached(${inner.name})`;
   }
 
@@ -154,7 +157,7 @@ export class DbCachedTitleProvider implements TitleProvider {
           out.set(externalId, payload);
         }
         // Negative hits (no titles in any requested lang) are kept out of the
-        // result map — match legacy behavior.
+        // result map - match legacy behavior.
       } else {
         missing.push(externalId);
       }
@@ -165,12 +168,9 @@ export class DbCachedTitleProvider implements TitleProvider {
     // Stream per-id persistence: each time the inner chain resolves an id, we
     // write it to the cache immediately. This way a crash mid-sync (TMDB
     // sequential calls, pcjones chunks, TVDB sequential) does not discard the
-    // items already fetched — re-running the sync picks up where it left off.
+    // items already fetched - re-running the sync picks up where it left off.
     const persisted = new Set<string>();
-    const onItem = async (
-      externalId: string,
-      payload: TitlePayload,
-    ): Promise<void> => {
+    const onItem = async (externalId: string, payload: TitlePayload): Promise<void> => {
       await this.persist(cacheKey(type, externalId), payload, langs);
       persisted.add(externalId);
     };
@@ -180,7 +180,7 @@ export class DbCachedTitleProvider implements TitleProvider {
     });
     for (const externalId of missing) {
       const payload = fromInner.get(externalId) ?? null;
-      // Skip ids the streaming callback already persisted — its last call
+      // Skip ids the streaming callback already persisted - its last call
       // carried the cumulative merged payload, which matches what the result
       // map holds. Only ids that the inner chain never resolved still need a
       // write here, to land a negative-cache row with a TTL.
@@ -202,47 +202,53 @@ export class DbCachedTitleProvider implements TitleProvider {
     const titlesByLang = payload?.titlesByLang ?? {};
     const aliasesByLang = payload?.aliasesByLang ?? {};
     const isPositive =
-      Object.keys(titlesByLang).length > 0 ||
-      Object.keys(aliasesByLang).length > 0;
+      Object.keys(titlesByLang).length > 0 || Object.keys(aliasesByLang).length > 0;
     const parentData = {
       fetchedAt: new Date(),
       expiresAt: isPositive ? null : new Date(Date.now() + NEGATIVE_TTL_MS),
     };
+    // Persist one TitleTranslation row per language we either *got* or
+    // *requested but didn't get* - the latter is a per-lang negative cache
+    // entry (title = null), so the next call skips the outbound roundtrip.
+    const allLangs = new Set<string>([...Object.keys(titlesByLang), ...Object.keys(aliasesByLang)]);
+    if (requestedLangs && !requestedLangs.includes("*")) {
+      for (const l of requestedLangs) allLangs.add(l);
+    }
     try {
-      await prisma.titleApiCache.upsert({
-        where: { id },
-        create: { id, ...parentData },
-        update: parentData,
-      });
-      // Persist one TitleTranslation row per language we either *got* or
-      // *requested but didn't get* — the latter is a per-lang negative cache
-      // entry (title = null), so the next call skips the outbound roundtrip.
-      const allLangs = new Set<string>([
-        ...Object.keys(titlesByLang),
-        ...Object.keys(aliasesByLang),
-      ]);
-      if (requestedLangs && !requestedLangs.includes("*")) {
-        for (const l of requestedLangs) allLangs.add(l);
-      }
-      for (const lang of allLangs) {
-        const title = titlesByLang[lang] ?? null;
-        const aliases = aliasesByLang[lang];
-        const translationData = {
-          title,
-          aliasesJson:
-            aliases && aliases.length > 0 ? JSON.stringify(aliases) : null,
-        };
-        await prisma.titleTranslation.upsert({
-          where: { cacheId_lang: { cacheId: id, lang } },
-          create: { cacheId: id, lang, ...translationData },
-          update: translationData,
-        });
-      }
+      // Build the parent upsert + all translation upserts as one array and
+      // run them in a single transaction, instead of 1+n sequential
+      // round-trips. Same where/create/update payloads as before.
+      const ops = [
+        prisma.titleApiCache.upsert({
+          where: { id },
+          create: { id, ...parentData },
+          update: parentData,
+        }),
+        ...Array.from(allLangs, (lang) => {
+          const title = titlesByLang[lang] ?? null;
+          const aliases = aliasesByLang[lang];
+          const translationData = {
+            title,
+            aliasesJson: aliases && aliases.length > 0 ? JSON.stringify(aliases) : null,
+          };
+          return prisma.titleTranslation.upsert({
+            where: { cacheId_lang: { cacheId: id, lang } },
+            create: { cacheId: id, lang, ...translationData },
+            update: translationData,
+          });
+        }),
+      ];
+      await prisma.$transaction(ops);
     } catch (err) {
       // Swallow: a failing title cache write must never abort the surrounding
-      // sync. Use console.error so the tree's logger doesn't have to be
-      // threaded through this decorator.
-      console.error("[db-cache] titleApiCache upsert failed", { id, err });
+      // sync. Prefer the injected structural logger (threaded from AppState
+      // so failures land in the same pino pipeline); fall back to
+      // console.error when no logger was provided.
+      if (this.logger) {
+        this.logger.error({ id, err }, "db-cache: titleApiCache upsert failed");
+      } else {
+        console.error("[db-cache] titleApiCache upsert failed", { id, err });
+      }
     }
   }
 }

@@ -8,7 +8,7 @@ import type { AppState } from "@/server/state";
 // These tests simulate an unexpected listener death by closing the internal
 // server directly (without going through HttpProxyServer.stop()) and verify
 // the proxy rebinds on the same port. Accessing the private field via cast
-// is the pragmatic compromise — the alternative would be exposing an
+// is the pragmatic compromise - the alternative would be exposing an
 // internal-only hook just for tests.
 
 function buildState(): AppState {
@@ -60,10 +60,7 @@ function isListening(port: number, timeoutMs: number): Promise<boolean> {
   });
 }
 
-async function waitFor(
-  predicate: () => Promise<boolean>,
-  timeoutMs: number,
-): Promise<boolean> {
+async function waitFor(predicate: () => Promise<boolean>, timeoutMs: number): Promise<boolean> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     if (await predicate()) return true;
@@ -77,14 +74,28 @@ describe("http-proxy watchdog", () => {
   let port: number;
 
   beforeEach(async () => {
-    port = await reservePort();
-    proxy = new HttpProxyServer({
-      port,
-      appPort: 1,
-      state: buildState(),
-      logger: pino({ level: "silent" }),
-    });
-    await proxy.start();
+    // The reserve→close→rebind window is racy under parallel vitest workers
+    // (another worker can claim the port in between), so retry with a fresh
+    // port on EADDRINUSE instead of failing the test - same pattern as
+    // http-proxy-connect.test.ts / http-proxy-http.test.ts.
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      port = await reservePort();
+      proxy = new HttpProxyServer({
+        port,
+        appPort: 1,
+        state: buildState(),
+        logger: pino({ level: "silent" }),
+      });
+      try {
+        await proxy.start();
+        return;
+      } catch (err) {
+        lastErr = err;
+        if ((err as NodeJS.ErrnoException).code !== "EADDRINUSE") throw err;
+      }
+    }
+    throw lastErr;
   });
 
   afterEach(async () => {

@@ -3,10 +3,7 @@ import { renameForMoviesAndTv } from "@/domain/matching/rename.js";
 
 const sonarr = {
   expectedTitle: "Realm of Ravens",
-  titleMatchVariations: [
-    "Realm of Ravens",
-    "Realm of Ravens - Lied der Schwarzen Raben",
-  ],
+  titleMatchVariations: ["Realm of Ravens", "Realm of Ravens - Lied der Schwarzen Raben"],
 };
 
 describe("renameForMoviesAndTv", () => {
@@ -36,9 +33,7 @@ describe("renameForMoviesAndTv", () => {
     // ambiguous prefix without SxxExx → don't rewrite via "Sigrid"
     const result = renameForMoviesAndTv("Sigrid.German.WEB", item);
     // expectedTitle starts with "Sigrid" → skip per ambiguous rule
-    expect(
-      result.reason === "ambiguous-prefix" || result.rewrittenTitle === null,
-    ).toBe(true);
+    expect(result.reason === "ambiguous-prefix" || result.rewrittenTitle === null).toBe(true);
   });
 
   it("ambiguous-prefix: rewrites when SxxExx follows", () => {
@@ -59,14 +54,14 @@ describe("renameForMoviesAndTv", () => {
   it("ignores variations that normalize to empty (regression: colon-only variation)", () => {
     // A variation like " -" (colon→" -" rewrite of ":") normalizes to "".
     // Without a guard, startsWith("") is vacuously true and the rewrite
-    // produces "Galaxy.Wars:.The.Lost.Squad.alaxy.Wars.The.Lost.Squad.S01E02..."
+    // produces "Galaxy.Wars:.The.Lost.Squad.alaxienkriege.Die.Verlorene..."
     // because targetCount=0 still slices off the first char.
     const item = {
       expectedTitle: "Galaxy Wars: The Lost Squad",
-      titleMatchVariations: [" -", "Galaxy Wars The Lost Squad"],
+      titleMatchVariations: [" -", "Galaxienkriege Die Verlorene Staffel"],
     };
     const result = renameForMoviesAndTv(
-      "Galaxy.Wars.The.Lost.Squad.S01E02.GERMAN.DL.HDR.2160p.WEB.H265-VoDTv",
+      "Galaxienkriege.Die.Verlorene.Staffel.S01E02.GERMAN.DL.HDR.2160p.WEB.H265-VoDTv",
       item,
     );
     expect(result.rewrittenTitle).toBe(
@@ -75,13 +70,10 @@ describe("renameForMoviesAndTv", () => {
   });
 
   it("returns no-match when only an empty-normalizing variation is present", () => {
-    const result = renameForMoviesAndTv(
-      "Galaxy.Wars.The.Lost.Squad.S01E02.GERMAN",
-      {
-        expectedTitle: "Galaxy Wars: The Lost Squad",
-        titleMatchVariations: [" -"],
-      },
-    );
+    const result = renameForMoviesAndTv("Galaxy.Wars.The.Lost.Squad.S01E02.GERMAN", {
+      expectedTitle: "Galaxy Wars: The Lost Squad",
+      titleMatchVariations: [" -"],
+    });
     expect(result.rewrittenTitle).toBeNull();
     expect(result.reason).toBe("no-match");
   });
@@ -89,7 +81,7 @@ describe("renameForMoviesAndTv", () => {
   it("preserves SxxExx when the original carries an accent that no active plugin covers", () => {
     // German plugin is the default and lists only umlauts. An "é" in the
     // original still normalizes to "e" via NFD, so the walk must credit
-    // it as 1 normalized char — otherwise the suffix slice eats the "S"
+    // it as 1 normalized char - otherwise the suffix slice eats the "S"
     // and we'd return "Coffee.House.01E01.GERMAN".
     const result = renameForMoviesAndTv("Café.S01E01.GERMAN", {
       expectedTitle: "Coffee House",
@@ -106,13 +98,8 @@ describe("renameForMoviesAndTv", () => {
       expectedTitle: "Galaxy Wars: Episode IV",
       titleMatchVariations: ["Galaxy Wars", "Galaxy Wars: Episode IV"],
     };
-    const result = renameForMoviesAndTv(
-      "Galaxy.Wars.1977.German.BluRay.x264-GROUP",
-      item,
-    );
-    expect(result.rewrittenTitle).toBe(
-      "Galaxy.Wars:.Episode.IV.1977.German.BluRay.x264-GROUP",
-    );
+    const result = renameForMoviesAndTv("Galaxy.Wars.1977.German.BluRay.x264-GROUP", item);
+    expect(result.rewrittenTitle).toBe("Galaxy.Wars:.Episode.IV.1977.German.BluRay.x264-GROUP");
   });
 
   it("still blocks prefix-only rewrites when neither SxxExx nor year follows", () => {
@@ -134,10 +121,7 @@ describe("renameForMoviesAndTv", () => {
       expectedTitle: "Die Renko Jagd",
       titleMatchVariations: ["Die Renko Jagd", "Mike Renko 2"],
     };
-    const result = renameForMoviesAndTv(
-      "Mike.Renko.2016.German.DL.2160p.HDR.UHD.BDRip.AV1",
-      item,
-    );
+    const result = renameForMoviesAndTv("Mike.Renko.2016.German.DL.2160p.HDR.UHD.BDRip.AV1", item);
     expect(result.rewrittenTitle).toBeNull();
   });
 
@@ -166,13 +150,8 @@ describe("renameForMoviesAndTv", () => {
       year: 2025,
       titleMatchVariations: ["Apex - Der Film", "Apex Racing", "Apex"],
     };
-    const result = renameForMoviesAndTv(
-      "Apex.Racing.2025.German.WEB-DL.AAC.H.264-GROUP",
-      item,
-    );
-    expect(result.rewrittenTitle).toBe(
-      "Apex.-.Der.Film.2025.German.WEB-DL.AAC.H.264-GROUP",
-    );
+    const result = renameForMoviesAndTv("Apex.Racing.2025.German.WEB-DL.AAC.H.264-GROUP", item);
+    expect(result.rewrittenTitle).toBe("Apex.-.Der.Film.2025.German.WEB-DL.AAC.H.264-GROUP");
   });
 
   it("accepts a release year within +/-1 tolerance (production vs release year)", () => {
@@ -185,15 +164,9 @@ describe("renameForMoviesAndTv", () => {
       year: 2025,
       titleMatchVariations: ["Apex - Der Film", "Apex Racing"],
     };
-    const within = renameForMoviesAndTv(
-      "Apex.Racing.2024.German.WEB-DL.AAC.H.264-GROUP",
-      item,
-    );
+    const within = renameForMoviesAndTv("Apex.Racing.2024.German.WEB-DL.AAC.H.264-GROUP", item);
     expect(within.rewrittenTitle).not.toBeNull();
-    const above = renameForMoviesAndTv(
-      "Apex.Racing.2026.German.WEB-DL.AAC.H.264-GROUP",
-      item,
-    );
+    const above = renameForMoviesAndTv("Apex.Racing.2026.German.WEB-DL.AAC.H.264-GROUP", item);
     expect(above.rewrittenTitle).not.toBeNull();
   });
 
@@ -203,10 +176,7 @@ describe("renameForMoviesAndTv", () => {
       year: 2025,
       titleMatchVariations: ["Apex - Der Film", "Apex Racing"],
     };
-    const result = renameForMoviesAndTv(
-      "Apex.Racing.2027.German.WEB-DL.AAC.H.264-GROUP",
-      item,
-    );
+    const result = renameForMoviesAndTv("Apex.Racing.2027.German.WEB-DL.AAC.H.264-GROUP", item);
     expect(result.rewrittenTitle).toBeNull();
     expect(result.reason).toBe("year-mismatch");
   });
@@ -217,19 +187,16 @@ describe("renameForMoviesAndTv", () => {
     // but "3D" belongs to the release name, not the title, and must
     // survive the rewrite.
     const item = {
-      expectedTitle: "Galaxy Wars: Reckoning",
+      expectedTitle: "Galaxienkriege: Abrechnung",
       year: 2010,
-      titleMatchVariations: [
-        "Galaxy Wars: Reckoning",
-        "Galaxy Wars Reckoning 3D",
-      ],
+      titleMatchVariations: ["Galaxienkriege: Abrechnung", "Galaxy Wars Reckoning 3D"],
     };
     const result = renameForMoviesAndTv(
       "Galaxy.Wars.Reckoning.3D.2010.German.DL.1080p.BluRay.x264-GROUP",
       item,
     );
     expect(result.rewrittenTitle).toBe(
-      "Galaxy.Wars:.Reckoning.3D.2010.German.DL.1080p.BluRay.x264-GROUP",
+      "Galaxienkriege:.Abrechnung.3D.2010.German.DL.1080p.BluRay.x264-GROUP",
     );
   });
 
@@ -258,10 +225,7 @@ describe("renameForMoviesAndTv", () => {
       year: 2025,
       titleMatchVariations: ["Apex - Der Film", "Apex Racing"],
     };
-    const result = renameForMoviesAndTv(
-      "Apex.Racing.German.WEB-DL.S01E01.AAC.H.264-GROUP",
-      item,
-    );
+    const result = renameForMoviesAndTv("Apex.Racing.German.WEB-DL.S01E01.AAC.H.264-GROUP", item);
     expect(result.rewrittenTitle).not.toBeNull();
   });
 
@@ -271,19 +235,16 @@ describe("renameForMoviesAndTv", () => {
     // targetCount reached on '5' used to leave trailing ')' in the suffix,
     // producing "Chronicles of Time (2005) ) - S08E08...".
     const item = {
-      expectedTitle: "Chronicles of Time (2005)",
+      expectedTitle: "Zeitchroniken (2005)",
       year: 2005,
-      titleMatchVariations: [
-        "Chronicles of Time (2005)",
-        "Chronicles of Time 2005",
-      ],
+      titleMatchVariations: ["Zeitchroniken (2005)", "Chronicles of Time 2005"],
     };
     const result = renameForMoviesAndTv(
       "Chronicles of Time (2005) - S08E08 - Mystery on the Stellar Express - Bluray-720p",
       item,
     );
     expect(result.rewrittenTitle).toBe(
-      "Chronicles of Time (2005) - S08E08 - Mystery on the Stellar Express - Bluray-720p",
+      "Zeitchroniken (2005) - S08E08 - Mystery on the Stellar Express - Bluray-720p",
     );
   });
 
@@ -291,20 +252,15 @@ describe("renameForMoviesAndTv", () => {
     // Same leak as above in the shape release names actually arrive in:
     // dot-separated, no spaces. Used to produce "...(2005).).S08E08...".
     const item = {
-      expectedTitle: "Chronicles of Time (2005)",
+      expectedTitle: "Zeitchroniken (2005)",
       year: 2005,
-      titleMatchVariations: [
-        "Chronicles of Time (2005)",
-        "Chronicles of Time 2005",
-      ],
+      titleMatchVariations: ["Zeitchroniken (2005)", "Chronicles of Time 2005"],
     };
     const result = renameForMoviesAndTv(
       "Chronicles.of.Time.(2005).S08E08.Mystery.Bluray-720p",
       item,
     );
-    expect(result.rewrittenTitle).toBe(
-      "Chronicles.of.Time.(2005).S08E08.Mystery.Bluray-720p",
-    );
+    expect(result.rewrittenTitle).toBe("Zeitchroniken.(2005).S08E08.Mystery.Bluray-720p");
   });
 
   it("keeps renaming when an opening delimiter follows the match without a separator", () => {
@@ -318,12 +274,100 @@ describe("renameForMoviesAndTv", () => {
       titleMatchVariations: ["Chronicles of Time"],
     };
     expect(
-      renameForMoviesAndTv("Chronicles of Time(2005) S08E08 Bluray-720p", item)
-        .rewrittenTitle,
+      renameForMoviesAndTv("Chronicles of Time(2005) S08E08 Bluray-720p", item).rewrittenTitle,
     ).toBe("Zeitchroniken (2005) S08E08 Bluray-720p");
     expect(
-      renameForMoviesAndTv("Chronicles of Time[2005] S08E08 Bluray-720p", item)
-        .rewrittenTitle,
+      renameForMoviesAndTv("Chronicles of Time[2005] S08E08 Bluray-720p", item).rewrittenTitle,
     ).toBe("Zeitchroniken [2005] S08E08 Bluray-720p");
+  });
+  it("declines a rewrite that only re-inserts punctuation the release dropped", () => {
+    // Field report: the provider had no separate German title, so germanTitle
+    // and expectedTitle were the same string - parentheses included. The
+    // variation generator strips those parentheses, so the variation is a
+    // different *string* from expectedTitle while naming the very same title.
+    // The raw identity check does not catch that, and the rewrite used to
+    // re-insert the parentheses into a scene name that was already correct:
+    // "Ember.Ascending.3.(Final.Descent).2015...".
+    const item = {
+      expectedTitle: "Ember Ascending 3 (Final Descent)",
+      year: 2015,
+      titleMatchVariations: [
+        "Ember Ascending 3 Final Descent",
+        "Ember Ascending 3 (Final Descent)",
+      ],
+    };
+    const result = renameForMoviesAndTv(
+      "Ember.Ascending.3.Final.Descent.2015.1080p.BluRay.x264-RIVET",
+      item,
+    );
+    expect(result.rewrittenTitle).toBeNull();
+    expect(result.reason).toBe("match-equals-expected");
+  });
+
+  it("still rewrites a parenthesised title when the release names a different title", () => {
+    // Counterpart to the case above: here the variation is a real German
+    // title, so the rewrite changes letters and the parentheses of the
+    // expectedTitle travel with it as before.
+    const item = {
+      expectedTitle: "Ember Ascending 3 (Final Descent)",
+      year: 2015,
+      titleMatchVariations: ["Glutsturz 3 Letzter Fall"],
+    };
+    const result = renameForMoviesAndTv(
+      "Glutsturz.3.Letzter.Fall.2015.1080p.BluRay.x264-RIVET",
+      item,
+    );
+    expect(result.rewrittenTitle).toBe(
+      "Ember.Ascending.3.(Final.Descent).2015.1080p.BluRay.x264-RIVET",
+    );
+  });
+
+  it("keeps restoring umlauts, which the comparison map folds onto the release spelling", () => {
+    // Guard against implementing the no-op check with
+    // `normalizeForComparison`: its comparison map folds "ä" to "a", so
+    // "Nachtwächter" and the release's "Nachtwachter" have the SAME
+    // normalized form. Restoring the umlaut is the whole point of the
+    // product, so the no-op check has to look at letters, not at their
+    // folded form.
+    const item = {
+      expectedTitle: "Nachtwächter",
+      year: 2015,
+      titleMatchVariations: ["Nachtwachter"],
+    };
+    const result = renameForMoviesAndTv(
+      "Nachtwachter.2015.German.DL.1080p.BluRay.x264-RIVET",
+      item,
+    );
+    expect(result.rewrittenTitle).toBe("Nachtwächter.2015.German.DL.1080p.BluRay.x264-RIVET");
+  });
+
+  it("ignores a variation without a single letter (numeral residue of a non-Latin alias)", () => {
+    // A non-Latin alias such as "エンバー・アセンディング 3" cleans down to the
+    // bare "3", which used to sit in titleMatchVariations. As a prefix match
+    // that numeral hijacks every unrelated release starting with "3." whose
+    // year happens to fall into the tolerance window, producing
+    // "Ember.Ascending.3.(Final.Descent).Tage.im.Nebel.2014...".
+    const item = {
+      expectedTitle: "Ember Ascending 3 (Final Descent)",
+      year: 2015,
+      titleMatchVariations: ["3", "Ember Ascending 3 (Final Descent)"],
+    };
+    const result = renameForMoviesAndTv("3.Tage.im.Nebel.2014.1080p.BluRay.x264-RIVET", item);
+    expect(result.rewrittenTitle).toBeNull();
+    expect(result.reason).toBe("no-match");
+  });
+
+  it("still evaluates a letter-less variation when the title itself has no letters", () => {
+    // "7-1-3" carries no letters of its own, so its digits-only variation is
+    // not a residue and stays usable. It is declined here by the no-op check
+    // (the release already spells the title, only the dashes differ), not by
+    // the residue rule - hence "match-equals-expected" rather than "no-match".
+    const item = {
+      expectedTitle: "7-1-3",
+      titleMatchVariations: ["713"],
+    };
+    const result = renameForMoviesAndTv("713.S01E01.GERMAN.1080p-RIVET", item);
+    expect(result.rewrittenTitle).toBeNull();
+    expect(result.reason).toBe("match-equals-expected");
   });
 });

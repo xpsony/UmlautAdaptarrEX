@@ -89,11 +89,11 @@ function isAmbiguousNumericHostname(hostname: string): boolean {
   // A strictly valid dotted-quad is handled by `isPrivateIpv4`. Anything
   // else that looks numeric but isn't a strict dotted-quad is suspicious.
   if (strictDottedQuadToInt(hostname) !== null) return false;
-  // Decimal-only without dots (`2130706433`) — Node will resolve it.
+  // Decimal-only without dots (`2130706433`) - Node will resolve it.
   if (/^[0-9]+$/.test(hostname)) return true;
   // 0x-prefixed hex octets, leading-zero (octal) octets.
   if (/(^|\.)(0[xX][0-9a-fA-F]+|0[0-7]+)(\.|$)/.test(hostname)) return true;
-  // Two or three-part dotted (`127.1`, `127.0.1`) — Node treats them as IPv4.
+  // Two or three-part dotted (`127.1`, `127.0.1`) - Node treats them as IPv4.
   const parts = hostname.split(".");
   if (parts.length >= 2 && parts.length <= 3) {
     if (parts.every((p) => /^[0-9]+$/.test(p))) return true;
@@ -150,10 +150,10 @@ function isPrivateIpv6(ip: string): boolean {
   if (expanded === "0000:0000:0000:0000:0000:0000:0000:0000") return true; // ::
   if (expanded!.startsWith("fe80:")) return true;
   const firstByte = parseInt(expanded!.slice(0, 2), 16);
-  // fc00::/7 (Unique Local Addresses) — first byte 0xfc or 0xfd.
+  // fc00::/7 (Unique Local Addresses) - first byte 0xfc or 0xfd.
   if (!Number.isNaN(firstByte) && (firstByte & 0xfe) === 0xfc) return true;
   // IPv4-mapped IPv6 `::ffff:a.b.c.d`. Detect both via the dotted-quad tag
-  // (preferred — preserves the original v4 form) and the all-hex form
+  // (preferred - preserves the original v4 form) and the all-hex form
   // `::ffff:7f00:1`.
   if (expanded!.startsWith("0000:0000:0000:0000:0000:ffff:")) {
     if (v4Tag) return isPrivateIpv4(v4Tag);
@@ -173,7 +173,7 @@ function isPrivateIpv6(ip: string): boolean {
 
 // Returns `true` when the given hostname (literal or IP) refers to a private,
 // loopback, or link-local address. Hostnames that aren't IP literals are
-// matched against a static blocklist plus a private-suffix list — DNS
+// matched against a static blocklist plus a private-suffix list - DNS
 // resolution is intentionally NOT performed here, since rebind attacks could
 // change the result between check and connect. Operators concerned about
 // DNS-rebind should put a forward proxy with explicit allow-listing in front
@@ -220,7 +220,7 @@ export function urlIsPrivate(rawUrl: string): boolean {
     const u = new URL(rawUrl);
     return isPrivateHost(u.hostname);
   } catch {
-    // Unparseable URL — treat as private/blocked rather than risk a
+    // Unparseable URL - treat as private/blocked rather than risk a
     // misformatted SSRF target slipping through.
     return true;
   }
@@ -229,11 +229,11 @@ export function urlIsPrivate(rawUrl: string): boolean {
 // Self-hosted installs almost always run UmlautAdaptarrEX alongside
 // Sonarr/Radarr/Prowlarr on the same Docker host or LAN, so `testConnection`
 // legitimately needs to talk to `localhost:8989`, `host.docker.internal`,
-// `192.168.x.x`, etc. The default is therefore permissive — that is the common
+// `192.168.x.x`, etc. The default is therefore permissive - that is the common
 // deployment shape for this app. Cloud-hosted UmlautAdaptarrEX instances
 // (rare; one publicly reachable per-user) can opt back into the strict default
 // either by toggling `Setting.blockPrivateInstanceHosts` in the admin UI or
-// — for boot-time enforcement — by setting `UA_BLOCK_PRIVATE_INSTANCE_HOSTS=true`
+// - for boot-time enforcement - by setting `UA_BLOCK_PRIVATE_INSTANCE_HOSTS=true`
 // (or, for backwards compatibility with previous installs,
 // `UA_ALLOW_PRIVATE_INSTANCE_HOSTS=false`). The env vars override the DB
 // setting so an operator can lock strict-mode in regardless of UI state.

@@ -5,14 +5,10 @@ import { loadSetting, type SettingRow } from "@/lib/setting-helpers";
 import { CompositeTitleProvider, DbCachedTitleProvider, looksLikeTmdbV4Token } from "@/providers";
 import type { TitleProvider } from "@/providers/types";
 import type { MediaType } from "@/domain/variations/generate";
+import type { RenameOptions } from "@/domain/matching/rename";
 import type { RewriteSearchItem } from "@/domain/xml/rewrite";
 import type { ProviderId } from "@/schemas/instance";
 import { OperationModeSchema, type OperationMode } from "@/schemas/settings";
-import {
-  normalizeForComparison,
-  normalizedCharContribution,
-} from "@/domain/normalization/comparison";
-import { getCleanTitle } from "@/domain/normalization/clean";
 import {
   aggregatePlugins,
   BUILTIN_PLUGINS,
@@ -21,58 +17,31 @@ import {
 } from "@/domain/plugins";
 import { loadActivePlugins, seedPlugins } from "@/server/plugins/seed";
 import { resolveProxyPortEnv } from "@/lib/ports";
+import { defaultUserAgent, resolveUserAgent } from "@/lib/user-agent";
+import {
+  DEFAULT_INSTANCE_OPTIONS,
+  SEARCH_ITEM_SELECT,
+  toCachedSearchItem,
+  type CachedSearchItem,
+  type CachedSearchItemInput,
+  type InstanceMatchOptions,
+  type SearchItemRow,
+} from "./search-item";
+import { SearchItemIndex } from "./search-index";
 
-const RELEASE_YEAR_RE = /(?<![A-Za-z0-9])(19|20)\d{2}(?![A-Za-z0-9])/g;
+export type {
+  CachedSearchItem,
+  CachedSearchItemInput,
+  InstanceMatchOptions,
+  SearchItemRow,
+} from "./search-item";
 
-function extractReleaseYears(title: string): number[] {
-  const out: number[] = [];
-  for (const m of title.matchAll(RELEASE_YEAR_RE)) out.push(Number(m[0]));
-  return out;
-}
-
-export interface InstanceMatchOptions {
-  enableYearMatching: boolean;
-  yearMatchingTolerance: number;
-}
-
-const DEFAULT_INSTANCE_OPTIONS: InstanceMatchOptions = {
-  enableYearMatching: true,
-  yearMatchingTolerance: 1,
-};
-
-// Walks the original string and returns the index after enough characters
-// have been consumed to cover `targetCount` normalized chars. Mirrors the
-// walk used in src/domain/matching/rename.ts so findByTitle can apply the
-// same token-boundary check.
-function mapNormalizedLengthToOriginal(
-  original: string,
-  targetCount: number,
-  pack: LanguagePack,
-): number {
-  let matched = 0;
-  for (let i = 0; i < original.length; i++) {
-    matched += normalizedCharContribution(original[i]!, pack);
-    if (matched >= targetCount) return i + 1;
-  }
-  return original.length;
-}
-
-export interface CachedSearchItem {
-  id: string;
-  arrInstanceId: string;
-  arrId: number;
-  externalId: string;
-  title: string;
-  expectedTitle: string;
-  expectedAuthor: string | null;
-  germanTitle: string | null;
-  mediaType: MediaType;
-  /** Release/first-air year used for year-mismatch rejection at lookup time. */
-  year: number | null;
-  titleSearchVariations: string[];
-  titleMatchVariations: string[];
-  authorMatchVariations: string[];
-}
+// Ephemeral tier sizing. 500 items is far more than a burst of interactive
+// searches produces, and 12h matches the indexer cache TTL - long enough that
+// a re-search minutes later is free, short enough that a title the sync never
+// picks up doesn't linger forever.
+const EPHEMERAL_MAX = 500;
+const EPHEMERAL_TTL_MS = 12 * 60 * 60 * 1000;
 
 interface AppSettings {
   appApiKey: string;
@@ -84,14 +53,42 @@ interface AppSettings {
   tmdbApiKey: string | null;
   tvdbApiKey: string | null;
   tvdbPin: string | null;
+  /**
+   * The EFFECTIVE User-Agent for outbound requests - the operator's override
+   * when set, otherwise `UmlautAdaptarrEX/<version>`. Resolved here so every
+   * consumer gets a usable value without repeating the fallback.
+   */
   userAgent: string;
+  /** The raw override as stored (empty = automatic). */
+  userAgentOverride: string;
+  /** Forward the calling *Arr's User-Agent to the indexer instead of ours. */
+  forwardArrUserAgent: boolean;
   setupComplete: boolean;
   logRetentionDays: number;
+  historyRetentionDays: number;
   indexerRateLimitMs: number;
   indexerTimeoutSeconds: number;
+  /** Quick-sync cadence in minutes; 0 disables the quick sync. */
+  syncIntervalMinutes: number;
+  /** Full-sync cadence in hours. */
+  fullSyncIntervalHours: number;
+  /** Resolve unknown titles during the request that asks for them. */
+  onDemandLookup: boolean;
+  /** Search with German title variations, per media type. */
+  tvVariationSearch: boolean;
+  movieVariationSearch: boolean;
+  /** Cap on GERMAN variations per search; q and expectedTitle come on top. */
+  maxTitleVariations: number;
   operationMode: OperationMode;
   blockPrivateInstanceHosts: boolean;
   pausedUntil: Date | null;
+  // Renaming behaviour - see the Setting model for what each flag does.
+  renameYearGuard: boolean;
+  renamePrefixGuard: boolean;
+  renameReleaseTagGuard: boolean;
+  renameLegacySuffix: boolean;
+  renameStripSpecialChars: boolean;
+  renameAttachExternalIds: boolean;
 }
 
 const NO_SETTINGS: AppSettings = {
@@ -104,14 +101,31 @@ const NO_SETTINGS: AppSettings = {
   tmdbApiKey: null,
   tvdbApiKey: null,
   tvdbPin: null,
-  userAgent: "UmlautAdaptarrEX/2.0",
+  userAgent: defaultUserAgent(),
+  userAgentOverride: "",
+  forwardArrUserAgent: false,
   setupComplete: false,
   logRetentionDays: 3,
+  historyRetentionDays: 30,
   indexerRateLimitMs: 500,
   indexerTimeoutSeconds: 60,
+  syncIntervalMinutes: 10,
+  fullSyncIntervalHours: 24,
+  onDemandLookup: true,
+  tvVariationSearch: true,
+  movieVariationSearch: true,
+  maxTitleVariations: 1,
   operationMode: "proxy",
   blockPrivateInstanceHosts: false,
   pausedUntil: null,
+  renameYearGuard: true,
+  renamePrefixGuard: true,
+  renameReleaseTagGuard: true,
+  renameLegacySuffix: false,
+  // Bare-install defaults, matching the Prisma column defaults. Existing
+  // installations are pinned to `false` by the rename_options migration.
+  renameStripSpecialChars: true,
+  renameAttachExternalIds: true,
 };
 
 // Central in-memory cache + settings snapshot.
@@ -121,8 +135,21 @@ const NO_SETTINGS: AppSettings = {
 //   - TitleProvider rebuilt on settings update
 export class AppState {
   readonly indexerCache: LRUCache<string, { body: Buffer; contentType: string; status: number }>;
-  private byExternalId = new Map<string, CachedSearchItem>(); // `${type}:${externalId}`
-  private byTitlePrefix = new Map<string, CachedSearchItem[]>(); // `${type}:${prefix5}`
+  /** Items written by the sync. Sole owner: the sync path. */
+  private readonly syncIndex = new SearchItemIndex();
+  /**
+   * Second lookup tier: items resolved on demand for a request whose title
+   * the sync hasn't picked up yet. Held in its own index so the sync tier is
+   * never polluted, and bounded by an LRU with a TTL.
+   *
+   * The LRU owns the lifetime; `ephemeralIndex` owns the lookup structures.
+   * `dispose` keeps the two in step when an entry is evicted or expires.
+   * `noDisposeOnSet` is required: without it, overwriting a key would dispose
+   * the OLD value after `indexEphemeral` already re-indexed the new one under
+   * the same key, silently removing the fresh entry.
+   */
+  private readonly ephemeralIndex = new SearchItemIndex();
+  private readonly ephemeral: LRUCache<string, CachedSearchItem>;
   // Per-instance match options (year-matching toggle + tolerance). Loaded
   // alongside SearchItems so findByTitle / toRewriteSearchItem can apply
   // them without an extra DB hit per request.
@@ -138,6 +165,15 @@ export class AppState {
       max: 5000,
       ttl: 12 * 60 * 1000,
       ttlAutopurge: true,
+    });
+    this.ephemeral = new LRUCache({
+      max: EPHEMERAL_MAX,
+      ttl: EPHEMERAL_TTL_MS,
+      ttlAutopurge: true,
+      noDisposeOnSet: true,
+      dispose: (item) => {
+        this.ephemeralIndex.removeItem(item.mediaType, item.externalId);
+      },
     });
   }
 
@@ -173,7 +209,7 @@ export class AppState {
 
   /**
    * True only when a usable TMDB v3 API key is configured. Sync checks this
-   * before allowing non-DE language plugins to issue outbound calls — we
+   * before allowing non-DE language plugins to issue outbound calls - we
    * never spam TMDB without an opt-in (and fail fast with a clear reason).
    */
   get tmdbAvailable(): boolean {
@@ -204,7 +240,7 @@ export class AppState {
       logger: this._logger ?? undefined,
       providerOrder: order,
     });
-    const wrapped = new DbCachedTitleProvider(composite);
+    const wrapped = new DbCachedTitleProvider(composite, this._logger ?? undefined);
     this._providersByOrder.set(key, wrapped);
     return wrapped;
   }
@@ -244,7 +280,7 @@ export class AppState {
             "Configured TMDB key looks like a v4 Read Access Token (JWT 'eyJ…'). " +
             "moviedb-promise needs a v3 API key (32-char hex). Update it in Settings → TMDB.",
         },
-        "tmdb v4 token detected — provider disabled until a v3 key is set",
+        "tmdb v4 token detected - provider disabled until a v3 key is set",
       );
       return null;
     }
@@ -262,16 +298,45 @@ export class AppState {
       tmdbApiKey: row.tmdbApiKey,
       tvdbApiKey: row.tvdbApiKey,
       tvdbPin: row.tvdbPin,
-      userAgent: row.userAgent,
+      userAgent: resolveUserAgent(row.userAgent),
+      userAgentOverride: row.userAgent,
+      forwardArrUserAgent: row.forwardArrUserAgent,
       setupComplete: row.setupComplete,
       logRetentionDays: row.logRetentionDays,
+      historyRetentionDays: row.historyRetentionDays,
       indexerRateLimitMs: row.indexerRateLimitMs,
       indexerTimeoutSeconds: row.indexerTimeoutSeconds,
+      syncIntervalMinutes: row.syncIntervalMinutes,
+      fullSyncIntervalHours: row.fullSyncIntervalHours,
+      onDemandLookup: row.onDemandLookup,
+      tvVariationSearch: row.tvVariationSearch,
+      movieVariationSearch: row.movieVariationSearch,
+      maxTitleVariations: row.maxTitleVariations,
       // Defensive parse: SQLite TEXT column without CHECK; an invalid value
       // falls back cleanly to the recommended default "proxy".
       operationMode: OperationModeSchema.catch("proxy").parse(row.operationMode),
       blockPrivateInstanceHosts: row.blockPrivateInstanceHosts,
       pausedUntil: row.pausedUntil,
+      renameYearGuard: row.renameYearGuard,
+      renamePrefixGuard: row.renamePrefixGuard,
+      renameReleaseTagGuard: row.renameReleaseTagGuard,
+      renameLegacySuffix: row.renameLegacySuffix,
+      renameStripSpecialChars: row.renameStripSpecialChars,
+      renameAttachExternalIds: row.renameAttachExternalIds,
+    };
+  }
+
+  /**
+   * The rename behaviour flags in the shape the domain layer expects. Kept as
+   * a getter so the legacy search path never has to know the column names.
+   */
+  get renameOptions(): RenameOptions {
+    return {
+      yearGuard: this._settings.renameYearGuard,
+      prefixGuard: this._settings.renamePrefixGuard,
+      releaseTagGuard: this._settings.renameReleaseTagGuard,
+      legacySuffix: this._settings.renameLegacySuffix,
+      stripSpecialChars: this._settings.renameStripSpecialChars,
     };
   }
 
@@ -306,7 +371,7 @@ export class AppState {
       tmdbApiKey: tmdbKeyForProvider,
       tvdbApiKey: row.tvdbApiKey,
       tvdbPin: row.tvdbPin,
-      userAgent: row.userAgent,
+      userAgent: resolveUserAgent(row.userAgent),
     };
     this._providersByOrder.clear();
     // Default provider (for legacy paths without an instance context):
@@ -315,6 +380,10 @@ export class AppState {
     this._provider = this.providerForOrder(["pcjones", "tvdb", "tmdb"]);
   }
 
+  // Note: a pack change here leaves the existing index (byTitlePrefix
+  // prefixes + each item's normalizedMatchVariations) normalized against the
+  // *old* pack until a resync rebuilds it via indexItem - a known, bounded
+  // staleness window surfaced to the admin by the UI's requiresResync banner.
   async reloadPlugins(): Promise<void> {
     await seedPlugins();
     const enabledIds = new Set(await loadActivePlugins());
@@ -343,7 +412,7 @@ export class AppState {
   /**
    * Returns the matching options for an Arr instance. Falls back to the
    * permissive defaults (year-matching on, tolerance 1) when the instance
-   * is unknown — keeps callers free of null-checks while preserving the
+   * is unknown - keeps callers free of null-checks while preserving the
    * documented default behaviour.
    */
   getInstanceOptions(instanceId: string): InstanceMatchOptions {
@@ -358,125 +427,115 @@ export class AppState {
     this._instanceOptions.delete(instanceId);
   }
 
-  async loadSearchItemsFromDb(): Promise<void> {
-    this.byExternalId.clear();
-    this.byTitlePrefix.clear();
-    await this.loadInstanceOptions();
-    const rows = await prisma.searchItem.findMany();
+  // Converts + indexes a batch of raw SearchItem rows, skipping any row whose
+  // JSON variation columns fail to parse (e.g. left truncated by an aborted
+  // write) instead of failing the whole load/reindex. Shared by
+  // loadSearchItemsFromDb and reindexInstance since both feed the same
+  // toCachedSearchItem conversion. Keeps up to 3 error samples (row id +
+  // message) so the single warn can distinguish a genuine data-corruption
+  // case from a code bug in the conversion.
+  private indexRowsSkippingCorrupt(rows: SearchItemRow[]): void {
+    let skipped = 0;
+    const samples: { rowId: string; error: string }[] = [];
     for (const row of rows) {
-      const item: CachedSearchItem = {
-        id: row.id,
-        arrInstanceId: row.arrInstanceId,
-        arrId: row.arrId,
-        externalId: row.externalId,
-        title: row.title,
-        expectedTitle: row.expectedTitle,
-        expectedAuthor: row.expectedAuthor,
-        germanTitle: row.germanTitle,
-        mediaType: row.mediaType as MediaType,
-        year: row.year,
-        titleSearchVariations: JSON.parse(row.titleSearchVariations) as string[],
-        titleMatchVariations: JSON.parse(row.titleMatchVariations) as string[],
-        authorMatchVariations: JSON.parse(row.authorMatchVariations) as string[],
-      };
-      this.indexItem(item);
+      try {
+        this.indexItem(toCachedSearchItem(row));
+      } catch (err) {
+        skipped++;
+        if (samples.length < 3) {
+          samples.push({ rowId: row.id, error: err instanceof Error ? err.message : String(err) });
+        }
+      }
+    }
+    if (skipped > 0) {
+      this._logger?.warn(
+        { skipped, total: rows.length, samples },
+        "search-item index: skipped corrupt rows",
+      );
     }
   }
 
-  indexItem(item: CachedSearchItem): void {
-    this.byExternalId.set(`${item.mediaType}:${item.externalId}`, item);
-    for (const variation of item.titleMatchVariations) {
-      const norm = normalizeForComparison(variation, this._languagePack);
-      const prefix = `${item.mediaType}:${norm.slice(0, 5)}`;
-      let bucket = this.byTitlePrefix.get(prefix);
-      if (!bucket) {
-        bucket = [];
-        this.byTitlePrefix.set(prefix, bucket);
-      }
-      if (!bucket.includes(item)) bucket.push(item);
-    }
+  async loadSearchItemsFromDb(): Promise<void> {
+    this.syncIndex.clear();
+    await this.loadInstanceOptions();
+    const rows = await prisma.searchItem.findMany({ select: SEARCH_ITEM_SELECT });
+    this.indexRowsSkippingCorrupt(rows);
+  }
+
+  indexItem(item: CachedSearchItemInput): void {
+    this.syncIndex.indexItem(item, this._languagePack);
   }
 
   removeItemsForInstance(instanceId: string): void {
-    for (const [key, item] of this.byExternalId) {
-      if (item.arrInstanceId === instanceId) this.byExternalId.delete(key);
-    }
-    for (const [prefix, bucket] of this.byTitlePrefix) {
-      const filtered = bucket.filter((it) => it.arrInstanceId !== instanceId);
-      if (filtered.length !== bucket.length) {
-        this.byTitlePrefix.set(prefix, filtered);
-      }
-    }
+    this.syncIndex.removeItemsForInstance(instanceId);
+  }
+
+  /** Targeted removal, for the delta sync's per-item reindex. */
+  removeItem(mediaType: MediaType, externalId: string): void {
+    this.syncIndex.removeItem(mediaType, externalId);
+  }
+
+  /**
+   * Indexes an on-demand resolved item into the ephemeral tier. Returns the
+   * indexed item (with `normalizedMatchVariations` filled in).
+   */
+  indexEphemeral(item: CachedSearchItemInput): CachedSearchItem {
+    // indexItem is not idempotent per object identity, so a repeat resolution
+    // of the same key has to clear the old buckets first.
+    this.ephemeralIndex.removeItem(item.mediaType, item.externalId);
+    const indexed = this.ephemeralIndex.indexItem({ ...item, ephemeral: true }, this._languagePack);
+    this.ephemeral.set(`${indexed.mediaType}:${indexed.externalId}`, indexed);
+    return indexed;
+  }
+
+  // The index has no TTL of its own, so a hit found through it has to be
+  // confirmed against the LRU, which does.
+  private isEphemeralLive(item: CachedSearchItem): boolean {
+    return this.ephemeral.has(`${item.mediaType}:${item.externalId}`);
+  }
+
+  // Drop and re-read one instance's items - used by the title-override
+  // rebuild so a saved override is searchable immediately, mirroring the
+  // remove-then-index pattern of the sync's persistAndReindex.
+  async reindexInstance(instanceId: string): Promise<void> {
+    this.removeItemsForInstance(instanceId);
+    const rows = await prisma.searchItem.findMany({
+      where: { arrInstanceId: instanceId },
+      select: SEARCH_ITEM_SELECT,
+    });
+    this.indexRowsSkippingCorrupt(rows);
   }
 
   getByExternalId(type: MediaType, externalId: string): CachedSearchItem | null {
-    return this.byExternalId.get(`${type}:${externalId}`) ?? null;
+    const synced = this.syncIndex.getByExternalId(type, externalId);
+    if (synced) return synced;
+    // Read through the LRU, not the index: only the LRU honours the TTL.
+    return this.ephemeral.get(`${type}:${externalId}`) ?? null;
   }
 
-  // Returns true when the item's release year is compatible with the years
-  // mentioned in the release title (or when the gate doesn't apply). The
-  // gate only kicks in when the candidate item has a known year AND the
-  // release names at least one year AND the instance has year-matching on.
-  private passesYearGate(item: CachedSearchItem, releaseYears: number[]): boolean {
-    if (item.year == null || releaseYears.length === 0) return true;
-    const opts = this.getInstanceOptions(item.arrInstanceId);
-    if (!opts.enableYearMatching) return true;
-    const itemYear = item.year;
-    const tol = opts.yearMatchingTolerance;
-    return releaseYears.some((y) => Math.abs(y - itemYear) <= tol);
-  }
-
-  // Length of the longest match contributed by this item's variations,
-  // strictly greater than `minLen`, or 0 when none qualifies. Mirrors the
-  // boundary check in renameForMoviesAndTv so e.g. "Mike Renko 2" doesn't
-  // spuriously prefix-match "Mike Renko 2016".
-  private bestVariationMatchLen(
-    item: CachedSearchItem,
-    cleanTitle: string,
-    norm: string,
-    pack: LanguagePack,
-    minLen: number,
-  ): number {
-    let bestLen = 0;
-    for (const variation of item.titleMatchVariations) {
-      const variationNorm = normalizeForComparison(variation, pack);
-      if (variationNorm.length === 0) continue;
-      if (variationNorm.length <= minLen) continue;
-      if (variationNorm.length <= bestLen) continue;
-      if (!norm.startsWith(variationNorm)) continue;
-      const endIdx = mapNormalizedLengthToOriginal(cleanTitle, variationNorm.length, pack);
-      const nextChar = cleanTitle[endIdx];
-      if (nextChar !== undefined && /[A-Za-z0-9]/.test(nextChar)) continue;
-      bestLen = variationNorm.length;
-    }
-    return bestLen;
+  getByImdbId(imdbId: string): CachedSearchItem | null {
+    const synced = this.syncIndex.getByImdbId(imdbId);
+    if (synced) return synced;
+    const hit = this.ephemeralIndex.getByImdbId(imdbId);
+    return hit && this.isEphemeralLive(hit) ? hit : null;
   }
 
   findByTitle(type: MediaType, releaseTitle: string): CachedSearchItem | null {
-    const pack = this._languagePack;
-    const cleanTitle = getCleanTitle(releaseTitle, pack);
-    const norm = normalizeForComparison(cleanTitle, pack);
-    const prefix = `${type}:${norm.slice(0, 5)}`;
-    const bucket = this.byTitlePrefix.get(prefix);
-    if (!bucket) return null;
-
-    // Year tokens in the original (un-normalized) release title.
-    // Disambiguates franchise overlap (e.g. a Formula-1 race recording
-    // many years off vs. the 2025 "F1 - Der Film"); operators can disable
-    // year-matching per instance if their library years are unreliable.
-    const releaseYears = extractReleaseYears(releaseTitle);
-
-    let best: CachedSearchItem | null = null;
-    let bestLen = 0;
-    for (const item of bucket) {
-      if (!this.passesYearGate(item, releaseYears)) continue;
-      const matchLen = this.bestVariationMatchLen(item, cleanTitle, norm, pack, bestLen);
-      if (matchLen > bestLen) {
-        bestLen = matchLen;
-        best = item;
-      }
-    }
-    return best;
+    const resolveOptions = (id: string): InstanceMatchOptions => this.getInstanceOptions(id);
+    const synced = this.syncIndex.findByTitle(
+      type,
+      releaseTitle,
+      this._languagePack,
+      resolveOptions,
+    );
+    if (synced) return synced;
+    const hit = this.ephemeralIndex.findByTitle(
+      type,
+      releaseTitle,
+      this._languagePack,
+      resolveOptions,
+    );
+    return hit && this.isEphemeralLive(hit) ? hit : null;
   }
 
   toRewriteSearchItem(item: CachedSearchItem): RewriteSearchItem {
@@ -487,6 +546,10 @@ export class AppState {
       titleMatchVariations: item.titleMatchVariations,
       authorMatchVariations: item.authorMatchVariations,
       mediaType: item.mediaType,
+      externalId: item.externalId,
+      // Normalised to null so the rewrite item never carries `undefined`
+      // (it is serialised into log lines and compared in tests).
+      imdbId: item.imdbId ?? null,
       year: item.year,
       // null disables the year check at the matching layer; otherwise the
       // configured tolerance is forwarded as +/-N around `year`.

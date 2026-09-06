@@ -38,7 +38,7 @@ export default tseslint.config(
         },
       ],
       // verbatimModuleSyntax requires explicit `import type` for type-only
-      // imports — let lint catch the cases tsc doesn't auto-fix.
+      // imports - let lint catch the cases tsc doesn't auto-fix.
       "@typescript-eslint/consistent-type-imports": [
         "warn",
         { prefer: "type-imports", fixStyle: "inline-type-imports" },

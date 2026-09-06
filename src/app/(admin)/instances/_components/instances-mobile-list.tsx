@@ -14,6 +14,10 @@ interface InstancesMobileListProps {
   onToggle: (id: string, enabled: boolean) => void;
   onEdit: (instance: Instance) => void;
   onDelete: (instance: Instance) => void;
+  onTest: (instance: Instance) => void;
+  onSync: (instance: Instance) => void;
+  testingId: string | null;
+  syncingId: string | null;
 }
 
 export function InstancesMobileList({
@@ -22,6 +26,10 @@ export function InstancesMobileList({
   onToggle,
   onEdit,
   onDelete,
+  onTest,
+  onSync,
+  testingId,
+  syncingId,
 }: InstancesMobileListProps) {
   const t = useTranslations("instances");
   return (
@@ -47,6 +55,10 @@ export function InstancesMobileList({
               instance={inst}
               onEdit={onEdit}
               onDelete={onDelete}
+              onTest={onTest}
+              onSync={onSync}
+              testing={testingId === inst.id}
+              syncing={syncingId === inst.id}
             />
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -54,17 +66,12 @@ export function InstancesMobileList({
               <Switch
                 checked={inst.enabled}
                 onCheckedChange={(checked) => onToggle(inst.id, checked)}
-                aria-label={t("enabled")}
+                aria-label={t("enableAria", { name: inst.name })}
               />
-              <InstanceStatusBadge
-                enabled={inst.enabled}
-                lastSyncError={inst.lastSyncError}
-              />
+              <InstanceStatusBadge enabled={inst.enabled} lastSyncError={inst.lastSyncError} />
             </div>
             <span className="ml-auto text-xs text-muted-foreground">
-              {inst.lastSyncAt
-                ? new Date(inst.lastSyncAt).toLocaleString(locale)
-                : "—"}
+              {inst.lastSyncAt ? new Date(inst.lastSyncAt).toLocaleString(locale) : "-"}
             </span>
           </div>
           {inst.lastSyncError ? (

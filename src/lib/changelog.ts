@@ -23,34 +23,168 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.0",
+    date: "2026-09-06",
+    highlight: true,
+    title: "1.4.0: German titles for films, a 10-minute sync & the new Library browser",
+    description:
+      "The biggest release since the rewrite, and it changes both halves of the product. What gets searched: German title variations are now used for films as well, the whole search fan-out is configurable, the sync cadence drops from one pass every 12 hours to a 10-minute quick sync plus a daily full one, and a title nobody has synced yet is resolved while its search is still in flight. What you can see and fix: a new Library page finally makes the synced titles visible and lets you correct individual mismatches with manual overrides, all list pages gain sorting, deep-linkable filters, detail views and CSV export, and renaming plus search behaviour each get their own settings tab. Plus the reported case where the German title never reached the indexers, two renaming bugs, faster searches on large libraries, and a full accessibility & translation pass.",
+    items: [
+      {
+        type: "feature",
+        text: "German title variations are now searched for films too. Until now only series were searched with their German titles, so a German film release that the indexer only lists under its German name was never found. Series and films are separate switches (Settings → Search), both on by default. New: “Maximum German variations per search”, default 1, replacing a hard-coded 10 - your literal search term and the original title are always searched on top and are never dropped by the cap, and 0 means no German variations at all. If your indexer enforces a tight request limit, leave the cap where it is or switch the film search off again; raise it if you want broader coverage.",
+      },
+      {
+        type: "feature",
+        text: "The sync intervals are configurable, and the default cadence is much shorter. Instead of one full sync every 12 hours there is now a quick sync every 10 minutes plus a full sync every 24 hours. The quick sync only processes what actually changed - additions, removals and titles your *Arr renamed - and when nothing changed it writes nothing and calls no title provider, which is what makes a 10-minute cadence affordable. The full sync is still the pass that re-queries every provider, so it is the one that picks up German titles which appeared upstream later. Three presets: Recommended (10 min / 24 h), Frugal (60 min / 24 h) and Like 1.x (quick sync off / 12 h). “Sync now” is always a full sync.",
+      },
+      {
+        type: "feature",
+        text: "A title nobody synced yet is now resolved while its search is still in flight. When a search arrives for a tvdbid, tmdbid or imdbid that isn't in the cache, UmlautAdaptarrEX asks your Sonarr or Radarr about that one title and uses the answer for that very request. This is the case a shorter sync interval cannot fix: a request in Jellyseerr or Overseerr makes Radarr create the movie and search for it in the same second. The lookup runs in parallel with the indexer request and is capped at 5 seconds, so it adds no waiting time - a timeout or an unreachable *Arr leaves the response exactly as it would have been before. Searches carrying only an imdbid need a TMDB key, because the id has to be mapped first.",
+      },
+      {
+        type: "feature",
+        text: "New “Search” tab in Settings and a new “Search behaviour” step in the setup wizard hold the six controls for all of the above. Every option says what it does, shows a worked example and names its cost, in German, English, Swedish and French - the variation example is not prose but the spellings the generator actually produces, pinned by a test.",
+      },
+      {
+        type: "feature",
+        text: "New Library page: browse every synced title (original ↔ resolved German title, all search variations) across all instances, with search, filters (instance, media type, missing German title) and pagination. This data previously lived only in the logs.",
+      },
+      {
+        type: "feature",
+        text: "Manual title overrides: fix a single mismatched title straight from the Library detail view. Overrides apply to all instances, survive re-syncs and item removal, and search variations recompute immediately - no more clearing the whole title cache for one bad match. Removing an override restores the provider title.",
+      },
+      {
+        type: "feature",
+        text: "Sortable columns on request history, rename history, sync runs and the library - and filters, page and sorting now live in the URL, so reload, back button and deep links reproduce exactly the view you had.",
+      },
+      {
+        type: "feature",
+        text: "Sync runs: server-side pagination with free-text search and a status filter - the old 200-run display cap is gone. (Also fixed: the “Successful” filter option never matched anything.)",
+      },
+      {
+        type: "feature",
+        text: "Row detail views for request history and sync runs: click any row to see the full query string, complete error messages and per-provider counters; an open sheet live-updates while a sync is running.",
+      },
+      {
+        type: "feature",
+        text: "CSV export for request and rename history - respects the current filter and sorting, Excel-safe (UTF-8 BOM so umlauts survive, spreadsheet formula injection neutralized), capped at 10,000 rows.",
+      },
+      {
+        type: "feature",
+        text: "Instances list: per-row “Test connection” and “Sync now” actions. Connection tests now run through a server-side endpoint, so instance API keys no longer round-trip through the browser.",
+      },
+      {
+        type: "feature",
+        text: "Request history and rename history paginate through all stored entries (page size 25/50/100/250) with server-side search across the whole retained period - previously search only covered the newest rows. The new “History retention (days)” setting (Settings → Advanced, default 30, 1–365) cleans up old entries automatically every 6 hours. Thanks to Tom-Furrer for reporting the search limitation (#115).",
+      },
+      {
+        type: "feature",
+        text: "New toggle “Forward the *Arr's User-Agent” (Settings → Advanced): sends Sonarr/Radarr/Lidarr/Readarr's User-Agent to the indexer verbatim instead of ours. Off by default, so the indexer sees only UmlautAdaptarrEX and no version fingerprint of your *Arr - turn it on if an indexer only accepts known client User-Agents or rate-limits by them. This replaces the previous behaviour, which always sent both concatenated (“Sonarr/4.0.0 UmlautAdaptarrEX/2.0”) - a value that identified neither client and could defeat exactly those allow-lists.",
+      },
+      {
+        type: "feature",
+        text: 'Renaming is now configurable under Settings → Renaming, with a worked before/after example on each switch so you can see what it does. Two new options: “Strip unwelcome characters” removes : ? * " < > | / \\ from the inserted title (scene releases never carry them, and Sonarr/Radarr parse the result more reliably), and “Attach external ids” adds tvdbid / tmdbid / imdb as newznab attributes so the *Arr can match a release without parsing its title. Four more switches expose the safety rules UmlautAdaptarrEX added on top of the old .NET version (year check, ambiguous prefix, release tags, legacy suffix cut), with presets for “Like the old Umlautadaptarr” and “Recommended values”. Changes apply from the next search - no restart, no re-sync.',
+      },
+      {
+        type: "improvement",
+        text: "Indexers whose API cannot be corrected are greyed out in the Prowlarr patch dialog. The correction hooks into the Newznab/Torznab interface; an indexer that speaks the tracker's own API instead (in Prowlarr the definition-driven Cardigann ones and the native tracker clients) has no such interface, and routing it through the proxy did not just fail to correct anything - it broke the indexer, because Prowlarr saw a 404 and disabled it. Those are now reported as not patchable, with the implementation named in the tooltip, and are never tagged. An indexer that already carries the proxy tag stays clickable so you can take the tag off, and an implementation Prowlarr does not report stays selectable.",
+      },
+      {
+        type: "improvement",
+        text: "Sync-run history is cleaned up. Those rows were never purged - unnoticeable at two runs a day, not at the new cadence. They now fall under the existing “History retention (days)” setting, alongside request and rename history.",
+      },
+      {
+        type: "improvement",
+        text: "Settings tabs are now independent forms: editing one tab no longer lights up the save button on the others, saves send only the fields of that tab, and the browser warns before closing with unsaved changes. Switching the UI language no longer reloads the page - and no longer discards unsaved edits.",
+      },
+      {
+        type: "improvement",
+        text: "Faster and more predictable searches on large libraries: match variations are pre-computed instead of re-normalized on every request, variation fan-out per search is capped by the new “Maximum German variations per search” setting (default 1) with a total deadline at 75% of the configured indexer timeout (your literal query and the canonical title are always searched), and the Prowlarr proxy timeouts now scale with that setting instead of a hardcoded 30s - no more Sonarr/Radarr timeouts on title-alias-heavy items.",
+      },
+      {
+        type: "improvement",
+        text: "Robustness: first-sync title-cache writes are batched (~4× fewer database commits), new composite indexes speed up filtered history/log views, a corrupt cache row no longer prevents startup, and a failed status write no longer loses a completed sync result.",
+      },
+      {
+        type: "improvement",
+        text: "Accessibility & translations: complete French and Swedish UI coverage (25 missing strings translated), skip-to-content link, screen-reader labels for navigation, charts and per-instance switches, keyboard- and touch-reachable error details, and live-log streaming now reconnects automatically after a connection drop.",
+      },
+      {
+        type: "improvement",
+        text: "The User-Agent now follows the running version instead of the hard-coded “UmlautAdaptarrEX/2.0” - a string that had been wrong ever since the 2.0 rewrite shipped as 1.x. The field in Settings → Advanced became an optional override: leave it empty and it stays correct across updates by itself, with the automatic value shown as the field's placeholder. If you never customised it, this update switches you to automatic.",
+      },
+      {
+        type: "improvement",
+        text: "Three settings are now on for every installation, not just fresh ones: “Strip unwelcome characters”, “Attach external ids” (Settings → Renaming) and “Search German variations: films” (Settings → Search). They were meant as recommended defaults for new installs, which would have left most installations on the worse of the two settings for no reason other than history. All three stay switches - if you want the old behaviour, turn them off and it applies from the next search. Note that the film variation search is the one that costs indexer requests. If you ran a 1.4.0 prerelease and had switched one of them off on purpose, switch it off again: nothing records why a switch was off, so the migration cannot tell “never opted in” from “deliberately disabled”.",
+      },
+      {
+        type: "improvement",
+        text: "The language plugins now tell you what they cost: only enable a language you actually consume. Each extra plugin adds search variations and therefore one more indexer request per search - and since the total per search is capped, an unused language can push genuinely useful queries (including German ones) out of the budget. On top of that, TheTVDB needs one more request per title per language on every sync. TMDB returns all languages in a single call and does not scale with the plugin count.",
+      },
+      {
+        type: "fix",
+        text: "A batch of silent-failure fixes: failed list or settings loads now show an error with a retry button instead of pretending to be empty, enabling/disabling an instance reports errors instead of silently snapping back, and the setup wizard shows field validation errors instead of doing nothing on an invalid submit.",
+      },
+      {
+        type: "fix",
+        text: 'The version under About is trustworthy again. Images built from source showed an empty version, and the automatic :latest security rebuild (every 2 days) changed the displayed string to something like 1.3.0-881f830 although the code was identical to the release. Both now show the plain release version. Note that if About still shows an older version after an update, the container was not replaced: "docker compose pull" only downloads the image, "docker compose up -d" recreates the container from it. Thanks to Tom-Furrer for the report (#86).',
+      },
+      {
+        type: "fix",
+        text: "No more spurious FST_CSRF_MISSING_SECRET 403 warnings in the logs: the CSRF cookie could expire before the login session (e.g. after a browser restart), making the next action fail with a 403. CSRF cookies now live exactly as long as the session, and CSRF rejections are logged at debug level instead of warn. Thanks to Tom-Furrer for the report (#87).",
+      },
+      {
+        type: "fix",
+        text: "German titles that existed only as an alias were never actually searched. If Sonarr holds a German production under its English TVDB title, the German name often only shows up in the alias list - and aliases were used to rewrite the indexer response, never to query the indexer. So only the English title went out and nothing was found, while a series whose German title came back as a proper translation worked fine. Three causes fixed: TheTVDB is now also asked for the extended record (embedded name translations, and the primary name when the original language proves it is German), Sonarr's own alternate titles are merged with the provider aliases instead of being discarded, and when no German title resolves at all, up to three Latin-script aliases are searched as well.",
+      },
+      {
+        type: "fix",
+        text: "TRUST_PROXY no longer accepts a hop count. Fastify disabled hop-count trust because it cannot validate the immediate peer, which would let a client reaching the app directly spoof X-Forwarded-* headers. A numeric value now trusts nothing and logs a warning at startup telling you to use “loopback” (the default) or a comma-separated list of trusted CIDRs/IPs instead. Only relevant if you set the variable yourself.",
+      },
+      {
+        type: "fix",
+        text: "A release was renamed even though it already carried the right title, and the rewrite pushed brackets into the name - reported for a numbered sequel whose title has a parenthesised subtitle. No separate German title exists for such a title, so the provider hands back the English one, brackets included; the variation generator strips them, which made the variation a different string from the stored title while naming the very same title, so the “nothing to rename here” check missed it and the rewrite put the brackets back into a scene name that was already correct. A rewrite is now declined when it would change nothing but punctuation. This also ends the cosmetic “Title.Sub.Title” → “Title:.Sub.Title” renames. Umlaut renames are unaffected - that check compares letters and digits only, on purpose.",
+      },
+      {
+        type: "fix",
+        text: "An unrelated release could be renamed onto a numbered sequel. Alias lists routinely carry a title in Japanese, Chinese, Korean or Cyrillic; for a numbered sequel, cleaning such an alias stripped every letter and left the bare sequel number behind. That numeral was stored as a match variation and, as a prefix match, claimed every unrelated release starting with the same digit whose year fell inside the year check's tolerance. Such residues are no longer generated, and the matching engine additionally ignores any variation without a single letter - so libraries that have not re-synced yet are protected too. Titles that genuinely consist of digits only keep their variations.",
+      },
+      {
+        type: "fix",
+        text: "The worked example for “Preserve release tags” (Settings → Renaming) showed a before/after in which nothing actually changed. It now uses an item whose title really differs from the release, so the 3D that the check preserves is visible.",
+      },
+    ],
+  },
+  {
     version: "1.3.0",
     date: "2026-07-26",
-    title: "1.3.0: Headless mode — run without the Web UI to save memory",
+    title: "1.3.0: Headless mode - run without the Web UI to save memory",
     description:
       "Adds an optional headless mode for lean, UI-less deployments: setting UMLAUTADAPTARREX_HEADLESS=1 runs the container without the Next.js Web UI (and without the self-forking supervisor) as a single process. Also fixes saving the settings when the proxy port is pinned by an environment variable, and a punctuation glitch in renamed titles. Headless is opt-in and off by default, so existing installs are unaffected. No database changes.",
     items: [
       {
         type: "feature",
-        text: "Headless mode (UMLAUTADAPTARREX_HEADLESS=1): run without the Next.js Web UI and without the self-forking supervisor — a single Node process (Fastify + TCP proxy). In Docker tests a minimally-configured container dropped from ~160 MiB (over 200 MiB with the Web UI open) to ~115 MiB headless, roughly a third / ~50–90 MB less depending on config. Only works for an already-configured instance (the setup wizard still runs exclusively in the Web UI); the container refuses to boot headless against an unconfigured database with an explanatory error. When enabled, the Web UI port (default 5007) can be dropped from the compose port mapping.",
-      },
-      {
-        type: "fix",
-        text: "Settings can be saved again when the proxy port is pinned by UMLAUTADAPTARREX_PROXY_PORT: saving from any settings tab failed with a conflict error, because the form sent the read-only, environment-managed port value back to the server. The field is now left out of the request, and an unchanged value is accepted as a no-op. Setting a different port while the environment variable is active is still refused — it would have no effect anyway.",
-      },
-      {
-        type: "fix",
-        text: "Renamed titles no longer pick up a stray bracket: when the matching title alias had no parentheses but the release name did (e.g. alias \"Chronicles of Time 2005\" vs. release Chronicles.of.Time.(2005).S08E08…), the closing bracket was duplicated into the result — Chronicles.of.Time.(2005).).S08E08…. Affects movie/series and book/audiobook renaming.",
+        text: "Headless mode (UMLAUTADAPTARREX_HEADLESS=1): run without the Next.js Web UI and without the self-forking supervisor - a single Node process (Fastify + TCP proxy). In Docker tests a minimally-configured container dropped from ~160 MiB (over 200 MiB with the Web UI open) to ~115 MiB headless, roughly a third / ~50–90 MB less depending on config. Only works for an already-configured instance (the setup wizard still runs exclusively in the Web UI); the container refuses to boot headless against an unconfigured database with an explanatory error. When enabled, the Web UI port (default 5007) can be dropped from the compose port mapping.",
       },
       {
         type: "improvement",
-        text: "Dependency refresh: the whole stack bumped to current — Prisma 7.9, Next.js 16.2.11, React 19.2.8, argon2 0.45.1, nanoid 6, undici 8.9, recharts 3.10, lucide-react 1.26, next-intl 4.13.4, plus the Radix UI set and the dev tooling (ESLint 10.8, Prettier 3.9.6, Playwright 1.62). Dependabot now waits 3 days before proposing a freshly-published release.",
+        text: "Dependency refresh: the whole stack bumped to current - Prisma 7.9, Next.js 16.2.11, React 19.2.8, argon2 0.45.1, nanoid 6, undici 8.9, recharts 3.10, lucide-react 1.26, next-intl 4.13.4, plus the Radix UI set and the dev tooling (ESLint 10.8, Prettier 3.9.6, Playwright 1.62). Dependabot now waits 3 days before proposing a freshly-published release.",
+      },
+      {
+        type: "fix",
+        text: "Settings can be saved again when the proxy port is pinned by UMLAUTADAPTARREX_PROXY_PORT: saving from any settings tab failed with a conflict error, because the form sent the read-only, environment-managed port value back to the server. The field is now left out of the request, and an unchanged value is accepted as a no-op. Setting a different port while the environment variable is active is still refused - it would have no effect anyway.",
+      },
+      {
+        type: "fix",
+        text: 'Renamed titles no longer pick up a stray bracket: when the matching title alias had no parentheses but the release name did (e.g. alias "Chronicles of Time 2005" vs. release Chronicles.of.Time.(2005).S08E08…), the closing bracket was duplicated into the result - Chronicles.of.Time.(2005).).S08E08…. Affects movie/series and book/audiobook renaming.',
       },
     ],
   },
   {
     version: "1.2.5",
     date: "2026-07-10",
-    title: "1.2.5: Maintenance — dependency refresh & automatic security rebuilds",
+    title: "1.2.5: Maintenance - dependency refresh & automatic security rebuilds",
     description:
       "A maintenance release: all dependencies and the build toolchain refreshed, CI and the dev container moved to Node 26 (the production image already ran Node 26), and the published Docker :latest image is now automatically rebuilt every 2 days to pick up OS security patches between releases. No database changes.",
     items: [
@@ -60,7 +194,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       },
       {
         type: "improvement",
-        text: "Dependency refresh: all packages bumped to their latest patch/minor — pnpm 11.11.0, Fastify 5.10.0, Next.js 16.2.10, recharts 3.9.2, lucide-react 1.24.0, undici 8.7.0, the Radix UI set, plus dev tooling (ESLint, Vitest, Vite, Prettier, tsx, Playwright). No known vulnerabilities in the shipped runtime dependencies.",
+        text: "Dependency refresh: all packages bumped to their latest patch/minor - pnpm 11.11.0, Fastify 5.10.0, Next.js 16.2.10, recharts 3.9.2, lucide-react 1.24.0, undici 8.7.0, the Radix UI set, plus dev tooling (ESLint, Vitest, Vite, Prettier, tsx, Playwright). No known vulnerabilities in the shipped runtime dependencies.",
       },
       {
         type: "improvement",
@@ -71,10 +205,30 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: "1.2.4",
     date: "2026-06-21",
-    title: "1.2.4: Stability & hardening — providers, proxy and matching fixes",
+    title: "1.2.4: Stability & hardening - providers, proxy and matching fixes",
     description:
       "A stability and hardening release: title-provider syncs and the supervisor no longer hang on stalled connections, the indexer proxy and the admin/setup endpoints are hardened, and several title-matching and Web UI bugs are fixed. No database changes.",
     items: [
+      {
+        type: "improvement",
+        text: "TVDB: concurrent lookups now share a single login instead of each firing its own, removing redundant logins and a token-refresh race that could drop titles during a large sync.",
+      },
+      {
+        type: "improvement",
+        text: "Indexer proxy hardening: the plain-HTTP relay path now only allows ports 80/443 (matching the HTTPS-CONNECT path), cleans up its sockets and adds an idle timeout - closing an SSRF / open-relay gap and a socket leak.",
+      },
+      {
+        type: "improvement",
+        text: "Security: the unauthenticated setup-status endpoint is now rate-limited and no longer discloses the Prowlarr host or proxy username once setup is complete (the API key was never exposed). The Prowlarr admin actions (preview/import/test/save) are now rate-limited too.",
+      },
+      {
+        type: "improvement",
+        text: 'Lower database load on large installs: the session last-used timestamp is now updated at most once every 5 minutes instead of on every request, and "Recheck missing titles" scans the cache in bounded batches instead of loading the whole table into memory at once. Request-history entries also cap the stored domain/query length.',
+      },
+      {
+        type: "improvement",
+        text: "Security: added a Content-Security-Policy header, and generated passwords now use only cryptographically-secure randomness (no weak fallback, no character bias). Secret-mask detection was tightened so a real stored secret is never mistaken for the mask, while Prowlarr's asterisk masking is still recognized.",
+      },
       {
         type: "fix",
         text: "Operation-mode descriptions now show the actually-configured ports: the mode texts in the setup wizard and Settings → Operation mode no longer hard-code 5005/5006 but use the resolved ports (UMLAUTADAPTARREX_*_PORT override > stored/default). Thanks to xopez (github.com/xopez) for reporting (#30).",
@@ -88,10 +242,6 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: "A failing title provider is now skipped so the remaining providers still contribute, instead of one error aborting the whole lookup chain mid-sync.",
       },
       {
-        type: "improvement",
-        text: "TVDB: concurrent lookups now share a single login instead of each firing its own, removing redundant logins and a token-refresh race that could drop titles during a large sync.",
-      },
-      {
         type: "fix",
         text: 'Title matching: titles containing tabs or line breaks are no longer collapsed into a single word, and leading articles (Der/Die/Das/The/…) are now stripped regardless of capitalization, so lowercase titles produce the same search variations. Readarr external-ID titles now strip the configured language\'s articles, not just English "the".',
       },
@@ -100,24 +250,8 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: "Startup and restart are more robust: a failed database migration launch now reports an error instead of hanging the boot forever, and a Web UI process that ignores the shutdown signal is now force-stopped so the Web UI port can no longer get stuck on restart. The admin Restart now waits for its response to be sent before tearing down.",
       },
       {
-        type: "improvement",
-        text: "Indexer proxy hardening: the plain-HTTP relay path now only allows ports 80/443 (matching the HTTPS-CONNECT path), cleans up its sockets and adds an idle timeout — closing an SSRF / open-relay gap and a socket leak.",
-      },
-      {
-        type: "improvement",
-        text: "Security: the unauthenticated setup-status endpoint is now rate-limited and no longer discloses the Prowlarr host or proxy username once setup is complete (the API key was never exposed). The Prowlarr admin actions (preview/import/test/save) are now rate-limited too.",
-      },
-      {
-        type: "improvement",
-        text: 'Lower database load on large installs: the session last-used timestamp is now updated at most once every 5 minutes instead of on every request, and "Recheck missing titles" scans the cache in bounded batches instead of loading the whole table into memory at once. Request-history entries also cap the stored domain/query length.',
-      },
-      {
         type: "fix",
         text: "Web UI: fixed a race when closing the Prowlarr-import dialog while it was still loading, a double-submit window on import, and live-log rows shifting/flickering as new lines arrive. The dashboard and instances pages now show a clear error with a retry button when a request fails, instead of looking empty.",
-      },
-      {
-        type: "improvement",
-        text: "Security: added a Content-Security-Policy header, and generated passwords now use only cryptographically-secure randomness (no weak fallback, no character bias). Secret-mask detection was tightened so a real stored secret is never mistaken for the mask, while Prowlarr's asterisk masking is still recognized.",
       },
     ],
   },
@@ -130,7 +264,7 @@ export const CHANGELOG: ChangelogEntry[] = [
     items: [
       {
         type: "feature",
-        text: 'UmlautAdaptarrEX is now available in the TrueNAS app catalog — search for "UmlautAdaptarrEX" under Apps → Discover Apps to install. The app is maintained by xopez (github.com/xopez), many thanks.',
+        text: 'UmlautAdaptarrEX is now available in the TrueNAS app catalog - search for "UmlautAdaptarrEX" under Apps → Discover Apps to install. The app is maintained by xopez (github.com/xopez), many thanks.',
       },
       {
         type: "improvement",
@@ -166,20 +300,20 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: "Service ports are now read only from the branded UMLAUTADAPTARREX_LEGACYAPI_PORT / UMLAUTADAPTARREX_WEBUI_PORT / UMLAUTADAPTARREX_PROXY_PORT variables. The legacy PORT and WEB_PORT fallbacks (still accepted in 1.2.1) have been removed; the compose files and .env.example already use the branded names.",
       },
       {
-        type: "fix",
-        text: "The Web UI now reverse-proxies /api/* at runtime instead of baking the API port into the build. A custom UMLAUTADAPTARREX_LEGACYAPI_PORT no longer left /api/health and the *Arr icons failing with ECONNREFUSED, and the *Arr icons are no longer redirected to /setup during the wizard.",
-      },
-      {
-        type: "fix",
-        text: "First-run setup behind Docker NAT works again: the pre-setup instance test no longer hard-blocks private/LAN targets by default but follows the SSRF-strict toggle, so connecting to Sonarr/Radarr on the same LAN succeeds out of the box (strict mode still restores loopback-only for cloud or multi-tenant operators).",
-      },
-      {
         type: "improvement",
         text: "Security hardening: the /api/auth/me session check is now rate-limited per IP",
       },
       {
         type: "improvement",
         text: "Dependencies updated to their latest patch/minor releases (Next.js 16.2.7, React 19.2.7, TanStack Query 5.101, plus dev tooling). No behaviour changes; pnpm audit reports no known vulnerabilities.",
+      },
+      {
+        type: "fix",
+        text: "The Web UI now reverse-proxies /api/* at runtime instead of baking the API port into the build. A custom UMLAUTADAPTARREX_LEGACYAPI_PORT no longer left /api/health and the *Arr icons failing with ECONNREFUSED, and the *Arr icons are no longer redirected to /setup during the wizard.",
+      },
+      {
+        type: "fix",
+        text: "First-run setup behind Docker NAT works again: the pre-setup instance test no longer hard-blocks private/LAN targets by default but follows the SSRF-strict toggle, so connecting to Sonarr/Radarr on the same LAN succeeds out of the box (strict mode still restores loopback-only for cloud or multi-tenant operators).",
       },
     ],
   },
@@ -233,6 +367,10 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Restores the Lidarr and Readarr sync against libraries that contain albums or books with identical titles across different artists/authors, and lets Lidarr/Readarr-only setups sync without a title provider configured.",
     items: [
       {
+        type: "improvement",
+        text: "Sync persistence is hardened against duplicate items in a single fetch: duplicates are dropped with a warning instead of aborting a 50-item chunk transaction.",
+      },
+      {
         type: "fix",
         text: "Lidarr and Readarr sync no longer crashes with a unique-constraint error when the library has albums or books sharing a title across different artists or authors (Greatest Hits, Live, Best Of, Self-Titled, …). The cache key now combines artist and album (Lidarr) or book and author (Readarr) so identical titles from different artists/authors can no longer collide.",
       },
@@ -243,10 +381,6 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         type: "fix",
         text: "Setups with only Lidarr and/or Readarr instances enabled can now sync without a title provider configured. Sonarr/Radarr still require a provider as before.",
-      },
-      {
-        type: "improvement",
-        text: "Sync persistence is hardened against duplicate items in a single fetch: duplicates are dropped with a warning instead of aborting a 50-item chunk transaction.",
       },
     ],
   },
@@ -274,18 +408,6 @@ export const CHANGELOG: ChangelogEntry[] = [
         text: "Sync writes go to the database in small chunks instead of one giant transaction, so concurrent instance syncs interleave on SQLite and a mid-sync interruption keeps most of the progress.",
       },
       {
-        type: "fix",
-        text: "Admin login now rotates the session ID, runs a constant-time check for unknown users, awaits the CSRF gate before the route handler runs, and forces Secure cookies on any HTTPS request.",
-      },
-      {
-        type: "fix",
-        text: "API keys, passwords and Prowlarr secrets are now redacted from logs (including the live log stream and legacy-route logs) and masked in admin responses; the /api/health endpoint no longer exposes process uptime.",
-      },
-      {
-        type: "fix",
-        text: "Setup wizard handles concurrent completions, rejects unknown plugin IDs up-front and no longer issues outbound probes (Prowlarr connect) before authentication is in place.",
-      },
-      {
         type: "improvement",
         text: "TMDB bulk lookups use Promise.allSettled so a single failing ID no longer aborts the batch; TVDB has a retry guard against 401 token-refresh loops; rate limiter clamps negative Retry-After values.",
       },
@@ -304,6 +426,18 @@ export const CHANGELOG: ChangelogEntry[] = [
       {
         type: "improvement",
         text: "Docker image rebuilds faster thanks to a reworked Dockerfile with better layer caching and refreshed base image references. The build context also includes the pnpm workspace file so the install step no longer fails inside the image.",
+      },
+      {
+        type: "fix",
+        text: "Admin login now rotates the session ID, runs a constant-time check for unknown users, awaits the CSRF gate before the route handler runs, and forces Secure cookies on any HTTPS request.",
+      },
+      {
+        type: "fix",
+        text: "API keys, passwords and Prowlarr secrets are now redacted from logs (including the live log stream and legacy-route logs) and masked in admin responses; the /api/health endpoint no longer exposes process uptime.",
+      },
+      {
+        type: "fix",
+        text: "Setup wizard handles concurrent completions, rejects unknown plugin IDs up-front and no longer issues outbound probes (Prowlarr connect) before authentication is in place.",
       },
       {
         type: "fix",

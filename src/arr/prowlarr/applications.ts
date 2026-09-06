@@ -6,10 +6,7 @@ import type {
   ProwlarrSkippedApp,
 } from "@/schemas/prowlarr";
 import { isMaskedSecret } from "@/lib/secrets";
-import {
-  privateHostsAllowedForArrInstance,
-  urlIsPrivate,
-} from "@/server/security/ssrf";
+import { privateHostsAllowedForArrInstance, urlIsPrivate } from "@/server/security/ssrf";
 import type { CompatLogger } from "./_client";
 import { describeError } from "@/lib/error-format";
 
@@ -55,10 +52,7 @@ export async function fetchProwlarrApplications(
   // SSRF guard. Default-allow for the typical self-hosted shape; cloud-hosted
   // operators opt back into strict mode via UA_BLOCK_PRIVATE_INSTANCE_HOSTS.
   if (urlIsPrivate(host) && !privateHostsAllowedForArrInstance()) {
-    log?.warn(
-      { host },
-      "prowlarr fetch refused, host resolves to a private/loopback target",
-    );
+    log?.warn({ host }, "prowlarr fetch refused, host resolves to a private/loopback target");
     return {
       ok: false,
       error:
@@ -91,9 +85,7 @@ export async function fetchProwlarrApplications(
       );
       return { ok: false, status: statusCode, error: `HTTP ${statusCode}` };
     }
-    const json = (await body.json().catch(() => null)) as
-      | ProwlarrApplicationRaw[]
-      | null;
+    const json = (await body.json().catch(() => null)) as ProwlarrApplicationRaw[] | null;
     if (!Array.isArray(json)) {
       log?.warn(
         { status: statusCode, durationMs: Math.round(durationMs) },
@@ -129,9 +121,7 @@ export async function fetchProwlarrApplications(
   }
 }
 
-export function parseProwlarrApplications(
-  raw: ProwlarrApplicationRaw[],
-): ProwlarrPreviewResult {
+export function parseProwlarrApplications(raw: ProwlarrApplicationRaw[]): ProwlarrPreviewResult {
   const apps: ProwlarrParsedApp[] = [];
   const skipped: ProwlarrSkippedApp[] = [];
 
@@ -176,8 +166,7 @@ export function parseProwlarrApplications(
     }
     // Prowlarr often masks API keys (e.g. "********"). Don't skip those apps,
     // surface them with an empty key so the user can fill it in during import.
-    const usableKey =
-      apiKey.length >= 8 && !isMaskedSecret(apiKey) ? apiKey : "";
+    const usableKey = apiKey.length >= 8 && !isMaskedSecret(apiKey) ? apiKey : "";
 
     apps.push({
       prowlarrId,
@@ -194,8 +183,7 @@ export function parseProwlarrApplications(
 
 function readField(fields: ProwlarrField[], name: string): string {
   const match = fields.find(
-    (f) =>
-      typeof f.name === "string" && f.name.toLowerCase() === name.toLowerCase(),
+    (f) => typeof f.name === "string" && f.name.toLowerCase() === name.toLowerCase(),
   );
   if (!match) return "";
   const value = match.value;

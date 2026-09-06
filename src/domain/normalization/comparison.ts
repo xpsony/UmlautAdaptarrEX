@@ -36,7 +36,7 @@ export function normalizeForComparison(
  * and so that 1→N expansions (German `ß` → "ss") are credited correctly.
  *
  * The matching walk uses this to map a position in the normalized string
- * back to a position in the original — getting the contribution wrong by N
+ * back to a position in the original - getting the contribution wrong by N
  * eats N characters of the suffix.
  */
 export function normalizedCharContribution(

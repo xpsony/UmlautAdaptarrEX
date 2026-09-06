@@ -12,3 +12,25 @@ allowBuilds:
 overrides:
   'postcss@<8.5.10': ^8.5.14
   '@hono/node-server@<1.19.13': ^1.19.13
+
+# Supply-chain guard: only resolve versions published at least 1 day ago
+# (unit: minutes). This pins pnpm 11's built-in default explicitly so the
+# policy survives a future default change. Don't raise it above Dependabot's
+# `cooldown.default-days` (3, see .github/dependabot.yml) minus lockfile age:
+# a stricter gate retroactively flags freshly-updated lockfile entries and
+# turns CI red. Non-strict by default: pnpm falls back to an older version
+# instead of failing.
+minimumReleaseAge: 1440
+
+# Deliberately held-back majors - protects `pnpm update --latest` from
+# crossing them. In-range patches for these still arrive via Dependabot
+# (which only ignores their semver-major updates, see .github/dependabot.yml).
+updateConfig:
+  ignoreDependencies:
+    # 13.x: @prisma/adapter-better-sqlite3 pins ^12.6.0; a 13.x root dep would
+    # be an unused second native build that also breaks the toolchain-free
+    # Docker runtime-deps stage. Drop once the adapter allows 13.x.
+    - better-sqlite3
+    # 7.x is the native (Go) compiler; typescript-eslint's peer range is
+    # `<6.1.0`. Drop once typescript-eslint (and tsup/Next) support TS 7.
+    - typescript

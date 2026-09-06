@@ -27,7 +27,7 @@ export default async function SettingsPage() {
   const queryClient = new QueryClient();
 
   // Prefetch the four queries the settings page mounts with. The "settings"
-  // key is shared by SettingsRow and OperationModeResponse callsites — one
+  // key is shared by SettingsRow and OperationModeResponse callsites - one
   // prefetch covers both. Failures are swallowed so a single broken upstream
   // doesn't block render; useQuery on the client will retry.
   await Promise.allSettled([

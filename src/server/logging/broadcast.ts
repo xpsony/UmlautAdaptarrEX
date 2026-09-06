@@ -38,10 +38,10 @@ function parseSessionCookie(req: IncomingMessage): string | null {
 // defense-in-depth.)
 //
 // Two valid topologies:
-//  1. Single-origin (reverse proxy folds UI + API onto one host:port) —
+//  1. Single-origin (reverse proxy folds UI + API onto one host:port) -
 //     origin.host === request.host.
 //  2. Dual-port (default architecture, UI on the Web UI port, Fastify on this
-//     port) — same hostname, origin.port === the Web UI port (default 5007).
+//     port) - same hostname, origin.port === the Web UI port (default 5007).
 export function isOriginAllowed(req: IncomingMessage): boolean {
   const origin = req.headers.origin;
   if (!origin) return true;
@@ -64,7 +64,7 @@ export function isOriginAllowed(req: IncomingMessage): boolean {
 }
 
 // Lightweight in-memory sliding-window rate limiter for the upgrade path.
-// Keyed by remote address. Any attempt — successful or not — counts against
+// Keyed by remote address. Any attempt - successful or not - counts against
 // the limit, so an attacker can't overwhelm the DB with `getSession` calls
 // on a stolen-but-revoked cookie. The bucket is small to avoid drift across
 // long-lived clients; legitimate users open at most one WS at a time.
@@ -118,7 +118,7 @@ export class LogBroadcaster {
     server.on("upgrade", (req, socket, head) => {
       if (req.url !== path) return;
 
-      // 1. Origin-Check (CSWSH guard) — synchronous, free.
+      // 1. Origin-Check (CSWSH guard) - synchronous, free.
       if (!isOriginAllowed(req)) {
         socket.write("HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
         socket.destroy();

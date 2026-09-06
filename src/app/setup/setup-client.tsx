@@ -3,6 +3,7 @@
 import { AdminStep } from "./_components/admin-step";
 import { ModeStep } from "./_components/mode-step";
 import { PluginsStep } from "./_components/plugins-step";
+import { SearchStep } from "./_components/search-step";
 import { ProwlarrConnectStep } from "./_components/prowlarr-connect-step";
 import { ProwlarrImportStep } from "./_components/prowlarr-import-step";
 import { ProwlarrInstallStep } from "./_components/prowlarr-install-step";
@@ -55,6 +56,15 @@ export function SetupClient({ initialStatus }: { initialStatus: SetupStatus }) {
             tmdbKey={w.adminForm.getValues("tmdbApiKey") ?? ""}
             onTogglePlugin={w.togglePlugin}
             onBack={() => w.setStep("mode")}
+            onNext={() => w.setStep("search")}
+          />
+        ) : null}
+
+        {w.step === "search" ? (
+          <SearchStep
+            values={w.searchBehaviour}
+            onChange={w.setSearchBehaviourField}
+            onBack={() => w.setStep("plugins")}
             onNext={() => w.setStep("prowlarr-connect")}
           />
         ) : null}
@@ -67,7 +77,7 @@ export function SetupClient({ initialStatus }: { initialStatus: SetupStatus }) {
             testing={w.prowlarrTesting}
             previewLoading={w.previewLoading}
             onSubmit={w.onProwlarrSubmit}
-            onBack={() => w.setStep("plugins")}
+            onBack={() => w.setStep("search")}
             onSkip={w.skipProwlarr}
             onTest={w.onProwlarrTest}
           />

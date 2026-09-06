@@ -1,7 +1,15 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { ExternalLink, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import {
+  ExternalLink,
+  Loader2,
+  MoreHorizontal,
+  Pencil,
+  Plug,
+  RefreshCw,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,12 +24,22 @@ interface InstanceRowActionsProps {
   instance: Instance;
   onEdit: (instance: Instance) => void;
   onDelete: (instance: Instance) => void;
+  onTest: (instance: Instance) => void;
+  onSync: (instance: Instance) => void;
+  /** True while a test-connection request for this exact instance is in flight. */
+  testing: boolean;
+  /** True while a sync request for this exact instance is in flight. */
+  syncing: boolean;
 }
 
 export function InstanceRowActions({
   instance,
   onEdit,
   onDelete,
+  onTest,
+  onSync,
+  testing,
+  syncing,
 }: InstanceRowActionsProps) {
   const t = useTranslations("instances");
   return (
@@ -41,6 +59,19 @@ export function InstanceRowActions({
         <DropdownMenuItem onClick={() => onEdit(instance)}>
           <Pencil className="h-4 w-4" />
           {t("edit")}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => onTest(instance)} disabled={testing}>
+          {testing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
+          {t("test")}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onSync(instance)} disabled={syncing || !instance.enabled}>
+          {syncing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          {t("syncNow")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem

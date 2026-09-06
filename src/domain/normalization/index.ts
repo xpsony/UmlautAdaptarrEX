@@ -7,7 +7,7 @@ import {getActiveLanguagePack, type LanguagePack} from "../plugins";
 import {removeAccentButKeepDiacritics} from "./accents";
 
 /**
- * Strip a leading article (`The|Der|Die|Das|...`) — case-insensitive — using
+ * Strip a leading article (`The|Der|Die|Das|...`) - case-insensitive - using
  * the active language pack's article list. Falls back to a sensible default
  * if no plugin contributes articles, so utility callers (e.g. Lidarr title
  * normalization) still strip `The/An/A`.

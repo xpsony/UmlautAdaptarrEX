@@ -26,9 +26,7 @@ interface ProwlarrCallFailure {
   error: string;
 }
 
-export type ProwlarrCallResult<T> =
-  | ProwlarrCallSuccess<T>
-  | ProwlarrCallFailure;
+export type ProwlarrCallResult<T> = ProwlarrCallSuccess<T> | ProwlarrCallFailure;
 
 export async function prowlarrRequest<T>(
   url: string,

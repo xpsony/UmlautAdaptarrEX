@@ -6,6 +6,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "instances": "Instances",
+    "library": "Library",
     "syncRuns": "Sync runs",
     "requestHistory": "Request History",
     "renameHistory": "Rename History",
@@ -19,7 +20,9 @@
     "themeDark": "Dark",
     "themeSystem": "System",
     "nav": "Navigation",
-    "openNav": "Open navigation"
+    "openNav": "Open navigation",
+    "navLabel": "Main navigation",
+    "skipToContent": "Skip to content"
   },
   "pause": {
     "trigger": "Pause",
@@ -43,6 +46,7 @@
   "setup": {
     "title": "First-run setup",
     "intro": "Create the admin user, connect Prowlarr, and configure the HTTP-Proxy credentials.",
+    "stepperLabel": "Setup steps",
     "step1Title": "Admin account",
     "step1Hint": "These credentials sign you in to the admin UI.",
     "step2Title": "Connect Prowlarr",
@@ -65,7 +69,7 @@
     "modeBothLabel": "Both",
     "modeBothDescription": "Both the proxy ({proxyPort}) and the legacy API ({legacyApiPort}) are active.",
     "modeBothDetails": "Run both paths in parallel. Only useful during a staged migration from legacy to proxy mode. In steady-state operation it doubles the attack surface for no benefit.",
-    "modeBothWarning": "Not recommended — usually only one of the two paths is needed at a time.",
+    "modeBothWarning": "Not recommended - usually only one of the two paths is needed at a time.",
     "pluginsLanguage": {
       "de": "German",
       "en": "English",
@@ -74,6 +78,7 @@
     },
     "pluginsTitle": "Select plugins",
     "pluginsHint": "Choose the language plugins used to generate search variations and rewrite indexer responses. You can change this later in Settings.",
+    "pluginsCostHint": "Only pick languages you actually consume - every extra plugin generates extra search variations, and therefore extra indexer requests per search (capped at 10), plus one more TheTVDB request per title per language on every sync.",
     "pluginsDefaultBadge": "Default",
     "pluginsEmpty": "No plugins available.",
     "pluginsLoadFailed": "Failed to load plugins: {error}",
@@ -147,7 +152,9 @@
     },
     "patchStepTitle": "Patch indexers",
     "patchStepSkip": "Skip",
-    "patchIndexersDone": "Indexers patched."
+    "patchIndexersDone": "Indexers patched.",
+    "searchStepTitle": "Search behaviour",
+    "searchStepHint": "These options decide how UmlautAdaptarrEX searches. Each one states its example and its cost."
   },
   "login": {
     "title": "Sign in",
@@ -215,9 +222,11 @@
       "requestsHint": "Hourly split by cache hits and misses.",
       "cacheHit": "Cache hit",
       "cacheMiss": "Cache miss",
+      "requestsChartAlt": "Chart: requests over the last 24 hours, hourly split by cache hits and misses.",
       "renamesTitle": "Renames (last 14 days)",
       "renamesHint": "Titles rewritten per day.",
-      "renames": "Renames"
+      "renames": "Renames",
+      "renamesChartAlt": "Chart: renames over the last 14 days, titles rewritten per day."
     }
   },
   "instances": {
@@ -240,6 +249,8 @@
     "test": "Test connection",
     "testOk": "Connection OK (version {version})",
     "testFail": "Connection failed: {error}",
+    "syncNow": "Sync now",
+    "syncStarted": "Sync started.",
     "type": "Type",
     "name": "Name",
     "host": "Host",
@@ -249,6 +260,7 @@
     "apiKeyMaskedHint": "The stored value is only the Prowlarr mask (********). Enter the real API key from Sonarr/Radarr/Lidarr/Readarr.",
     "enabled": "Enabled",
     "enabledHint": "Disabled instances are skipped during sync.",
+    "enableAria": "Toggle {name}",
     "providerOrder": "Title provider order",
     "providerOrderHint": "Walked top to bottom on every sync. pcjones returns German titles only; TVDB and TMDB serve any language. Drag with the handle or use arrow keys to reorder.",
     "enableYearMatching": "Year disambiguation in title matching",
@@ -258,6 +270,8 @@
     "providerAdd": "Add",
     "providerRemove": "Remove",
     "providerDragHandle": "Sort handle for {name}",
+    "providerAddAria": "Add {name}",
+    "providerRemoveAria": "Remove {name}",
     "providerOption": {
       "pcjones": "Title API (pcjones / compatible)",
       "tmdb": "TMDB",
@@ -271,6 +285,7 @@
     "status": "Status",
     "statusOk": "Healthy",
     "statusError": "Error",
+    "statusErrorHeading": "Last sync error",
     "statusDisabled": "Disabled",
     "noInstances": "Add your first Sonarr/Radarr/Lidarr/Readarr to get started.",
     "noInstancesTitle": "No instances yet",
@@ -329,6 +344,45 @@
       }
     }
   },
+  "library": {
+    "title": "Library",
+    "subtitle": "Synced titles across all instances - including manual overrides.",
+    "listTitle": "{count, plural, =0 {No titles} one {# title} other {# titles}}",
+    "listSubtitle": "Original and German titles as used by the matching engine.",
+    "emptyTitle": "No titles",
+    "emptyHint": "No sync has run yet, or the filters are too narrow.",
+    "filterPlaceholder": "Search titles…",
+    "allInstances": "All instances",
+    "allTypes": "All types",
+    "missingGermanOnly": "Only without German title",
+    "allOverrides": "All overrides",
+    "overrideOnly": "With override",
+    "noOverrideOnly": "Without override",
+    "colTitle": "Title",
+    "colGermanTitle": "German title",
+    "colType": "Type",
+    "colYear": "Year",
+    "colInstance": "Instance",
+    "colUpdated": "Updated",
+    "typeTv": "Series",
+    "typeMovie": "Movie",
+    "typeAudio": "Music",
+    "typeBook": "Book",
+    "overrideBadge": "Override",
+    "detailExternalId": "External ID",
+    "detailOriginalTitle": "Original title",
+    "detailAuthor": "Author/Artist",
+    "detailAliases": "Aliases",
+    "searchVariations": "Search variations",
+    "matchVariations": "Match variations",
+    "authorVariations": "Author variations",
+    "overrideLabel": "German title (override)",
+    "overrideHint": "Replaces this medium's German title across all instances. Variations are recomputed immediately.",
+    "overrideSave": "Save override",
+    "overrideRemove": "Remove override",
+    "overrideSaved": "Override saved - variations recomputed.",
+    "overrideRemoved": "Override removed."
+  },
   "settings": {
     "title": "Settings",
     "subtitle": "Configure providers, the indexer cache and the application API key.",
@@ -337,13 +391,17 @@
       "providers": "Title providers",
       "prowlarr": "Prowlarr",
       "plugins": "Plugins",
+      "renaming": "Renaming",
       "advanced": "Advanced",
       "providersHint": "External services used to look up German titles.",
-      "advancedHint": "Use the defaults unless you know what you're doing."
+      "advancedHint": "Use the defaults unless you know what you're doing.",
+      "search": "Search",
+      "searchHint": "How searching works and how often titles are reconciled."
     },
     "plugins": {
       "title": "Built-in plugins",
       "hint": "Each plugin contributes a set of language-specific transformations (e.g. ä → ae) used to generate search variations and rewrite indexer responses.",
+      "costHint": "Only enable a language plugin if you actually consume content in that language. Every extra plugin costs lookups: each search sends one additional indexer request per language variation (hard-capped at 10 - surplus variations are dropped, possibly including German ones), and on every sync TheTVDB needs one more request per title per language (TMDB returns all languages in a single call and therefore does not scale with the plugin count).",
       "defaultEnabledBadge": "Default on",
       "resyncBanner": "Plugin changes only take effect after a sync, your library variations were generated with the previous configuration.",
       "resyncNow": "Sync now",
@@ -412,8 +470,15 @@
       "unknown": "TVDB test failed."
     },
     "userAgent": "User-Agent header",
+    "userAgentHint": "Optional. Leaving it empty means automatic: UmlautAdaptarrEX plus the running version - the value then follows every update without you touching the field.",
+    "userAgentAutoHint": "Empty = automatic: {value}",
+    "forwardArrUserAgent": "Forward the *Arr's User-Agent",
+    "forwardArrUserAgentDescription": "Sends Sonarr/Radarr/Lidarr/Readarr's User-Agent to the indexer verbatim instead of our own.",
+    "forwardArrUserAgentHint": "Off by default: the indexer sees only \"{ua}\" and no version fingerprint of your *Arr. Turn it on when an indexer only accepts known client User-Agents or rate-limits by them. If the *Arr sends no header, ours is used.",
     "logRetentionDays": "Log retention (days)",
     "logRetentionDaysHint": "Logs older than this are deleted by a cleanup job that runs every 6 hours. 1–30 days.",
+    "historyRetentionDays": "History retention (days)",
+    "historyRetentionDaysHint": "Request and rename history entries older than this are removed by the cleanup job every 6 hours. 1–365 days.",
     "indexerRateLimitMs": "Indexer rate-limit (ms)",
     "indexerRateLimitMsHint": "Minimum spacing between requests to the same indexer host. Lower = faster TV variation searches but higher risk of getting throttled (HTTP 429) or banned by free-tier indexers. Default 500 ms. The limiter automatically backs off when an indexer responds with Retry-After.",
     "indexerTimeoutSeconds": "Indexer request timeout (seconds)",
@@ -454,7 +519,7 @@
       "timeout": "Server did not respond within 30 seconds. Please check logs and restart manually if needed.",
       "failed": "Restart failed: {error}",
       "unsupported": "Restart from the UI is not available in this environment (dev mode or no supervisor). Please restart the container/service manually.",
-      "unsupportedTitle": "Restart not available — please restart manually."
+      "unsupportedTitle": "Restart not available - please restart manually."
     },
     "prowlarr": {
       "title": "Prowlarr connection",
@@ -511,7 +576,8 @@
       "patchColStatus": "Status",
       "patchStatusPatched": "patched",
       "patchStatusUnpatched": "not patched",
-      "patchNotPatchable": "No editable base URL — cannot be patched.",
+      "patchNotPatchable": "No editable base URL - cannot be patched.",
+      "patchUnsupportedApi": "Not a Newznab/Torznab API ({implementation}) - cannot be corrected through the proxy.",
       "patchApply": "Apply",
       "patchApplying": "Applying…",
       "patchEmpty": "No indexers found in Prowlarr.",
@@ -519,6 +585,89 @@
       "patchResult": "{patched} patched, {unpatched} reset, {unchanged} unchanged, {skipped} skipped, {failed} failed.",
       "patchResultFailedDetail": "Failed: {names}",
       "patchRetry": "Retry"
+    },
+    "renaming": {
+      "hint": "Controls how release titles in indexer responses are rewritten. The guard switches are the safety rules UmlautAdaptarrEX added on top of the old .NET predecessor - turning one off makes rewriting more permissive, but also more error-prone.",
+      "scopeHint": "Changes apply to the next search immediately, no restart or sync required. Releases already handed to Sonarr/Radarr are not changed retroactively.",
+      "presetsLabel": "Presets:",
+      "presetLegacy": "Like the old Umlautadaptarr",
+      "presetRecommended": "Recommended values",
+      "exampleRelease": "Example - release from the indexer:",
+      "exampleItem": "Library item:",
+      "exampleOff": "Off",
+      "exampleOn": "On",
+      "exampleNotRenamed": "not renamed",
+      "exampleNoteExternalIds": "Abbreviated; the attributes are added alongside the existing <item> content.",
+      "exampleNoteLegacySuffix": "That \"016\" was the year 2016 - the cut swallowed the leading 2.",
+      "exampleNotePrefixGuard": "With a season marker (…Silberlicht.S01E01…) both cases rename - the check only applies without one.",
+      "renameStripSpecialChars": {
+        "label": "Strip unwelcome characters",
+        "description": "Removes : ? * \" < > | / \\ from the inserted title and leaves no doubled separators behind.",
+        "hint": "Scene releases never carry these characters. \"Ember:.Steel.Angel.2019…\" becomes \"Ember.Steel.Angel.2019…\", which Sonarr/Radarr parse more reliably. The indexer's own suffix is left untouched."
+      },
+      "renameAttachExternalIds": {
+        "label": "Attach external ids",
+        "description": "Appends tvdbid / tmdbid / imdb as a newznab attribute to every matched release.",
+        "hint": "Lets Sonarr and Radarr bind a release without parsing its title. Purely additive: an id the indexer already supplied is never overwritten, and ids are attached even when the rewrite was declined."
+      },
+      "renameYearGuard": {
+        "label": "Year check",
+        "description": "Declines the rewrite when the year in the release name does not match the item.",
+        "hint": "Stops a same-named recording from a different year being rewritten to the wrong title. The tolerance is configured per instance; this switch disables the check globally. The old Umlautadaptarr had no year check."
+      },
+      "renamePrefixGuard": {
+        "label": "Ambiguous-prefix check",
+        "description": "Declines when the target title starts with the matched variation and no SxxExx or year follows.",
+        "hint": "Without this check a short alias can hijack a different work that merely shares the same opening words."
+      },
+      "renameReleaseTagGuard": {
+        "label": "Preserve release tags",
+        "description": "Pushes 3D / 4K / HDR / IMAX back into the suffix when a provider alias brought it along.",
+        "hint": "Without this check an alias like \"Nachtwache Wiederkehr 3D\" swallows the release's \"3D\" and the quality marker disappears from the title."
+      },
+      "renameLegacySuffix": {
+        "label": "Cut the suffix like the old Umlautadaptarr",
+        "description": "Cuts at the matched variation's raw length instead of counting normalized characters - and turns the token-boundary check off with it.",
+        "hint": "Only enable this if you need the exact old behaviour. When a variation ends on a digit the cut can land inside the release's year and mangle it (see the example). Without this switch UmlautAdaptarrEX declines such matches instead."
+      }
+    }
+  },
+  "searchBehaviour": {
+    "onDemand": {
+      "label": "Look a title up on demand",
+      "hint": "Recommended. Asks your *Arr and the title providers about an unknown title in the moment its search arrives.",
+      "description": "Without this, UmlautAdaptarrEX only knows the titles the last refresh fetched.",
+      "example": "Example: you make a request in Jellyseerr. Radarr creates the movie and searches in the same second. Without this option the movie is still unknown and the German release is overlooked.",
+      "cost": "Costs one call to your *Arr per unknown title, plus possibly one to TMDB, TVDB or pcjones. It runs in parallel with the indexer request and normally adds no waiting time."
+    },
+    "variations": {
+      "label": "Search German title variations too",
+      "hint": "Searches the German spellings in addition to the original title.",
+      "description": "Needed when an indexer only lists a release under its German name.",
+      "tvVariationSearch": "Series",
+      "movieVariationSearch": "Films",
+      "capLabel": "At most variations",
+      "capHint": "Counts the German variations. Your search term and the original title are searched on top and are never dropped. 0 searches without any German variations.",
+      "exampleQuery": "Sonarr searches for",
+      "exampleExtra": "These are searched as well:",
+      "cost": "Results in up to {max} extra indexer requests per search. Use with care if your indexer limits are tight."
+    },
+    "refresh": {
+      "label": "Refresh",
+      "description": "How often the titles in your *Arr are reconciled.",
+      "presetsLabel": "Presets:",
+      "preset": {
+        "recommended": "Recommended",
+        "frugal": "Frugal",
+        "legacy": "Like 1.x"
+      },
+      "quickLabel": "Quick sync (minutes)",
+      "quickHint": "0 turns the quick sync off. Otherwise at least 5 minutes.",
+      "quickDescription": "Fetches the title listing and processes only additions, removals and titles renamed in the *Arr. Writes nothing when nothing changed.",
+      "fullLabel": "Full sync (hours)",
+      "fullHint": "Between 1 and 168 hours.",
+      "fullDescription": "Also re-queries every title provider, so it picks up German titles added upstream later.",
+      "firstScanHint": "The very first run is always a full reconcile. Only after that does the quick sync take over."
     }
   },
   "history": {
@@ -538,7 +687,8 @@
       "createdAt": "Time",
       "filterPlaceholder": "Filter by domain, query or external ID…",
       "emptyTitle": "Nothing here yet",
-      "emptyHint": "Once requests pass through the proxy they appear here."
+      "emptyHint": "Once requests pass through the proxy they appear here.",
+      "detailTitle": "Request details"
     },
     "rename": {
       "title": "Rename history",
@@ -547,6 +697,8 @@
       "listSubtitle": "Filter by original or rewritten title.",
       "originalTitle": "Original",
       "rewrittenTitle": "Rewritten",
+      "titleColumn": "Title",
+      "groupCount": "×{count} · {from}–{to}",
       "mediaType": "Type",
       "createdAt": "Time",
       "filterPlaceholder": "Filter by title…",
@@ -558,7 +710,8 @@
     "title": "Sync runs",
     "subtitle": "Past and in-progress synchronisations across all instances.",
     "listTitle": "{count, plural, =0 {No runs} one {# run} other {# runs}}",
-    "listSubtitle": "Latest 200 runs, new entries appear automatically.",
+    "listSubtitle": "Filter by instance, search or status.",
+    "filterPlaceholder": "Filter by instance or error message…",
     "filterAll": "All statuses",
     "filterRunning": "Running",
     "filterOk": "Successful",
@@ -574,7 +727,9 @@
     "colDuration": "Duration",
     "colError": "Error",
     "emptyTitle": "No runs yet",
-    "emptyHint": "Trigger a sync from the dashboard to populate this list."
+    "emptyHint": "Trigger a sync from the dashboard to populate this list.",
+    "detailFinishedAt": "Finished",
+    "detailUnknownInstance": "Unknown instance"
   },
   "logs": {
     "title": "Logs",
@@ -591,6 +746,7 @@
     "download": "Download as JSONL",
     "droppedHint": "{count} log lines were dropped due to throttling.",
     "noConnection": "Disconnected",
+    "reconnecting": "Reconnecting…",
     "emptyTitle": "Waiting for log lines",
     "emptyHint": "New entries from the server will stream in here.",
     "emptyFiltered": "No log lines match your filter.",
@@ -598,13 +754,20 @@
     "loadingHistoryHint": "Fetching the persisted history from the database."
   },
   "common": {
+    "pagination": {
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {pageCount}",
+      "perPage": "Per page"
+    },
     "save": "Save",
     "cancel": "Cancel",
     "confirm": "Confirm",
     "yes": "Yes",
     "no": "No",
     "loading": "Loading…",
-    "error": "An error occurred."
+    "error": "An error occurred.",
+    "export": "Export"
   },
   "boundaries": {
     "errorTitle": "Something went wrong",

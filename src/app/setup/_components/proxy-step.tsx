@@ -5,13 +5,7 @@ import { useTranslations } from "next-intl";
 import type { UseFormReturn } from "react-hook-form";
 import { ArrowLeft, ArrowRight, Loader2, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RevealableInput } from "@/components/ui/revealable-input";
@@ -50,10 +44,14 @@ export function ProxyStep({
               <Input
                 id="proxyUsername"
                 autoComplete="off"
+                aria-invalid={form.formState.errors.proxyUsername ? true : undefined}
+                aria-describedby={
+                  form.formState.errors.proxyUsername ? "proxyUsername-error" : undefined
+                }
                 {...form.register("proxyUsername")}
               />
               {form.formState.errors.proxyUsername ? (
-                <p className="text-xs text-destructive">
+                <p id="proxyUsername-error" className="text-xs text-destructive">
                   {form.formState.errors.proxyUsername.message}
                 </p>
               ) : null}
@@ -66,6 +64,10 @@ export function ProxyStep({
                 className="font-mono"
                 showLabel={t("showPassword")}
                 hideLabel={t("hidePassword")}
+                aria-invalid={form.formState.errors.proxyPassword ? true : undefined}
+                aria-describedby={
+                  form.formState.errors.proxyPassword ? "proxyPassword-error" : "proxyPassword-hint"
+                }
                 {...form.register("proxyPassword")}
                 extraTrailingActions={
                   <Button
@@ -80,11 +82,11 @@ export function ProxyStep({
                 }
               />
               {form.formState.errors.proxyPassword ? (
-                <p className="text-xs text-destructive">
+                <p id="proxyPassword-error" className="text-xs text-destructive">
                   {form.formState.errors.proxyPassword.message}
                 </p>
               ) : (
-                <p className="text-xs text-muted-foreground">
+                <p id="proxyPassword-hint" className="text-xs text-muted-foreground">
                   {t("proxyPasswordHint")}
                 </p>
               )}

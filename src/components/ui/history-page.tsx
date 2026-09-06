@@ -1,20 +1,13 @@
 import type { ReactNode } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
+
+/** A plain (non-sortable) column keeps the old bare-string shape. */
+export type HistoryColumn = string | { label: string; sortKey?: string };
 
 interface HistoryPageProps {
   title: string;
@@ -26,9 +19,24 @@ interface HistoryPageProps {
   emptyIcon: ReactNode;
   isLoading: boolean;
   isEmpty: boolean;
+  /** Failed fetch with nothing to show yet. Renders an alert + retry instead of the empty state. */
+  isError?: boolean;
+  /** Translated generic error label (usually t common.error). */
+  errorLabel?: string;
+  /** Translated retry label (usually t boundaries.retry). */
+  retryLabel?: string;
+  onRetry?: () => void;
+  /** Disables the retry button and can be used to show pending state (usually query.isFetching). */
+  retryPending?: boolean;
   filterSlot: ReactNode;
-  columns: string[];
+  columns: HistoryColumn[];
   rows: ReactNode;
+  /** Optional footer (e.g. pagination bar) rendered below the table. */
+  footerSlot?: ReactNode;
+  /** Current sort, if this page's columns are sortable. Omit for an unsorted table. */
+  sort?: { key: string; order: "asc" | "desc" };
+  /** Called with a column's `sortKey` when its header is clicked. */
+  onSortChange?: (key: string) => void;
 }
 
 /**
@@ -66,7 +74,7 @@ export function HistoryPageSkeleton() {
   );
 }
 
-/** Shared scaffold for admin list/history pages — header + card + filter + table. */
+/** Shared scaffold for admin list/history pages - header + card + filter + table. */
 export function HistoryPage(props: HistoryPageProps) {
   return (
     <div className="space-y-4">
@@ -91,6 +99,20 @@ export function HistoryPage(props: HistoryPageProps) {
               <Skeleton className="h-9 w-full" />
               <Skeleton className="h-9 w-full" />
             </div>
+          ) : props.isError ? (
+            // A failed fetch must not masquerade as "no entries"; show a
+            // distinct error with a retry affordance instead.
+            <div
+              role="alert"
+              className="flex flex-col items-center gap-3 p-10 text-center text-sm text-destructive"
+            >
+              <span>{props.errorLabel}</span>
+              {props.onRetry ? (
+                <Button variant="outline" disabled={props.retryPending} onClick={props.onRetry}>
+                  {props.retryLabel}
+                </Button>
+              ) : null}
+            </div>
           ) : props.isEmpty ? (
             <EmptyState
               icon={props.emptyIcon}
@@ -98,16 +120,46 @@ export function HistoryPage(props: HistoryPageProps) {
               description={props.emptyHint}
             />
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {props.columns.map((c) => (
-                    <TableHead key={c}>{c}</TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>{props.rows}</TableBody>
-            </Table>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {props.columns.map((c) => {
+                      const label = typeof c === "string" ? c : c.label;
+                      const sortKey = typeof c === "string" ? undefined : c.sortKey;
+                      if (!sortKey) {
+                        return <TableHead key={label}>{label}</TableHead>;
+                      }
+                      const isActive = props.sort?.key === sortKey;
+                      const ariaSort = isActive
+                        ? props.sort?.order === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : "none";
+                      const Icon = isActive
+                        ? props.sort?.order === "asc"
+                          ? ArrowUp
+                          : ArrowDown
+                        : ArrowUpDown;
+                      return (
+                        <TableHead key={label} aria-sort={ariaSort}>
+                          <button
+                            type="button"
+                            onClick={() => props.onSortChange?.(sortKey)}
+                            className="inline-flex items-center gap-1 rounded-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none"
+                          >
+                            {label}
+                            <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+                          </button>
+                        </TableHead>
+                      );
+                    })}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>{props.rows}</TableBody>
+              </Table>
+              {props.footerSlot}
+            </>
           )}
         </CardContent>
       </Card>

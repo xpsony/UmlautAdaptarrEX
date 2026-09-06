@@ -31,13 +31,13 @@ data/
 .DS_Store
 Thumbs.db
 
-# Legacy .NET sources — never needed in image
+# Legacy .NET sources - never needed in image
 old_code/
 
 # Local dev helpers
 dev/
 
-# Tests, docs and tooling — not needed by `pnpm build` (next build + tsup),
+# Tests, docs and tooling - not needed by `pnpm build` (next build + tsup),
 # only bloat the build context shipped to the daemon for `COPY . .`.
 tests/
 e2e/

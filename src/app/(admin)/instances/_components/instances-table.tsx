@@ -22,6 +22,12 @@ interface InstancesTableProps {
   onToggle: (id: string, enabled: boolean) => void;
   onEdit: (instance: Instance) => void;
   onDelete: (instance: Instance) => void;
+  onTest: (instance: Instance) => void;
+  onSync: (instance: Instance) => void;
+  /** Instance id currently being tested/synced, or null; drives the disabled
+   * + spinner state of a single row's actions without re-rendering others. */
+  testingId: string | null;
+  syncingId: string | null;
 }
 
 export function InstancesTable({
@@ -30,6 +36,10 @@ export function InstancesTable({
   onToggle,
   onEdit,
   onDelete,
+  onTest,
+  onSync,
+  testingId,
+  syncingId,
 }: InstancesTableProps) {
   const t = useTranslations("instances");
   return (
@@ -61,32 +71,29 @@ export function InstancesTable({
                   {inst.type}
                 </Badge>
               </TableCell>
-              <TableCell className="font-mono text-xs text-muted-foreground">
-                {inst.host}
-              </TableCell>
+              <TableCell className="font-mono text-xs text-muted-foreground">{inst.host}</TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
                   <Switch
                     checked={inst.enabled}
                     onCheckedChange={(checked) => onToggle(inst.id, checked)}
-                    aria-label={t("enabled")}
+                    aria-label={t("enableAria", { name: inst.name })}
                   />
-                  <InstanceStatusBadge
-                    enabled={inst.enabled}
-                    lastSyncError={inst.lastSyncError}
-                  />
+                  <InstanceStatusBadge enabled={inst.enabled} lastSyncError={inst.lastSyncError} />
                 </div>
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {inst.lastSyncAt
-                  ? new Date(inst.lastSyncAt).toLocaleString(locale)
-                  : "—"}
+                {inst.lastSyncAt ? new Date(inst.lastSyncAt).toLocaleString(locale) : "-"}
               </TableCell>
               <TableCell className="text-right">
                 <InstanceRowActions
                   instance={inst}
                   onEdit={onEdit}
                   onDelete={onDelete}
+                  onTest={onTest}
+                  onSync={onSync}
+                  testing={testingId === inst.id}
+                  syncing={syncingId === inst.id}
                 />
               </TableCell>
             </TableRow>

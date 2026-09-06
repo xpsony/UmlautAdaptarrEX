@@ -10,6 +10,7 @@ vi.mock("@/server/auth/middleware", () => ({
 const { mockArr } = vi.hoisted(() => ({
   mockArr: {
     findMany: vi.fn(),
+    findUnique: vi.fn(),
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
@@ -47,6 +48,7 @@ let app: ReturnType<typeof Fastify>;
 
 beforeEach(async () => {
   mockArr.findMany.mockReset();
+  mockArr.findUnique.mockReset();
   mockArr.create.mockReset();
   mockArr.update.mockReset();
   mockArr.delete.mockReset();
@@ -258,6 +260,44 @@ describe("DELETE /api/admin/instances/:id", () => {
   });
 });
 
+describe("PATCH /api/admin/instances/:id - Prisma error mapping", () => {
+  it("returns 404 when the instance does not exist (P2025)", async () => {
+    mockArr.update.mockRejectedValueOnce({ code: "P2025" });
+    const r = await app.inject({
+      method: "PATCH",
+      url: "/api/admin/instances/does-not-exist",
+      payload: { enabled: true },
+    });
+    expect(r.statusCode).toBe(404);
+    expect(r.json()).toMatchObject({ error: "not_found" });
+  });
+
+  it("returns 409 when renaming onto an existing type+name (P2002)", async () => {
+    mockArr.update.mockRejectedValueOnce({ code: "P2002" });
+    const r = await app.inject({
+      method: "PATCH",
+      url: "/api/admin/instances/i1",
+      payload: { name: "Duplicate" },
+    });
+    expect(r.statusCode).toBe(409);
+    expect(r.json()).toMatchObject({ error: "duplicate" });
+  });
+});
+
+describe("DELETE /api/admin/instances/:id - Prisma error mapping", () => {
+  it("returns 404 when the instance does not exist (P2025)", async () => {
+    mockArr.delete.mockRejectedValueOnce({ code: "P2025" });
+    const r = await app.inject({
+      method: "DELETE",
+      url: "/api/admin/instances/does-not-exist",
+    });
+    expect(r.statusCode).toBe(404);
+    expect(r.json()).toMatchObject({ error: "not_found" });
+    // State cleanup must NOT run for a failed delete.
+    expect(mockState.removeItemsForInstance).not.toHaveBeenCalled();
+  });
+});
+
 describe("POST /api/admin/instances/test", () => {
   it("delegates to testConnection with the configured user agent", async () => {
     mockTestConnection.mockResolvedValueOnce({ ok: true, version: "1.2.3" });
@@ -284,5 +324,72 @@ describe("POST /api/admin/instances/test", () => {
       payload: { type: "sonarr", host: "not-a-url", apiKey: "k" },
     });
     expect(r.statusCode).toBe(400);
+  });
+});
+
+describe("POST /api/admin/instances/:id/test", () => {
+  const stored = {
+    id: "i1",
+    type: "sonarr",
+    name: "Living",
+    host: "http://sonarr.local",
+    apiKey: "real-key",
+    enabled: true,
+    providerOrder: "pcjones",
+    enableYearMatching: true,
+    yearMatchingTolerance: 1,
+    lastSyncAt: null,
+    lastSyncError: null,
+    createdAt: new Date(0),
+    updatedAt: new Date(0),
+  };
+
+  it("loads the instance server-side and delegates to testConnection", async () => {
+    mockArr.findUnique.mockResolvedValueOnce(stored);
+    mockTestConnection.mockResolvedValueOnce({ ok: true, version: "4.5.6" });
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/admin/instances/i1/test",
+    });
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toEqual({ ok: true, version: "4.5.6" });
+    expect(mockArr.findUnique).toHaveBeenCalledWith({ where: { id: "i1" } });
+    expect(mockTestConnection).toHaveBeenCalledWith(
+      "sonarr",
+      "http://sonarr.local",
+      "real-key",
+      "UmlautAdaptarr/2.0",
+      expect.anything(),
+    );
+  });
+
+  it("returns 404 when the instance does not exist", async () => {
+    mockArr.findUnique.mockResolvedValueOnce(null);
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/admin/instances/does-not-exist/test",
+    });
+    expect(r.statusCode).toBe(404);
+    expect(r.json()).toMatchObject({ error: "not_found" });
+    expect(mockTestConnection).not.toHaveBeenCalled();
+  });
+
+  it("passes through a failed testConnection result verbatim", async () => {
+    mockArr.findUnique.mockResolvedValueOnce(stored);
+    mockTestConnection.mockResolvedValueOnce({
+      ok: false,
+      code: "upstream_unauthorized",
+      error: "HTTP 401: sonarr rejected the API key.",
+    });
+    const r = await app.inject({
+      method: "POST",
+      url: "/api/admin/instances/i1/test",
+    });
+    expect(r.statusCode).toBe(200);
+    expect(r.json()).toEqual({
+      ok: false,
+      code: "upstream_unauthorized",
+      error: "HTTP 401: sonarr rejected the API key.",
+    });
   });
 });

@@ -32,7 +32,7 @@ up the exact expected title.
 6. **Replace `<title>`**, but only when `rewritten !== originalTitle`. The `onRename` callback fires so the
    caller can persist the event.
 
-## TV / movies — `renameForMoviesAndTv`
+## TV / movies - `renameForMoviesAndTv`
 
 [src/domain/matching/rename.ts:18](../src/domain/matching/rename.ts#L18). Assumes the original title _starts
 with_ one of the `titleMatchVariations`, which is true for the typical scene-style release where the work
@@ -52,7 +52,7 @@ Steps:
 2. **Skip the variation that equals `expectedTitle`.** If the release already carries the expected title,
    nothing needs to happen.
 3. **Prefix match** on `normalizeForComparison(original).startsWith(normalizeForComparison(variation))`.
-   Variations whose normalized form is empty are skipped — otherwise an accent-only variation like `é` would
+   Variations whose normalized form is empty are skipped - otherwise an accent-only variation like `é` would
    normalize to `""` and match every release
    ([commit b67d912](../../../commit/b67d912)).
 4. **Detect the separator** from the original (first occurrence of `.`, `_`, `␣`; falls back to `␣`)
@@ -68,7 +68,7 @@ Steps:
    return `.est.S01E01` because `ß` was undercounted. The walk reads verbose on purpose, the _why_ is in the
    inline comment.
 
-6. **Ambiguity gate** — when `expectedTitle` _starts with_ `variation` (e.g. `Sigrid` ⊂
+6. **Ambiguity gate** - when `expectedTitle` _starts with_ `variation` (e.g. `Sigrid` ⊂
    `Sigrid - Beyond the Realm's End`), only rewrite if a strong release marker follows immediately:
    `SxxEyy` for TV, or a four-digit year (`19xx`/`20xx`) for movies. Otherwise the function returns `null`
    with `reason: "ambiguous-prefix"` because the prefix could belong to a different work that happens to
@@ -76,7 +76,7 @@ Steps:
 7. **Assemble the output:** the expected title with spaces replaced by the detected separator, then the
    suffix that follows the matched span.
 
-## Books / audio — `renameForBooksAndAudio`
+## Books / audio - `renameForBooksAndAudio`
 
 [src/domain/matching/books-audio.ts:93](../src/domain/matching/books-audio.ts#L93). These categories don't
 follow a reliable "work in front" pattern (different sites interleave quality tags before and after the
@@ -126,13 +126,13 @@ the request and never hides the rewritten title. The Web UI surfaces the table a
 
 Pure-domain tests live under [tests/unit/](../tests/unit/):
 
-- `matching-tv.test.ts` — edge cases for `renameForMoviesAndTv` (umlauts, ß expansion, ambiguity gate, empty
+- `matching-tv.test.ts` - edge cases for `renameForMoviesAndTv` (umlauts, ß expansion, ambiguity gate, empty
   variations).
-- `matching-books.test.ts` — `renameForBooksAndAudio` (author/title spans, suffix handling).
-- `xml-rewrite.test.ts` — wire preservation (CDATA stays CDATA, attribute order, items without a SearchItem
+- `matching-books.test.ts` - `renameForBooksAndAudio` (author/title spans, suffix handling).
+- `xml-rewrite.test.ts` - wire preservation (CDATA stays CDATA, attribute order, items without a SearchItem
   pass through untouched).
 
-Run via `pnpm test`. If you change either algorithm, the unit suite is the cheapest regression net — both
+Run via `pnpm test`. If you change either algorithm, the unit suite is the cheapest regression net - both
 functions are framework-free and don't need the DB.
 
 ## Known pitfalls

@@ -1,12 +1,5 @@
-import {
-  getActiveLanguagePack,
-  hasMappedChar,
-  type LanguagePack,
-} from "../plugins";
-import {
-  type BooksAudioVariationOutput,
-  generateForBooksAndAudio,
-} from "./books-audio";
+import { getActiveLanguagePack, hasMappedChar, type LanguagePack } from "../plugins";
+import { type BooksAudioVariationOutput, generateForBooksAndAudio } from "./books-audio";
 import { generateForTvMovie, type TvMovieVariationOutput } from "./tv-movie";
 import type { MediaType } from "./generate";
 
@@ -15,6 +8,12 @@ export { generateVariations } from "./generate";
 export interface SearchItemInput {
   arrId: number;
   externalId: string;
+  /**
+   * IMDb id, when the *Arr client has one (Radarr does per movie). Carried
+   * through untouched - it takes no part in variation generation, it is only
+   * persisted so the rewrite can emit a newznab `imdb` attribute.
+   */
+  imdbId?: string | null;
   title: string;
   expectedTitle: string;
   expectedAuthor?: string | null;
@@ -39,6 +38,7 @@ export interface SearchItemInput {
 export interface SearchItemDerived {
   arrId: number;
   externalId: string;
+  imdbId: string | null;
   title: string;
   expectedTitle: string;
   expectedAuthor: string | null;
@@ -59,6 +59,7 @@ export function buildSearchItem(
   const base = {
     arrId: input.arrId,
     externalId: input.externalId,
+    imdbId: input.imdbId ?? null,
     title: input.title,
     expectedTitle: input.expectedTitle,
     expectedAuthor: input.expectedAuthor ?? null,
@@ -67,10 +68,7 @@ export function buildSearchItem(
     year: input.year ?? null,
   };
 
-  if (
-    (input.mediaType === "audio" || input.mediaType === "book") &&
-    input.expectedAuthor
-  ) {
+  if ((input.mediaType === "audio" || input.mediaType === "book") && input.expectedAuthor) {
     const v: BooksAudioVariationOutput = generateForBooksAndAudio(
       {
         expectedTitle: input.expectedTitle,

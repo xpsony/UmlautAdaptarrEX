@@ -5,17 +5,15 @@ import { expect, test } from "@playwright/test";
 test.use({ storageState: { cookies: [], origins: [] } });
 
 test.describe("locale toggle", () => {
-  test("switches the UI to German and persists the cookie", async ({
-    page,
-  }) => {
+  test("switches the UI to German and persists the cookie", async ({ page }) => {
     await page.goto("/login");
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
 
     await page.getByRole("button", { name: /Language: English/i }).click();
     await page.getByRole("menuitemradio", { name: /Deutsch/i }).click();
 
-    // The toggle reloads the page; wait for the localized heading instead
-    // of relying on a navigation event the dropdown does not emit.
+    // The toggle triggers a router.refresh() (no full page navigation); wait
+    // for the localized heading instead of relying on a navigation event.
     await expect(page.getByRole("heading", { name: "Anmelden" })).toBeVisible();
 
     const cookies = await page.context().cookies();

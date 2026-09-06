@@ -6,6 +6,7 @@
   "nav": {
     "dashboard": "Übersicht",
     "instances": "Instanzen",
+    "library": "Bibliothek",
     "syncRuns": "Sync-Läufe",
     "requestHistory": "Anfragen-Verlauf",
     "renameHistory": "Umbenennungs-Verlauf",
@@ -19,7 +20,9 @@
     "themeDark": "Dunkel",
     "themeSystem": "System",
     "nav": "Navigation",
-    "openNav": "Navigation öffnen"
+    "openNav": "Navigation öffnen",
+    "navLabel": "Hauptnavigation",
+    "skipToContent": "Zum Inhalt springen"
   },
   "pause": {
     "trigger": "Pausieren",
@@ -43,6 +46,7 @@
   "setup": {
     "title": "Erstkonfiguration",
     "intro": "Lege den Admin-Benutzer an, verbinde Prowlarr und konfiguriere die HTTP-Proxy-Zugangsdaten.",
+    "stepperLabel": "Einrichtungsschritte",
     "step1Title": "Admin-Konto",
     "step1Hint": "Mit diesen Zugangsdaten meldest du dich am Admin-UI an.",
     "step2Title": "Prowlarr verbinden",
@@ -74,6 +78,7 @@
     },
     "pluginsTitle": "Plugins auswählen",
     "pluginsHint": "Wähle die Sprach-Plugins, die für Suchvarianten und das Umschreiben der Indexer-Antworten verwendet werden. Du kannst diese Auswahl später in den Einstellungen ändern.",
+    "pluginsCostHint": "Wähle nur Sprachen, die du tatsächlich konsumierst - jedes zusätzliche Plugin erzeugt zusätzliche Suchvarianten und damit zusätzliche Indexer-Anfragen pro Suche (Obergrenze 10) sowie eine weitere TheTVDB-Anfrage pro Titel und Sprache bei jedem Sync.",
     "pluginsDefaultBadge": "Standard",
     "pluginsEmpty": "Keine Plugins verfügbar.",
     "pluginsLoadFailed": "Plugins konnten nicht geladen werden: {error}",
@@ -147,7 +152,9 @@
     },
     "patchStepTitle": "Indexer patchen",
     "patchStepSkip": "Überspringen",
-    "patchIndexersDone": "Indexer wurden gepatcht."
+    "patchIndexersDone": "Indexer wurden gepatcht.",
+    "searchStepTitle": "Suchverhalten",
+    "searchStepHint": "Diese Optionen bestimmen, wie UmlautAdaptarrEX sucht. Jede nennt ihr Beispiel und ihre Kosten."
   },
   "login": {
     "title": "Anmelden",
@@ -215,9 +222,11 @@
       "requestsHint": "Stündlich aufgeteilt nach Cache-Treffern und -Fehlversuchen.",
       "cacheHit": "Cache-Treffer",
       "cacheMiss": "Cache-Miss",
+      "requestsChartAlt": "Diagramm: Anfragen der letzten 24 Stunden, stündlich aufgeteilt nach Cache-Treffern und Cache-Fehlversuchen.",
       "renamesTitle": "Umbenennungen (letzte 14 Tage)",
       "renamesHint": "Pro Tag umgeschriebene Titel.",
-      "renames": "Umbenennungen"
+      "renames": "Umbenennungen",
+      "renamesChartAlt": "Diagramm: Umbenennungen der letzten 14 Tage, pro Tag umgeschriebene Titel."
     }
   },
   "instances": {
@@ -240,6 +249,8 @@
     "test": "Verbindung testen",
     "testOk": "Verbindung OK (Version {version})",
     "testFail": "Verbindung fehlgeschlagen: {error}",
+    "syncNow": "Jetzt synchronisieren",
+    "syncStarted": "Sync gestartet.",
     "type": "Typ",
     "name": "Name",
     "host": "Host",
@@ -249,6 +260,7 @@
     "apiKeyMaskedHint": "Der gespeicherte Wert ist nur die Prowlarr-Maske (********). Trage den echten API-Key aus Sonarr/Radarr/Lidarr/Readarr ein.",
     "enabled": "Aktiviert",
     "enabledHint": "Deaktivierte Instanzen werden beim Sync übersprungen.",
+    "enableAria": "„{name}“ aktivieren/deaktivieren",
     "providerOrder": "Reihenfolge der Title-Provider",
     "providerOrderHint": "Wird beim Sync von oben nach unten abgearbeitet. pcjones liefert nur deutsche Titel, TVDB und TMDB können alle Sprachen. Per Drag & Drop oder Pfeiltasten sortieren.",
     "enableYearMatching": "Jahres-Abgleich beim Title-Matching",
@@ -258,6 +270,8 @@
     "providerAdd": "Hinzufügen",
     "providerRemove": "Entfernen",
     "providerDragHandle": "Sortier-Griff für {name}",
+    "providerAddAria": "{name} hinzufügen",
+    "providerRemoveAria": "{name} entfernen",
     "providerOption": {
       "pcjones": "Title-API (pcjones / kompatibel)",
       "tmdb": "TMDB",
@@ -271,6 +285,7 @@
     "status": "Status",
     "statusOk": "OK",
     "statusError": "Fehler",
+    "statusErrorHeading": "Letzter Sync-Fehler",
     "statusDisabled": "Deaktiviert",
     "noInstances": "Lege deine erste Sonarr-/Radarr-/Lidarr-/Readarr-Instanz an.",
     "noInstancesTitle": "Noch keine Instanzen",
@@ -329,6 +344,45 @@
       }
     }
   },
+  "library": {
+    "title": "Bibliothek",
+    "subtitle": "Synchronisierte Titel aller Instanzen - inklusive manueller Overrides.",
+    "listTitle": "{count, plural, =0 {Keine Titel} one {# Titel} other {# Titel}}",
+    "listSubtitle": "Original- und deutscher Titel, wie sie im Matching verwendet werden.",
+    "emptyTitle": "Keine Titel",
+    "emptyHint": "Noch kein Sync gelaufen oder Filter zu eng.",
+    "filterPlaceholder": "Titel suchen…",
+    "allInstances": "Alle Instanzen",
+    "allTypes": "Alle Typen",
+    "missingGermanOnly": "Nur ohne deutschen Titel",
+    "allOverrides": "Alle Overrides",
+    "overrideOnly": "Nur mit Override",
+    "noOverrideOnly": "Nur ohne Override",
+    "colTitle": "Titel",
+    "colGermanTitle": "Deutscher Titel",
+    "colType": "Typ",
+    "colYear": "Jahr",
+    "colInstance": "Instanz",
+    "colUpdated": "Aktualisiert",
+    "typeTv": "Serie",
+    "typeMovie": "Film",
+    "typeAudio": "Musik",
+    "typeBook": "Buch",
+    "overrideBadge": "Override",
+    "detailExternalId": "Externe ID",
+    "detailOriginalTitle": "Originaltitel",
+    "detailAuthor": "Autor/Künstler",
+    "detailAliases": "Aliases",
+    "searchVariations": "Suchvarianten",
+    "matchVariations": "Match-Varianten",
+    "authorVariations": "Autor-Varianten",
+    "overrideLabel": "Deutscher Titel (Override)",
+    "overrideHint": "Ersetzt den deutschen Titel dieses Mediums in allen Instanzen. Varianten werden sofort neu berechnet.",
+    "overrideSave": "Override speichern",
+    "overrideRemove": "Override entfernen",
+    "overrideSaved": "Override gespeichert - Varianten neu berechnet.",
+    "overrideRemoved": "Override entfernt."
+  },
   "settings": {
     "title": "Einstellungen",
     "subtitle": "Konfiguriere Provider, Indexer-Cache und den Anwendungs-API-Key.",
@@ -337,13 +391,17 @@
       "providers": "Titel-Provider",
       "prowlarr": "Prowlarr",
       "plugins": "Plugins",
+      "renaming": "Renaming",
       "advanced": "Erweitert",
       "providersHint": "Externe Dienste zur Suche deutscher Titel.",
-      "advancedHint": "Behalte die Standardwerte, sofern du nicht weißt, was du tust."
+      "advancedHint": "Behalte die Standardwerte, sofern du nicht weißt, was du tust.",
+      "search": "Suche",
+      "searchHint": "Wie gesucht wird und wie oft die Titel abgeglichen werden."
     },
     "plugins": {
       "title": "Eingebaute Plugins",
       "hint": "Jedes Plugin liefert sprachspezifische Transformationen (z.B. ä → ae), die in Suchvarianten und beim Umschreiben der Indexer-Antworten verwendet werden.",
+      "costHint": "Aktiviere ein Sprach-Plugin nur, wenn du Inhalte in dieser Sprache tatsächlich konsumierst. Jedes zusätzliche Plugin kostet Abfragen: pro Suche geht eine zusätzliche Anfrage je Sprachvariante an die Indexer (hart begrenzt auf 10 - überzählige Varianten fallen weg, im Zweifel auch deutsche), und beim Sync stellt TheTVDB pro Titel eine weitere Anfrage je Sprache (TMDB liefert alle Sprachen in einem Aufruf und skaliert daher nicht mit).",
       "defaultEnabledBadge": "Standardmäßig an",
       "resyncBanner": "Plugin-Änderungen wirken erst nach dem nächsten Sync, die gespeicherten Varianten wurden mit der vorigen Konfiguration berechnet.",
       "resyncNow": "Jetzt synchronisieren",
@@ -412,8 +470,15 @@
       "unknown": "TVDB-Test fehlgeschlagen."
     },
     "userAgent": "User-Agent-Header",
+    "userAgentHint": "Optional. Leer lassen heißt automatisch: UmlautAdaptarrEX plus die laufende Version - der Wert wächst dann mit jedem Update mit, ohne dass du das Feld anfassen musst.",
+    "userAgentAutoHint": "Leer = automatisch: {value}",
+    "forwardArrUserAgent": "User-Agent der *Arr durchreichen",
+    "forwardArrUserAgentDescription": "Sendet den User-Agent von Sonarr/Radarr/Lidarr/Readarr wortwörtlich an den Indexer statt unseren eigenen.",
+    "forwardArrUserAgentHint": "Standardmäßig aus: der Indexer sieht nur „{ua}“ und keinen Versions-Fingerprint deiner *Arr. Einschalten, wenn ein Indexer nur bekannte Client-User-Agents zulässt oder danach limitiert. Schickt die *Arr keinen Header, wird unser eigener verwendet.",
     "logRetentionDays": "Log-Aufbewahrung (Tage)",
     "logRetentionDaysHint": "Ältere Logs werden alle 6 Stunden vom Cleanup-Job gelöscht. 1–30 Tage.",
+    "historyRetentionDays": "Verlauf-Aufbewahrung (Tage)",
+    "historyRetentionDaysHint": "Anfragen- und Umbenennungs-Verlauf, die älter sind, werden alle 6 Stunden vom Cleanup-Job gelöscht. 1–365 Tage.",
     "indexerRateLimitMs": "Indexer-Rate-Limit (ms)",
     "indexerRateLimitMsHint": "Mindestabstand zwischen Anfragen an denselben Indexer-Host. Niedriger = schnellere Variation-Suchen, aber höheres Risiko, von Free-Tier-Indexern mit HTTP 429 abgelehnt oder gesperrt zu werden. Standard 500 ms. Bei Retry-After im Antwort-Header backofft der Limiter automatisch.",
     "indexerTimeoutSeconds": "Indexer-Request-Timeout (Sekunden)",
@@ -454,7 +519,7 @@
       "timeout": "Server hat nach 30 Sekunden noch nicht geantwortet. Bitte Logs prüfen und ggf. manuell neu starten.",
       "failed": "Neustart fehlgeschlagen: {error}",
       "unsupported": "Neustart aus dem UI ist in dieser Umgebung nicht verfügbar (Dev-Modus oder Setup ohne Supervisor). Bitte den Container/Service manuell neu starten.",
-      "unsupportedTitle": "Neustart nicht verfügbar — bitte manuell neu starten."
+      "unsupportedTitle": "Neustart nicht verfügbar - bitte manuell neu starten."
     },
     "prowlarr": {
       "title": "Prowlarr-Verbindung",
@@ -511,7 +576,8 @@
       "patchColStatus": "Status",
       "patchStatusPatched": "gepatcht",
       "patchStatusUnpatched": "nicht gepatcht",
-      "patchNotPatchable": "Keine editierbare Basis-URL — kann nicht gepatcht werden.",
+      "patchNotPatchable": "Keine editierbare Basis-URL - kann nicht gepatcht werden.",
+      "patchUnsupportedApi": "Keine Newznab/Torznab-API ({implementation}) - über den Proxy nicht korrigierbar.",
       "patchApply": "Anwenden",
       "patchApplying": "Wird angewendet…",
       "patchEmpty": "Keine Indexer in Prowlarr gefunden.",
@@ -519,6 +585,89 @@
       "patchResult": "{patched} gepatcht, {unpatched} zurückgesetzt, {unchanged} unverändert, {skipped} übersprungen, {failed} fehlgeschlagen.",
       "patchResultFailedDetail": "Fehlgeschlagen: {names}",
       "patchRetry": "Erneut versuchen"
+    },
+    "renaming": {
+      "hint": "Steuert, wie Release-Titel in den Indexer-Antworten umgeschrieben werden. Die Guard-Schalter sind die Schutzregeln, die UmlautAdaptarrEX gegenüber dem alten .NET-Vorgänger ergänzt hat - ausschalten macht das Umschreiben freizügiger, aber auch fehleranfälliger.",
+      "scopeHint": "Änderungen wirken sofort auf die nächste Suche, ein Neustart oder Sync ist nicht nötig. Bereits an Sonarr/Radarr ausgelieferte Releases werden nicht rückwirkend geändert.",
+      "presetsLabel": "Voreinstellungen:",
+      "presetLegacy": "Wie der alte Umlautadaptarr",
+      "presetRecommended": "Empfohlene Werte",
+      "exampleRelease": "Beispiel - Release vom Indexer:",
+      "exampleItem": "Bibliothek:",
+      "exampleOff": "Aus",
+      "exampleOn": "An",
+      "exampleNotRenamed": "wird nicht umbenannt",
+      "exampleNoteExternalIds": "Verkürzt dargestellt; die Attribute kommen zusätzlich zum bestehenden <item>-Inhalt.",
+      "exampleNotePrefixGuard": "Mit Staffel-Marker (…Silberlicht.S01E01…) wird in beiden Fällen umbenannt - die Prüfung greift nur ohne solchen Marker.",
+      "exampleNoteLegacySuffix": "Die „016“ war eigentlich das Jahr 2016 - der Schnitt hat die führende 2 verschluckt.",
+      "renameStripSpecialChars": {
+        "label": "Unerwünschte Zeichen entfernen",
+        "description": "Entfernt : ? * \" < > | / \\ aus dem eingesetzten Titel und lässt keine doppelten Trennzeichen zurück.",
+        "hint": "Scene-Releases enthalten diese Zeichen nie. „Ember:.Steel.Angel.2019…“ wird zu „Ember.Steel.Angel.2019…“, was Sonarr/Radarr zuverlässiger parsen. Das Suffix des Indexers bleibt unverändert."
+      },
+      "renameAttachExternalIds": {
+        "label": "Externe IDs anhängen",
+        "description": "Hängt tvdbid / tmdbid / imdb als newznab-Attribut an jedes zugeordnete Release.",
+        "hint": "Sonarr und Radarr können ein Release damit ohne Titel-Analyse zuordnen. Rein additiv: bereits vom Indexer gelieferte IDs werden nie überschrieben, und die IDs werden auch dann angehängt, wenn das Umschreiben abgelehnt wurde."
+      },
+      "renameYearGuard": {
+        "label": "Jahres-Prüfung",
+        "description": "Lehnt das Umschreiben ab, wenn die Jahreszahl im Release nicht zum Medium passt.",
+        "hint": "Verhindert, dass eine gleichnamige Aufzeichnung aus einem anderen Jahr auf den falschen Titel umgeschrieben wird. Die Toleranz pflegst du pro Instanz; dieser Schalter deaktiviert die Prüfung global. Der alte Umlautadaptarr hatte keine Jahres-Prüfung."
+      },
+      "renamePrefixGuard": {
+        "label": "Prüfung auf mehrdeutigen Präfix",
+        "description": "Lehnt ab, wenn der Zieltitel mit der gefundenen Variante beginnt und danach kein SxxExx bzw. keine Jahreszahl folgt.",
+        "hint": "Ohne diese Prüfung kann ein kurzer Alias ein anderes Werk kapern, das nur denselben Wortanfang hat."
+      },
+      "renameReleaseTagGuard": {
+        "label": "Release-Tags erhalten",
+        "description": "Schiebt 3D / 4K / HDR / IMAX zurück ins Suffix, wenn ein Provider-Alias sie mitgebracht hat.",
+        "hint": "Ohne diese Prüfung verschluckt ein Alias wie „Nachtwache Wiederkehr 3D“ das „3D“ des Releases, und die Qualitätsangabe fehlt danach im Titel."
+      },
+      "renameLegacySuffix": {
+        "label": "Suffix wie beim alten Umlautadaptarr schneiden",
+        "description": "Schneidet nach Rohlänge der gefundenen Variante statt nach normalisierten Zeichen - und schaltet die Token-Grenzen-Prüfung mit ab.",
+        "hint": "Nur einschalten, wenn du exakt das alte Verhalten brauchst. Endet eine Variante auf einer Ziffer, kann der Schnitt mitten in die Jahreszahl des Releases fallen und sie verstümmeln (siehe Beispiel). Ohne diesen Schalter lehnt UmlautAdaptarrEX solche Treffer stattdessen ab."
+      }
+    }
+  },
+  "searchBehaviour": {
+    "onDemand": {
+      "label": "Titel bei Bedarf sofort nachschlagen",
+      "hint": "Empfohlen. Fragt einen unbekannten Titel im Moment der Anfrage bei deiner *Arr und den Titel-Providern nach.",
+      "description": "Ohne diese Option kennt UmlautAdaptarrEX nur Titel, die der letzte Abgleich geholt hat.",
+      "example": "Beispiel: Du stellst in Jellyseerr eine Anfrage. Radarr legt den Film an und sucht in derselben Sekunde. Ohne diese Option ist der Film noch unbekannt und das deutsche Release wird übersehen.",
+      "cost": "Kostet pro unbekanntem Titel einen Aufruf an deine *Arr und gegebenenfalls einen an TMDB, TVDB oder pcjones. Läuft parallel zur Indexer-Anfrage und verlängert die Suche im Normalfall nicht."
+    },
+    "variations": {
+      "label": "Mit deutschen Titelvarianten mitsuchen",
+      "hint": "Sucht zusätzlich zum Originaltitel mit den deutschen Schreibweisen.",
+      "description": "Nötig, wenn ein Indexer ein Release nur unter seinem deutschen Namen führt.",
+      "tvVariationSearch": "Serien",
+      "movieVariationSearch": "Filme",
+      "capLabel": "Höchstens Varianten",
+      "capHint": "Zählt die deutschen Varianten. Dein Suchwort und der Originaltitel kommen obendrauf und werden nie weggelassen. 0 sucht ganz ohne deutsche Varianten.",
+      "exampleQuery": "Sonarr sucht nach",
+      "exampleExtra": "Zusätzlich wird gesucht nach:",
+      "cost": "Ergibt bis zu {max} zusätzliche Indexer-Anfragen pro Suche. Bei knappen Indexer-Limits vorsichtig einsetzen."
+    },
+    "refresh": {
+      "label": "Aktualisierung",
+      "description": "Wie oft die Titel deiner *Arr abgeglichen werden.",
+      "presetsLabel": "Vorgaben:",
+      "preset": {
+        "recommended": "Empfohlen",
+        "frugal": "Sparsam",
+        "legacy": "Wie 1.x"
+      },
+      "quickLabel": "Schnellabgleich (Minuten)",
+      "quickHint": "0 schaltet den Schnellabgleich ab. Sonst mindestens 5 Minuten.",
+      "quickDescription": "Holt die Titelliste und verarbeitet nur Neues, Entferntes und in der *Arr Umbenanntes. Schreibt nichts, wenn sich nichts geändert hat.",
+      "fullLabel": "Vollabgleich (Stunden)",
+      "fullHint": "Zwischen 1 und 168 Stunden.",
+      "fullDescription": "Fragt zusätzlich alle Titel-Provider neu ab und findet so nachträglich ergänzte deutsche Titel.",
+      "firstScanHint": "Beim ersten Mal läuft immer ein vollständiger Abgleich. Erst danach übernimmt der Schnellabgleich."
     }
   },
   "history": {
@@ -538,7 +687,8 @@
       "createdAt": "Zeit",
       "filterPlaceholder": "Nach Domain, Suche oder External-ID filtern…",
       "emptyTitle": "Hier ist noch nichts",
-      "emptyHint": "Sobald Anfragen den Proxy passieren, erscheinen sie hier."
+      "emptyHint": "Sobald Anfragen den Proxy passieren, erscheinen sie hier.",
+      "detailTitle": "Anfrage-Details"
     },
     "rename": {
       "title": "Umbenennungs-Verlauf",
@@ -547,6 +697,8 @@
       "listSubtitle": "Nach Original- oder umgeschriebenem Titel filtern.",
       "originalTitle": "Original",
       "rewrittenTitle": "Umgeschrieben",
+      "titleColumn": "Titel",
+      "groupCount": "×{count} · {from}–{to}",
       "mediaType": "Typ",
       "createdAt": "Zeit",
       "filterPlaceholder": "Nach Titel filtern…",
@@ -558,7 +710,8 @@
     "title": "Sync-Läufe",
     "subtitle": "Vergangene und laufende Synchronisationen aller Instanzen.",
     "listTitle": "{count, plural, =0 {Keine Läufe} one {# Lauf} other {# Läufe}}",
-    "listSubtitle": "Letzte 200 Läufe, neue Einträge erscheinen automatisch.",
+    "listSubtitle": "Nach Instanz, Suche oder Status filtern.",
+    "filterPlaceholder": "Nach Instanz oder Fehlermeldung filtern…",
     "filterAll": "Alle Status",
     "filterRunning": "Laufend",
     "filterOk": "Erfolgreich",
@@ -574,7 +727,9 @@
     "colDuration": "Dauer",
     "colError": "Fehler",
     "emptyTitle": "Noch keine Läufe",
-    "emptyHint": "Starte einen Sync auf der Übersicht, um diese Liste zu füllen."
+    "emptyHint": "Starte einen Sync auf der Übersicht, um diese Liste zu füllen.",
+    "detailFinishedAt": "Beendet",
+    "detailUnknownInstance": "Unbekannte Instanz"
   },
   "logs": {
     "title": "Logs",
@@ -591,6 +746,7 @@
     "download": "Als JSONL herunterladen",
     "droppedHint": "{count} Log-Zeilen wurden wegen Drosselung verworfen.",
     "noConnection": "Getrennt",
+    "reconnecting": "Verbinde neu…",
     "emptyTitle": "Warte auf Log-Zeilen",
     "emptyHint": "Neue Einträge des Servers werden hier live angezeigt.",
     "emptyFiltered": "Keine Log-Zeilen passen zu deinem Filter.",
@@ -598,13 +754,20 @@
     "loadingHistoryHint": "Persistierte Historie wird aus der Datenbank gelesen."
   },
   "common": {
+    "pagination": {
+      "previous": "Zurück",
+      "next": "Weiter",
+      "pageOf": "Seite {page} von {pageCount}",
+      "perPage": "Pro Seite"
+    },
     "save": "Speichern",
     "cancel": "Abbrechen",
     "confirm": "Bestätigen",
     "yes": "Ja",
     "no": "Nein",
     "loading": "Wird geladen…",
-    "error": "Ein Fehler ist aufgetreten."
+    "error": "Ein Fehler ist aufgetreten.",
+    "export": "Exportieren"
   },
   "boundaries": {
     "errorTitle": "Etwas ist schiefgelaufen",

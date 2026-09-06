@@ -38,7 +38,7 @@ describe("getMediaTypeFromCategory", () => {
   });
 
   it("returns the first recognised type from a list", () => {
-    // A real indexer may emit ["TV/HD", "5000"] or ["5040", "5000"] —
+    // A real indexer may emit ["TV/HD", "5000"] or ["5040", "5000"] -
     // both must classify as tv even when the first entry isn't directly
     // recognisable in isolation (legacy: only the head was checked).
     expect(getMediaTypeFromCategory(["5040", "5000"])).toBe("tv");

@@ -239,7 +239,7 @@ export class PcjonesApiProvider implements TitleProvider {
           returned: totalReturned,
           sample: externalIds.slice(0, 5),
         },
-        "pcjones bulk returned 0 German titles — check host and endpoint",
+        "pcjones bulk returned 0 German titles - check host and endpoint",
       );
     }
 
@@ -303,7 +303,7 @@ export class PcjonesApiProvider implements TitleProvider {
         "pcjones request failed (network/timeout)",
       );
       // Return an empty result instead of rethrowing so a single network
-      // failure is treated like an empty lookup — consistent with TMDB/TVDB,
+      // failure is treated like an empty lookup - consistent with TMDB/TVDB,
       // which return null/empty rather than aborting the chain. statusCode 0
       // is below the >=400 threshold callers check, and json:null is already
       // handled by every caller's empty-response branch.

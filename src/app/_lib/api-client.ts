@@ -29,8 +29,7 @@ export class ApiError extends Error {
 function deriveMessage(status: number, body: unknown): string {
   if (body && typeof body === "object") {
     const obj = body as { message?: unknown; error?: unknown };
-    if (typeof obj.message === "string" && obj.message.length > 0)
-      return obj.message;
+    if (typeof obj.message === "string" && obj.message.length > 0) return obj.message;
     if (typeof obj.error === "string" && obj.error.length > 0) return obj.error;
   }
   if (typeof body === "string" && body.length > 0) return body;
@@ -59,16 +58,17 @@ function triggerAutoLogout(): void {
   try {
     sessionStorage.setItem(SESSION_EXPIRED_FLAG, "1");
   } catch {
-    /* sessionStorage can throw in private tabs — non-fatal */
+    /* sessionStorage can throw in private tabs - non-fatal */
   }
   const next = encodeURIComponent(here + window.location.search);
-  window.location.href = `/login?next=${next}`;
+  // Hard navigation on purpose: the session is dead, so a full reload must
+  // drop all in-memory client state (react-query caches etc.) instead of a
+  // soft router.push(). Absolute URL - relative destinations trip the
+  // @next/next/no-location-assign-relative-destination rule.
+  window.location.assign(new URL(`/login?next=${next}`, window.location.origin));
 }
 
-export async function apiFetch<T>(
-  path: string,
-  init: RequestInit = {},
-): Promise<T> {
+export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (init.body != null && !headers.has("content-type")) {
     headers.set("content-type", "application/json");

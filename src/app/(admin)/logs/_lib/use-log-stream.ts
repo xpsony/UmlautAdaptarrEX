@@ -18,6 +18,7 @@ export function useLogStream(apiPort: number) {
   const [items, setItems] = useState<StreamLogItem[]>([]);
   const [paused, setPaused] = useState(false);
   const [connected, setConnected] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const [dropped, setDropped] = useState(0);
   const [loadingHistory, setLoadingHistory] = useState(true);
 
@@ -61,24 +62,62 @@ export function useLogStream(apiPort: number) {
     // "umlautadaptarr.example.com") and route /ws/logs through to Fastify.
     const apiHost = process.env.NEXT_PUBLIC_API_HOST ?? `${location.hostname}:${apiPort}`;
     const url = `${proto}//${apiHost}/ws/logs`;
-    const ws = new WebSocket(url);
-    ws.onopen = () => setConnected(true);
-    ws.onclose = () => setConnected(false);
-    ws.onerror = () => setConnected(false);
-    ws.onmessage = (ev) => {
-      if (pausedRef.current) return;
-      try {
-        const data = JSON.parse(ev.data) as {
-          items: LogItem[];
-          dropped?: number;
-        };
-        if (data.dropped) setDropped((d) => d + data.dropped!);
-        setItems((prev) => [...tag(data.items), ...prev].slice(0, HISTORY_TAKE));
-      } catch {
-        /* ignore */
-      }
+
+    let ws: WebSocket | null = null;
+    let disposed = false;
+    let attempt = 0;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    // A dropped connection (server restart, sleeping laptop, flaky reverse
+    // proxy) used to leave the page on a dead stream until a full reload.
+    // Reconnect with exponential backoff: 1s, 2s, 4s, ... capped at 30s,
+    // reset once a connection sticks.
+    const scheduleReconnect = (): void => {
+      if (disposed || timer) return;
+      const delay = Math.min(1_000 * 2 ** attempt, 30_000);
+      attempt += 1;
+      setReconnecting(true);
+      timer = setTimeout(() => {
+        timer = null;
+        if (!disposed) connect();
+      }, delay);
     };
-    return () => ws.close();
+
+    const connect = (): void => {
+      ws = new WebSocket(url);
+      ws.onopen = () => {
+        attempt = 0;
+        setReconnecting(false);
+        setConnected(true);
+      };
+      ws.onclose = () => {
+        setConnected(false);
+        scheduleReconnect();
+      };
+      // onerror is always followed by onclose; reconnect only in onclose so
+      // a single failure doesn't schedule twice.
+      ws.onerror = () => setConnected(false);
+      ws.onmessage = (ev) => {
+        if (pausedRef.current) return;
+        try {
+          const data = JSON.parse(ev.data) as {
+            items: LogItem[];
+            dropped?: number;
+          };
+          if (data.dropped) setDropped((d) => d + data.dropped!);
+          setItems((prev) => [...tag(data.items), ...prev].slice(0, HISTORY_TAKE));
+        } catch {
+          /* ignore */
+        }
+      };
+    };
+
+    connect();
+    return () => {
+      disposed = true;
+      if (timer) clearTimeout(timer);
+      ws?.close();
+    };
   }, [apiPort]);
 
   function clear(): void {
@@ -91,6 +130,7 @@ export function useLogStream(apiPort: number) {
     paused,
     setPaused,
     connected,
+    reconnecting,
     dropped,
     loadingHistory,
     clear,

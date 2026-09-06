@@ -1,6 +1,7 @@
 import { getReadarrTitleForExternalId } from "@/domain/normalization/index";
 import { buildSearchItem, type SearchItemDerived } from "@/domain/variations/index";
 import { ArrClient, type ArrClientOptions } from "./base";
+import type { RawArrItem } from "./raw-item";
 
 interface ReadarrAuthor {
   id: number;
@@ -31,22 +32,39 @@ export class ReadarrClient extends ArrClient {
     super(opts);
   }
 
-  async fetchAllItems(): Promise<SearchItemDerived[]> {
-    return this.fetchNested<ReadarrAuthor, ReadarrBook>({
+  async fetchRawItems(): Promise<RawArrItem[]> {
+    return this.fetchNested<ReadarrAuthor, ReadarrBook, RawArrItem>({
       parentPath: "/api/v1/author",
       childPath: "/api/v1/book",
       childParams: (author) => ({ authorId: String(author.id) }),
       map: (author, book) => {
         const cleaned = cleanBookTitle(book.title, author.authorName);
-        return buildSearchItem({
+        return {
           arrId: author.id,
           externalId: getReadarrTitleForExternalId(`${cleaned} ${author.authorName}`),
+          imdbId: null,
           title: cleaned,
-          expectedTitle: cleaned,
-          expectedAuthor: author.authorName,
+          year: null,
+          aliases: null,
+          germanTitle: null,
           mediaType: "book",
-        });
+          expectedAuthor: author.authorName,
+        };
       },
     });
+  }
+
+  // No TitleProvider is consulted for books, same as Lidarr.
+  async deriveItems(raw: RawArrItem[]): Promise<SearchItemDerived[]> {
+    return raw.map((r) =>
+      buildSearchItem({
+        arrId: r.arrId,
+        externalId: r.externalId,
+        title: r.title,
+        expectedTitle: r.title,
+        expectedAuthor: r.expectedAuthor,
+        mediaType: "book",
+      }),
+    );
   }
 }

@@ -2,7 +2,12 @@ version: 2
 updates:
   # PRs open against `dev` (the active integration branch), not the default
   # branch `main`. Updates land where development happens and ride dev->main
-  # on the next release — no back-merge from main into dev.
+  # on the next release - no back-merge from main into dev.
+  #
+  # NOTE: `target-branch` only applies to *version* updates. Dependabot
+  # *security* updates always target the default branch (`main`); dev picks
+  # the same bump up through its own version-update PR before the next
+  # release merge.
   - package-ecosystem: "npm"
     directory: "/"
     target-branch: "dev"
@@ -11,14 +16,64 @@ updates:
       day: "monday"
       time: "06:00"
       timezone: "Europe/Berlin"
-    # Wait 3 days after a release before proposing it, so Dependabot never
-    # opens a PR for a version that the pnpm minimumReleaseAge policy would
-    # then reject in CI (ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION).
+    # Wait 3 days after a release before proposing it - comfortably past the
+    # explicit pnpm `minimumReleaseAge: 1440` (1 day, pnpm-workspace.yaml), so
+    # Dependabot never opens a PR for a version that pnpm's release-age gate
+    # would reject (ERR_PNPM_MINIMUM_RELEASE_AGE_VIOLATION).
     cooldown:
       default-days: 3
     open-pull-requests-limit: 10
+    # Explicit `build(deps):` prefix - the history so far relied on Dependabot
+    # auto-detecting the conventional-commit style from recent commits.
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    groups:
+      # Lockstep families: these packages must move together - a solo bump
+      # (especially a major) can never pass CI on its own. Groups deliberately
+      # cover ALL update types; dependabot-automerge.yml still skips any
+      # grouped PR whose highest bump is a major.
+      prisma:
+        patterns:
+          - "prisma"
+          - "@prisma/*"
+      react:
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+      nextjs:
+        patterns:
+          - "next"
+          - "eslint-config-next"
+      vitest:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+      # Everything else: one weekly PR for all minor/patch bumps (auto-merged
+      # once CI is green). Majors outside the lockstep families stay
+      # individual PRs for manual review.
+      minor-and-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "prisma"
+          - "@prisma/*"
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+          - "next"
+          - "eslint-config-next"
+          - "vitest"
+          - "@vitest/*"
+        update-types:
+          - "minor"
+          - "patch"
     ignore:
-      # better-sqlite3 has no direct importer — @prisma/adapter-better-sqlite3
+      # better-sqlite3 has no direct importer - @prisma/adapter-better-sqlite3
       # is the only consumer and pins ^12.6.0. Bumping the root dependency to
       # 13.x therefore does not upgrade anything the app runs: pnpm keeps a 12.x
       # copy for the adapter and installs 13.x as a second, unused copy whose
@@ -26,6 +81,11 @@ updates:
       # prebuild-install script) breaks the toolchain-free runtime-deps image
       # stage. Drop this ignore once the adapter's range includes 13.x.
       - dependency-name: "better-sqlite3"
+        update-types: ["version-update:semver-major"]
+      # TypeScript 7.x is the native (Go) compiler; typescript-eslint's peer
+      # range is `<6.1.0`, so a 7.x bump breaks linting. Drop this ignore once
+      # typescript-eslint (and tsup/Next) support TS 7.
+      - dependency-name: "typescript"
         update-types: ["version-update:semver-major"]
     labels:
       - "dependencies"
@@ -42,12 +102,26 @@ updates:
     cooldown:
       default-days: 3
     open-pull-requests-limit: 10
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    groups:
+      actions-minor-and-patch:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "github-actions"
 
   - package-ecosystem: "docker"
-    directory: "/"
+    # Root Dockerfile (node base image) plus the devcontainer's base image.
+    directories:
+      - "/"
+      - "/.devcontainer"
     target-branch: "dev"
     schedule:
       interval: "weekly"
@@ -57,6 +131,28 @@ updates:
     cooldown:
       default-days: 3
     open-pull-requests-limit: 10
+    commit-message:
+      prefix: "build"
+      include: "scope"
     labels:
       - "dependencies"
       - "docker"
+
+  # Devcontainer *features* in .devcontainer/devcontainer.json (the base
+  # image in .devcontainer/Dockerfile is covered by the docker block above).
+  - package-ecosystem: "devcontainers"
+    directory: "/"
+    target-branch: "dev"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:45"
+      timezone: "Europe/Berlin"
+    cooldown:
+      default-days: 3
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "build"
+      include: "scope"
+    labels:
+      - "dependencies"

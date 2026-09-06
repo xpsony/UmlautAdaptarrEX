@@ -25,7 +25,7 @@ export function replyProwlarrUpstreamError(
 
 /**
  * Look up persisted Prowlarr credentials. Returns `null` and emits a 409 if
- * none are configured — caller can `if (!creds) return;` and bail.
+ * none are configured - caller can `if (!creds) return;` and bail.
  */
 export async function loadStoredProwlarrCreds(
     reply: FastifyReply,

@@ -31,10 +31,10 @@ CSRF tokens are issued on login (`POST /api/auth/login` returns `{ ok, csrf }`) 
 Sessions live 14 days in production, 365 days in dev (`SESSION_TTL_MS` in
 [src/lib/auth/session.ts](../src/lib/auth/session.ts)).
 
-Global rate limit defaults are 60 requests / minute (per IP). Login and setup endpoints have stricter per-route limits
-(see table below).
+There is no global rate limit - `@fastify/rate-limit` is registered with `global: false`; only specific routes opt in.
+Login, setup, Prowlarr admin, and the WebSocket upgrade have per-route limits (see table and sections below).
 
-## `/api/health` — public
+## `/api/health` - public
 
 ```http
 GET /api/health
@@ -44,7 +44,7 @@ Returns `{ status: "ok" }`. Defined inline at
 [src/server/index.ts:149-154](../src/server/index.ts#L149-L154). Used by the start.mjs supervisor and Docker
 healthcheck. `uptime` was intentionally removed in 1.1.0 to avoid leaking process restart times to unauthenticated callers.
 
-## `/api/auth/*` — login, setup wizard, session
+## `/api/auth/*` - login, setup wizard, session
 
 Defined in [src/server/routes/admin/login.ts](../src/server/routes/admin/login.ts) and
 [src/server/routes/admin/setup.ts](../src/server/routes/admin/setup.ts).
@@ -52,10 +52,10 @@ Defined in [src/server/routes/admin/login.ts](../src/server/routes/admin/login.t
 | Method | Path                                       | Auth       | Rate limit      | Purpose                                                                                                                                                                                                                                              |
 | ------ | ------------------------------------------ | ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | POST   | `/api/auth/login`                          | public     | 5 / 5 min / IP  | Verify admin credentials, issue session + CSRF cookies. Returns `{ ok, csrf }`.                                                                                                                                                                      |
-| POST   | `/api/auth/logout`                         | session    | global          | Revoke session, clear cookies.                                                                                                                                                                                                                       |
-| GET    | `/api/auth/me`                             | session    | global          | Return `{ id, username }` for the current session.                                                                                                                                                                                                   |
-| GET    | `/api/auth/setup-status`                   | public     | global          | Wizard gate. Returns `setupComplete`, persisted Prowlarr host (no key) and proxy defaults.                                                                                                                                                           |
-| GET    | `/api/auth/plugins`                        | public     | global          | List built-in language plugins with current enable state.                                                                                                                                                                                            |
+| POST   | `/api/auth/logout`                         | session    | none            | Revoke session, clear cookies.                                                                                                                                                                                                                       |
+| GET    | `/api/auth/me`                             | session    | 60 / min / IP   | Return `{ id, username }` for the current session.                                                                                                                                                                                                   |
+| GET    | `/api/auth/setup-status`                   | public     | 20 / 5 min / IP | Wizard gate. Returns `setupComplete`, persisted Prowlarr host (no key) and proxy defaults.                                                                                                                                                           |
+| GET    | `/api/auth/plugins`                        | public     | 20 / 5 min / IP | List built-in language plugins with current enable state.                                                                                                                                                                                            |
 | POST   | `/api/auth/setup`                          | setup-open | 20 / 5 min / IP | Final wizard submission; creates the admin user, persists settings, flips `setupComplete=true`. 409 once setup is done.                                                                                                                              |
 | POST   | `/api/auth/test-tmdb-key`                  | setup-open | 20 / 5 min / IP | Probe a TMDB v3 key. 409 once setup is done.                                                                                                                                                                                                         |
 | POST   | `/api/auth/instances/test`                 | setup-open | 20 / 5 min / IP | Test a Sonarr/Radarr/Lidarr/Readarr connection from the wizard.                                                                                                                                                                                      |
@@ -66,7 +66,7 @@ Defined in [src/server/routes/admin/login.ts](../src/server/routes/admin/login.t
 
 "setup-open" means the route is public while `Setting.setupComplete=false` and refuses (`403` or `409`) afterwards.
 
-## `/api/admin/*` — authenticated admin API
+## `/api/admin/*` - authenticated admin API
 
 All routes require a valid session cookie (and CSRF token on state-changing methods) via the `requireAuth` preHandler in
 [src/server/auth/middleware.ts](../src/server/auth/middleware.ts).
@@ -184,7 +184,7 @@ feature.
 - The mode is read once at boot. Switching `operationMode` in the admin UI requires a server restart for the proxy port
   change to take effect (the UI flags this).
 
-## WebSocket — `/ws/logs`
+## WebSocket - `/ws/logs`
 
 Attached in [src/server/logging/broadcast.ts:106](../src/server/logging/broadcast.ts#L106), invoked from
 [src/server/index.ts:193](../src/server/index.ts#L193).

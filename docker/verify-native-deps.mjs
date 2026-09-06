@@ -1,6 +1,6 @@
 // Asserts that the native bindings in the runtime-deps tree are actually usable
 // before the image ships. Both argon2 and better-sqlite3 arrive prebuilt (the
-// stage has no C++/Python toolchain — see runtime-deps.pnpm-workspace.yaml), and
+// stage has no C++/Python toolchain - see runtime-deps.pnpm-workspace.yaml), and
 // a prebuild can be missing (build script not allowed) or present but unloadable
 // (linked against a newer glibc than the base image). Neither makes `pnpm
 // install` fail, so without this check both only surface as a crash on the first
@@ -8,7 +8,7 @@
 //
 // EVERY installed better-sqlite3 copy is probed, not just the top-level one:
 // @prisma/adapter-better-sqlite3 depends on its own range, so a root dependency
-// outside that range silently installs a second copy — and the copy the adapter
+// outside that range silently installs a second copy - and the copy the adapter
 // resolves is the one the app really runs on.
 import {readdirSync} from "node:fs";
 import {createRequire} from "node:module";

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockCache, mockTrans } = vi.hoisted(() => ({
+const { mockCache, mockTrans, mockTransaction } = vi.hoisted(() => ({
   mockCache: {
     findUnique: vi.fn(),
     findMany: vi.fn(),
@@ -9,21 +9,24 @@ const { mockCache, mockTrans } = vi.hoisted(() => ({
   mockTrans: {
     upsert: vi.fn(),
   },
+  // Mirrors Prisma's array-form $transaction: run every op and resolve with
+  // their results. Individual ops (mockCache.upsert / mockTrans.upsert) are
+  // already invoked synchronously when the array is built, matching how the
+  // real client kicks off queued PrismaPromises before $transaction awaits
+  // them.
+  mockTransaction: vi.fn(async (ops: Promise<unknown>[]) => Promise.all(ops)),
 }));
 
 vi.mock("@/lib/db", () => ({
   prisma: {
     titleApiCache: mockCache,
     titleTranslation: mockTrans,
+    $transaction: mockTransaction,
   },
 }));
 
 import { DbCachedTitleProvider } from "@/providers/db-cache";
-import {
-  makeTitlePayload,
-  type TitlePayload,
-  type TitleProvider,
-} from "@/providers/types";
+import { makeTitlePayload, type TitlePayload, type TitleProvider } from "@/providers/types";
 
 function makeInner(overrides: Partial<TitleProvider> = {}): TitleProvider & {
   fetchByExternalId: ReturnType<typeof vi.fn>;
@@ -40,27 +43,20 @@ function makeInner(overrides: Partial<TitleProvider> = {}): TitleProvider & {
   } as never;
 }
 
-beforeEach(() => {
-  for (const m of [
-    mockCache.findUnique,
-    mockCache.findMany,
-    mockCache.upsert,
-  ]) {
+function resetMocks(): void {
+  for (const m of [mockCache.findUnique, mockCache.findMany, mockCache.upsert]) {
     m.mockReset();
   }
   mockTrans.upsert.mockReset();
-});
+  // mockReset() also drops the default implementation, so restore the
+  // Prisma-array-form passthrough every test relies on unless it overrides it.
+  mockTransaction.mockReset();
+  mockTransaction.mockImplementation(async (ops: Promise<unknown>[]) => Promise.all(ops));
+}
 
-afterEach(() => {
-  for (const m of [
-    mockCache.findUnique,
-    mockCache.findMany,
-    mockCache.upsert,
-  ]) {
-    m.mockReset();
-  }
-  mockTrans.upsert.mockReset();
-});
+beforeEach(resetMocks);
+
+afterEach(resetMocks);
 
 describe("DbCachedTitleProvider metadata", () => {
   it("decorates the inner provider name", () => {
@@ -71,17 +67,12 @@ describe("DbCachedTitleProvider metadata", () => {
 
   it("delegates supportedLanguages to the inner provider", () => {
     const inner = makeInner({ supportedLanguages: () => ["de", "fr"] });
-    expect(new DbCachedTitleProvider(inner).supportedLanguages()).toEqual([
-      "de",
-      "fr",
-    ]);
+    expect(new DbCachedTitleProvider(inner).supportedLanguages()).toEqual(["de", "fr"]);
   });
 
   it("does not cache fetchByTitle calls", async () => {
     const inner = makeInner();
-    inner.fetchByTitle.mockResolvedValueOnce(
-      makeTitlePayload({ titlesByLang: { de: "x" } }),
-    );
+    inner.fetchByTitle.mockResolvedValueOnce(makeTitlePayload({ titlesByLang: { de: "x" } }));
     const cached = new DbCachedTitleProvider(inner);
     await cached.fetchByTitle("tv", "X");
     expect(inner.fetchByTitle).toHaveBeenCalledOnce();
@@ -188,6 +179,48 @@ describe("DbCachedTitleProvider.fetchByExternalId", () => {
 
     const result = await cached.fetchByExternalId("tv", "1", ["de"]);
     expect(result).toBe(fresh);
+
+    consoleSpy.mockRestore();
+  });
+
+  it("persists via a single $transaction covering the parent upsert plus one upsert per language", async () => {
+    mockCache.findUnique.mockResolvedValueOnce(null);
+    mockCache.upsert.mockResolvedValueOnce({});
+    mockTrans.upsert.mockResolvedValue({});
+    const inner = makeInner();
+    inner.fetchByExternalId.mockResolvedValueOnce(
+      makeTitlePayload({ titlesByLang: { de: "X", fr: "Le X" } }),
+    );
+    const cached = new DbCachedTitleProvider(inner);
+
+    await cached.fetchByExternalId("tv", "1", ["de", "fr"]);
+
+    expect(mockTransaction).toHaveBeenCalledOnce();
+    const ops = mockTransaction.mock.calls[0]?.[0] as unknown[];
+    // 1 parent upsert + 2 translation upserts (de, fr).
+    expect(ops).toHaveLength(3);
+    expect(mockCache.upsert).toHaveBeenCalledOnce();
+    expect(mockTrans.upsert).toHaveBeenCalledTimes(2);
+  });
+
+  it("routes persistence failures to an injected structural logger instead of console.error", async () => {
+    mockCache.findUnique.mockResolvedValueOnce(null);
+    mockCache.upsert.mockRejectedValueOnce(new Error("io"));
+    const inner = makeInner();
+    const fresh = makeTitlePayload({ titlesByLang: { de: "X" } });
+    inner.fetchByExternalId.mockResolvedValueOnce(fresh);
+    const logger = { error: vi.fn() };
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const cached = new DbCachedTitleProvider(inner, logger);
+
+    const result = await cached.fetchByExternalId("tv", "1", ["de"]);
+
+    expect(result).toBe(fresh);
+    expect(logger.error).toHaveBeenCalledWith(
+      { id: "tv:1", err: expect.any(Error) },
+      "db-cache: titleApiCache upsert failed",
+    );
+    expect(consoleSpy).not.toHaveBeenCalled();
 
     consoleSpy.mockRestore();
   });

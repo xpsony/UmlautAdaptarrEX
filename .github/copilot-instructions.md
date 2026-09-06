@@ -1,4 +1,4 @@
-# UmlautAdaptarrEX — Copilot instructions
+# UmlautAdaptarrEX - Copilot instructions
 
 - Read [CLAUDE.md](../CLAUDE.md) before changing the project. It captures the architecture, ports, and gotchas.
 - The HTTP API surface is documented in [docs/api.md](../docs/api.md). Update it when you add or remove a route.

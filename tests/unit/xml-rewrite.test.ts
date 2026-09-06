@@ -149,7 +149,7 @@ describe("rewriteIndexerXml", () => {
     });
     expect(got).toContain('isPermaLink="true"');
     expect(got).not.toMatch(/<guid isPermaLink>/);
-    // Newznab attrs must roundtrip — Sonarr identifies tvdbid/season/episode
+    // Newznab attrs must roundtrip - Sonarr identifies tvdbid/season/episode
     // through these.
     expect(got).toContain('name="tvdbid"');
     expect(got).toContain('value="12345"');
@@ -181,7 +181,7 @@ describe("rewriteIndexerXml", () => {
     expect(got).toContain("<![CDATA[<p>raw html ok</p>]]>");
   });
 
-  // Untouched items also roundtrip cleanly — no whitespace garbage and
+  // Untouched items also roundtrip cleanly - no whitespace garbage and
   // ampersands stay properly escaped.
   it("keeps non-matching items intact and does not introduce whitespace garbage", () => {
     const xml = `<?xml version="1.0" encoding="UTF-8"?>

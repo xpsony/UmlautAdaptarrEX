@@ -3,7 +3,7 @@ import type { VariationPlugin } from "../types";
 // French accented vowels are conventionally written without the diacritic in
 // release titles (é → e, à → a, …). Ligatures (æ, œ) are expanded to ae/oe.
 //   1. "Stripped":  drops every diacritic and expands ligatures.
-//   2. "Ligatures only": keeps accents but still expands æ/œ — this is the
+//   2. "Ligatures only": keeps accents but still expands æ/œ - this is the
 //      form used when filenames are produced on locales that allow accents
 //      but lack ligature support.
 const STRIPPED: Readonly<Record<string, string>> = {

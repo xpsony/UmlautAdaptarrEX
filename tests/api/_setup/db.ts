@@ -24,7 +24,7 @@ let pushed = false;
 
 /**
  * Lazily creates the test SQLite (or wipes it if it exists) and applies the
- * current Prisma schema. Idempotent — every test file calls it via beforeAll.
+ * current Prisma schema. Idempotent - every test file calls it via beforeAll.
  */
 export async function ensureTestDb(): Promise<void> {
   if (pushed) return;
@@ -44,6 +44,10 @@ export async function ensureTestDb(): Promise<void> {
 export async function cleanDb(): Promise<void> {
   const { prisma } = await import("@/lib/db");
   await prisma.session.deleteMany({});
+  // TitleOverride has no FK to SearchItem (it is keyed by mediaType +
+  // externalId), so a leftover row survives a SearchItem wipe and silently
+  // re-applies itself to the next test's items.
+  await prisma.titleOverride.deleteMany({});
   await prisma.searchItem.deleteMany({});
   await prisma.titleTranslation.deleteMany({});
   await prisma.titleApiCache.deleteMany({});
@@ -55,4 +59,12 @@ export async function cleanDb(): Promise<void> {
   await prisma.adminUser.deleteMany({});
   await prisma.plugin.deleteMany({});
   await prisma.setting.deleteMany({});
+  // seedPlugins() is now guarded to run once per process (see
+  // src/server/plugins/seed.ts). Without this reset, only the first test in
+  // a file would ever re-seed the Plugin table just wiped above - every
+  // later test in the file would run against an empty Plugin table /
+  // language pack, a latent order-dependency across the ~9 API test files
+  // that call cleanDb() between tests.
+  const { resetSeedGuardForTests } = await import("@/server/plugins/seed");
+  resetSeedGuardForTests();
 }

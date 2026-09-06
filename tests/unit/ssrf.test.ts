@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isPrivateHost } from "@/server/security/ssrf.js";
 
-describe("isPrivateHost — strict private hosts", () => {
+describe("isPrivateHost - strict private hosts", () => {
   it.each([
     "127.0.0.1",
     "127.0.0.42",
@@ -30,7 +30,7 @@ describe("isPrivateHost — strict private hosts", () => {
   });
 });
 
-describe("isPrivateHost — IPv4 numeric/short-form bypass plugs", () => {
+describe("isPrivateHost - IPv4 numeric/short-form bypass plugs", () => {
   it("blocks decimal-32 IPv4 (`2130706433` = 127.0.0.1)", () => {
     expect(isPrivateHost("2130706433")).toBe(true);
   });
@@ -54,7 +54,7 @@ describe("isPrivateHost — IPv4 numeric/short-form bypass plugs", () => {
   });
 });
 
-describe("isPrivateHost — hostnames", () => {
+describe("isPrivateHost - hostnames", () => {
   it.each([
     "localhost",
     "Localhost",
@@ -83,7 +83,7 @@ describe("isPrivateHost — hostnames", () => {
   });
 });
 
-describe("isPrivateHost — IPv6", () => {
+describe("isPrivateHost - IPv6", () => {
   it.each([
     "::1",
     "[::1]",
@@ -106,7 +106,7 @@ describe("isPrivateHost — IPv6", () => {
   );
 });
 
-describe("isPrivateHost — edge cases", () => {
+describe("isPrivateHost - edge cases", () => {
   it("returns false for empty input", () => {
     expect(isPrivateHost("")).toBe(false);
     expect(isPrivateHost("   ")).toBe(false);

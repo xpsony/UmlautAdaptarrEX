@@ -1,9 +1,9 @@
 import type { VariationPlugin } from "../types";
 
 // Swedish romanization conventions:
-//   Å/å — written as A/a (single-letter) or AA/aa (digraph)
-//   Ä/ä — written as A/a (single-letter) or AE/ae (digraph)
-//   Ö/ö — written as O/o (single-letter) or OE/oe (digraph)
+//   Å/å - written as A/a (single-letter) or AA/aa (digraph)
+//   Ä/ä - written as A/a (single-letter) or AE/ae (digraph)
+//   Ö/ö - written as O/o (single-letter) or OE/oe (digraph)
 const SINGLE_LETTER: Readonly<Record<string, string>> = {
   å: "a",
   ä: "a",

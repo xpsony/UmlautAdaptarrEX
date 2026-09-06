@@ -2,6 +2,7 @@ import { Agent, request } from "undici";
 import type { Logger } from "pino";
 import type { AppState } from "@/server/state";
 import { urlIsPrivate } from "@/server/security/ssrf";
+import { outboundUserAgent } from "@/lib/user-agent";
 import { HostRateLimiter, parseRetryAfterMs } from "./rate-limiter";
 
 // Manual redirect handling so we can re-check every hop against the SSRF
@@ -31,9 +32,7 @@ export class IndexerFetcher {
   ) {
     this.log = logger?.child({ component: "indexer-fetcher" }) ?? null;
     // Read the limit live from settings so admin changes apply without restart.
-    this.limiter = new HostRateLimiter(
-      () => this.state.settings.indexerRateLimitMs,
-    );
+    this.limiter = new HostRateLimiter(() => this.state.settings.indexerRateLimitMs);
   }
 
   // Returns an Agent whose connect/headers/body timeouts all match the
@@ -54,10 +53,7 @@ export class IndexerFetcher {
     return agent;
   }
 
-  async fetch(
-    targetUrl: string,
-    headers: Record<string, string>,
-  ): Promise<IndexerFetchResult> {
+  async fetch(targetUrl: string, headers: Record<string, string>): Promise<IndexerFetchResult> {
     const cached = this.state.indexerCache.get(targetUrl);
     if (cached) {
       this.log?.debug(
@@ -78,10 +74,14 @@ export class IndexerFetcher {
     delete reqHeaders["content-length"];
     delete reqHeaders["accept-encoding"];
 
-    const ua = reqHeaders["user-agent"] ?? "";
-    reqHeaders["user-agent"] = ua
-      ? `${ua} ${this.state.settings.userAgent}`
-      : this.state.settings.userAgent;
+    // Either our own token or the calling *Arr's header, per the
+    // `forwardArrUserAgent` setting - never the concatenation of both, which
+    // is what this used to send and which matched neither client.
+    reqHeaders["user-agent"] = outboundUserAgent(
+      reqHeaders["user-agent"],
+      this.state.settings.userAgent,
+      this.state.settings.forwardArrUserAgent,
+    );
 
     const timeoutMs = this.state.settings.indexerTimeoutSeconds * 1000;
     const dispatcher = this.getDispatcher(timeoutMs);
@@ -91,7 +91,7 @@ export class IndexerFetcher {
       let statusCode = 0;
       let respHeaders: Record<string, string | string[] | undefined> = {};
       let body!: Awaited<ReturnType<typeof request>>["body"];
-      // Manual redirect chain — re-checks `urlIsPrivate` at every hop so an
+      // Manual redirect chain - re-checks `urlIsPrivate` at every hop so an
       // upstream 301 → http://10.0.0.5/admin can't pivot the request into
       // an internal network. Indexer URLs themselves are guarded earlier
       // (legacy/util.ts, http-proxy.ts), but a malicious or compromised
@@ -130,10 +130,7 @@ export class IndexerFetcher {
           continue;
         }
         statusCode = res.statusCode;
-        respHeaders = res.headers as Record<
-          string,
-          string | string[] | undefined
-        >;
+        respHeaders = res.headers as Record<string, string | string[] | undefined>;
         body = res.body;
         break;
       }
@@ -143,11 +140,8 @@ export class IndexerFetcher {
         chunks.push(chunk as Buffer);
       }
       const buf = Buffer.concat(chunks);
-      const contentType = String(
-        respHeaders["content-type"] ?? "application/xml",
-      );
-      const durationMs =
-        Number(process.hrtime.bigint() - fetchStart) / 1_000_000;
+      const contentType = String(respHeaders["content-type"] ?? "application/xml");
+      const durationMs = Number(process.hrtime.bigint() - fetchStart) / 1_000_000;
 
       if (statusCode >= 200 && statusCode < 300) {
         this.state.indexerCache.set(
@@ -195,8 +189,7 @@ export class IndexerFetcher {
 
       return { status: statusCode, contentType, body: buf, cacheHit: false };
     } catch (err) {
-      const durationMs =
-        Number(process.hrtime.bigint() - fetchStart) / 1_000_000;
+      const durationMs = Number(process.hrtime.bigint() - fetchStart) / 1_000_000;
       this.log?.error(
         {
           host,

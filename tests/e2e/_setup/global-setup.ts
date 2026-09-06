@@ -6,7 +6,7 @@ import { E2E_PATHS } from "../../../playwright.config";
 
 // Wipes the test SQLite and runs `prisma migrate deploy` against it before
 // Playwright starts the dev webServer. Runs in the Playwright runner process,
-// so any env we mutate here only affects the prisma subprocess we spawn —
+// so any env we mutate here only affects the prisma subprocess we spawn -
 // the webServer itself receives DATABASE_URL via its own `env` block in
 // `playwright.config.ts`.
 export default async function globalSetup(_config: FullConfig): Promise<void> {

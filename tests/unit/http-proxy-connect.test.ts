@@ -6,7 +6,7 @@ import type { AppState } from "@/server/state";
 
 // We exercise the public TCP surface of HttpProxyServer rather than calling
 // private methods, so the test catches any future regression that leaves
-// `net.connect` reachable for non-allow-listed CONNECT targets — which is the
+// `net.connect` reachable for non-allow-listed CONNECT targets - which is the
 // open-relay case we just closed.
 
 interface ProxyHandle {
@@ -36,31 +36,42 @@ function buildState(overrides: Partial<AppState["settings"]> = {}): AppState {
   } as unknown as AppState;
 }
 
-async function startProxy(state: AppState): Promise<ProxyHandle> {
-  // Use a backing TCP server on an ephemeral port to grab a free port, then
-  // bind the proxy on the same port number after closing it. Avoids races
-  // with a hardcoded port in CI.
+async function grabFreePort(): Promise<number> {
   const probe = net.createServer();
   await new Promise<void>((resolve) => probe.listen(0, "127.0.0.1", resolve));
   const addr = probe.address();
   if (!addr || typeof addr === "string") throw new Error("no addr");
   const port = addr.port;
   await new Promise<void>((resolve) => probe.close(() => resolve()));
-
-  const proxy = new HttpProxyServer({
-    port,
-    appPort: 1, // unused — these tests never reach handleHttp.
-    state,
-    logger: pino({ level: "silent" }),
-  });
-  await proxy.start();
-  return { proxy, port, stop: () => proxy.stop() };
+  return port;
 }
 
-function sendConnectAndReadStatusLine(
-  port: number,
-  connectLine: string,
-): Promise<string> {
+async function startProxy(state: AppState): Promise<ProxyHandle> {
+  // Grab a free ephemeral port, close the probe, then bind the proxy on that
+  // port number. The close→rebind window is racy under parallel vitest
+  // workers (another worker can claim the port in between), so retry with a
+  // fresh port on EADDRINUSE instead of failing the test.
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const port = await grabFreePort();
+    const proxy = new HttpProxyServer({
+      port,
+      appPort: 1, // unused - these tests never reach handleHttp.
+      state,
+      logger: pino({ level: "silent" }),
+    });
+    try {
+      await proxy.start();
+      return { proxy, port, stop: () => proxy.stop() };
+    } catch (err) {
+      lastErr = err;
+      if ((err as NodeJS.ErrnoException).code !== "EADDRINUSE") throw err;
+    }
+  }
+  throw lastErr;
+}
+
+function sendConnectAndReadStatusLine(port: number, connectLine: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const sock = net.connect(port, "127.0.0.1");
     let buf = "";
@@ -68,9 +79,7 @@ function sendConnectAndReadStatusLine(
       sock.destroy(new Error("timeout waiting for response"));
     });
     sock.on("connect", () => {
-      sock.write(
-        `${connectLine}\r\nHost: ${connectLine.split(" ")[1]}\r\n\r\n`,
-      );
+      sock.write(`${connectLine}\r\nHost: ${connectLine.split(" ")[1]}\r\n\r\n`);
     });
     sock.on("data", (chunk) => {
       buf += chunk.toString("ascii");
@@ -157,7 +166,7 @@ describe("http-proxy auth gating (regression: empty password ≠ open proxy)", (
       handle.port,
       "CONNECT example.com:443 HTTP/1.1",
     );
-    // Hits the allow-list 403, not 407. Confirms auth is bypassed —
+    // Hits the allow-list 403, not 407. Confirms auth is bypassed -
     // documented as part of the limitation we're explicitly mitigating
     // with the CONNECT allow-list until Layer 2 lands.
     expect(status).toBe("HTTP/1.1 403 Forbidden");

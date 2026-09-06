@@ -1,0 +1,262 @@
+"use client";
+
+import { useState } from "react";
+import { useLocale, useTranslations } from "next-intl";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { BookOpen, Search } from "lucide-react";
+import { apiFetch } from "@/app/_lib/api-client";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { TableCell, TableRow } from "@/components/ui/table";
+import { HistoryPage } from "@/components/ui/history-page";
+import { TablePagination } from "@/components/ui/table-pagination";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { Instance } from "@/app/(admin)/instances/_lib/instances-types";
+import { useListUrlState } from "@/app/(admin)/_lib/use-list-url-state";
+import { ItemDetailSheet } from "./_components/item-detail-sheet";
+import type { Item, MediaType } from "./_lib/library-types";
+
+// shadcn Select can't carry an empty-string item value, so "all" is the
+// sentinel for "no filter" and is simply omitted from the query params.
+const ALL = "all";
+
+const MEDIA_TYPES: MediaType[] = ["tv", "movie", "audio", "book"];
+
+// Accepted `override` query values; anything else falls back to ALL (both
+// here and server-side in src/server/routes/admin/search-items.ts).
+const OVERRIDE_FILTERS = ["with", "without"] as const;
+
+export function LibraryClient() {
+  const t = useTranslations("library");
+  const tCommon = useTranslations("common");
+  const tBoundaries = useTranslations("boundaries");
+  const locale = useLocale();
+
+  // Sortable columns exposed by the route - see SEARCH_ITEMS_SORT in
+  // src/server/routes/admin/search-items.ts. Default matches the server's
+  // default (expectedTitle asc).
+  const url = useListUrlState({
+    defaultSort: { key: "expectedTitle", order: "asc" },
+    validSortKeys: ["expectedTitle", "germanTitle", "year", "updatedAt"],
+  });
+  const { page, pageSize, sort, searchInput, debouncedSearch } = url;
+  const instanceFilter = url.getParam("instanceId", ALL);
+  const typeFilter = url.getParam("mediaType", ALL, MEDIA_TYPES);
+  const missingOnly = url.getFlag("missing");
+  const overrideFilter = url.getParam("override", ALL, OVERRIDE_FILTERS);
+  const [detail, setDetail] = useState<Item | null>(null);
+
+  const instances = useQuery<Instance[]>({
+    queryKey: ["instances"],
+    queryFn: () => apiFetch<Instance[]>("/api/admin/instances"),
+  });
+
+  const data = useQuery<{ items: Item[]; total: number }>({
+    queryKey: [
+      "search-items",
+      page,
+      pageSize,
+      debouncedSearch,
+      instanceFilter,
+      typeFilter,
+      missingOnly,
+      overrideFilter,
+      sort.key,
+      sort.order,
+    ],
+    queryFn: () => {
+      const params = new URLSearchParams({
+        take: String(pageSize),
+        skip: String((page - 1) * pageSize),
+        sort: sort.key,
+        order: sort.order,
+      });
+      if (debouncedSearch) params.set("search", debouncedSearch);
+      if (instanceFilter !== ALL) params.set("instanceId", instanceFilter);
+      if (typeFilter !== ALL) params.set("mediaType", typeFilter);
+      if (missingOnly) params.set("missingGerman", "1");
+      if (overrideFilter !== ALL) params.set("override", overrideFilter);
+      return apiFetch(`/api/admin/search-items?${params}`);
+    },
+    placeholderData: keepPreviousData,
+  });
+
+  const items = data.data?.items ?? [];
+  const total = data.data?.total ?? 0;
+  // Re-derive the open item from the latest page data so background
+  // refetches (e.g. after saving an override) update the open sheet instead
+  // of showing the stale snapshot captured at click time.
+  const detailItem = detail ? (items.find((i) => i.id === detail.id) ?? detail) : null;
+
+  const typeLabel = (type: MediaType): string => {
+    switch (type) {
+      case "tv":
+        return t("typeTv");
+      case "movie":
+        return t("typeMovie");
+      case "audio":
+        return t("typeAudio");
+      case "book":
+        return t("typeBook");
+    }
+  };
+
+  return (
+    <>
+      <HistoryPage
+        title={t("title")}
+        subtitle={t("subtitle")}
+        listTitle={t("listTitle", { count: total })}
+        listSubtitle={t("listSubtitle")}
+        emptyTitle={t("emptyTitle")}
+        emptyHint={t("emptyHint")}
+        emptyIcon={<BookOpen className="h-5 w-5" />}
+        isLoading={data.isLoading}
+        isError={data.isLoadingError}
+        errorLabel={tCommon("error")}
+        retryLabel={tBoundaries("retry")}
+        onRetry={() => void data.refetch()}
+        retryPending={data.isFetching}
+        isEmpty={items.length === 0}
+        filterSlot={
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative w-full sm:w-64">
+              <Search className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={searchInput}
+                onChange={(e) => url.setSearchInput(e.target.value)}
+                placeholder={t("filterPlaceholder")}
+                className="pl-9"
+              />
+            </div>
+            <Select
+              value={instanceFilter}
+              onValueChange={(v) => url.setFilters({ instanceId: v === ALL ? undefined : v })}
+            >
+              <SelectTrigger className="w-40" aria-label={t("allInstances")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t("allInstances")}</SelectItem>
+                {(instances.data ?? []).map((i) => (
+                  <SelectItem key={i.id} value={i.id}>
+                    {i.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={typeFilter}
+              onValueChange={(v) => url.setFilters({ mediaType: v === ALL ? undefined : v })}
+            >
+              <SelectTrigger className="w-36" aria-label={t("allTypes")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t("allTypes")}</SelectItem>
+                {MEDIA_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {typeLabel(type)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select
+              value={overrideFilter}
+              onValueChange={(v) => url.setFilters({ override: v === ALL ? undefined : v })}
+            >
+              <SelectTrigger className="w-44" aria-label={t("allOverrides")}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL}>{t("allOverrides")}</SelectItem>
+                <SelectItem value="with">{t("overrideOnly")}</SelectItem>
+                <SelectItem value="without">{t("noOverrideOnly")}</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="missing-german-only"
+                checked={missingOnly}
+                onCheckedChange={(v) => url.setFilters({ missing: v })}
+              />
+              <Label htmlFor="missing-german-only" className="font-normal whitespace-nowrap">
+                {t("missingGermanOnly")}
+              </Label>
+            </div>
+          </div>
+        }
+        columns={[
+          { label: t("colTitle"), sortKey: "expectedTitle" },
+          { label: t("colGermanTitle"), sortKey: "germanTitle" },
+          t("colType"),
+          { label: t("colYear"), sortKey: "year" },
+          t("colInstance"),
+          { label: t("colUpdated"), sortKey: "updatedAt" },
+        ]}
+        sort={sort}
+        onSortChange={url.toggleSort}
+        rows={items.map((item) => (
+          <TableRow
+            key={item.id}
+            className="cursor-pointer focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-inset"
+            tabIndex={0}
+            role="button"
+            aria-label={item.expectedTitle}
+            onClick={() => setDetail(item)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setDetail(item);
+              }
+            }}
+          >
+            <TableCell className="max-w-xs truncate font-medium" title={item.expectedTitle}>
+              {item.expectedTitle}
+            </TableCell>
+            <TableCell>
+              <div className="flex items-center gap-2">
+                {item.germanTitle ? (
+                  <span className="max-w-xs truncate" title={item.germanTitle}>
+                    {item.germanTitle}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">-</span>
+                )}
+                {item.override !== null && <Badge variant="info">{t("overrideBadge")}</Badge>}
+              </div>
+            </TableCell>
+            <TableCell>
+              <Badge variant="outline">{typeLabel(item.mediaType)}</Badge>
+            </TableCell>
+            <TableCell className="tabular-nums">
+              {item.year ?? <span className="text-muted-foreground">-</span>}
+            </TableCell>
+            <TableCell>{item.instance.name}</TableCell>
+            <TableCell className="whitespace-nowrap text-muted-foreground">
+              {new Date(item.updatedAt).toLocaleString(locale)}
+            </TableCell>
+          </TableRow>
+        ))}
+        footerSlot={
+          <TablePagination
+            page={page}
+            pageSize={pageSize}
+            total={total}
+            onPageChange={url.setPage}
+            onPageSizeChange={url.setPageSize}
+          />
+        }
+      />
+      <ItemDetailSheet open={detail !== null} item={detailItem} onClose={() => setDetail(null)} />
+    </>
+  );
+}

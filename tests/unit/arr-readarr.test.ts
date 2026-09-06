@@ -133,3 +133,35 @@ describe("ReadarrClient.fetchAllItems", () => {
     expect(externalIds).toContain("Fireman Joe Hill");
   });
 });
+
+describe("ReadarrClient raw/derive split", () => {
+  it("fetchRawItems applies cleanBookTitle before handing the title on", async () => {
+    requestMock.mockResolvedValueOnce(jsonResponse([{ id: 6, authorName: "Marlen Voss" }]));
+    requestMock.mockResolvedValueOnce(
+      jsonResponse([{ id: 60, authorId: 6, title: "Marlen Voss: Die Uhrmacherin (Band 2)" }]),
+    );
+    const client = new ReadarrClient({
+      instanceId: "i",
+      instanceName: "n",
+      host: "http://readarr.local",
+      apiKey: "k",
+      userAgent: "UA",
+    });
+
+    const raw = await client.fetchRawItems();
+
+    expect(raw).toHaveLength(1);
+    expect(raw[0]).toMatchObject({
+      arrId: 6,
+      title: "Die Uhrmacherin",
+      mediaType: "book",
+      expectedAuthor: "Marlen Voss",
+      year: null,
+    });
+
+    const derived = await client.deriveItems(raw);
+
+    expect(derived[0]?.expectedTitle).toBe("Die Uhrmacherin");
+    expect(derived[0]?.externalId).toBe(raw[0]?.externalId);
+  });
+});

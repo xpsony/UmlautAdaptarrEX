@@ -95,7 +95,7 @@ test("setup wizard: redirect, mode picker copy, end-to-end completion", async ({
   });
 });
 
-// Smoke test for the second setup branch — purely UI navigation, no DB
+// Smoke test for the second setup branch - purely UI navigation, no DB
 // mutation. Reuses the now-completed-setup DB by virtue of running after
 // the main flow above; we assert the gate redirects /setup back to the
 // dashboard once setupComplete = true.

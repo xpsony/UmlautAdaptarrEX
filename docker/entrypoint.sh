@@ -1,6 +1,6 @@
 #!/bin/sh
 # Entrypoint shim: root is used ONLY to fix /data ownership and then drop to
-# PUID:PGID via gosu — the application process (node start.mjs) never runs as
+# PUID:PGID via gosu - the application process (node start.mjs) never runs as
 # root. When the container is already started unprivileged (docker --user,
 # Kubernetes runAsUser, TrueNAS run_as), there is nothing to drop and no
 # permission to chown, so exec directly and let the orchestrator own UID/GID and

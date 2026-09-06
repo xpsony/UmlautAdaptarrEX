@@ -29,7 +29,7 @@ const ITEM_TONE: Record<ChangelogItemType, string> = {
 };
 
 interface ChangelogSectionProps {
-  /** Bigger header, accent border and a sparkle icon — use when this is a focal section. */
+  /** Bigger header, accent border and a sparkle icon - use when this is a focal section. */
   prominent?: boolean;
 }
 

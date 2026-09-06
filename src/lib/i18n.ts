@@ -30,7 +30,7 @@ function pickFromAcceptLanguage(header: string | null): Locale {
 // Deep-merge so that any key missing from the active locale's bundle falls
 // back to the corresponding English string. Only plain objects are merged
 // recursively; arrays/primitives in the override replace the base value
-// outright (matches next-intl's expected message shape — leaves are always
+// outright (matches next-intl's expected message shape - leaves are always
 // strings).
 type MessagesObj = { [key: string]: string | MessagesObj };
 

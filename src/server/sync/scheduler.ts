@@ -3,7 +3,6 @@ import type { AppLogger } from "@/server/logging/logger";
 import { getAppState } from "@/server/state";
 import { type PreparedRun, runSync, type SyncResult } from "./run";
 
-const SUCCESS_INTERVAL_MS = 12 * 60 * 60 * 1000;
 const FIRST_FAIL_INTERVAL_MS = 2 * 60 * 1000;
 const REPEATED_FAIL_INTERVAL_MS = 60 * 60 * 1000;
 
@@ -14,6 +13,34 @@ const REPEATED_FAIL_INTERVAL_MS = 60 * 60 * 1000;
 // are idempotent against the SyncRun row, so a late completion just
 // updates the row to "succeeded"/"errored" with no follow-on damage.
 const RUNNING_FLAG_WATCHDOG_MS = 6 * 60 * 60 * 1000;
+
+export interface SyncIntervalSettings {
+  syncIntervalMinutes: number;
+  fullSyncIntervalHours: number;
+}
+
+/**
+ * Full when the instance has never had a full sync (the one-time first scan),
+ * when the configured full interval has elapsed, or when the quick sync is
+ * switched off entirely. Delta otherwise.
+ */
+export function decideMode(
+  instance: { lastFullSyncAt: Date | null },
+  settings: SyncIntervalSettings,
+  now: Date,
+): "full" | "delta" {
+  if (instance.lastFullSyncAt === null) return "full";
+  if (settings.syncIntervalMinutes === 0) return "full";
+  const dueAt = instance.lastFullSyncAt.getTime() + settings.fullSyncIntervalHours * 60 * 60_000;
+  return now.getTime() >= dueAt ? "full" : "delta";
+}
+
+/** How long until the next tick, given the configured intervals. */
+export function nextTickMs(settings: SyncIntervalSettings): number {
+  return settings.syncIntervalMinutes === 0
+    ? settings.fullSyncIntervalHours * 60 * 60_000
+    : settings.syncIntervalMinutes * 60_000;
+}
 
 interface SchedulerOptions {
   logger: AppLogger;
@@ -92,9 +119,10 @@ export class SyncScheduler {
     const prepared = await Promise.all(
       instances.map(async (inst) => {
         const run = await prisma.syncRun.create({
-          data: { arrInstanceId: inst.id, status: "running" },
+          data: { arrInstanceId: inst.id, status: "running", kind: "full" },
         });
-        return { runId: run.id, instance: inst } satisfies PreparedRun;
+        // A user pressing the button wants a real refresh, never a delta.
+        return { runId: run.id, mode: "full", instance: inst } satisfies PreparedRun;
       }),
     );
 
@@ -118,7 +146,7 @@ export class SyncScheduler {
     await this.runScheduled();
     const next =
       this.failures === 0
-        ? SUCCESS_INTERVAL_MS
+        ? nextTickMs(getAppState().settings)
         : this.failures === 1
           ? FIRST_FAIL_INTERVAL_MS
           : REPEATED_FAIL_INTERVAL_MS;
@@ -144,12 +172,19 @@ export class SyncScheduler {
       return;
     }
 
+    const now = new Date();
     const prepared = await Promise.all(
       instances.map(async (inst) => {
+        const mode = decideMode(inst, state.settings, now);
+        // A delta pass creates its row lazily in runSync, once planDelta found
+        // work - otherwise a quiet instance produces one empty row per tick.
+        if (mode === "delta") {
+          return { runId: null, mode, instance: inst } satisfies PreparedRun;
+        }
         const run = await prisma.syncRun.create({
-          data: { arrInstanceId: inst.id, status: "running" },
+          data: { arrInstanceId: inst.id, status: "running", kind: "full" },
         });
-        return { runId: run.id, instance: inst } satisfies PreparedRun;
+        return { runId: run.id, mode, instance: inst } satisfies PreparedRun;
       }),
     );
 

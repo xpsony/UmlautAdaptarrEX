@@ -6,6 +6,7 @@
   "nav": {
     "dashboard": "Översikt",
     "instances": "Instanser",
+    "library": "Bibliotek",
     "syncRuns": "Synk-körningar",
     "requestHistory": "Förfrågningshistorik",
     "renameHistory": "Namnändringshistorik",
@@ -19,7 +20,9 @@
     "themeDark": "Mörkt",
     "themeSystem": "System",
     "nav": "Navigation",
-    "openNav": "Öppna navigering"
+    "openNav": "Öppna navigering",
+    "navLabel": "Huvudnavigering",
+    "skipToContent": "Hoppa till innehåll"
   },
   "pause": {
     "trigger": "Pausa",
@@ -43,6 +46,7 @@
   "setup": {
     "title": "Förstagångsinställning",
     "intro": "Skapa administratörskontot, anslut Prowlarr och konfigurera autentiseringsuppgifter för HTTP-proxyn.",
+    "stepperLabel": "Inställningssteg",
     "step1Title": "Administratörskonto",
     "step1Hint": "Med dessa uppgifter loggar du in i admin-gränssnittet.",
     "step2Title": "Anslut Prowlarr",
@@ -65,7 +69,7 @@
     "modeBothLabel": "Båda",
     "modeBothDescription": "Både proxy ({proxyPort}) och äldre API ({legacyApiPort}) är aktiva.",
     "modeBothDetails": "Kör båda vägarna parallellt. Användbart endast under en stegvis migrering från legacy- till proxyläge. I stadigt drift fördubblar det attackytan utan fördelar.",
-    "modeBothWarning": "Rekommenderas inte — vanligtvis behövs bara en av de två vägarna åt gången.",
+    "modeBothWarning": "Rekommenderas inte - vanligtvis behövs bara en av de två vägarna åt gången.",
     "pluginsLanguage": {
       "de": "Tyska",
       "en": "Engelska",
@@ -74,6 +78,7 @@
     },
     "pluginsTitle": "Välj plugins",
     "pluginsHint": "Välj de språk-plugins som används för att skapa sökvarianter och skriva om indexer-svar. Du kan ändra detta senare i Inställningar.",
+    "pluginsCostHint": "Välj bara språk som du faktiskt konsumerar - varje extra plugin ger fler sökvarianter och därmed fler indexerarförfrågningar per sökning (tak på 10), plus ytterligare en TheTVDB-förfrågan per titel och språk vid varje synk.",
     "pluginsDefaultBadge": "Standard",
     "pluginsEmpty": "Inga plugins tillgängliga.",
     "pluginsLoadFailed": "Kunde inte läsa in plugins: {error}",
@@ -144,7 +149,12 @@
     "errors": {
       "validation": "Kontrollera dina uppgifter.",
       "alreadyExists": "Konfigurationen är redan slutförd."
-    }
+    },
+    "patchStepTitle": "Patcha indexerare",
+    "patchStepSkip": "Hoppa över",
+    "patchIndexersDone": "Indexerare patchade.",
+    "searchStepTitle": "Sökbeteende",
+    "searchStepHint": "Dessa alternativ styr hur UmlautAdaptarrEX söker. Varje alternativ anger sitt exempel och sin kostnad."
   },
   "login": {
     "title": "Logga in",
@@ -212,9 +222,11 @@
       "requestsHint": "Per timme, uppdelat på cache-träffar och missar.",
       "cacheHit": "Cache-träff",
       "cacheMiss": "Cache-miss",
+      "requestsChartAlt": "Diagram: förfrågningar under de senaste 24 timmarna, uppdelat per timme på cache-träffar och cache-missar.",
       "renamesTitle": "Namnändringar (senaste 14 dagar)",
       "renamesHint": "Omskrivna titlar per dag.",
-      "renames": "Namnändringar"
+      "renames": "Namnändringar",
+      "renamesChartAlt": "Diagram: namnändringar under de senaste 14 dagarna, omskrivna titlar per dag."
     }
   },
   "instances": {
@@ -237,6 +249,8 @@
     "test": "Testa anslutning",
     "testOk": "Anslutning OK (version {version})",
     "testFail": "Anslutning misslyckades: {error}",
+    "syncNow": "Synkronisera nu",
+    "syncStarted": "Synkronisering startad.",
     "type": "Typ",
     "name": "Namn",
     "host": "Värd",
@@ -246,6 +260,7 @@
     "apiKeyMaskedHint": "Det sparade värdet är endast Prowlarrs mask (********). Ange den riktiga API-nyckeln från Sonarr/Radarr/Lidarr/Readarr.",
     "enabled": "Aktiverad",
     "enabledHint": "Inaktiverade instanser hoppas över vid synk.",
+    "enableAria": "Aktivera/inaktivera {name}",
     "providerOrder": "Ordning för titel-leverantörer",
     "providerOrderHint": "Gås igenom uppifrån och ner vid varje synk. pcjones ger endast tyska titlar; TVDB och TMDB stödjer alla språk. Dra med handtaget eller använd piltangenter för att sortera om.",
     "enableYearMatching": "Årsdisambiguering vid titel-matchning",
@@ -255,6 +270,8 @@
     "providerAdd": "Lägg till",
     "providerRemove": "Ta bort",
     "providerDragHandle": "Sorteringshandtag för {name}",
+    "providerAddAria": "Lägg till {name}",
+    "providerRemoveAria": "Ta bort {name}",
     "providerOption": {
       "pcjones": "Title-API (pcjones / kompatibel)",
       "tmdb": "TMDB",
@@ -268,6 +285,7 @@
     "status": "Status",
     "statusOk": "Frisk",
     "statusError": "Fel",
+    "statusErrorHeading": "Senaste synkfel",
     "statusDisabled": "Inaktiverad",
     "noInstances": "Lägg till din första Sonarr/Radarr/Lidarr/Readarr för att komma igång.",
     "noInstancesTitle": "Inga instanser ännu",
@@ -326,6 +344,45 @@
       }
     }
   },
+  "library": {
+    "title": "Bibliotek",
+    "subtitle": "Synkroniserade titlar från alla instanser - inklusive manuella overrides.",
+    "listTitle": "{count, plural, =0 {Inga titlar} one {# titel} other {# titlar}}",
+    "listSubtitle": "Original- och tyska titlar, som de används av matchningsmotorn.",
+    "emptyTitle": "Inga titlar",
+    "emptyHint": "Ingen synkning har körts än, eller filtren är för snäva.",
+    "filterPlaceholder": "Sök titlar…",
+    "allInstances": "Alla instanser",
+    "allTypes": "Alla typer",
+    "missingGermanOnly": "Endast utan tysk titel",
+    "allOverrides": "Alla overrides",
+    "overrideOnly": "Med override",
+    "noOverrideOnly": "Utan override",
+    "colTitle": "Titel",
+    "colGermanTitle": "Tysk titel",
+    "colType": "Typ",
+    "colYear": "År",
+    "colInstance": "Instans",
+    "colUpdated": "Uppdaterad",
+    "typeTv": "Serie",
+    "typeMovie": "Film",
+    "typeAudio": "Musik",
+    "typeBook": "Bok",
+    "overrideBadge": "Override",
+    "detailExternalId": "Externt ID",
+    "detailOriginalTitle": "Originaltitel",
+    "detailAuthor": "Författare/Artist",
+    "detailAliases": "Alias",
+    "searchVariations": "Sökvarianter",
+    "matchVariations": "Matchningsvarianter",
+    "authorVariations": "Författarvarianter",
+    "overrideLabel": "Tysk titel (override)",
+    "overrideHint": "Ersätter den tyska titeln för detta medium i alla instanser. Varianter beräknas om omedelbart.",
+    "overrideSave": "Spara override",
+    "overrideRemove": "Ta bort override",
+    "overrideSaved": "Override sparad - varianter omberäknade.",
+    "overrideRemoved": "Override borttagen."
+  },
   "settings": {
     "title": "Inställningar",
     "subtitle": "Konfigurera leverantörer, indexer-cache och programmets API-nyckel.",
@@ -334,13 +391,17 @@
       "providers": "Titel-leverantörer",
       "prowlarr": "Prowlarr",
       "plugins": "Plugins",
+      "renaming": "Omdöpning",
       "advanced": "Avancerat",
       "providersHint": "Externa tjänster som används för att slå upp tyska titlar.",
-      "advancedHint": "Använd standardvärden om du inte vet vad du gör."
+      "advancedHint": "Använd standardvärden om du inte vet vad du gör.",
+      "search": "Sökning",
+      "searchHint": "Hur sökningen fungerar och hur ofta titlarna stäms av."
     },
     "plugins": {
       "title": "Inbyggda plugins",
       "hint": "Varje plugin bidrar med språkspecifika omvandlingar (t.ex. ä → ae) som används för att skapa sökvarianter och skriva om indexer-svar.",
+      "costHint": "Aktivera bara ett språkplugin om du faktiskt konsumerar det språket. Varje extra plugin kostar anrop: varje sökning skickar ytterligare en indexerarförfrågan per språkvariant (hårt tak på 10 - överflödiga varianter faller bort, i värsta fall även tyska), och vid varje synk behöver TheTVDB en förfrågan till per titel och språk (TMDB returnerar alla språk i ett enda anrop och skalar därför inte med antalet plugins).",
       "defaultEnabledBadge": "På som standard",
       "resyncBanner": "Plugin-ändringar börjar gälla först efter en synk, dina biblioteksvarianter genererades med tidigare konfiguration.",
       "resyncNow": "Synkronisera nu",
@@ -409,8 +470,15 @@
       "unknown": "TVDB-test misslyckades."
     },
     "userAgent": "User-Agent-header",
+    "userAgentHint": "Valfritt. Lämnar du fältet tomt blir det automatiskt: UmlautAdaptarrEX plus den version som körs - värdet följer då varje uppdatering utan att du rör fältet.",
+    "userAgentAutoHint": "Tomt = automatiskt: {value}",
+    "forwardArrUserAgent": "Skicka vidare *Arr:s User-Agent",
+    "forwardArrUserAgentDescription": "Skickar Sonarr/Radarr/Lidarr/Readarrs User-Agent ordagrant till indexeraren i stället för vår egen.",
+    "forwardArrUserAgentHint": "Av som standard: indexeraren ser bara ”{ua}” och inget versionsfingeravtryck från din *Arr. Slå på den när en indexerare bara accepterar kända klient-User-Agents eller begränsar utifrån dem. Skickar *Arr ingen header används vår egen.",
     "logRetentionDays": "Loggbevarande (dagar)",
     "logRetentionDaysHint": "Loggar äldre än så raderas av en städ-jobb som körs var 6:e timme. 1–30 dagar.",
+    "historyRetentionDays": "Historiklagring (dagar)",
+    "historyRetentionDaysHint": "Poster i förfrågnings- och omdöpningshistoriken som är äldre än så raderas av städjobbet var 6:e timme. 1–365 dagar.",
     "indexerRateLimitMs": "Indexer-rate-limit (ms)",
     "indexerRateLimitMsHint": "Minsta avstånd mellan förfrågningar till samma indexer-värd. Lägre = snabbare TV-variantsökningar men högre risk för throttling (HTTP 429) eller bannlysning från gratis-indexers. Standard 500 ms. Limitern backar automatiskt när en indexer svarar med Retry-After.",
     "indexerTimeoutSeconds": "Indexer-request-timeout (sekunder)",
@@ -451,7 +519,7 @@
       "timeout": "Servern svarade inte inom 30 sekunder. Kontrollera loggarna och starta om manuellt vid behov.",
       "failed": "Omstart misslyckades: {error}",
       "unsupported": "Omstart från gränssnittet är inte tillgänglig i den här miljön (dev-läge eller utan supervisor). Starta om containern/tjänsten manuellt.",
-      "unsupportedTitle": "Omstart ej tillgänglig — starta om manuellt."
+      "unsupportedTitle": "Omstart ej tillgänglig - starta om manuellt."
     },
     "prowlarr": {
       "title": "Prowlarr-anslutning",
@@ -494,7 +562,112 @@
       "installSubmit": "Installera",
       "installCreated": "Proxy skapad i Prowlarr.",
       "installUpdated": "Befintlig proxy i Prowlarr överskriven.",
-      "installFailed": "Installation i Prowlarr misslyckades: {error}"
+      "installFailed": "Installation i Prowlarr misslyckades: {error}",
+      "patchIndexers": "Patcha indexerare",
+      "patchTitle": "Patcha Prowlarr-indexerare",
+      "patchDescription": "Välj de indexerare som ska patchas för UmlautAdaptarrEX.",
+      "patchWhyTitle": "Varför behövs detta?",
+      "patchWhyBody": "Prowlarr pratar med indexerare via https:// som standard. Det gör att förfrågan går genom proxyn som en krypterad tunnel, så titeln kan inte skrivas om. Patchningen ändrar indexerarens adress i Prowlarr till http:// så att förfrågan går i klartext genom den lokala proxyn och umlaut-varianterna kan tillämpas.",
+      "patchSafeTitle": "Ingen säkerhetsrisk",
+      "patchSafeBody": "http:// gäller bara den lokala sträckan från Prowlarr till UmlautAdaptarrEX-proxyn (vanligtvis localhost eller ditt eget nätverk). Anslutningen till indexeraren på internet är alltid https://, hårdkodat i koden. Ingen okrypterad trafik lämnar alltså ditt system.",
+      "patchMore": "Läs mer",
+      "patchSelectAll": "Välj alla",
+      "patchColName": "Indexerare",
+      "patchColStatus": "Status",
+      "patchStatusPatched": "patchad",
+      "patchStatusUnpatched": "inte patchad",
+      "patchNotPatchable": "Ingen redigerbar bas-URL - kan inte patchas.",
+      "patchUnsupportedApi": "Inte ett Newznab/Torznab-API ({implementation}) - kan inte korrigeras via proxyn.",
+      "patchApply": "Tillämpa",
+      "patchApplying": "Tillämpar…",
+      "patchEmpty": "Inga indexerare hittades i Prowlarr.",
+      "patchLoadFailed": "Kunde inte läsa in indexerare: {error}",
+      "patchResult": "{patched} patchade, {unpatched} återställda, {unchanged} oförändrade, {skipped} överhoppade, {failed} misslyckade.",
+      "patchResultFailedDetail": "Misslyckades: {names}",
+      "patchRetry": "Försök igen"
+    },
+    "renaming": {
+      "hint": "Styr hur release-titlar i indexerarnas svar skrivs om. Skyddsreglerna är de säkerhetskontroller som UmlautAdaptarrEX lade till utöver den gamla .NET-föregångaren - att stänga av en gör omskrivningen mer tillåtande, men också mer felbenägen.",
+      "scopeHint": "Ändringar gäller direkt vid nästa sökning, ingen omstart och ingen ny synk behövs. Releaser som redan lämnats till Sonarr/Radarr ändras inte retroaktivt.",
+      "presetsLabel": "Förinställningar:",
+      "presetLegacy": "Som den gamla Umlautadaptarr",
+      "presetRecommended": "Rekommenderade värden",
+      "exampleRelease": "Exempel - release från indexeraren:",
+      "exampleItem": "Objekt i biblioteket:",
+      "exampleOff": "Av",
+      "exampleOn": "På",
+      "exampleNotRenamed": "byter inte namn",
+      "exampleNoteExternalIds": "Förkortat; attributen läggs till utöver det befintliga innehållet i <item>.",
+      "exampleNotePrefixGuard": "Med en säsongsmarkör (…Silberlicht.S01E01…) byter båda fallen namn - kontrollen gäller bara utan en sådan markör.",
+      "exampleNoteLegacySuffix": "Det där ”016” var årtalet 2016 - snittet svalde den inledande 2:an.",
+      "renameStripSpecialChars": {
+        "label": "Ta bort oönskade tecken",
+        "description": "Tar bort : ? * \" < > | / \\ ur den insatta titeln utan att lämna dubbla avgränsare.",
+        "hint": "Scene-releaser innehåller aldrig dessa tecken. ”Ember:.Steel.Angel.2019…” blir ”Ember.Steel.Angel.2019…”, vilket Sonarr/Radarr tolkar mer tillförlitligt. Indexerarens eget suffix lämnas orört."
+      },
+      "renameAttachExternalIds": {
+        "label": "Bifoga externa id:n",
+        "description": "Lägger till tvdbid / tmdbid / imdb som newznab-attribut på varje matchad release.",
+        "hint": "Låter Sonarr och Radarr koppla en release utan att tolka titeln. Rent additivt: ett id som indexeraren redan skickat skrivs aldrig över, och id:n bifogas även när omskrivningen avvisades."
+      },
+      "renameYearGuard": {
+        "label": "Årskontroll",
+        "description": "Avvisar omskrivningen när årtalet i release-namnet inte stämmer med objektet.",
+        "hint": "Hindrar att en likadant namngiven inspelning från ett annat år skrivs om till fel titel. Toleransen ställs in per instans; den här reglaget stänger av kontrollen globalt. Den gamla Umlautadaptarr hade ingen årskontroll."
+      },
+      "renamePrefixGuard": {
+        "label": "Kontroll av tvetydigt prefix",
+        "description": "Avvisar när måltiteln börjar med den hittade varianten och inget SxxExx eller årtal följer.",
+        "hint": "Utan den här kontrollen kan ett kort alias kapa ett annat verk som bara delar de inledande orden."
+      },
+      "renameReleaseTagGuard": {
+        "label": "Bevara release-taggar",
+        "description": "Skjuter tillbaka 3D / 4K / HDR / IMAX i suffixet när ett leverantörsalias tagit med det.",
+        "hint": "Utan den här kontrollen svaljer ett alias som ”Nachtwache Wiederkehr 3D” releasens ”3D” och kvalitetsmarkeringen försvinner ur titeln."
+      },
+      "renameLegacySuffix": {
+        "label": "Klipp suffixet som den gamla Umlautadaptarr",
+        "description": "Klipper vid den hittade variantens råa längd istället för att räkna normaliserade tecken - och stänger av tokengränskontrollen på samma gång.",
+        "hint": "Aktivera bara om du behöver exakt det gamla beteendet. Om en variant slutar på en siffra kan snittet hamna mitt i releasens årtal och förvanska det (se exemplet). Utan den här reglaget avvisar UmlautAdaptarrEX sådana träffar istället."
+      }
+    }
+  },
+  "searchBehaviour": {
+    "onDemand": {
+      "label": "Slå upp titlar vid behov",
+      "hint": "Rekommenderas. Frågar din *Arr och titel-leverantörerna om en okänd titel i samma stund som sökningen kommer in.",
+      "description": "Utan detta känner UmlautAdaptarrEX bara till de titlar som den senaste avstämningen hämtade.",
+      "example": "Exempel: du gör en förfrågan i Jellyseerr. Radarr lägger upp filmen och söker i samma sekund. Utan detta alternativ är filmen ännu okänd och den tyska releasen förbises.",
+      "cost": "Kostar ett anrop till din *Arr per okänd titel, och eventuellt ett till TMDB, TVDB eller pcjones. Det körs parallellt med indexerar-förfrågan och förlänger normalt inte sökningen."
+    },
+    "variations": {
+      "label": "Sök även med tyska titelvarianter",
+      "hint": "Söker med de tyska stavningarna utöver originaltiteln.",
+      "description": "Behövs när en indexerare bara listar en release under dess tyska namn.",
+      "tvVariationSearch": "Serier",
+      "movieVariationSearch": "Filmer",
+      "capLabel": "Högst antal varianter",
+      "capHint": "Räknar de tyska varianterna. Ditt sökord och originaltiteln söks utöver dessa och tas aldrig bort. 0 söker helt utan tyska varianter.",
+      "exampleQuery": "Sonarr söker efter",
+      "exampleExtra": "Dessa söks också:",
+      "cost": "Ger upp till {max} extra indexerar-förfrågningar per sökning. Använd med försiktighet om dina indexerar-gränser är snäva."
+    },
+    "refresh": {
+      "label": "Uppdatering",
+      "description": "Hur ofta titlarna i din *Arr stäms av.",
+      "presetsLabel": "Förval:",
+      "preset": {
+        "recommended": "Rekommenderat",
+        "frugal": "Sparsamt",
+        "legacy": "Som 1.x"
+      },
+      "quickLabel": "Snabb avstämning (minuter)",
+      "quickHint": "0 stänger av den snabba avstämningen. Annars minst 5 minuter.",
+      "quickDescription": "Hämtar titellistan och behandlar bara nytt, borttaget och sådant som döpts om i *Arr. Skriver ingenting när inget har ändrats.",
+      "fullLabel": "Full avstämning (timmar)",
+      "fullHint": "Mellan 1 och 168 timmar.",
+      "fullDescription": "Frågar dessutom alla titel-leverantörer på nytt och hittar så tyska titlar som lagts till i efterhand.",
+      "firstScanHint": "Den allra första körningen är alltid en full avstämning. Först därefter tar den snabba avstämningen över."
     }
   },
   "history": {
@@ -514,7 +687,8 @@
       "createdAt": "Tid",
       "filterPlaceholder": "Filtrera efter domän eller sökning…",
       "emptyTitle": "Inget här ännu",
-      "emptyHint": "När förfrågningar passerar proxyn visas de här."
+      "emptyHint": "När förfrågningar passerar proxyn visas de här.",
+      "detailTitle": "Förfrågningsdetaljer"
     },
     "rename": {
       "title": "Namnändringshistorik",
@@ -523,6 +697,8 @@
       "listSubtitle": "Filtrera efter original- eller omskriven titel.",
       "originalTitle": "Original",
       "rewrittenTitle": "Omskriven",
+      "titleColumn": "Titel",
+      "groupCount": "×{count} · {from}–{to}",
       "mediaType": "Typ",
       "createdAt": "Tid",
       "filterPlaceholder": "Filtrera efter titel…",
@@ -534,11 +710,13 @@
     "title": "Synk-körningar",
     "subtitle": "Tidigare och pågående synkroniseringar för alla instanser.",
     "listTitle": "{count, plural, =0 {Inga körningar} one {# körning} other {# körningar}}",
-    "listSubtitle": "Senaste 200 körningar, nya poster visas automatiskt.",
+    "listSubtitle": "Filtrera efter instans, sökning eller status.",
+    "filterPlaceholder": "Filtrera efter instans eller felmeddelande…",
     "filterAll": "Alla statusar",
     "filterRunning": "Körs",
     "filterOk": "Lyckades",
     "filterError": "Misslyckades",
+    "filterCancelled": "Avbruten",
     "colInstance": "Instans",
     "colStatus": "Status",
     "colItems": "Objekt",
@@ -549,7 +727,9 @@
     "colDuration": "Varaktighet",
     "colError": "Fel",
     "emptyTitle": "Inga körningar ännu",
-    "emptyHint": "Starta en synk från översikten för att fylla listan."
+    "emptyHint": "Starta en synk från översikten för att fylla listan.",
+    "detailFinishedAt": "Avslutad",
+    "detailUnknownInstance": "Okänd instans"
   },
   "logs": {
     "title": "Loggar",
@@ -566,6 +746,7 @@
     "download": "Ladda ner som JSONL",
     "droppedHint": "{count} loggrader förkastades på grund av throttling.",
     "noConnection": "Frånkopplad",
+    "reconnecting": "Återansluter…",
     "emptyTitle": "Väntar på loggrader",
     "emptyHint": "Nya poster från servern strömmas in här.",
     "emptyFiltered": "Inga loggrader matchar ditt filter.",
@@ -573,13 +754,20 @@
     "loadingHistoryHint": "Hämtar den persisterade historiken från databasen."
   },
   "common": {
+    "pagination": {
+      "previous": "Föregående",
+      "next": "Nästa",
+      "pageOf": "Sida {page} av {pageCount}",
+      "perPage": "Per sida"
+    },
     "save": "Spara",
     "cancel": "Avbryt",
     "confirm": "Bekräfta",
     "yes": "Ja",
     "no": "Nej",
     "loading": "Läser in…",
-    "error": "Ett fel uppstod."
+    "error": "Ett fel uppstod.",
+    "export": "Exportera"
   },
   "boundaries": {
     "errorTitle": "Något gick fel",

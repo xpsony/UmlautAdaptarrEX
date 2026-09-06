@@ -23,7 +23,7 @@ describe("generateForTvMovie multi-language pipeline", () => {
     expect(out.titleSearchVariations.some((v) => v.includes("Huette"))).toBe(
       true,
     );
-    // Swedish title was passed through the swedish-only pack — "Stugan" stays
+    // Swedish title was passed through the swedish-only pack - "Stugan" stays
     // as-is and no German maps were applied to it.
     expect(out.titleSearchVariations).toContain("Stugan");
   });

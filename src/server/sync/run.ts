@@ -3,16 +3,25 @@ import { buildArrClient } from "@/arr";
 import { isMaskedSecret } from "@/lib/secrets";
 import type { ArrType, ProviderId } from "@/schemas/instance";
 import type { AppLogger } from "@/server/logging/logger";
-import { type AppState, type CachedSearchItem, getAppState } from "@/server/state";
+import { type AppState, getAppState } from "@/server/state";
+import { toCachedSearchItem } from "@/server/search-item";
+import { buildSearchItem, type SearchItemDerived } from "@/domain/variations";
 import type { MediaType } from "@/domain/variations/generate";
 import type { TitleProvider } from "@/providers/types";
 import { requiredLanguages } from "@/providers";
 import { withSyncStats } from "@/server/sync/stats";
 import { describeError } from "@/lib/error-format";
+import { planDelta } from "./delta";
 
 export interface PreparedRun {
-  /** SyncRun row pre-created by the scheduler (status="running"). */
-  runId: string;
+  /**
+   * SyncRun row pre-created by the scheduler. `null` for a delta pass: it
+   * only creates a row once `planDelta` found actual work, so a quiet
+   * instance doesn't produce one empty row per tick.
+   */
+  runId: string | null;
+  /** Full = re-query every provider. Delta = only process what changed. */
+  mode: "full" | "delta";
   instance: {
     id: string;
     name: string;
@@ -33,10 +42,12 @@ export interface RunSyncOptions {
 
 type PerInstanceResult = {
   instanceId: string;
-  runId: string;
+  runId: string | null;
   type: ArrType;
   name: string;
   count: number;
+  /** Delta pass that found nothing to do. No SyncRun row was written. */
+  skipped?: boolean;
   error?: string;
 };
 
@@ -69,26 +80,41 @@ function parseProviderOrder(csv: string | null): ProviderId[] | null {
 }
 
 // Mark a run failed and propagate the message to the instance row so the UI
-// can surface it. Always returns a perInstance entry the caller can collect.
+// can surface it. Always returns a perInstance entry the caller can collect -
+// a status-write failure (e.g. DB locked) must not lose the in-memory result
+// that the sync already computed, so writes are best-effort and logged rather
+// than propagated.
 async function markRunFailed(
   prepared: PreparedRun,
   message: string,
+  logger: AppLogger,
   options: { updateInstance?: boolean } = {},
 ): Promise<PerInstanceResult> {
   const { instance, runId } = prepared;
-  await prisma.syncRun.update({
-    where: { id: runId },
-    data: {
-      status: "error",
-      finishedAt: new Date(),
-      errorMessage: message,
-    },
-  });
-  if (options.updateInstance !== false) {
-    await prisma.arrInstance.update({
-      where: { id: instance.id },
-      data: { lastSyncError: message },
-    });
+  try {
+    // runId is null when a delta pass failed before it had any work to
+    // report - there is no row to close out in that case.
+    if (runId !== null) {
+      await prisma.syncRun.update({
+        where: { id: runId },
+        data: {
+          status: "error",
+          finishedAt: new Date(),
+          errorMessage: message,
+        },
+      });
+    }
+    if (options.updateInstance !== false) {
+      await prisma.arrInstance.update({
+        where: { id: instance.id },
+        data: { lastSyncError: message },
+      });
+    }
+  } catch (err) {
+    logger.error(
+      { runId, err: describeError(err) },
+      "sync: failed to persist run-failed status; returning result anyway",
+    );
   }
   return {
     instanceId: instance.id,
@@ -126,23 +152,39 @@ async function markRunSucceeded(
   prepared: PreparedRun,
   itemsCount: number,
   stats: ProviderStats,
+  logger: AppLogger,
 ): Promise<PerInstanceResult> {
   const { instance, runId } = prepared;
-  await prisma.syncRun.update({
-    where: { id: runId },
-    data: {
-      status: "success",
-      finishedAt: new Date(),
-      itemsCount,
-      pcjonesItemsCount: stats.pcjonesItems,
-      tmdbItemsCount: stats.tmdbItems,
-      tvdbItemsCount: stats.tvdbItems,
-    },
-  });
-  await prisma.arrInstance.update({
-    where: { id: instance.id },
-    data: { lastSyncAt: new Date(), lastSyncError: null },
-  });
+  try {
+    if (runId !== null) {
+      await prisma.syncRun.update({
+        where: { id: runId },
+        data: {
+          status: "success",
+          finishedAt: new Date(),
+          itemsCount,
+          pcjonesItemsCount: stats.pcjonesItems,
+          tmdbItemsCount: stats.tmdbItems,
+          tvdbItemsCount: stats.tvdbItems,
+        },
+      });
+    }
+    await prisma.arrInstance.update({
+      where: { id: instance.id },
+      data: {
+        lastSyncAt: new Date(),
+        lastSyncError: null,
+        // Only a full pass proves every provider was re-queried, so only it
+        // may reset the full-sync clock.
+        ...(prepared.mode === "full" ? { lastFullSyncAt: new Date() } : {}),
+      },
+    });
+  } catch (err) {
+    logger.error(
+      { runId, err: describeError(err) },
+      "sync: failed to persist run-succeeded status; returning result anyway",
+    );
+  }
   return {
     instanceId: instance.id,
     runId,
@@ -166,6 +208,63 @@ function checkTmdbPreflight(state: AppState): string | null {
   );
 }
 
+// Manual overrides win over provider titles. Items are already derived by
+// the arr client; re-derive only the overridden ones (cheap: a handful of
+// rows) so persisted variations and runtime matching agree with the override.
+//
+// titlesByLang is sourced from the TitleApiCache (same source the route-
+// triggered rebuild helper in title-overrides/rebuild.ts uses), not just
+// `{ de: overrideTitle }` - that keeps non-DE plugin variations (sv/fr/...)
+// intact for overridden items across every sync instead of dropping them.
+async function applyTitleOverrides(items: SearchItemDerived[]): Promise<SearchItemDerived[]> {
+  const overrides = await prisma.titleOverride.findMany();
+  if (overrides.length === 0) return items;
+  const map = new Map(overrides.map((o) => [`${o.mediaType}:${o.externalId}`, o.germanTitle]));
+
+  // Cache lookup is bounded by the (few) items actually overridden, not the
+  // whole library.
+  const overriddenKeys = new Set(
+    items.map((item) => `${item.mediaType}:${item.externalId}`).filter((key) => map.has(key)),
+  );
+  const cacheById = new Map<string, { translations: { lang: string; title: string | null }[] }>();
+  if (overriddenKeys.size > 0) {
+    const caches = await prisma.titleApiCache.findMany({
+      where: { id: { in: [...overriddenKeys] } },
+      include: { translations: { select: { lang: true, title: true } } },
+    });
+    for (const cache of caches) cacheById.set(cache.id, cache);
+  }
+
+  return items.map((item) => {
+    const key = `${item.mediaType}:${item.externalId}`;
+    const overrideTitle = map.get(key);
+    if (overrideTitle === undefined) return item;
+
+    const titlesByLang: Record<string, string> = {};
+    for (const t of cacheById.get(key)?.translations ?? []) {
+      if (t.title) titlesByLang[t.lang] = t.title;
+    }
+    // The override must win the "de" slot the same way it does in
+    // rebuild.ts, regardless of what the cache last saw for German.
+    titlesByLang["de"] = overrideTitle;
+
+    return buildSearchItem({
+      arrId: item.arrId,
+      externalId: item.externalId,
+      title: item.title,
+      expectedTitle: item.expectedTitle,
+      expectedAuthor: item.expectedAuthor,
+      // titlesByLang.de wins for tv/movie; germanTitle feeds the books/audio
+      // path, which ignores titlesByLang entirely.
+      germanTitle: overrideTitle,
+      titlesByLang,
+      mediaType: item.mediaType,
+      aliases: item.aliases,
+      year: item.year,
+    });
+  });
+}
+
 interface PersistChangeStats {
   created: number;
   updated: number;
@@ -181,7 +280,7 @@ interface PersistChangeStats {
 // emit thousands of "title synced" lines). Aggregate counts always log.
 const PER_ITEM_LOG_CAP = 50;
 
-// Batch size for upsert transactions in persistAndReindex. Splitting a large
+// Batch size for upsert transactions in persistItems. Splitting a large
 // sync into many short transactions keeps the SQLite writer lock available
 // for other concurrent instance syncs, instead of holding it for the entire
 // 5k-item library at once. Small chunks also give the sync more save points:
@@ -190,18 +289,36 @@ const PERSIST_CHUNK_SIZE = 50;
 
 // Replaces the on-disk SearchItem rows for one instance with the freshly
 // fetched items, then rebuilds the in-memory index from the new rows.
-async function persistAndReindex(
+interface PersistOptions {
+  /**
+   * externalIds to delete. `null` means "full mode": derive the stale set
+   * from the difference between the stored rows and `items`. A delta pass
+   * passes its own list, because its `items` is only a partial listing and
+   * the implicit difference would wipe the rest of the library.
+   */
+  deleteExternalIds: string[] | null;
+  /**
+   * Full mode rebuilds the whole in-memory index for the instance; delta
+   * mode updates only the touched items.
+   */
+  mode: "full" | "delta";
+}
+
+async function persistItems(
   state: AppState,
   instanceId: string,
   instanceName: string,
   items: Awaited<ReturnType<ReturnType<typeof buildArrClient>["fetchAllItems"]>>,
   logger: AppLogger,
+  opts: PersistOptions,
 ): Promise<PersistChangeStats> {
   const existing = await prisma.searchItem.findMany({
     where: { arrInstanceId: instanceId },
     select: {
       id: true,
       externalId: true,
+      // Needed by the delta path's targeted index removal.
+      mediaType: true,
       title: true,
       expectedTitle: true,
       germanTitle: true,
@@ -255,6 +372,7 @@ async function persistAndReindex(
           arrInstanceId: instanceId,
           arrId: item.arrId,
           externalId: item.externalId,
+          imdbId: item.imdbId ?? null,
           title: item.title,
           expectedTitle: item.expectedTitle,
           expectedAuthor: item.expectedAuthor ?? null,
@@ -310,7 +428,11 @@ async function persistAndReindex(
     });
   }
 
-  const stale = existing.filter((e) => !seenExternalIds.has(e.externalId));
+  const deleteSet = opts.deleteExternalIds === null ? null : new Set(opts.deleteExternalIds);
+  const stale =
+    deleteSet === null
+      ? existing.filter((e) => !seenExternalIds.has(e.externalId))
+      : existing.filter((e) => deleteSet.has(e.externalId));
   if (stale.length > 0) {
     stats.removed = stale.length;
     for (const s of stale) {
@@ -328,27 +450,23 @@ async function persistAndReindex(
     });
   }
 
-  state.removeItemsForInstance(instanceId);
-  const fresh = await prisma.searchItem.findMany({
-    where: { arrInstanceId: instanceId },
-  });
-  for (const row of fresh) {
-    const cached: CachedSearchItem = {
-      id: row.id,
-      arrInstanceId: row.arrInstanceId,
-      arrId: row.arrId,
-      externalId: row.externalId,
-      title: row.title,
-      expectedTitle: row.expectedTitle,
-      expectedAuthor: row.expectedAuthor,
-      germanTitle: row.germanTitle,
-      mediaType: row.mediaType as MediaType,
-      year: row.year,
-      titleSearchVariations: JSON.parse(row.titleSearchVariations) as string[],
-      titleMatchVariations: JSON.parse(row.titleMatchVariations) as string[],
-      authorMatchVariations: JSON.parse(row.authorMatchVariations) as string[],
-    };
-    state.indexItem(cached);
+  if (opts.mode === "full") {
+    state.removeItemsForInstance(instanceId);
+    const fresh = await prisma.searchItem.findMany({
+      where: { arrInstanceId: instanceId },
+    });
+    for (const row of fresh) state.indexItem(toCachedSearchItem(row));
+  } else {
+    // Targeted: a quick sync must never pay for a full-library reindex.
+    for (const s of stale) state.removeItem(s.mediaType as MediaType, s.externalId);
+    const touched = await prisma.searchItem.findMany({
+      where: { arrInstanceId: instanceId, externalId: { in: deduped.map((i) => i.externalId) } },
+    });
+    for (const row of touched) {
+      // removeItem first: indexItem is not idempotent per object identity.
+      state.removeItem(row.mediaType as MediaType, row.externalId);
+      state.indexItem(toCachedSearchItem(row));
+    }
   }
 
   return stats;
@@ -361,7 +479,7 @@ async function syncOneInstance(
 ): Promise<PerInstanceResult> {
   const { instance } = prepared;
   const order = parseProviderOrder(instance.providerOrder);
-  // Lidarr/Readarr don't need a TitleProvider — their fetchAllItems paths
+  // Lidarr/Readarr don't need a TitleProvider - their fetchAllItems paths
   // ignore it anyway. Sonarr/Radarr without an order = config error, so we
   // fail loudly instead of silently running through.
   const needsProvider = instance.type === "sonarr" || instance.type === "radarr";
@@ -375,6 +493,7 @@ async function syncOneInstance(
     return markRunFailed(
       prepared,
       "No title provider could be built. Configure at least one provider in Settings and review the instance's provider order.",
+      logger,
       { updateInstance: false },
     );
   }
@@ -383,16 +502,111 @@ async function syncOneInstance(
     return markRunFailed(
       prepared,
       "API key is only the Prowlarr mask (********). Set the real key on the instance.",
+      logger,
     );
   }
 
   try {
-    return await fetchAndPersist(prepared, state, provider, order, logger);
+    return prepared.mode === "delta"
+      ? await deltaAndPersist(prepared, state, provider, order, logger)
+      : await fetchAndPersist(prepared, state, provider, order, logger);
   } catch (err) {
     const message = describeError(err);
     logger.error({ instance: instance.name, type: instance.type, err }, "sync error");
-    return markRunFailed(prepared, message);
+    return markRunFailed(prepared, message, logger);
   }
+}
+
+async function deltaAndPersist(
+  prepared: PreparedRun,
+  state: AppState,
+  provider: TitleProvider | null,
+  order: ProviderId[] | null,
+  logger: AppLogger,
+): Promise<PerInstanceResult> {
+  const { instance } = prepared;
+  const client = buildArrClient({
+    type: instance.type as ArrType,
+    instanceId: instance.id,
+    instanceName: instance.name,
+    host: instance.host,
+    apiKey: instance.apiKey,
+    userAgent: state.settings.userAgent,
+    provider: provider as TitleProvider,
+    logger,
+  });
+
+  const raw = await client.fetchRawItems();
+  const stored = await prisma.searchItem.findMany({
+    where: { arrInstanceId: instance.id },
+    select: { externalId: true, title: true, year: true },
+  });
+  const plan = planDelta(raw, stored);
+
+  if (plan.isEmpty) {
+    // Bump lastSyncAt so the UI shows the instance as alive, but write no
+    // SearchItem rows and no SyncRun row. This is the common case at a
+    // 10-minute cadence and has to stay this cheap.
+    await prisma.arrInstance
+      .update({
+        where: { id: instance.id },
+        data: { lastSyncAt: new Date(), lastSyncError: null },
+      })
+      .catch((err) => {
+        logger.debug({ err: describeError(err) }, "sync delta: lastSyncAt bump failed");
+      });
+    logger.debug(
+      { instance: instance.name, type: instance.type, listed: raw.length },
+      "sync delta: nothing changed",
+    );
+    return {
+      instanceId: instance.id,
+      runId: null,
+      type: instance.type as ArrType,
+      name: instance.name,
+      count: 0,
+      skipped: true,
+    };
+  }
+
+  const run = await prisma.syncRun.create({
+    data: { arrInstanceId: instance.id, status: "running", kind: "delta" },
+  });
+  const withRun: PreparedRun = { ...prepared, runId: run.id };
+
+  logger.info(
+    {
+      instance: instance.name,
+      type: instance.type,
+      providerOrder: order,
+      listed: raw.length,
+      changed: plan.changed.length,
+      removed: plan.removedExternalIds.length,
+    },
+    "sync delta start",
+  );
+
+  const { items, providerStats } = await withSyncStats(async (stats) => {
+    const fetched = await client.deriveItems(plan.changed);
+    const withOverrides = await applyTitleOverrides(fetched);
+    return { items: withOverrides, providerStats: { ...stats } };
+  });
+
+  const changeStats = await persistItems(state, instance.id, instance.name, items, logger, {
+    deleteExternalIds: plan.removedExternalIds,
+    mode: "delta",
+  });
+  logger.info(
+    {
+      instance: instance.name,
+      type: instance.type,
+      created: changeStats.created,
+      updated: changeStats.updated,
+      removed: changeStats.removed,
+    },
+    "sync delta persisted",
+  );
+  return markRunSucceeded(withRun, changeStats.persistedCount, providerStats, logger);
 }
 
 async function fetchAndPersist(
@@ -428,11 +642,12 @@ async function fetchAndPersist(
   });
   const { items, providerStats } = await withSyncStats(async (stats) => {
     const fetched = await client.fetchAllItems();
-    return { items: fetched, providerStats: { ...stats } };
+    const withOverrides = await applyTitleOverrides(fetched);
+    return { items: withOverrides, providerStats: { ...stats } };
   });
 
   const withGermanTitle = items.filter((i) => i.germanTitle).length;
-  // First few titles without a German title — most useful diagnostic when an
+  // First few titles without a German title - most useful diagnostic when an
   // operator asks "why didn't movie X get translated?". Capped at 5 so a
   // 4k-library sync doesn't dump 4k titles into the log line.
   const missingGermanSample = items
@@ -454,7 +669,10 @@ async function fetchAndPersist(
     "sync fetched items",
   );
 
-  const changeStats = await persistAndReindex(state, instance.id, instance.name, items, logger);
+  const changeStats = await persistItems(state, instance.id, instance.name, items, logger, {
+    deleteExternalIds: null,
+    mode: "full",
+  });
   logger.info(
     {
       instance: instance.name,
@@ -468,7 +686,7 @@ async function fetchAndPersist(
     },
     "sync persisted",
   );
-  return markRunSucceeded(prepared, changeStats.persistedCount, providerStats);
+  return markRunSucceeded(prepared, changeStats.persistedCount, providerStats, logger);
 }
 
 export async function runSync(opts: RunSyncOptions): Promise<SyncResult> {
@@ -486,7 +704,7 @@ export async function runSync(opts: RunSyncOptions): Promise<SyncResult> {
       "sync aborted: TMDB key missing for non-German language plugins",
     );
     const perInstance = await Promise.all(
-      preparedRuns.map((prepared) => markRunFailed(prepared, preflightError)),
+      preparedRuns.map((prepared) => markRunFailed(prepared, preflightError, logger)),
     );
     return { totalItems: 0, perInstance };
   }
@@ -494,7 +712,7 @@ export async function runSync(opts: RunSyncOptions): Promise<SyncResult> {
   // Instances are independent (different arrInstanceId, separate SyncRun rows,
   // separate HTTP fetches). Running them in parallel turns wall-time from
   // sum-of-instances into max-of-instances. The SQLite writer lock still
-  // serializes the actual upsert transactions, but chunked persistAndReindex
+  // serializes the actual upsert transactions, but chunked persistItems
   // releases the lock between batches so the instances interleave instead of
   // fully serializing.
   const perInstance = await Promise.all(

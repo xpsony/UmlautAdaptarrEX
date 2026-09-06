@@ -99,3 +99,38 @@ describe("LidarrClient.fetchAllItems", () => {
     expect(externalIds).toContain("Eagles Greatest Hits");
   });
 });
+
+describe("LidarrClient raw/derive split", () => {
+  it("fetchRawItems returns audio raw items and deriveItems maps them 1:1", async () => {
+    requestMock.mockResolvedValueOnce(jsonResponse([{ id: 3, artistName: "Nordlicht" }]));
+    requestMock.mockResolvedValueOnce(jsonResponse([{ id: 30, artistId: 3, title: "Polarnacht" }]));
+    const client = new LidarrClient({
+      instanceId: "i",
+      instanceName: "n",
+      host: "http://lidarr.local",
+      apiKey: "k",
+      userAgent: "UA",
+    });
+
+    const raw = await client.fetchRawItems();
+
+    expect(raw).toHaveLength(1);
+    expect(raw[0]).toMatchObject({
+      arrId: 3,
+      title: "Polarnacht",
+      mediaType: "audio",
+      expectedAuthor: "Nordlicht",
+      year: null,
+      imdbId: null,
+      germanTitle: null,
+      aliases: null,
+    });
+
+    const derived = await client.deriveItems(raw);
+
+    expect(derived).toHaveLength(1);
+    expect(derived[0]?.expectedTitle).toBe("Polarnacht");
+    expect(derived[0]?.expectedAuthor).toBe("Nordlicht");
+    expect(derived[0]?.externalId).toBe(raw[0]?.externalId);
+  });
+});

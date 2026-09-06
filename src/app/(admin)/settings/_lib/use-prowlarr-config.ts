@@ -46,7 +46,7 @@ export function useProwlarrConfig() {
   // Tracks an explicit user intent ("I clicked Replace") so the section can
   // switch back to the host/apiKey inputs even while a config is stored.
   // Default false. Reset to false on save/disconnect/cancel. Combined with
-  // `isConfigured` below into the derived `editing` flag — avoids syncing
+  // `isConfigured` below into the derived `editing` flag - avoids syncing
   // editing state from a useEffect, which lint flags as cascading renders.
   const [userEditing, setUserEditing] = useState(false);
 

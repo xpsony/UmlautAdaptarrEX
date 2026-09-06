@@ -32,6 +32,10 @@ UmlautAdaptarrEX gibt sich gegenüber den *arrs als Indexer aus, schaltet sich z
 korrigiert Suchen wie Ergebnisse, damit Releases mit Umlauten oder deutschen Titeln zuverlässig gefunden, geladen und
 importiert werden.
 
+> **Umsteiger vom originalen UmlautAdaptarr?** Ein ausführlicher Vergleich der beiden Projekte
+> (Funktionen, Betrieb, Migration) steht in [docs/comparison.de.md](docs/comparison.de.md)
+> (English: [docs/comparison.en.md](docs/comparison.en.md)).
+
 ## Welche Probleme löst es?
 
 - Releases mit Umlauten werden von den \*arrs sonst oft nicht korrekt gefunden oder importiert (Suche nach `o` statt
@@ -56,17 +60,30 @@ importiert werden.
 | Erkennung von Releases mit deutschem Titel & TVDB-Alias                                                                                |   ✓    |
 | Korrekte Suche und Erkennung von Titeln mit Umlauten                                                                                   |   ✓    |
 | Umbenennung von Releases mit schlechtem Naming (optional)                                                                              |   ✓    |
-| **Web-UI** (Setup-Wizard, Login, Dashboard, Instanzen, Sync-Runs, Request- & Rename-History)                                           |   ✓    |
+| **Web-UI** (Setup-Wizard, Login, Dashboard, Instanzen, Bibliothek, Sync-Runs, Request- & Rename-History)                               |   ✓    |
+| **Titel-Bibliothek mit manuellem Override**: alle synchronisierten Titel einsehen, einzelne Fehlmatches direkt fixen                   |   ✓    |
+| **Tabellen-Komfort**: sortierbare Spalten, Filter/Seite per URL teilbar, Zeilen-Detailansichten, CSV-Export                            |   ✓    |
+| **History mit Pagination & Aufbewahrungsfrist** (konfigurierbar, automatisches Aufräumen)                                              |   ✓    |
 | **Persistente SQLite-Datenbank**, kein Cache-Verlust nach Neustart                                                                     |   ✓    |
-| **Live-Logs** über WebSocket                                                                                                           |   ✓    |
+| **Live-Logs** über WebSocket (mit Auto-Reconnect)                                                                                      |   ✓    |
 | **Mehrere Title-Provider** mit konfigurierbarer Reihenfolge: pcjones-API, TVDB, TMDB                                                   |   ✓    |
 | **Sprach-Plugins**: Deutsche Umlaute (default), Schwedische Umlaute, Französische Akzente                                              |   ✓    |
-| **i18n**: Deutsch + Englisch                                                                                                           |   ✓    |
+| **Konfigurierbares Renaming**: Sonderzeichen entfernen, externe IDs anhängen, Schutzregeln einzeln schaltbar                           |   ✓    |
+| **Headless-Modus** (ohne Web-UI, ~115 MiB RAM)                                                                                         |   ✓    |
+| **i18n**: Deutsch, Englisch, Französisch, Schwedisch                                                                                   |   ✓    |
 
 > **Hinweis zu Radarr:**
 >
 > - TMDB / TVDB Key wird benötigt, damit Radarr funktioniert.
 > - TMDB / TVDB Key wird benötigt, damit die Plugins funktionieren.
+
+> **Hinweis zu Torrent-Trackern:** Unterstützt werden ausschließlich Tracker, die die **Torznab-API** sprechen (bei
+> Usenet entsprechend Newznab). Die Korrektur setzt genau an dieser Schnittstelle an: UmlautAdaptarrEX liest die
+> Newznab/Torznab-Suchparameter und schreibt die Titel im Antwort-XML um. Ein Tracker mit einer eigenen API - in
+> Prowlarr sind das die definitionsbasierten Indexer (Implementation `Cardigann`) und die nativen Tracker-Clients -
+> bietet keine solche Schnittstelle und wird deshalb nicht unterstützt. Diese Indexer gehören **nicht** an den Proxy;
+> der Patch-Dialog graut sie aus und taggt sie nicht. Läuft dort noch ein altes Proxy-Tag, nimm es ab: dann sprechen
+> sie wieder direkt mit dem Tracker.
 
 ## Sprach-Plugins
 
@@ -84,6 +101,38 @@ z. B. wenn eine Bibliothek deutsche und französische Titel enthält.
 Pro Plugin werden mehrere Variationsmaps generiert, sodass auch Releases mit gemischter Schreibweise (z. B. `Brueckenkopf`
 vs. `Brückenkopf` vs. `Brueckenkopf`) zuverlässig erkannt werden. Audio-Bibliotheken (Lidarr) verwenden zusätzlich
 einen "Strip-All"-Pfad, der den diakritischen Buchstaben komplett entfernt.
+
+> **Aktiviere nur Sprachen, die du tatsächlich konsumierst.** Jedes zusätzliche Plugin kostet Abfragen:
+>
+> - **Pro Suche** entsteht je Sprachvariante eine zusätzliche Anfrage an die Indexer. Die Gesamtzahl ist hart auf 10
+>   begrenzt - überzählige Varianten fallen weg, im Zweifel auch deutsche. Ein Plugin, dessen Sprache du nie
+>   herunterlädst, verdrängt also potenziell nützliche Suchen.
+> - **Pro Sync** stellt TheTVDB eine weitere Anfrage je Titel und Sprache (es gibt dort keinen Bulk-Endpoint für
+>   Übersetzungen). TMDB liefert alle Sprachen in einem Aufruf und skaliert daher nicht mit der Plugin-Anzahl.
+
+## Renaming
+
+Wie Release-Titel in den Indexer-Antworten umgeschrieben werden, ist unter **Settings → Renaming** konfigurierbar.
+Änderungen wirken ab der nächsten Suche - kein Neustart, kein Re-Sync.
+
+| Schalter                                 | Default | Wirkung                                                                                                                                                |
+| ---------------------------------------- | :-----: | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Unerwünschte Zeichen entfernen**       |    ✓    | Entfernt `: ? * " < > \| / \` aus dem eingesetzten Titel, ohne doppelte Trennzeichen zu hinterlassen. Das Suffix des Indexers bleibt unverändert.      |
+| **Externe IDs anhängen**                 |    ✓    | Hängt `tvdbid` / `tmdbid` / `imdb` als newznab-Attribut an. Sonarr/Radarr können das Release damit ohne Titel-Analyse zuordnen. Rein additiv.          |
+| **Jahres-Prüfung**                       |    ✓    | Lehnt das Umschreiben ab, wenn die Jahreszahl im Release nicht zum Medium passt (Toleranz pro Instanz konfigurierbar).                                 |
+| **Prüfung auf mehrdeutigen Präfix**      |    ✓    | Lehnt ab, wenn der Zieltitel mit der gefundenen Variante beginnt und danach kein `SxxExx` bzw. keine Jahreszahl folgt.                                 |
+| **Release-Tags erhalten**                |    ✓    | Schiebt `3D` / `4K` / `HDR` / `IMAX` zurück ins Suffix, wenn ein Provider-Alias sie mitgebracht hat.                                                   |
+| **Suffix wie beim alten Umlautadaptarr** |    ◯    | Schneidet nach Rohlänge der Variante statt nach normalisierten Zeichen. Bei `ß`/Umlauten schneidet das zu weit - nur für exakte Legacy-Kompatibilität. |
+
+Zwei Preset-Buttons setzen die vier Schutzregeln auf einmal: **Wie der alte Umlautadaptarr** (alle Schutzregeln aus,
+Legacy-Suffix an) und **Empfohlene Werte**.
+
+> **Ab dieser Version gelten die empfohlenen Defaults für alle Installationen.** Früher liefen die beiden Schalter, die
+> die ausgelieferten Bytes verändern, in Bestandsinstallationen auf **aus**, damit ein Update die Ausgabe nicht
+> anfasst. Beide lohnen sich aber - Scene-Releases enthalten die entfernten Zeichen nie, und die externen IDs
+> verbessern die Zuordnung in Sonarr/Radarr deutlich - deshalb schaltet eine Migration sie einmalig für alle ein. Wer
+> die alte Ausgabe will, schaltet sie unter **Settings → Renaming** wieder aus; die Presets **Wie der alte
+> Umlautadaptarr** und **Empfohlene Werte** stellen den Rest in einem Klick um.
 
 ## Installation
 
@@ -237,9 +286,9 @@ Was das Skript tut:
 - Installiert Node.js 26 + pnpm (via npm), holt das neueste Release von `xpsony/UmlautAdaptarrEX`
   und führt `pnpm build:prod` + `pnpm prisma:deploy` aus.
 - Fragt während der Installation die drei Service-Ports ab (vorbelegt mit den Defaults, Enter übernimmt):
-  - **5007** — Web-UI + Setup-Wizard (`http://<IP>:5007/setup`)
-  - **5005** — Public API + Indexer-Routen für die \*arrs
-  - **5006** — Prowlarr-TCP-Proxy (Basic-Auth, wird im Setup gesetzt)
+  - **5007** - Web-UI + Setup-Wizard (`http://<IP>:5007/setup`)
+  - **5005** - Public API + Indexer-Routen für die \*arrs
+  - **5006** - Prowlarr-TCP-Proxy (Basic-Auth, wird im Setup gesetzt)
 - Startet die App als systemd-Dienst (`umlautadaptarrex`). Die SQLite-DB liegt unter
   `/opt/umlautadaptarrex/data/` und bleibt über Updates erhalten.
 
@@ -274,18 +323,19 @@ Die `data/`-DB wird in den Container gemountet und enthält die gesamte Konfigur
 
 Für schlanke Deployments lässt sich UmlautAdaptarrEX ohne die Next.js-Web-UI
 betreiben. Die eigentliche Funktion (Prowlarr-Indexer-Proxy, Legacy-API,
-Titel-Lookup) läuft vollständig in Fastify und ist von der UI unabhängig — die
+Titel-Lookup) läuft vollständig in Fastify und ist von der UI unabhängig - die
 \*Arrs sprechen ohnehin direkt mit Port 5005.
 
 Aktivierung über die Umgebungsvariable `UMLAUTADAPTARREX_HEADLESS=1`. Dann
 entfällt der Next.js-Prozess **und** die selbst-forkende Supervisor-Schicht;
 der Container läuft in einem einzigen Node-Prozess. In Messungen dieses
 Projekts (minimale Konfiguration) sank der Container-Verbrauch von ca. 160 MiB
-— und über 200 MiB, während die Web-UI geöffnet ist — auf ca. 115 MiB im
-Headless-Betrieb, also grob **ein Drittel bzw. ~50–90 MB** weniger. Der
-Fastify-/Core-Prozess bleibt der Hauptverbraucher; eingespart wird im
-Wesentlichen der wegfallende Web-UI-Prozess. Der genaue Betrag hängt von deiner
-Konfiguration ab.
+
+- und über 200 MiB, während die Web-UI geöffnet ist - auf ca. 115 MiB im
+  Headless-Betrieb, also grob **ein Drittel bzw. ~50–90 MB** weniger. Der
+  Fastify-/Core-Prozess bleibt der Hauptverbraucher; eingespart wird im
+  Wesentlichen der wegfallende Web-UI-Prozess. Der genaue Betrag hängt von deiner
+  Konfiguration ab.
 
 **Wichtig:** Der Headless-Modus funktioniert nur für eine **bereits
 eingerichtete** Instanz. Der Einrichtungs-Assistent läuft ausschließlich in der
@@ -429,7 +479,7 @@ API-Key wird normal gesetzt. Den `apiKey` für UmlautAdaptarrEX erzeugst du im W
 Die vollständige HTTP-API (Admin, Auth, Legacy, WebSocket, TCP-Proxy) ist in [docs/api.md](docs/api.md) dokumentiert.
 Die Release-Rename-Pipeline ist in [docs/renaming.md](docs/renaming.md) beschrieben. Wer das Projekt forken und auf
 eigenen GitHub-Owner / Docker-Hub-Namespace umflaggen will, findet die Anleitung in
-[docs/forking.md](docs/forking.md) — inkl. `scripts/rebrand.sh` für die statischen Defaults und der drei Runtime-Hebel
+[docs/forking.md](docs/forking.md) - inkl. `scripts/rebrand.sh` für die statischen Defaults und der drei Runtime-Hebel
 (`DOCKERHUB_IMAGE`, `UMLAUTADAPTARREX_IMAGE`, `NEXT_PUBLIC_GITHUB_OWNER` / `NEXT_PUBLIC_GITHUB_REPO`).
 
 ## Local Development
@@ -482,7 +532,7 @@ src/
 ├─ providers/             # Externe Title-Provider (pcjones, TVDB, TMDB, db-cache)
 ├─ arr/                   # Sonarr/Radarr/Lidarr/Readarr/Prowlarr-Clients
 ├─ schemas/               # Zod-Schemas (shared client/server)
-├─ messages/              # i18n (de.json, en.json)
+├─ messages/              # i18n (de, en, fr, sv)
 └─ lib/                   # db, auth, secrets, legacy-env, i18n, utils
 ```
 
@@ -501,7 +551,8 @@ src/
 
 ## Credits
 
-Basiert auf der Idee und Logik von [PCJones/UmlautAdaptarr](https://github.com/PCJones/UmlautAdaptarr).
+Basiert auf der Idee und Logik von [PCJones/UmlautAdaptarr](https://github.com/PCJones/UmlautAdaptarr) -
+ein ausführlicher Vergleich beider Projekte steht in [docs/comparison.de.md](docs/comparison.de.md).
 
 Danke an [xopez](https://github.com/xopez) für die TrueNAS-Community-App.
 

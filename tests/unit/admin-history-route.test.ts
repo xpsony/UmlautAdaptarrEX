@@ -78,6 +78,36 @@ describe("GET /api/admin/request-history", () => {
     expect(args.where).toEqual({ type: "caps", domain: "example.com" });
   });
 
+  it("supports a free-text search over query, externalId and domain", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/request-history?search=galaxy",
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as {
+      where: { OR: unknown[] };
+    };
+    expect(args.where.OR).toEqual([
+      { query: { contains: "galaxy" } },
+      { externalId: { contains: "galaxy" } },
+      { domain: { contains: "galaxy" } },
+    ]);
+  });
+
+  it("caps the search term at 256 chars", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: `/api/admin/request-history?search=${"a".repeat(300)}`,
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as {
+      where: { OR: Array<{ query: { contains: string } }> };
+    };
+    expect(args.where.OR[0]?.query.contains).toHaveLength(256);
+  });
+
   it("clamps take to the configured maximum", async () => {
     mockReq.findMany.mockResolvedValueOnce([]);
     mockReq.count.mockResolvedValueOnce(0);
@@ -87,6 +117,175 @@ describe("GET /api/admin/request-history", () => {
     });
     const args = mockReq.findMany.mock.calls[0]?.[0] as { take: number };
     expect(args.take).toBe(500);
+  });
+
+  it("orders by createdAt desc by default, with an id tiebreaker", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({ method: "GET", url: "/api/admin/request-history" });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual([{ createdAt: "desc" }, { id: "asc" }]);
+  });
+
+  it("accepts a whitelisted sort key with an explicit order", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/request-history?sort=status&order=asc",
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual([{ status: "asc" }, { id: "asc" }]);
+  });
+
+  it("flips order between asc and desc for the same sort key", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/request-history?sort=durationMs&order=desc",
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual([{ durationMs: "desc" }, { id: "asc" }]);
+  });
+
+  it("falls back to the default sort key when sort is not whitelisted", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/request-history?sort=apiKey&order=asc",
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual([{ createdAt: "asc" }, { id: "asc" }]);
+  });
+
+  it("falls back to the default order when order is not asc/desc", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/request-history?sort=status&order=sideways",
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual([{ status: "desc" }, { id: "asc" }]);
+  });
+
+  it("keeps a stable id tiebreaker after a low-cardinality, non-default sort", async () => {
+    mockReq.findMany.mockResolvedValueOnce([]);
+    mockReq.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/request-history?sort=status&order=asc",
+    });
+    const args = mockReq.findMany.mock.calls[0]?.[0] as { orderBy: unknown[] };
+    expect(args.orderBy).toHaveLength(2);
+    expect(args.orderBy[1]).toEqual({ id: "asc" });
+  });
+
+  describe("format=csv", () => {
+    it("returns text/csv with an attachment content-disposition and today's date in the filename", async () => {
+      mockReq.findMany.mockResolvedValueOnce([]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv",
+      });
+      expect(r.statusCode).toBe(200);
+      expect(r.headers["content-type"]).toBe("text/csv; charset=utf-8");
+      const today = new Date().toISOString().slice(0, 10);
+      expect(r.headers["content-disposition"]).toBe(
+        `attachment; filename="request-history-${today}.csv"`,
+      );
+    });
+
+    it("does not run the count query (no pagination total needed for a file export)", async () => {
+      mockReq.findMany.mockResolvedValueOnce([]);
+      await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv",
+      });
+      expect(mockReq.count).not.toHaveBeenCalled();
+    });
+
+    it("ignores take/skip and caps at 10_000 rows", async () => {
+      mockReq.findMany.mockResolvedValueOnce([]);
+      await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv&take=5&skip=10",
+      });
+      const args = mockReq.findMany.mock.calls[0]?.[0] as {
+        take: number;
+        skip?: number;
+      };
+      expect(args.take).toBe(10_000);
+      expect(args.skip).toBeUndefined();
+    });
+
+    it("applies the same filters and sort as the JSON list", async () => {
+      mockReq.findMany.mockResolvedValueOnce([]);
+      await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv&type=caps&domain=example.com&sort=status&order=asc",
+      });
+      const args = mockReq.findMany.mock.calls[0]?.[0] as {
+        where: Record<string, unknown>;
+        orderBy: unknown;
+      };
+      expect(args.where).toEqual({ type: "caps", domain: "example.com" });
+      expect(args.orderBy).toEqual([{ status: "asc" }, { id: "asc" }]);
+    });
+
+    it("emits a header row plus one row per item, with id included", async () => {
+      mockReq.findMany.mockResolvedValueOnce([
+        {
+          id: "r1",
+          createdAt: new Date("2026-01-02T03:04:05.000Z"),
+          type: "caps",
+          domain: "example.com",
+          query: "a, b",
+          externalId: null,
+          status: 200,
+          durationMs: 12,
+          cacheHit: true,
+        },
+      ]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv",
+      });
+      // Body is BOM-prefixed (see below) - strip it before splitting on rows.
+      const lines = r.body.slice(1).split("\r\n");
+      expect(lines[0]).toBe("id,createdAt,type,domain,query,externalId,status,durationMs,cacheHit");
+      expect(lines[1]).toBe('r1,2026-01-02T03:04:05.000Z,caps,example.com,"a, b",,200,12,true');
+    });
+
+    it("prefixes the body with a UTF-8 BOM so Excel doesn't mis-decode umlauts as ANSI", async () => {
+      mockReq.findMany.mockResolvedValueOnce([]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv",
+      });
+      expect(r.body.startsWith("﻿")).toBe(true);
+    });
+
+    it("sets x-truncated when the row count hits the 10_000 cap", async () => {
+      const rows = Array.from({ length: 10_000 }, (_, i) => ({ id: String(i) }));
+      mockReq.findMany.mockResolvedValueOnce(rows);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv",
+      });
+      expect(r.headers["x-truncated"]).toBe("true");
+    });
+
+    it("omits x-truncated when the row count is under the cap", async () => {
+      mockReq.findMany.mockResolvedValueOnce([{ id: "r1" }]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/request-history?format=csv",
+      });
+      expect(r.headers["x-truncated"]).toBeUndefined();
+    });
   });
 });
 
@@ -104,6 +303,141 @@ describe("GET /api/admin/rename-history", () => {
     expect(args.where.mediaType).toBe("movie");
     expect(Array.isArray(args.where.OR)).toBe(true);
     expect(args.where.OR.length).toBe(2);
+  });
+
+  it("orders by createdAt desc by default, with an id tiebreaker", async () => {
+    mockRename.findMany.mockResolvedValueOnce([]);
+    mockRename.count.mockResolvedValueOnce(0);
+    await app.inject({ method: "GET", url: "/api/admin/rename-history" });
+    const args = mockRename.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual([{ createdAt: "desc" }, { id: "asc" }]);
+  });
+
+  it("accepts the whitelisted mediaType sort key", async () => {
+    mockRename.findMany.mockResolvedValueOnce([]);
+    mockRename.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/rename-history?sort=mediaType&order=asc",
+    });
+    const args = mockRename.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual([{ mediaType: "asc" }, { id: "asc" }]);
+  });
+
+  it("falls back to the default sort key when sort is not whitelisted", async () => {
+    mockRename.findMany.mockResolvedValueOnce([]);
+    mockRename.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/rename-history?sort=originalTitle",
+    });
+    const args = mockRename.findMany.mock.calls[0]?.[0] as { orderBy: unknown };
+    expect(args.orderBy).toEqual([{ createdAt: "desc" }, { id: "asc" }]);
+  });
+
+  it("keeps a stable id tiebreaker after the low-cardinality mediaType sort", async () => {
+    mockRename.findMany.mockResolvedValueOnce([]);
+    mockRename.count.mockResolvedValueOnce(0);
+    await app.inject({
+      method: "GET",
+      url: "/api/admin/rename-history?sort=mediaType&order=asc",
+    });
+    const args = mockRename.findMany.mock.calls[0]?.[0] as { orderBy: unknown[] };
+    expect(args.orderBy).toHaveLength(2);
+    expect(args.orderBy[1]).toEqual({ id: "asc" });
+  });
+
+  describe("format=csv", () => {
+    it("returns text/csv with an attachment content-disposition and today's date in the filename", async () => {
+      mockRename.findMany.mockResolvedValueOnce([]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/rename-history?format=csv",
+      });
+      expect(r.statusCode).toBe(200);
+      expect(r.headers["content-type"]).toBe("text/csv; charset=utf-8");
+      const today = new Date().toISOString().slice(0, 10);
+      expect(r.headers["content-disposition"]).toBe(
+        `attachment; filename="rename-history-${today}.csv"`,
+      );
+    });
+
+    it("does not run the count query and caps at 10_000 rows", async () => {
+      mockRename.findMany.mockResolvedValueOnce([]);
+      await app.inject({
+        method: "GET",
+        url: "/api/admin/rename-history?format=csv&take=5&skip=10",
+      });
+      expect(mockRename.count).not.toHaveBeenCalled();
+      const args = mockRename.findMany.mock.calls[0]?.[0] as {
+        take: number;
+        skip?: number;
+      };
+      expect(args.take).toBe(10_000);
+      expect(args.skip).toBeUndefined();
+    });
+
+    it("applies the same filters and sort as the JSON list", async () => {
+      mockRename.findMany.mockResolvedValueOnce([]);
+      await app.inject({
+        method: "GET",
+        url: "/api/admin/rename-history?format=csv&mediaType=movie&sort=mediaType&order=asc",
+      });
+      const args = mockRename.findMany.mock.calls[0]?.[0] as {
+        where: Record<string, unknown>;
+        orderBy: unknown;
+      };
+      expect(args.where).toEqual({ mediaType: "movie" });
+      expect(args.orderBy).toEqual([{ mediaType: "asc" }, { id: "asc" }]);
+    });
+
+    it("emits a header row plus one row per item, with id included", async () => {
+      mockRename.findMany.mockResolvedValueOnce([
+        {
+          id: "n1",
+          createdAt: new Date("2026-01-02T03:04:05.000Z"),
+          mediaType: "movie",
+          originalTitle: "Die Hard",
+          rewrittenTitle: 'Stirb "langsam"',
+        },
+      ]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/rename-history?format=csv",
+      });
+      // Body is BOM-prefixed (see below) - strip it before splitting on rows.
+      const lines = r.body.slice(1).split("\r\n");
+      expect(lines[0]).toBe("id,createdAt,mediaType,originalTitle,rewrittenTitle");
+      expect(lines[1]).toBe('n1,2026-01-02T03:04:05.000Z,movie,Die Hard,"Stirb ""langsam"""');
+    });
+
+    it("prefixes the body with a UTF-8 BOM so Excel doesn't mis-decode umlauts as ANSI", async () => {
+      mockRename.findMany.mockResolvedValueOnce([]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/rename-history?format=csv",
+      });
+      expect(r.body.startsWith("﻿")).toBe(true);
+    });
+
+    it("sets x-truncated when the row count hits the 10_000 cap", async () => {
+      const rows = Array.from({ length: 10_000 }, (_, i) => ({ id: String(i) }));
+      mockRename.findMany.mockResolvedValueOnce(rows);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/rename-history?format=csv",
+      });
+      expect(r.headers["x-truncated"]).toBe("true");
+    });
+
+    it("omits x-truncated when the row count is under the cap", async () => {
+      mockRename.findMany.mockResolvedValueOnce([{ id: "n1" }]);
+      const r = await app.inject({
+        method: "GET",
+        url: "/api/admin/rename-history?format=csv",
+      });
+      expect(r.headers["x-truncated"]).toBeUndefined();
+    });
   });
 });
 

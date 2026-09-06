@@ -30,11 +30,11 @@ export interface LanguagePack {
   hasPlugins: boolean;
 
   // ── Hot-path precomputed regexes (built once per pack) ─────────────────────
-  /** `[a-z0-9…]/i` — used by rename/matching to count "word characters". */
+  /** `[a-z0-9…]/i` - used by rename/matching to count "word characters". */
   wordCharRegex: RegExp;
-  /** `^(Der|Die|…) ` — null when no plugin contributes articles. */
+  /** `^(Der|Die|…) ` - null when no plugin contributes articles. */
   articleRegex: RegExp | null;
-  /** `[^a-zA-Z0-9 …\-]+/g` — strips specials but keeps plugin word chars. */
+  /** `[^a-zA-Z0-9 …\-]+/g` - strips specials but keeps plugin word chars. */
   specialCharsKeepRegex: RegExp;
 }
 
@@ -105,12 +105,12 @@ export function aggregatePlugins(
 //
 // `applyCharMap` and `hasMappedChar` get hammered: every variation, every
 // release-title comparison hits them. The naive loop visits every codepoint
-// even for plain ASCII strings ("Some.Show.Title") where no key matches —
+// even for plain ASCII strings ("Some.Show.Title") where no key matches -
 // roughly the steady-state release name. We precompile a regex per map
 // (cached on the map's identity) and bail out in O(1) when no key is present.
 
 interface MapRegex {
-  /** Single-shot detect (no flags) — used for fast bail. */
+  /** Single-shot detect (no flags) - used for fast bail. */
   detect: RegExp;
   /** Global replace, used for actual substitution. */
   replace: RegExp;

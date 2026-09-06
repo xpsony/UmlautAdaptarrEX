@@ -42,7 +42,7 @@ async function acknowledgeSeen(): Promise<void> {
   try {
     await apiFetch("/api/auth/changelog/seen", { method: "POST" });
   } catch {
-    /* non-fatal — the dialog will show again on the next load */
+    /* non-fatal - the dialog will show again on the next load */
   }
 }
 
@@ -64,7 +64,7 @@ export function ChangelogDialog() {
         const me = await apiFetch<{ lastSeenChangelog?: string | null }>("/api/auth/me");
         lastSeen = me.lastSeenChangelog ?? null;
       } catch {
-        // Not authenticated / request failed — stay closed.
+        // Not authenticated / request failed - stay closed.
         return;
       }
       if (cancelled) return;

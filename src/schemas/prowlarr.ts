@@ -17,10 +17,7 @@ export const ProwlarrImportSchema = z.object({
 });
 
 type ProwlarrSkipReason =
-  | "unsupported_type"
-  | "missing_api_key"
-  | "missing_host"
-  | "masked_api_key";
+  "unsupported_type" | "missing_api_key" | "missing_host" | "masked_api_key";
 
 export interface ProwlarrParsedApp {
   prowlarrId: number;
@@ -70,15 +67,23 @@ export interface InstallProxyResponse {
 // A single Prowlarr indexer as shown in the patch dialog. Carries no secrets:
 // indexer-level API keys / cookies live in `fields` on the raw object and are
 // never mapped into this view.
+export type ProwlarrIndexerSkipReason = "no_base_url" | "unsupported_api";
+
 export interface ProwlarrIndexerView {
   id: number;
   name: string;
   enable: boolean;
   protocol: string; // "torrent" | "usenet" | "unknown"
+  /**
+   * Prowlarr's own implementation name ("Newznab", "Torznab", "Cardigann", a
+   * native tracker client, ...) or null when Prowlarr did not report one. The
+   * dialog names it in the tooltip of an indexer it had to grey out.
+   */
+  implementation: string | null;
   currentBaseUrl: string | null;
   isPatched: boolean;
   patchable: boolean;
-  reason?: string; // set when patchable === false, e.g. "no_base_url"
+  reason?: ProwlarrIndexerSkipReason; // set when patchable === false
 }
 
 export interface ProwlarrIndexersResponse {

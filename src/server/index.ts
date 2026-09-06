@@ -5,7 +5,7 @@ import type {
   FastifyReply,
   FastifyRequest,
 } from "fastify";
-import Fastify from "fastify";
+import Fastify, { LogController } from "fastify";
 import { nanoid } from "nanoid";
 import { prisma } from "@/lib/db";
 import cookie from "@fastify/cookie";
@@ -27,6 +27,8 @@ import { historyRoutes } from "./routes/admin/history";
 import { pluginRoutes } from "./routes/admin/plugins";
 import { syncRoutes } from "./routes/admin/sync";
 import { systemRoutes } from "./routes/admin/system";
+import { titleOverrideRoutes } from "./routes/admin/title-overrides";
+import { searchItemRoutes } from "./routes/admin/search-items";
 import { handleCaps } from "./routes/legacy/caps";
 import { handleSearch } from "./routes/legacy/search";
 import { isLoopbackRequest } from "./routes/legacy/util";
@@ -38,7 +40,7 @@ import { cancelStaleRuns } from "./sync/run";
 import { SESSION_TTL_MS } from "@/lib/auth/session";
 import { ensureCsrfSecret, getCsrfSecret } from "@/lib/auth/csrf";
 import { SessionRetentionScheduler } from "./auth/session-retention";
-import { parseTrustProxy } from "./trust-proxy";
+import { isHopCountTrustProxy, parseTrustProxy } from "./trust-proxy";
 import { applySecurityHeaders } from "./security-headers";
 import { resolveHeadless, resolveLegacyApiPort } from "@/lib/ports";
 
@@ -85,7 +87,7 @@ export async function bootServer(opts: BootOptions): Promise<{
     });
     await state.reloadSettings();
     logger.info(
-      "generated initial proxy password for existing installation — visit Settings → Advanced to view it",
+      "generated initial proxy password for existing installation - visit Settings → Advanced to view it",
     );
   }
   await state.loadSearchItemsFromDb();
@@ -93,12 +95,24 @@ export async function bootServer(opts: BootOptions): Promise<{
   const fetcher = new IndexerFetcher(state, logger);
 
   const trustProxy = parseTrustProxy(process.env.TRUST_PROXY);
+  if (isHopCountTrustProxy(process.env.TRUST_PROXY)) {
+    logger.warn(
+      { trustProxy: process.env.TRUST_PROXY },
+      "TRUST_PROXY hop counts are no longer supported (Fastify 5.12 disabled " +
+        "them: a hop count cannot validate the immediate peer, so direct " +
+        "clients could spoof X-Forwarded-*). Falling back to no trust - set " +
+        'TRUST_PROXY to "loopback" or a comma-separated CIDR/IP list instead.',
+    );
+  }
   const app = Fastify({
     loggerInstance: logger as FastifyBaseLogger,
     trustProxy,
     bodyLimit: 5 * 1024 * 1024,
-    // Errors are logged centrally below; slow requests are logged via onResponse.
-    disableRequestLogging: true,
+    // Errors are logged centrally below; slow requests are logged via
+    // onResponse. The top-level `disableRequestLogging` option still works but
+    // is deprecated since Fastify 5.12 (removed in 6) and warns on every boot,
+    // so we pass it through LogController instead.
+    logController: new LogController({ disableRequestLogging: true }),
   });
 
   installErrorHandlers(app, logger);
@@ -119,12 +133,13 @@ export async function bootServer(opts: BootOptions): Promise<{
   // `x-csrf-token` to match the existing UI; cookieOpts mirror the session
   // cookie (sameSite=lax, path=/, secure derived from req.protocol via
   // trustProxy when the cookie is set). Without `userInfo: true` the token
-  // is not session-bound — that's fine because the secret cookie is itself
+  // is not session-bound - that's fine because the secret cookie is itself
   // tied to the session via httpOnly+sameSite, and stealing both halves
   // requires either XSS (game over anyway) or a cross-site bypass that
   // sameSite=lax already blocks.
   await app.register(csrfProtection, {
     sessionPlugin: "@fastify/cookie",
+    logLevel: "debug",
     getToken: (req) => {
       const h = req.headers["x-csrf-token"];
       return Array.isArray(h) ? h[0] : h;
@@ -134,6 +149,7 @@ export async function bootServer(opts: BootOptions): Promise<{
       sameSite: "lax",
       httpOnly: true,
       signed: true,
+      maxAge: Math.floor(SESSION_TTL_MS / 1000),
     },
   });
 
@@ -199,12 +215,14 @@ export async function bootServer(opts: BootOptions): Promise<{
   await pluginRoutes(app);
   await syncRoutes(app, { scheduler });
   await systemRoutes(app);
+  await titleOverrideRoutes(app);
+  await searchItemRoutes(app);
 
   await app.ready();
   broadcaster.attachToHttp(app.server);
 
   const proxyPort = opts.proxyPort ?? state.settings.proxyPort ?? 5006;
-  // operationMode is read once at boot — switching modes in Settings logs a
+  // operationMode is read once at boot - switching modes in Settings logs a
   // hint that a restart is required for port 5006. Live-switching would
   // require open() / close() of two competing servers on the same port and
   // isn't worth the complexity for what is a once-per-install decision.
@@ -233,12 +251,7 @@ export async function bootServer(opts: BootOptions): Promise<{
       cacheDurationMinutes: state.settings.cacheDurationMinutes,
       logRetentionDays: state.settings.logRetentionDays,
       providerConfigured: !!state.provider,
-      trustProxy:
-        typeof trustProxy === "boolean" || typeof trustProxy === "number"
-          ? trustProxy
-          : Array.isArray(trustProxy)
-            ? trustProxy.join(",")
-            : trustProxy,
+      trustProxy: Array.isArray(trustProxy) ? trustProxy.join(",") : trustProxy,
     },
     "fastify gateway listening",
   );
@@ -246,7 +259,7 @@ export async function bootServer(opts: BootOptions): Promise<{
   if (SESSION_TTL_MS > 60 * 24 * 60 * 60 * 1000) {
     logger.warn(
       { sessionTtlDays: Math.round(SESSION_TTL_MS / (24 * 60 * 60 * 1000)) },
-      "long admin session TTL active (dev mode) — never run with this config in production",
+      "long admin session TTL active (dev mode) - never run with this config in production",
     );
   }
 
@@ -282,8 +295,21 @@ function installErrorHandlers(app: FastifyInstance, logger: AppLogger): void {
       status,
       err,
     };
+    const isCsrfError =
+      err.code === "FST_CSRF_MISSING_SECRET" || err.code === "FST_CSRF_INVALID_TOKEN";
     if (status >= 500) {
       req.log.error(ctx, "request failed");
+    } else if (isCsrfError) {
+      req.log.debug(
+        {
+          reqId: req.id,
+          method: req.method,
+          url: redactApiKey(req.url),
+          ip: req.ip,
+          code: err.code,
+        },
+        "auth rejected: invalid CSRF token",
+      );
     } else {
       req.log.warn(ctx, "request rejected");
     }
@@ -304,7 +330,7 @@ function installErrorHandlers(app: FastifyInstance, logger: AppLogger): void {
     // Translate both CSRF codes into the SPA-known `csrf-invalid` shape so
     // `isSessionLost` triggers a clean redirect to /login instead of
     // surfacing the raw "Missing csrf secret" string in a toast.
-    if (err.code === "FST_CSRF_MISSING_SECRET" || err.code === "FST_CSRF_INVALID_TOKEN") {
+    if (isCsrfError) {
       void reply.code(403).send({ error: "csrf-invalid" });
       return;
     }
@@ -345,7 +371,7 @@ function installRequestTiming(app: FastifyInstance, _logger: AppLogger): void {
     const status = reply.statusCode;
     const slow = durationMs >= SLOW_REQUEST_MS;
     const errored = status >= 400;
-    // Skip fast successes — admin UI polls every 5s and would flood the log.
+    // Skip fast successes - admin UI polls every 5s and would flood the log.
     if (!slow && !errored) return;
     const alreadyLogged = (req as FastifyRequest & { _loggedError?: boolean })._loggedError;
     if (errored && alreadyLogged) return;

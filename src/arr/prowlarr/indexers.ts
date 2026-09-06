@@ -1,6 +1,10 @@
 import { type CompatLogger, type ProwlarrCallResult, prowlarrRequest } from "./_client";
 import { ensureProxyTag, PROWLARR_PROXY_TAG_LABEL, type StepContext } from "./install-proxy";
-import type { PatchIndexerResult, ProwlarrIndexerView } from "@/schemas/prowlarr";
+import type {
+  PatchIndexerResult,
+  ProwlarrIndexerSkipReason,
+  ProwlarrIndexerView,
+} from "@/schemas/prowlarr";
 
 export interface ProwlarrIndexerField {
   name?: string;
@@ -14,6 +18,9 @@ export interface RawProwlarrIndexer {
   name?: string;
   enable?: boolean;
   protocol?: string;
+  /** "Newznab" | "Torznab" | "Cardigann" | a native tracker client's name. */
+  implementation?: string;
+  implementationName?: string;
   fields?: ProwlarrIndexerField[];
   tags?: number[];
 
@@ -43,19 +50,54 @@ export function isPatchableUrl(value: string | null): boolean {
   return typeof value === "string" && /^https?:\/\//i.test(value);
 }
 
+// The only two Prowlarr implementations whose wire protocol we can read. The
+// rewriting works on Newznab/Torznab response XML and the search fan-out on
+// Newznab query parameters; every other implementation talks the tracker's own
+// API instead. Routing one of those through the proxy cannot correct anything
+// and actively breaks the indexer, because the legacy route dispatches on the
+// Newznab `t` parameter and has nothing to answer a request without it.
+const CORRECTABLE_IMPLEMENTATIONS = new Set(["newznab", "torznab"]);
+
+/** Prowlarr's implementation name for this indexer, or null if it sent none. */
+export function getImplementation(raw: RawProwlarrIndexer): string | null {
+  const impl = typeof raw.implementation === "string" ? raw.implementation.trim() : "";
+  if (impl) return impl;
+  const named = typeof raw.implementationName === "string" ? raw.implementationName.trim() : "";
+  return named || null;
+}
+
+/**
+ * Fails OPEN: an indexer whose implementation Prowlarr did not report counts
+ * as correctable. A Prowlarr version that omits the field must not end up with
+ * every one of its indexers greyed out.
+ */
+export function isCorrectableImplementation(raw: RawProwlarrIndexer): boolean {
+  const impl = getImplementation(raw);
+  if (!impl) return true;
+  return CORRECTABLE_IMPLEMENTATIONS.has(impl.toLowerCase());
+}
+
+/** Why this indexer cannot be patched, or null when it can. */
+export function patchSkipReason(raw: RawProwlarrIndexer): ProwlarrIndexerSkipReason | null {
+  if (!isPatchableUrl(getBaseUrlValue(raw))) return "no_base_url";
+  if (!isCorrectableImplementation(raw)) return "unsupported_api";
+  return null;
+}
+
 export function toIndexerView(raw: RawProwlarrIndexer, tagId: number | null): ProwlarrIndexerView {
   const baseUrl = getBaseUrlValue(raw);
-  const patchable = isPatchableUrl(baseUrl);
+  const reason = patchSkipReason(raw);
   const isPatched = tagId != null && Array.isArray(raw.tags) && raw.tags.includes(tagId);
   return {
     id: raw.id,
     name: typeof raw.name === "string" && raw.name ? raw.name : `#${raw.id}`,
     enable: raw.enable ?? false,
     protocol: typeof raw.protocol === "string" ? raw.protocol : "unknown",
+    implementation: getImplementation(raw),
     currentBaseUrl: baseUrl,
     isPatched,
-    patchable,
-    ...(patchable ? {} : { reason: "no_base_url" }),
+    patchable: reason === null,
+    ...(reason === null ? {} : { reason }),
   };
 }
 
@@ -66,7 +108,7 @@ export function computePatchPlan(
   selectedIds: Set<number>,
 ): PatchPlanItem[] {
   return indexers.map((raw) => {
-    const patchable = isPatchableUrl(getBaseUrlValue(raw));
+    const patchable = patchSkipReason(raw) === null;
     const isPatched = Array.isArray(raw.tags) && raw.tags.includes(tagId);
     const shouldBePatched = selectedIds.has(raw.id);
     let action: PatchAction;
@@ -97,12 +139,10 @@ export function applyPatchToRaw(
 }
 
 export type FetchIndexersResult =
-  | { ok: true; indexers: ProwlarrIndexerView[] }
-  | { ok: false; status?: number; error: string };
+  { ok: true; indexers: ProwlarrIndexerView[] } | { ok: false; status?: number; error: string };
 
 export type ReconcileResult =
-  | { ok: true; results: PatchIndexerResult[] }
-  | { ok: false; status?: number; error: string };
+  { ok: true; results: PatchIndexerResult[] } | { ok: false; status?: number; error: string };
 
 function makeCtx(host: string, apiKey: string, ua: string, logger?: CompatLogger): StepContext {
   return {

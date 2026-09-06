@@ -21,7 +21,7 @@ const TVDB_HOST = "api4.thetvdb.com";
 const TVDB_BASE = `https://${TVDB_HOST}/v4`;
 
 // TVDB v4 publishes no explicit rate ceiling, just a "don't spam" guideline.
-// 100 ms between request starts caps us at 10 req/s — conservative for a
+// 100 ms between request starts caps us at 10 req/s - conservative for a
 // service that handles millions of calls per day across all users, but well
 // below anything that could be construed as spam from a single integration.
 // Each fetchByExternalId issues 1–3 calls (resolve + translations [+ extended
@@ -94,11 +94,21 @@ interface TvdbExtendedResponse {
   data?: {
     id?: number;
     name?: string;
+    /**
+     * ISO 639-3 code of the record's original language ("deu", "eng", ...).
+     * For a German production TVDB frequently stores the German title in
+     * `name` and offers only an `eng` name translation, so this field is the
+     * only way to learn that `name` IS the German title.
+     */
+    originalLanguage?: string;
     aliases?: { language?: string; name?: string }[];
     translations?: {
       nameTranslations?: {
         name?: string;
         language?: string;
+        /** True when the entry is an alternate spelling, not the title. */
+        isAlias?: boolean;
+        isPrimary?: boolean;
       }[];
       aliases?: { language?: string; name?: string }[];
     };
@@ -188,9 +198,7 @@ async function tvdbLogin(apiKey: string, pin: string | null): Promise<string> {
   const json = (await res.body.json()) as TvdbLoginResponse;
   const token = json.data?.token;
   if (!token) {
-    throw new Error(
-      `TVDB login response missing token: ${JSON.stringify(json).slice(0, 160)}`,
-    );
+    throw new Error(`TVDB login response missing token: ${JSON.stringify(json).slice(0, 160)}`);
   }
   return token;
 }
@@ -278,22 +286,78 @@ export class TvdbProvider implements TitleProvider {
       }
     }
 
-    // 2) Extended returns nameTranslations + aliases together. We use it
-    //    only as a fallback for per-language aliases (the translations
-    //    endpoint exposes aliases as an array but it is not always populated
-    //    depending on the subscription tier).
-    if (Object.keys(aliasesByLang).length === 0) {
+    // 2) Extended returns name + originalLanguage + nameTranslations +
+    //    aliases in a single response. We reach for it when either half of
+    //    step 1 came back short:
+    //
+    //      a) a wanted language has no title. `/translations/{lang3}` only
+    //         answers for languages that actually carry a *translation
+    //         record*. A German production is routinely stored with the
+    //         German title in `name` (originalLanguage = "deu") and only an
+    //         `eng` name translation on top - which is exactly what Sonarr
+    //         then displays. Without this fallback such a series ends up with
+    //         germanTitle = null and the search never asks the indexer for
+    //         the German name at all.
+    //      b) no per-language aliases were returned (the translations
+    //         endpoint exposes an aliases array but it is not always
+    //         populated depending on the subscription tier).
+    //
+    //    Both cases share one HTTP call, so a fully-resolved item still costs
+    //    nothing extra.
+    const missingLangs = wantedLangs.filter((l) => !titlesByLang[l]);
+    if (missingLangs.length > 0 || Object.keys(aliasesByLang).length === 0) {
       const path =
-        type === "tv"
-          ? `/series/${internalId}/extended`
-          : `/movies/${internalId}/extended`;
+        type === "tv" ? `/series/${internalId}/extended` : `/movies/${internalId}/extended`;
       try {
         const data = await this.authedGet<TvdbExtendedResponse>(path);
-        const list = data?.data?.aliases ?? [];
-        for (const a of list) {
+        const record = data?.data;
+
+        // 2a-i) Named translations embedded in the extended record. Entries
+        //       flagged `isAlias` are alternate spellings, not the title, so
+        //       they go to the alias bucket instead of the title slot.
+        for (const nt of record?.translations?.nameTranslations ?? []) {
+          const name = nt.name?.trim();
+          if (!name) continue;
+          const lang1 = toIso6391(nt.language?.toLowerCase() ?? "");
+          if (!lang1 || !wantedLangs.includes(lang1)) continue;
+          if (nt.isAlias) {
+            const bucket = aliasesByLang[lang1] ?? [];
+            if (!bucket.includes(name)) bucket.push(name);
+            aliasesByLang[lang1] = bucket;
+            continue;
+          }
+          if (!titlesByLang[lang1]) titlesByLang[lang1] = name;
+        }
+
+        // 2a-ii) Last resort for a still-missing language: the record's own
+        //        `name`, but only when `originalLanguage` proves it is in
+        //        that language. Guessing from `name` alone would file an
+        //        English title as the German one.
+        const originalLang1 = toIso6391(record?.originalLanguage?.toLowerCase() ?? "");
+        const recordName = record?.name?.trim();
+        if (
+          originalLang1 &&
+          recordName &&
+          wantedLangs.includes(originalLang1) &&
+          !titlesByLang[originalLang1]
+        ) {
+          titlesByLang[originalLang1] = recordName;
+          this.log?.debug(
+            {
+              externalId,
+              internalId,
+              type,
+              lang: originalLang1,
+              title: recordName,
+            },
+            "tvdb: used the record's primary name as the original-language title",
+          );
+        }
+
+        // 2b) Per-language aliases.
+        for (const a of record?.aliases ?? []) {
           if (!a.name) continue;
-          const lang3 = a.language?.toLowerCase() ?? "";
-          const lang1 = toIso6391(lang3);
+          const lang1 = toIso6391(a.language?.toLowerCase() ?? "");
           if (!lang1) continue;
           if (!wantedLangs.includes(lang1)) continue;
           const bucket = aliasesByLang[lang1] ?? [];
@@ -323,8 +387,7 @@ export class TvdbProvider implements TitleProvider {
     // Representative title for the log. Prefer DE since TVDB is mainly
     // queried for German titles in this project; fall back to anything
     // available so the operator can still identify the work in logs.
-    const representative =
-      titlesByLang["de"] ?? titlesByLang[titleLangs[0]!] ?? null;
+    const representative = titlesByLang["de"] ?? titlesByLang[titleLangs[0]!] ?? null;
     this.log?.debug(
       {
         externalId,
@@ -340,8 +403,7 @@ export class TvdbProvider implements TitleProvider {
 
     return makeTitlePayload({
       titlesByLang,
-      aliasesByLang:
-        Object.keys(aliasesByLang).length > 0 ? aliasesByLang : undefined,
+      aliasesByLang: Object.keys(aliasesByLang).length > 0 ? aliasesByLang : undefined,
       externalId,
     });
   }
@@ -384,19 +446,13 @@ export class TvdbProvider implements TitleProvider {
             try {
               await opts.onItem(id, p);
             } catch (err) {
-              this.log?.warn(
-                { externalId: id, err },
-                "tvdb bulk onItem callback failed",
-              );
+              this.log?.warn({ externalId: id, err }, "tvdb bulk onItem callback failed");
             }
           }
         }),
       );
     }
-    this.log?.info(
-      { type, requested: externalIds.length, withTitles: resolved },
-      "tvdb bulk done",
-    );
+    this.log?.info({ type, requested: externalIds.length, withTitles: resolved }, "tvdb bulk done");
     return out;
   }
 
@@ -425,10 +481,7 @@ export class TvdbProvider implements TitleProvider {
         this.remoteIdCache.set(tmdbId, null);
         return null;
       }
-      this.log?.warn(
-        { tmdbId, status, err },
-        "tvdb remoteid lookup failed — skipping movie",
-      );
+      this.log?.warn({ tmdbId, status, err }, "tvdb remoteid lookup failed - skipping movie");
       return null;
     }
   }
@@ -443,10 +496,7 @@ export class TvdbProvider implements TitleProvider {
   private async ensureToken(): Promise<string> {
     if (this.token) return this.token;
     if (!this.tokenPromise) {
-      this.tokenPromise = tvdbLogin(
-        this.opts.apiKey,
-        this.opts.pin ?? null,
-      ).then(
+      this.tokenPromise = tvdbLogin(this.opts.apiKey, this.opts.pin ?? null).then(
         (token) => {
           this.token = token;
           this.tokenPromise = null;
@@ -503,7 +553,7 @@ export class TvdbProvider implements TitleProvider {
     };
 
     // Explicit attempt counter so a future change can't accidentally make
-    // this recursive — if the first 401 retry also returns 401 we surface
+    // this recursive - if the first 401 retry also returns 401 we surface
     // the error to the caller instead of looping.
     const MAX_ATTEMPTS = 2;
     let lastErr: unknown;
@@ -514,7 +564,7 @@ export class TvdbProvider implements TitleProvider {
         lastErr = err;
         const status = (err as { __status?: number }).__status;
         if (status === 401 && attempt < MAX_ATTEMPTS) {
-          // Re-login on the next attempt — token may have expired. Clear both
+          // Re-login on the next attempt - token may have expired. Clear both
           // the cached token and any in-flight login promise so the next
           // ensureToken() starts a fresh single-flight login.
           this.token = null;

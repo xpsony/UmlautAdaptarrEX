@@ -35,7 +35,7 @@ export function LoginForm() {
         expired = true;
       }
     } catch {
-      /* sessionStorage can throw in private tabs — ignore */
+      /* sessionStorage can throw in private tabs - ignore */
     }
     if (searchParams.get("expired") === "1") expired = true;
     if (expired) toast.warning(t("sessionExpired"));

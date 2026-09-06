@@ -22,10 +22,11 @@ describe("auth cookie options", () => {
   });
 
   it("marks cookies Secure when the request arrived over HTTPS", async () => {
-    const { sessionCookieOptions, csrfCookieOptions } =
+    const { sessionCookieOptions, csrfCookieOptions, secretCsrfCookieOptions } =
       await loadWithEnv("production");
     expect(sessionCookieOptions(req("https"), 1000).secure).toBe(true);
     expect(csrfCookieOptions(req("https")).secure).toBe(true);
+    expect(secretCsrfCookieOptions(req("https")).secure).toBe(true);
   });
 
   it("does not mark cookies Secure for plain HTTP, even in production", async () => {
@@ -33,15 +34,26 @@ describe("auth cookie options", () => {
     // hard `Secure` flag here would mean the browser silently drops the
     // cookie on the next request and the user sees an instant
     // "Session expired" after login.
-    const { sessionCookieOptions, csrfCookieOptions } =
+    const { sessionCookieOptions, csrfCookieOptions, secretCsrfCookieOptions } =
       await loadWithEnv("production");
     expect(sessionCookieOptions(req("http"), 1000).secure).toBe(false);
     expect(csrfCookieOptions(req("http")).secure).toBe(false);
+    expect(secretCsrfCookieOptions(req("http")).secure).toBe(false);
   });
 
   it("honors req.protocol in development as well", async () => {
-    const { sessionCookieOptions } = await loadWithEnv("development");
+    const { sessionCookieOptions, secretCsrfCookieOptions } = await loadWithEnv("development");
     expect(sessionCookieOptions(req("http"), 1000).secure).toBe(false);
     expect(sessionCookieOptions(req("https"), 1000).secure).toBe(true);
+    expect(secretCsrfCookieOptions(req("http"), 1000).secure).toBe(false);
+    expect(secretCsrfCookieOptions(req("https"), 1000).secure).toBe(true);
+  });
+
+  it("sets maxAge on all cookie options", async () => {
+    const { sessionCookieOptions, csrfCookieOptions, secretCsrfCookieOptions } =
+      await loadWithEnv("production");
+    expect(sessionCookieOptions(req("http"), 14000).maxAge).toBe(14);
+    expect(csrfCookieOptions(req("http"), 14000).maxAge).toBe(14);
+    expect(secretCsrfCookieOptions(req("http"), 14000).maxAge).toBe(14);
   });
 });

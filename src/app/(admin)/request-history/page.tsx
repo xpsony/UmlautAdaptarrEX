@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
+import { HistoryPageSkeleton } from "@/components/ui/history-page";
 import { RequestHistoryClient } from "./request-history-client";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -8,5 +10,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function RequestHistoryPage() {
-  return <RequestHistoryClient />;
+  return (
+    <Suspense fallback={<HistoryPageSkeleton />}>
+      <RequestHistoryClient />
+    </Suspense>
+  );
 }

@@ -6,7 +6,7 @@ const SUPERVISOR_ENV = "UMLAUTADAPTARREX_SUPERVISED";
 
 // Restart support: the parent `start.mjs` re-spawns this process on exit
 // code 75. In dev (`tsx watch`) the env var is missing, so we still let the
-// admin trigger a shutdown — but we tell the UI ahead of time that it has
+// admin trigger a shutdown - but we tell the UI ahead of time that it has
 // to be brought back up manually. That way the button is a one-line
 // behaviour switch instead of a missing feature on dev environments.
 function canRestart(): boolean {
@@ -37,7 +37,7 @@ export async function systemRoutes(app: FastifyInstance): Promise<void> {
       );
       const teardown = (): void => {
         if (supervised) {
-          // Hand off to start.mjs — its `umlautadaptarrex:restart` handler
+          // Hand off to start.mjs - its `umlautadaptarrex:restart` handler
           // runs the full shutdown (SIGTERM Next.js, close Fastify, exit 75)
           // so the parent supervisor respawns onto freed ports. A direct
           // process.exit(75) here would orphan the Next.js subprocess,
@@ -47,7 +47,7 @@ export async function systemRoutes(app: FastifyInstance): Promise<void> {
           (process as NodeJS.EventEmitter).emit("umlautadaptarrex:restart");
         } else {
           // Dev (`tsx watch`): no parent supervisor watching for code 75,
-          // so a normal exit is the cleanest signal — the UI told the user
+          // so a normal exit is the cleanest signal - the UI told the user
           // up-front (canRestart=false) that they need to bring it back.
           process.exit(0);
         }

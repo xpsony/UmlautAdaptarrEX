@@ -1,11 +1,22 @@
 import { getMediaTypeFromCategory } from "../matching/category";
 import { renameForBooksAndAudio } from "../matching/books-audio";
-import { renameForMoviesAndTv, type RenameResult, type RenameSearchItem } from "../matching/rename";
+import {
+  renameForMoviesAndTv,
+  type RenameOptions,
+  type RenameResult,
+  type RenameSearchItem,
+} from "../matching/rename";
 import { replaceSeparatorsWithSpace } from "../matching/separator";
 import { removeAccentButKeepDiacritics } from "../normalization/accents";
 import { getActiveLanguagePack, type LanguagePack } from "../plugins";
 import type { MediaType } from "../variations/generate";
 import { buildXml, CDATA_KEY, ensureArray, parseXml } from "./parse";
+import {
+  attachExternalIdAttributes,
+  externalIdAttributes,
+  newznabNamespaceAttribute,
+  resolveAttrKey,
+} from "./newznab-attrs";
 
 export interface RewriteSearchItem {
   expectedTitle: string;
@@ -13,6 +24,14 @@ export interface RewriteSearchItem {
   titleMatchVariations: string[];
   authorMatchVariations: string[];
   mediaType: MediaType;
+  /**
+   * The *Arr-side primary id - tvdbid for tv, tmdbid for movie. Emitted as a
+   * newznab id attribute when `attachExternalIds` is on. Optional so the
+   * pure-domain tests and older callers keep compiling.
+   */
+  externalId?: string | undefined;
+  /** IMDb id, when the *Arr knows one (Radarr does for movies). */
+  imdbId?: string | null | undefined;
   /** Release year for movies / first-air year for TV. Used by the matching
    * layer to refuse rewrites when the release carries a different year. */
   year?: number | null;
@@ -55,12 +74,21 @@ export interface RewriteOptions {
    * active pack so that pure-domain callers (e.g. unit tests) keep working.
    */
   pack?: LanguagePack | undefined;
+  /**
+   * Operator-configurable rename behaviour (Settings -> Renaming). Omitted
+   * means "today's defaults" - see `RenameOptions`.
+   */
+  rename?: RenameOptions | undefined;
+  /**
+   * Append the known external ids (tvdbid/tmdbid/imdb) to every rewritten
+   * item as newznab attributes so Sonarr/Radarr can bind the release without
+   * parsing its title.
+   */
+  attachExternalIds?: boolean | undefined;
 }
 
 type TextLike =
-  | string
-  | { "#text"?: string; [k: string]: unknown }
-  | { __cdata?: string; [k: string]: unknown };
+  string | { "#text"?: string; [k: string]: unknown } | { __cdata?: string; [k: string]: unknown };
 
 interface RssItem {
   title?: TextLike;
@@ -127,6 +155,16 @@ export function rewriteIndexerXml(xml: string, options: RewriteOptions): string 
   const items = ensureArray(channel.item);
   if (items.length === 0) return xml;
 
+  // Resolved once per response: which attr element the feed speaks and
+  // whether we have to declare the namespace ourselves.
+  const attrTarget = options.attachExternalIds
+    ? resolveAttrKey(
+        tree.rss as unknown as Record<string, unknown>,
+        items[0] as unknown as Record<string, unknown>,
+      )
+    : null;
+  let attachedAny = false;
+
   for (const item of items) {
     const originalTitle = readTextField(item.title);
     if (!originalTitle) continue;
@@ -158,7 +196,7 @@ export function rewriteIndexerXml(xml: string, options: RewriteOptions): string 
       if (searchItem.yearMatchingTolerance !== undefined) {
         renameItem.yearMatchingTolerance = searchItem.yearMatchingTolerance;
       }
-      const result = renameForMoviesAndTv(originalTitle, renameItem, pack);
+      const result = renameForMoviesAndTv(originalTitle, renameItem, pack, options.rename ?? {});
       rewritten = result.rewrittenTitle;
       if (!rewritten && result.reason) {
         options.onSkip?.({
@@ -179,6 +217,7 @@ export function rewriteIndexerXml(xml: string, options: RewriteOptions): string 
           authorMatchVariations: searchItem.authorMatchVariations,
         },
         pack,
+        { stripSpecialChars: options.rename?.stripSpecialChars ?? false },
       ).rewrittenTitle;
     }
 
@@ -190,6 +229,30 @@ export function rewriteIndexerXml(xml: string, options: RewriteOptions): string 
         mediaType,
       });
     }
+
+    // Id attributes are attached to every item we could resolve a search
+    // item for - including the ones the rename declined. The id is correct
+    // either way, and a refused rename is exactly the case where Sonarr
+    // benefits most from not having to parse the title.
+    if (attrTarget && searchItem.externalId) {
+      const added = attachExternalIdAttributes(
+        item as unknown as Record<string, unknown>,
+        attrTarget.key,
+        externalIdAttributes({
+          mediaType,
+          externalId: searchItem.externalId,
+          imdbId: searchItem.imdbId,
+        }),
+      );
+      if (added > 0) attachedAny = true;
+    }
+  }
+
+  // Only declare the namespace once we actually emitted a prefixed element;
+  // adding it to an untouched response would change bytes for nothing.
+  if (attrTarget?.needsNamespaceDecl && attachedAny && tree.rss) {
+    const ns = newznabNamespaceAttribute();
+    (tree.rss as unknown as Record<string, unknown>)[ns.name] = ns.value;
   }
 
   return buildXml(tree);

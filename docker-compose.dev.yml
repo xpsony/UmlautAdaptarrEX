@@ -1,4 +1,4 @@
-# Local helpers for dev/testing — NOT used in production.
+# Local helpers for dev/testing - NOT used in production.
 # Spin up only when you need them:
 #   docker compose -f docker-compose.dev.yml up -d
 # UmlautAdaptarrEX itself runs on the host via `pnpm dev`. Prowlarr inside the

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseTrustProxy } from "@/server/trust-proxy";
+import { isHopCountTrustProxy, parseTrustProxy } from "@/server/trust-proxy";
 
 describe("parseTrustProxy", () => {
   it("defaults to 'loopback' when the env var is unset", () => {
@@ -16,9 +16,12 @@ describe("parseTrustProxy", () => {
     expect(parseTrustProxy("true")).toBe(true);
   });
 
-  it("returns a number for an integer string", () => {
-    expect(parseTrustProxy("1")).toBe(1);
-    expect(parseTrustProxy("3")).toBe(3);
+  // Fastify 5.12 disabled hop-count trust (it cannot validate the immediate
+  // peer). We fail closed instead of silently widening the trust window.
+  it("returns false for an integer string (hop counts are unsupported)", () => {
+    expect(parseTrustProxy("1")).toBe(false);
+    expect(parseTrustProxy("3")).toBe(false);
+    expect(parseTrustProxy(" 2 ")).toBe(false);
   });
 
   it("returns a trimmed string array for a comma-separated list", () => {
@@ -36,5 +39,20 @@ describe("parseTrustProxy", () => {
 
   it("trims whitespace from the input", () => {
     expect(parseTrustProxy("  loopback  ")).toBe("loopback");
+  });
+});
+
+describe("isHopCountTrustProxy", () => {
+  it("detects the removed hop-count form so the caller can warn", () => {
+    expect(isHopCountTrustProxy("1")).toBe(true);
+    expect(isHopCountTrustProxy("  10  ")).toBe(true);
+  });
+
+  it("is false for every still-supported form", () => {
+    expect(isHopCountTrustProxy(undefined)).toBe(false);
+    expect(isHopCountTrustProxy("")).toBe(false);
+    expect(isHopCountTrustProxy("true")).toBe(false);
+    expect(isHopCountTrustProxy("loopback")).toBe(false);
+    expect(isHopCountTrustProxy("127.0.0.1")).toBe(false);
   });
 });
