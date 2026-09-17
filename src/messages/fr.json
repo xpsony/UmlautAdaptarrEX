@@ -50,7 +50,7 @@
     "step1Title": "Compte administrateur",
     "step1Hint": "Ces identifiants vous permettent de vous connecter à l'interface d'administration.",
     "step2Title": "Connecter Prowlarr",
-    "step2Hint": "Saisissez l'URL et la clé API de votre instance Prowlarr, Sonarr / Radarr / Lidarr / Readarr / Listenarr seront détectés automatiquement.",
+    "step2Hint": "Saisissez l'URL et la clé API de votre instance Prowlarr, Sonarr / Radarr / Lidarr / Readarr seront détectés automatiquement.",
     "step3Title": "Importer les applications",
     "step3Hint": "Indiquez la clé API pour chaque application à gérer. Testez la connexion avant de continuer.",
     "step4Title": "Identifiants du proxy HTTP",

@@ -50,7 +50,7 @@
     "step1Title": "Admin-Konto",
     "step1Hint": "Mit diesen Zugangsdaten meldest du dich am Admin-UI an.",
     "step2Title": "Prowlarr verbinden",
-    "step2Hint": "Trage URL und API-Key deiner Prowlarr-Instanz ein, Sonarr / Radarr / Lidarr / Readarr / Listenarr werden automatisch erkannt.",
+    "step2Hint": "Trage URL und API-Key deiner Prowlarr-Instanz ein, Sonarr / Radarr / Lidarr / Readarr werden automatisch erkannt.",
     "step3Title": "Apps importieren",
     "step3Hint": "Trage je App den passenden API-Key ein. Teste die Verbindung, bevor du weitergehst.",
     "step4Title": "HTTP-Proxy-Zugangsdaten",

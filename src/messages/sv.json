@@ -50,7 +50,7 @@
     "step1Title": "Administratörskonto",
     "step1Hint": "Med dessa uppgifter loggar du in i admin-gränssnittet.",
     "step2Title": "Anslut Prowlarr",
-    "step2Hint": "Ange URL och API-nyckel för din Prowlarr-instans, Sonarr / Radarr / Lidarr / Readarr / Listenarr identifieras automatiskt.",
+    "step2Hint": "Ange URL och API-nyckel för din Prowlarr-instans, Sonarr / Radarr / Lidarr / Readarr identifieras automatiskt.",
     "step3Title": "Importera appar",
     "step3Hint": "Ange API-nyckel för varje app du vill hantera. Testa anslutningen innan du fortsätter.",
     "step4Title": "Autentiseringsuppgifter för HTTP-proxy",

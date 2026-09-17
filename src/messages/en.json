@@ -50,7 +50,7 @@
     "step1Title": "Admin account",
     "step1Hint": "These credentials sign you in to the admin UI.",
     "step2Title": "Connect Prowlarr",
-    "step2Hint": "Enter the URL and API key of your Prowlarr instance, we'll discover Sonarr / Radarr / Lidarr / Readarr / Listenarr automatically.",
+    "step2Hint": "Enter the URL and API key of your Prowlarr instance, we'll discover Sonarr / Radarr / Lidarr / Readarr automatically.",
     "step3Title": "Import apps",
     "step3Hint": "Provide the API key for each app you want to manage. Test the connection before continuing.",
     "step4Title": "HTTP-Proxy credentials",
