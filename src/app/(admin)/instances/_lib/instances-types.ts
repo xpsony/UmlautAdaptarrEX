@@ -19,7 +19,7 @@ export interface TestConnectionResponse {
   error?: string;
 }
 
-export const ARR_TYPES = ["sonarr", "radarr", "lidarr", "readarr"] as const;
+export const ARR_TYPES = ["sonarr", "radarr", "lidarr", "readarr", "listenarr"] as const;
 export const PROVIDER_IDS = ["pcjones", "tvdb", "tmdb"] as const;
 
 /**
