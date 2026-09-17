@@ -203,6 +203,12 @@ model SearchItem {
   arrInstance           ArrInstance @relation(fields: [arrInstanceId], references: [id], onDelete: Cascade)
   arrId                 Int
   externalId            String
+  // Additional lookup keys for the same row. Listenarr searches with
+  // "Title Author Series" while Readarr uses "Title Author", so one audiobook
+  // needs to be findable under both spellings without a second row (which the
+  // @@unique below would anyway allow but the title library UI would show
+  // twice). JSON array of strings; NULL for every *arr that needs one key.
+  externalIdAliases     String?
   // IMDb-ID (`tt…`), sofern die *Arr-Instanz sie kennt (Radarr liefert sie pro
   // Movie). Nur für das newznab-Attribut `imdbid` beim Umschreiben gebraucht -
   // `externalId` bleibt der Primär-Identifier (tvdbid für TV, tmdbid für Film).

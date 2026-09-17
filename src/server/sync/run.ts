@@ -383,6 +383,9 @@ async function persistItems(
           titleMatchVariations: JSON.stringify(item.titleMatchVariations),
           authorMatchVariations: JSON.stringify(item.authorMatchVariations),
           aliases: item.aliases ? JSON.stringify(item.aliases) : null,
+          externalIdAliases: item.externalIdAliases
+            ? JSON.stringify(item.externalIdAliases)
+            : null,
         };
         const prior = existingMap.get(item.externalId);
         if (prior) {

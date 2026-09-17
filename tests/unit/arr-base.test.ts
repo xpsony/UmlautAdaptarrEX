@@ -249,6 +249,7 @@ it("fetchAllItems is the base composition of fetchRawItems and deriveItems", asy
         {
           arrId: 1,
           externalId: "e1",
+          externalIdAliases: null,
           imdbId: null,
           title: "T",
           year: null,

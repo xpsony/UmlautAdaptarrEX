@@ -207,6 +207,7 @@ describe("RadarrClient.fetchRawItems", () => {
       {
         arrId: 4,
         externalId: "900",
+        externalIdAliases: null,
         imdbId: "tt0000900",
         title: "Winter Harbour",
         year: 2021,
@@ -236,6 +237,7 @@ describe("RadarrClient.deriveItems", () => {
       {
         arrId: 4,
         externalId: "900",
+        externalIdAliases: null,
         imdbId: null,
         title: "Winter Harbour",
         year: 2021,
@@ -276,6 +278,7 @@ describe("RadarrClient.deriveItems", () => {
       {
         arrId: 5,
         externalId: "901",
+        externalIdAliases: null,
         imdbId: "tt0000901",
         title: "Winter Harbour",
         year: 2021,
@@ -316,6 +319,7 @@ describe("RadarrClient.deriveItems", () => {
       {
         arrId: 6,
         externalId: "902",
+        externalIdAliases: null,
         imdbId: null,
         title: "Winter Harbour",
         year: 2021,

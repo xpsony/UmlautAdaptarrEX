@@ -28,6 +28,7 @@ export class LidarrClient extends ArrClient {
       map: (artist, album) => ({
         arrId: artist.id,
         externalId: getLidarrTitleForExternalId(`${artist.artistName} ${album.title}`),
+        externalIdAliases: null,
         imdbId: null,
         title: album.title,
         year: null,

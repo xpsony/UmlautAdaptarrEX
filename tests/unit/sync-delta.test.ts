@@ -6,6 +6,7 @@ function raw(over: Partial<RawArrItem> = {}): RawArrItem {
   return {
     arrId: 1,
     externalId: "100",
+    externalIdAliases: null,
     imdbId: null,
     title: "Realm of Ravens",
     year: 2019,

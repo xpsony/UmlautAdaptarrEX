@@ -13,6 +13,11 @@ export interface RawArrItem {
   arrId: number;
   /** tvdbid for tv, tmdbid for movie, derived key for audio/book. */
   externalId: string;
+  /**
+   * Extra lookup keys for the same item. Only Listenarr supplies any, when
+   * the audiobook belongs to a series. NULL everywhere else.
+   */
+  externalIdAliases: string[] | null;
   /** Only Radarr supplies one. */
   imdbId: string | null;
   title: string;

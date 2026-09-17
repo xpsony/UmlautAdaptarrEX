@@ -8,6 +8,8 @@ export { generateVariations } from "./generate";
 export interface SearchItemInput {
   arrId: number;
   externalId: string;
+  /** Extra lookup keys, carried through untouched. Only Listenarr sets any. */
+  externalIdAliases?: string[] | null;
   /**
    * IMDb id, when the *Arr client has one (Radarr does per movie). Carried
    * through untouched - it takes no part in variation generation, it is only
@@ -38,6 +40,7 @@ export interface SearchItemInput {
 export interface SearchItemDerived {
   arrId: number;
   externalId: string;
+  externalIdAliases: string[] | null;
   imdbId: string | null;
   title: string;
   expectedTitle: string;
@@ -59,6 +62,7 @@ export function buildSearchItem(
   const base = {
     arrId: input.arrId,
     externalId: input.externalId,
+    externalIdAliases: input.externalIdAliases ?? null,
     imdbId: input.imdbId ?? null,
     title: input.title,
     expectedTitle: input.expectedTitle,
