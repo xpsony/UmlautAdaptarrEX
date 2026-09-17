@@ -435,7 +435,7 @@ Recommended method, because there is no speed loss with multiple indexers.
 
    > **Listenarr instances are added by hand.** Prowlarr has no Listenarr application type, so the
    > Prowlarr auto-detection in the setup wizard cannot find one. Add the instance under
-   > **Instances → Add** instead.
+   > **Arr instances → Add instance** instead.
    >
    > Listenarr ships its own Prowlarr-compatible endpoint under `/api/v1/prowlarr/…`. If you register
    > Listenarr in Prowlarr as a _Readarr_ application, our auto-detection reads it back as `readarr`,
@@ -533,7 +533,7 @@ src/
 │   ├─ plugins/           # Language plugins (DE umlauts, SE umlauts, FR accents)
 │   └─ xml/               # Newznab/Torznab XML rewriting
 ├─ providers/             # External title providers (pcjones, TVDB, TMDB, db-cache)
-├─ arr/                   # Sonarr/Radarr/Lidarr/Readarr/Prowlarr clients
+├─ arr/                   # Sonarr/Radarr/Lidarr/Readarr/Listenarr/Prowlarr clients
 ├─ schemas/               # Zod schemas (shared client/server)
 ├─ messages/              # i18n (de, en, fr, sv)
 └─ lib/                   # db, auth, secrets, legacy-env, i18n, utils

@@ -444,7 +444,7 @@ Empfohlene Methode, da bei mehreren Indexern kein Geschwindigkeitsverlust entste
 
    > **Listenarr-Instanzen legst du von Hand an.** Prowlarr kennt keinen Anwendungstyp Listenarr,
    > deshalb findet die Prowlarr-Erkennung im Setup-Wizard keine solche Instanz. Leg sie
-   > stattdessen unter **Instanzen → Hinzufügen** an.
+   > stattdessen unter **Arr-Instanzen → Instanz hinzufügen** an.
    >
    > Listenarr bringt unter `/api/v1/prowlarr/…` einen eigenen Prowlarr-kompatiblen Endpunkt mit.
    > Trägst du Listenarr in Prowlarr als _Readarr_-Anwendung ein, liest unsere Erkennung den Typ als
@@ -543,7 +543,7 @@ src/
 │   ├─ plugins/           # Sprach-Plugins (DE-Umlaute, SE-Umlaute, FR-Akzente)
 │   └─ xml/               # Newznab/Torznab-XML-Rewriting
 ├─ providers/             # Externe Title-Provider (pcjones, TVDB, TMDB, db-cache)
-├─ arr/                   # Sonarr/Radarr/Lidarr/Readarr/Prowlarr-Clients
+├─ arr/                   # Sonarr/Radarr/Lidarr/Readarr/Listenarr/Prowlarr-Clients
 ├─ schemas/               # Zod-Schemas (shared client/server)
 ├─ messages/              # i18n (de, en, fr, sv)
 └─ lib/                   # db, auth, secrets, legacy-env, i18n, utils
