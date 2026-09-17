@@ -542,7 +542,7 @@ async function deltaAndPersist(
   const raw = await client.fetchRawItems();
   const stored = await prisma.searchItem.findMany({
     where: { arrInstanceId: instance.id },
-    select: { externalId: true, title: true, year: true },
+    select: { externalId: true, title: true, year: true, externalIdAliases: true },
   });
   const plan = planDelta(raw, stored);
 

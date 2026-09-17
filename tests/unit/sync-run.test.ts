@@ -634,6 +634,7 @@ describe("persistItems delete scope", () => {
 const RAW_UNCHANGED = {
   arrId: 1,
   externalId: "100",
+  externalIdAliases: null,
   imdbId: null,
   title: "Realm of Ravens",
   year: 2019,
@@ -646,6 +647,7 @@ const RAW_UNCHANGED = {
 const RAW_NEW = {
   arrId: 2,
   externalId: "200",
+  externalIdAliases: null,
   imdbId: null,
   title: "Winter Harbour",
   year: 2021,
@@ -662,7 +664,7 @@ describe("runSync delta mode", () => {
 
   it("writes nothing and creates no SyncRun row when the listing is unchanged", async () => {
     mockPrisma.searchItem.findMany.mockResolvedValueOnce([
-      { externalId: "100", title: "Realm of Ravens", year: 2019 },
+      { externalId: "100", title: "Realm of Ravens", year: 2019, externalIdAliases: null },
     ]);
     mockBuild.mockReturnValue({
       fetchRawItems: async () => [RAW_UNCHANGED],
@@ -693,7 +695,7 @@ describe("runSync delta mode", () => {
 
   it("derives only the changed subset and creates a SyncRun row for it", async () => {
     mockPrisma.searchItem.findMany.mockResolvedValueOnce([
-      { externalId: "100", title: "Realm of Ravens", year: 2019 },
+      { externalId: "100", title: "Realm of Ravens", year: 2019, externalIdAliases: null },
     ]);
     mockPrisma.searchItem.findMany.mockResolvedValue([]);
     const derived: string[] = [];
