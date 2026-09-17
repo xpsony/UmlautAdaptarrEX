@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <em>Umlaut and German-title proxy for Sonarr / Radarr / Lidarr / Readarr.</em>
+  <em>Umlaut and German-title proxy for Sonarr / Radarr / Lidarr / Readarr / Listenarr.</em>
 </p>
 
 <p align="center">
@@ -15,6 +15,7 @@
   <img src="public/arr/radarr.svg" alt="Radarr" height="36" />&nbsp;&nbsp;
   <img src="public/arr/lidarr.svg" alt="Lidarr" height="36" />&nbsp;&nbsp;
   <img src="public/arr/readarr.svg" alt="Readarr" height="36" />&nbsp;&nbsp;
+  <img src="public/arr/listenarr.svg" alt="Listenarr" height="36" />&nbsp;&nbsp;
   <img src="public/arr/prowlarr.svg" alt="Prowlarr" height="36" />
 </p>
 
@@ -52,6 +53,7 @@ imported.
 | <img src="public/arr/radarr.svg" height="16" alt="" align="top" />&nbsp; Radarr support (native, via `alternateTitles` + optional TMDB) |   ✓    |
 | <img src="public/arr/lidarr.svg" height="16" alt="" align="top" />&nbsp; Lidarr support                                                 |   ✓    |
 | <img src="public/arr/readarr.svg" height="16" alt="" align="top" />&nbsp; Readarr support                                               |   ✓    |
+| <img src="public/arr/listenarr.svg" height="16" alt="" align="top" />&nbsp; Listenarr support (audiobooks)                              |   ✓    |
 | <img src="public/arr/prowlarr.svg" height="16" alt="" align="top" />&nbsp; Prowlarr & NZB Hydra support                                 |   ✓    |
 | **Prowlarr indexer-patch dialog**: select indexers, auto-tag them & switch from `https` to `http`                                       |   ✓    |
 | Newznab (Usenet) & Torznab (Torrent) support                                                                                            |   ✓    |
@@ -430,6 +432,16 @@ Key points:
 Recommended method, because there is no speed loss with multiple indexers.
 
 1. Start UmlautAdaptarrEX and walk through the setup in the web UI (create Sonarr/Radarr/Lidarr/Readarr instances).
+
+   > **Listenarr instances are added by hand.** Prowlarr has no Listenarr application type, so the
+   > Prowlarr auto-detection in the setup wizard cannot find one. Add the instance under
+   > **Instances → Add** instead.
+   >
+   > Listenarr ships its own Prowlarr-compatible endpoint under `/api/v1/prowlarr/…`. If you register
+   > Listenarr in Prowlarr as a _Readarr_ application, our auto-detection reads it back as `readarr`,
+   > and the Readarr client then talks to `/api/v1/author` with query-string auth and gets nothing
+   > usable. Add such an instance by hand as type Listenarr.
+
 2. In Prowlarr: **Settings → Indexers → Indexer Proxies → Add (HTTP)**
    - Name: `UmlautAdaptarrEX HTTP Proxy`
    - Host: container name (`umlautadaptarrex`) or host IP
