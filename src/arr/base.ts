@@ -87,12 +87,24 @@ export abstract class ArrClient {
     return out;
   }
 
+  /**
+   * Where the API key goes. Sonarr/Radarr/Lidarr/Readarr read it from the
+   * query string; Listenarr accepts it only as a header and deliberately
+   * refuses query-string auth to keep keys out of logs and referrers.
+   * Subclasses override; the default keeps every existing client byte-identical.
+   */
+  protected readonly apiKeyTransport: "query" | "header" = "query";
+
   protected async getJson<T = unknown>(
     path: string,
     params: Record<string, string> = {},
   ): Promise<T | null> {
-    const search = new URLSearchParams({ ...params, apikey: this.opts.apiKey });
-    const url = `${this.host}${path}?${search.toString()}`;
+    const useHeader = this.apiKeyTransport === "header";
+    const search = new URLSearchParams(
+      useHeader ? { ...params } : { ...params, apikey: this.opts.apiKey },
+    );
+    const query = search.toString();
+    const url = query ? `${this.host}${path}?${query}` : `${this.host}${path}`;
     const started = process.hrtime.bigint();
     let statusCode = 0;
     try {
@@ -101,6 +113,7 @@ export abstract class ArrClient {
         headers: {
           "User-Agent": this.opts.userAgent,
           Accept: "application/json",
+          ...(useHeader ? { "X-Api-Key": this.opts.apiKey } : {}),
         },
         bodyTimeout: this.opts.timeoutMs ?? 30_000,
         headersTimeout: this.opts.timeoutMs ?? 30_000,
@@ -122,7 +135,9 @@ export abstract class ArrClient {
             host: this.host,
             bodyPreview: preview.slice(0, 200),
             hint: isAuth
-              ? "Upstream rejected the API key - verify the key configured for this instance."
+              ? useHeader
+                ? "Upstream rejected the API key sent as the X-Api-Key header - verify the key configured for this instance."
+                : "Upstream rejected the API key - verify the key configured for this instance."
               : undefined,
           },
           "arr request returned HTTP error",

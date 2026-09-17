@@ -300,3 +300,66 @@ it("fetchRawItemByExternalId defaults to null so Lidarr and Readarr inherit an o
 
   expect(await client.fetchRawItemByExternalId("123")).toBeNull();
 });
+
+describe("ArrClient apiKeyTransport", () => {
+  class QueryClient extends ArrClient {
+    async fetchRawItems() {
+      return [];
+    }
+
+    async deriveItems() {
+      return [];
+    }
+
+    async call() {
+      return this.getJson("/api/v1/thing");
+    }
+  }
+
+  class HeaderClient extends QueryClient {
+    protected readonly apiKeyTransport = "header" as const;
+  }
+
+  const opts = {
+    instanceId: "i",
+    instanceName: "n",
+    host: "http://arr.local",
+    apiKey: "the-api-key",
+    userAgent: "UA",
+  };
+
+  it("defaults to the query transport, unchanged from before", async () => {
+    requestMock.mockResolvedValueOnce(jsonResponse([]));
+    await new QueryClient(opts).call();
+
+    const url = requestMock.mock.calls[0]?.[0] as string;
+    const args = requestMock.mock.calls[0]?.[1] as { headers: Record<string, string> };
+    expect(url).toContain("apikey=the-api-key");
+    expect(args.headers["X-Api-Key"]).toBeUndefined();
+  });
+
+  it("puts the key in the header and keeps it out of the URL", async () => {
+    requestMock.mockResolvedValueOnce(jsonResponse([]));
+    await new HeaderClient(opts).call();
+
+    const url = requestMock.mock.calls[0]?.[0] as string;
+    const args = requestMock.mock.calls[0]?.[1] as { headers: Record<string, string> };
+    expect(args.headers["X-Api-Key"]).toBe("the-api-key");
+    expect(url).not.toContain("the-api-key");
+    expect(url).not.toContain("apikey");
+  });
+
+  it("keeps other query params on the header transport", async () => {
+    requestMock.mockResolvedValueOnce(jsonResponse([]));
+
+    class ParamClient extends HeaderClient {
+      async call() {
+        return this.getJson("/api/v1/thing", { page: "2" });
+      }
+    }
+
+    await new ParamClient(opts).call();
+    const url = requestMock.mock.calls[0]?.[0] as string;
+    expect(url).toContain("page=2");
+  });
+});
