@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "UmlautAdaptarrEX",
-    "tagline": "Umlaut- und Deutsche-Titel-Proxy für Sonarr / Radarr / Lidarr / Readarr"
+    "tagline": "Umlaut- und Deutsche-Titel-Proxy für Sonarr / Radarr / Lidarr / Readarr / Listenarr"
   },
   "nav": {
     "dashboard": "Übersicht",
@@ -50,7 +50,7 @@
     "step1Title": "Admin-Konto",
     "step1Hint": "Mit diesen Zugangsdaten meldest du dich am Admin-UI an.",
     "step2Title": "Prowlarr verbinden",
-    "step2Hint": "Trage URL und API-Key deiner Prowlarr-Instanz ein, Sonarr / Radarr / Lidarr / Readarr werden automatisch erkannt.",
+    "step2Hint": "Trage URL und API-Key deiner Prowlarr-Instanz ein, Sonarr / Radarr / Lidarr / Readarr / Listenarr werden automatisch erkannt.",
     "step3Title": "Apps importieren",
     "step3Hint": "Trage je App den passenden API-Key ein. Teste die Verbindung, bevor du weitergehst.",
     "step4Title": "HTTP-Proxy-Zugangsdaten",
@@ -199,7 +199,7 @@
     "manageInstances": "Verwalten",
     "addInstance": "Instanz hinzufügen",
     "noInstancesTitle": "Noch keine Instanzen verbunden",
-    "noInstancesHint": "Verbinde Sonarr, Radarr, Lidarr oder Readarr, um zu starten.",
+    "noInstancesHint": "Verbinde Sonarr, Radarr, Lidarr, Readarr oder Listenarr, um zu starten.",
     "instanceStatus": {
       "ok": "OK",
       "error": "Fehler",
@@ -231,12 +231,12 @@
   },
   "instances": {
     "title": "Arr-Instanzen",
-    "subtitle": "Verwalte Sonarr-/Radarr-/Lidarr-/Readarr-Verbindungen.",
+    "subtitle": "Verwalte Sonarr-/Radarr-/Lidarr-/Readarr-/Listenarr-Verbindungen.",
     "listTitle": "Verbundene Instanzen",
     "listSubtitle": "Aktiviere oder pausiere den Sync per Schalter.",
     "add": "Instanz hinzufügen",
     "addTitle": "Neue Instanz hinzufügen",
-    "addSubtitle": "Verbinde Sonarr, Radarr, Lidarr oder Readarr.",
+    "addSubtitle": "Verbinde Sonarr, Radarr, Lidarr, Readarr oder Listenarr.",
     "edit": "Bearbeiten",
     "open": "Instanz öffnen",
     "editTitle": "Instanz bearbeiten",
@@ -257,7 +257,7 @@
     "hostHint": "Vollständige URL inklusive Protokoll, z. B. http://sonarr:8989",
     "apiKey": "API-Key",
     "apiKeyMaskedPlaceholder": "Echten API-Key eintragen…",
-    "apiKeyMaskedHint": "Der gespeicherte Wert ist nur die Prowlarr-Maske (********). Trage den echten API-Key aus Sonarr/Radarr/Lidarr/Readarr ein.",
+    "apiKeyMaskedHint": "Der gespeicherte Wert ist nur die Prowlarr-Maske (********). Trage den echten API-Key aus Sonarr/Radarr/Lidarr/Readarr/Listenarr ein.",
     "enabled": "Aktiviert",
     "enabledHint": "Deaktivierte Instanzen werden beim Sync übersprungen.",
     "enableAria": "„{name}“ aktivieren/deaktivieren",
@@ -287,7 +287,7 @@
     "statusError": "Fehler",
     "statusErrorHeading": "Letzter Sync-Fehler",
     "statusDisabled": "Deaktiviert",
-    "noInstances": "Lege deine erste Sonarr-/Radarr-/Lidarr-/Readarr-Instanz an.",
+    "noInstances": "Lege deine erste Sonarr-/Radarr-/Lidarr-/Readarr-/Listenarr-Instanz an.",
     "noInstancesTitle": "Noch keine Instanzen",
     "deleteConfirm": "„{name}“ wird dauerhaft entfernt, inklusive der gecachten Sucheinträge. Aktion kann nicht rückgängig gemacht werden.",
     "prowlarr": {
@@ -473,7 +473,7 @@
     "userAgentHint": "Optional. Leer lassen heißt automatisch: UmlautAdaptarrEX plus die laufende Version - der Wert wächst dann mit jedem Update mit, ohne dass du das Feld anfassen musst.",
     "userAgentAutoHint": "Leer = automatisch: {value}",
     "forwardArrUserAgent": "User-Agent der *Arr durchreichen",
-    "forwardArrUserAgentDescription": "Sendet den User-Agent von Sonarr/Radarr/Lidarr/Readarr wortwörtlich an den Indexer statt unseren eigenen.",
+    "forwardArrUserAgentDescription": "Sendet den User-Agent von Sonarr/Radarr/Lidarr/Readarr/Listenarr wortwörtlich an den Indexer statt unseren eigenen.",
     "forwardArrUserAgentHint": "Standardmäßig aus: der Indexer sieht nur „{ua}“ und keinen Versions-Fingerprint deiner *Arr. Einschalten, wenn ein Indexer nur bekannte Client-User-Agents zulässt oder danach limitiert. Schickt die *Arr keinen Header, wird unser eigener verwendet.",
     "logRetentionDays": "Log-Aufbewahrung (Tage)",
     "logRetentionDaysHint": "Ältere Logs werden alle 6 Stunden vom Cleanup-Job gelöscht. 1–30 Tage.",
@@ -781,7 +781,7 @@
   "about": {
     "title": "Über",
     "subtitle": "Projekt-Informationen, Links und Danksagungen.",
-    "tagline": "Umlaut- und Deutsche-Titel-Proxy für Sonarr / Radarr / Lidarr / Readarr",
+    "tagline": "Umlaut- und Deutsche-Titel-Proxy für Sonarr / Radarr / Lidarr / Readarr / Listenarr",
     "authorLabel": "Autor",
     "linksTitle": "Links",
     "linksHint": "Quellcode, Bugs melden und Support-Kanäle.",

@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "UmlautAdaptarrEX",
-    "tagline": "Umlaut- och tysktitel-proxy för Sonarr / Radarr / Lidarr / Readarr"
+    "tagline": "Umlaut- och tysktitel-proxy för Sonarr / Radarr / Lidarr / Readarr / Listenarr"
   },
   "nav": {
     "dashboard": "Översikt",
@@ -50,7 +50,7 @@
     "step1Title": "Administratörskonto",
     "step1Hint": "Med dessa uppgifter loggar du in i admin-gränssnittet.",
     "step2Title": "Anslut Prowlarr",
-    "step2Hint": "Ange URL och API-nyckel för din Prowlarr-instans, Sonarr / Radarr / Lidarr / Readarr identifieras automatiskt.",
+    "step2Hint": "Ange URL och API-nyckel för din Prowlarr-instans, Sonarr / Radarr / Lidarr / Readarr / Listenarr identifieras automatiskt.",
     "step3Title": "Importera appar",
     "step3Hint": "Ange API-nyckel för varje app du vill hantera. Testa anslutningen innan du fortsätter.",
     "step4Title": "Autentiseringsuppgifter för HTTP-proxy",
@@ -199,7 +199,7 @@
     "manageInstances": "Hantera",
     "addInstance": "Lägg till instans",
     "noInstancesTitle": "Inga instanser anslutna ännu",
-    "noInstancesHint": "Anslut Sonarr, Radarr, Lidarr eller Readarr för att komma igång.",
+    "noInstancesHint": "Anslut Sonarr, Radarr, Lidarr, Readarr eller Listenarr för att komma igång.",
     "instanceStatus": {
       "ok": "OK",
       "error": "Fel",
@@ -231,12 +231,12 @@
   },
   "instances": {
     "title": "Arr-instanser",
-    "subtitle": "Hantera anslutningar för Sonarr / Radarr / Lidarr / Readarr.",
+    "subtitle": "Hantera anslutningar för Sonarr / Radarr / Lidarr / Readarr / Listenarr.",
     "listTitle": "Anslutna instanser",
     "listSubtitle": "Slå på/av med växeln för att aktivera eller pausa synk.",
     "add": "Lägg till instans",
     "addTitle": "Lägg till en ny instans",
-    "addSubtitle": "Anslut Sonarr, Radarr, Lidarr eller Readarr.",
+    "addSubtitle": "Anslut Sonarr, Radarr, Lidarr, Readarr eller Listenarr.",
     "edit": "Redigera",
     "open": "Öppna instans",
     "editTitle": "Redigera instans",
@@ -257,7 +257,7 @@
     "hostHint": "Fullständig URL inklusive protokoll, t.ex. http://sonarr:8989",
     "apiKey": "API-nyckel",
     "apiKeyMaskedPlaceholder": "Ange den riktiga API-nyckeln…",
-    "apiKeyMaskedHint": "Det sparade värdet är endast Prowlarrs mask (********). Ange den riktiga API-nyckeln från Sonarr/Radarr/Lidarr/Readarr.",
+    "apiKeyMaskedHint": "Det sparade värdet är endast Prowlarrs mask (********). Ange den riktiga API-nyckeln från Sonarr/Radarr/Lidarr/Readarr/Listenarr.",
     "enabled": "Aktiverad",
     "enabledHint": "Inaktiverade instanser hoppas över vid synk.",
     "enableAria": "Aktivera/inaktivera {name}",
@@ -287,7 +287,7 @@
     "statusError": "Fel",
     "statusErrorHeading": "Senaste synkfel",
     "statusDisabled": "Inaktiverad",
-    "noInstances": "Lägg till din första Sonarr/Radarr/Lidarr/Readarr för att komma igång.",
+    "noInstances": "Lägg till din första Sonarr/Radarr/Lidarr/Readarr/Listenarr för att komma igång.",
     "noInstancesTitle": "Inga instanser ännu",
     "deleteConfirm": "Detta tar permanent bort \"{name}\" och dess cachade sökobjekt. Åtgärden går inte att ångra.",
     "prowlarr": {
@@ -473,7 +473,7 @@
     "userAgentHint": "Valfritt. Lämnar du fältet tomt blir det automatiskt: UmlautAdaptarrEX plus den version som körs - värdet följer då varje uppdatering utan att du rör fältet.",
     "userAgentAutoHint": "Tomt = automatiskt: {value}",
     "forwardArrUserAgent": "Skicka vidare *Arr:s User-Agent",
-    "forwardArrUserAgentDescription": "Skickar Sonarr/Radarr/Lidarr/Readarrs User-Agent ordagrant till indexeraren i stället för vår egen.",
+    "forwardArrUserAgentDescription": "Skickar Sonarr/Radarr/Lidarr/Readarr/Listenarrs User-Agent ordagrant till indexeraren i stället för vår egen.",
     "forwardArrUserAgentHint": "Av som standard: indexeraren ser bara ”{ua}” och inget versionsfingeravtryck från din *Arr. Slå på den när en indexerare bara accepterar kända klient-User-Agents eller begränsar utifrån dem. Skickar *Arr ingen header används vår egen.",
     "logRetentionDays": "Loggbevarande (dagar)",
     "logRetentionDaysHint": "Loggar äldre än så raderas av en städ-jobb som körs var 6:e timme. 1–30 dagar.",
@@ -781,7 +781,7 @@
   "about": {
     "title": "Om",
     "subtitle": "Projektinfo, länkar och tack.",
-    "tagline": "Umlaut- och tyska titel-proxy för Sonarr / Radarr / Lidarr / Readarr",
+    "tagline": "Umlaut- och tyska titel-proxy för Sonarr / Radarr / Lidarr / Readarr / Listenarr",
     "authorLabel": "Författare",
     "linksTitle": "Länkar",
     "linksHint": "Källkod, buggrapporter och supportkanaler.",
