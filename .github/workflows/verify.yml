@@ -22,6 +22,10 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          # Nothing in this job pushes with the git credential, so it is not
+          # persisted into .git/config while later steps run third-party code.
+          persist-credentials: false
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
