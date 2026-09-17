@@ -43,14 +43,20 @@ const READARR_CATEGORY_IDS = new Set([
 ]);
 const LIDARR_CATEGORY_IDS = new Set(["3000", "3010", "3020", "3040", "3050"]);
 
+// Listenarr identifies itself to the indexer as
+// `Listenarr/<version> (+https://github.com/Listenarrs/listenarr)`.
+const LISTENARR_USER_AGENT_PREFIX = "Listenarr/";
+
 // Reproduces SearchController's per-action upfront lookup. Returning null
 // means "no upfront searchItem" - rewrites still happen via per-item title
 // lookup against the cache (matches old `useCacheService = searchItem == null`
 // path in TitleMatchingService.RenameTitlesInContent).
-function determineSearchItem(
+// Exported for unit tests; the route itself is the only production caller.
+export function determineSearchItem(
   spec: RouteSpec,
   params: URLSearchParams,
   state: AppState,
+  userAgent: string,
 ): CachedSearchItem | null {
   const q = params.get("q");
   switch (spec.type) {
@@ -63,7 +69,17 @@ function determineSearchItem(
     case "search": {
       if (!q) return null;
       const cat = params.get("cat");
-      if (!cat) return null;
+      if (!cat) {
+        // Listenarr's indexer categories are optional, so a search can arrive
+        // with no `cat` at all. Its user agent is then the only signal that
+        // this is an audiobook query. Additive: without that signal we return
+        // null exactly as before and the per-item findByTitle fallback carries
+        // the rewrite.
+        if (userAgent.startsWith(LISTENARR_USER_AGENT_PREFIX)) {
+          return state.getByExternalId("book", getReadarrTitleForExternalId(q));
+        }
+        return null;
+      }
       const cats = cat.split(",").map((c) => c.trim());
       if (cats.some((c) => READARR_CATEGORY_IDS.has(c))) {
         return state.getByExternalId("book", getReadarrTitleForExternalId(q));
@@ -224,7 +240,8 @@ export async function handleSearch(
   const q = params.get("q");
 
   const state = getAppState();
-  let searchItem = determineSearchItem(spec, params, state);
+  const userAgent = String(req.headers["user-agent"] ?? "");
+  let searchItem = determineSearchItem(spec, params, state, userAgent);
   let fanoutItem = resolveFanoutItem(spec, params, state, searchItem);
   // While paused, the legacy path becomes a transparent pass-through: no
   // outbound variation fan-out and no response-XML rewriting. Logging and
@@ -244,7 +261,6 @@ export async function handleSearch(
     ? resolveOnDemand(onDemandTarget, { state, logger: req.log })
     : null;
 
-  const userAgent = String(req.headers["user-agent"] ?? "");
   const responses: string[] = [];
   let lastStatus = 200;
   let lastContentType = "application/xml";
