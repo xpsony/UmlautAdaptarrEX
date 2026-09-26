@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "UmlautAdaptarrEX",
-    "tagline": "Umlaut + German title proxy for Sonarr / Radarr / Lidarr / Readarr"
+    "tagline": "Umlaut + German title proxy for Sonarr / Radarr / Lidarr / Readarr / Listenarr"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -199,7 +199,7 @@
     "manageInstances": "Manage",
     "addInstance": "Add instance",
     "noInstancesTitle": "No instances connected yet",
-    "noInstancesHint": "Connect Sonarr, Radarr, Lidarr or Readarr to get started.",
+    "noInstancesHint": "Connect Sonarr, Radarr, Lidarr, Readarr or Listenarr to get started.",
     "instanceStatus": {
       "ok": "OK",
       "error": "Error",
@@ -231,12 +231,12 @@
   },
   "instances": {
     "title": "Arr instances",
-    "subtitle": "Manage Sonarr / Radarr / Lidarr / Readarr connections.",
+    "subtitle": "Manage Sonarr / Radarr / Lidarr / Readarr / Listenarr connections.",
     "listTitle": "Connected instances",
     "listSubtitle": "Toggle the switch to enable or pause syncing.",
     "add": "Add instance",
     "addTitle": "Add a new instance",
-    "addSubtitle": "Connect Sonarr, Radarr, Lidarr or Readarr.",
+    "addSubtitle": "Connect Sonarr, Radarr, Lidarr, Readarr or Listenarr.",
     "edit": "Edit",
     "open": "Open instance",
     "editTitle": "Edit instance",
@@ -257,7 +257,7 @@
     "hostHint": "Full URL including protocol, e.g. http://sonarr:8989",
     "apiKey": "API key",
     "apiKeyMaskedPlaceholder": "Enter the real API key…",
-    "apiKeyMaskedHint": "The stored value is only the Prowlarr mask (********). Enter the real API key from Sonarr/Radarr/Lidarr/Readarr.",
+    "apiKeyMaskedHint": "The stored value is only the Prowlarr mask (********). Enter the real API key from Sonarr/Radarr/Lidarr/Readarr/Listenarr.",
     "enabled": "Enabled",
     "enabledHint": "Disabled instances are skipped during sync.",
     "enableAria": "Toggle {name}",
@@ -287,7 +287,7 @@
     "statusError": "Error",
     "statusErrorHeading": "Last sync error",
     "statusDisabled": "Disabled",
-    "noInstances": "Add your first Sonarr/Radarr/Lidarr/Readarr to get started.",
+    "noInstances": "Add your first Sonarr/Radarr/Lidarr/Readarr/Listenarr to get started.",
     "noInstancesTitle": "No instances yet",
     "deleteConfirm": "This permanently removes \"{name}\" and its cached search items. This cannot be undone.",
     "prowlarr": {
@@ -473,7 +473,7 @@
     "userAgentHint": "Optional. Leaving it empty means automatic: UmlautAdaptarrEX plus the running version - the value then follows every update without you touching the field.",
     "userAgentAutoHint": "Empty = automatic: {value}",
     "forwardArrUserAgent": "Forward the *Arr's User-Agent",
-    "forwardArrUserAgentDescription": "Sends Sonarr/Radarr/Lidarr/Readarr's User-Agent to the indexer verbatim instead of our own.",
+    "forwardArrUserAgentDescription": "Sends Sonarr/Radarr/Lidarr/Readarr/Listenarr's User-Agent to the indexer verbatim instead of our own.",
     "forwardArrUserAgentHint": "Off by default: the indexer sees only \"{ua}\" and no version fingerprint of your *Arr. Turn it on when an indexer only accepts known client User-Agents or rate-limits by them. If the *Arr sends no header, ours is used.",
     "logRetentionDays": "Log retention (days)",
     "logRetentionDaysHint": "Logs older than this are deleted by a cleanup job that runs every 6 hours. 1–30 days.",
@@ -781,7 +781,7 @@
   "about": {
     "title": "About",
     "subtitle": "Project info, links and acknowledgements.",
-    "tagline": "Umlaut + German title proxy for Sonarr / Radarr / Lidarr / Readarr",
+    "tagline": "Umlaut + German title proxy for Sonarr / Radarr / Lidarr / Readarr / Listenarr",
     "authorLabel": "Author",
     "linksTitle": "Links",
     "linksHint": "Source code, issues and support channels.",

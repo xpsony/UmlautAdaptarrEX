@@ -1,13 +1,13 @@
 import { z } from "zod";
 
-export const ArrTypeSchema = z.enum(["sonarr", "radarr", "lidarr", "readarr"]);
+export const ArrTypeSchema = z.enum(["sonarr", "radarr", "lidarr", "readarr", "listenarr"]);
 export type ArrType = z.infer<typeof ArrTypeSchema>;
 
 export const ProviderIdSchema = z.enum(["pcjones", "tvdb", "tmdb"]);
 export type ProviderId = z.infer<typeof ProviderIdSchema>;
 
 // Ordered list of title providers consulted for an instance (in the given
-// order). Only relevant for Sonarr/Radarr; Lidarr and Readarr set this field
+// order). Only relevant for Sonarr/Radarr; Lidarr/Readarr/Listenarr set this field
 // to `null` because their sync doesn't call the TitleProvider.
 export const ProviderOrderSchema = z
   .array(ProviderIdSchema)
@@ -38,10 +38,10 @@ export const ArrInstanceSchema = z
     apiKey: z.string().min(8).max(128),
     enabled: z.boolean().default(true),
     // Default is `null`; UI/setup wizard sets a sensible per-type value.
-    // Lidarr/Readarr stay `null`; sync ignores the field for those types.
+    // Lidarr/Readarr/Listenarr stay `null`; sync ignores the field for those types.
     providerOrder: ProviderOrderSchema.nullable().default(null),
     // Year-Disambiguation pro Instanz. Wirkt nur fuer Sonarr/Radarr; das
-    // Backend liest die Felder dort beim Match-Aufbau aus. Lidarr/Readarr
+    // Backend liest die Felder dort beim Match-Aufbau aus. Lidarr/Readarr/Listenarr
     // ignorieren die Felder vollstaendig.
     enableYearMatching: z.boolean().default(true),
     yearMatchingTolerance: YearToleranceSchema.default(1),

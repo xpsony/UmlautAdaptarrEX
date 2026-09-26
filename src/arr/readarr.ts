@@ -42,6 +42,7 @@ export class ReadarrClient extends ArrClient {
         return {
           arrId: author.id,
           externalId: getReadarrTitleForExternalId(`${cleaned} ${author.authorName}`),
+          externalIdAliases: null,
           imdbId: null,
           title: cleaned,
           year: null,

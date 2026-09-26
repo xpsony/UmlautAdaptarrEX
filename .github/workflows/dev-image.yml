@@ -49,6 +49,10 @@ jobs:
 
       - name: Check out repository
         uses: actions/checkout@v7
+        with:
+          # Nothing in this job pushes with the git credential, so it is not
+          # persisted into .git/config while later steps run third-party code.
+          persist-credentials: false
 
       # The dev image's version string is "<release>-dev-<short sha>" so the UI
       # can show which release the build is based on ("v1.4.0 DEV-6A0974E")
@@ -78,14 +82,12 @@ jobs:
           platforms: ${{ matrix.platform }}
           build-args: |
             APP_VERSION=${{ steps.pkg.outputs.version }}-dev-${{ steps.sha.outputs.short }}
+          # Static labels (title, description, licenses) live in the Dockerfile.
           labels: |
-            org.opencontainers.image.title=UmlautAdaptarrEX
-            org.opencontainers.image.description=Umlaut/German-title proxy for Sonarr/Radarr/Lidarr/Readarr
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.url=https://hub.docker.com/r/${{ env.IMAGE_NAME }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.version=${{ steps.pkg.outputs.version }}-dev-${{ steps.sha.outputs.short }}
-            org.opencontainers.image.licenses=MIT
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           cache-from: |
             type=gha,scope=dev-${{ steps.prep.outputs.pair }}
@@ -153,6 +155,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Word splitting on the printf output is the mechanism here: each
+          # digest file becomes its own argument. Quoting would collapse them
+          # into a single bogus reference.
+          # shellcheck disable=SC2046
           docker buildx imagetools create ${{ steps.tags.outputs.args }} \
             $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
 

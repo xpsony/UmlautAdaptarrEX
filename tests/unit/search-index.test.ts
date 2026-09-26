@@ -89,4 +89,93 @@ describe("SearchItemIndex", () => {
     expect(index.getByExternalId("tv", "100")).toBeNull();
     expect(index.getByImdbId("tt0000100")).toBeNull();
   });
+
+  it("registers every alias as a lookup key for the same item", () => {
+    const index = new SearchItemIndex();
+    index.indexItem(
+      makeItem({
+        mediaType: "book",
+        externalId: "Sunken Bells Marla Ostrand",
+        externalIdAliases: ["Sunken Bells Marla Ostrand Tidewater Chronicles"],
+        expectedAuthor: "Marla Ostrand",
+        title: "Sunken Bells",
+      }),
+      PACK,
+    );
+
+    const viaPrimary = index.getByExternalId("book", "Sunken Bells Marla Ostrand");
+    const viaAlias = index.getByExternalId(
+      "book",
+      "Sunken Bells Marla Ostrand Tidewater Chronicles",
+    );
+    expect(viaPrimary?.title).toBe("Sunken Bells");
+    expect(viaAlias).toBe(viaPrimary);
+  });
+
+  it("removeItem drops the aliases along with the primary key", () => {
+    const index = new SearchItemIndex();
+    index.indexItem(
+      makeItem({
+        mediaType: "book",
+        externalId: "Sunken Bells Marla Ostrand",
+        externalIdAliases: ["Sunken Bells Marla Ostrand Tidewater Chronicles"],
+      }),
+      PACK,
+    );
+    index.removeItem("book", "Sunken Bells Marla Ostrand");
+
+    expect(index.getByExternalId("book", "Sunken Bells Marla Ostrand")).toBeNull();
+    expect(
+      index.getByExternalId("book", "Sunken Bells Marla Ostrand Tidewater Chronicles"),
+    ).toBeNull();
+  });
+
+  it("removeItem leaves an alias alone once another item has taken it over", () => {
+    const index = new SearchItemIndex();
+    index.indexItem(
+      makeItem({
+        id: "id-old",
+        mediaType: "book",
+        externalId: "Old Primary",
+        externalIdAliases: ["Shared Key"],
+      }),
+      PACK,
+    );
+    index.indexItem(
+      makeItem({
+        id: "id-new",
+        mediaType: "book",
+        externalId: "Shared Key",
+        title: "Winter Lanterns",
+      }),
+      PACK,
+    );
+
+    index.removeItem("book", "Old Primary");
+
+    expect(index.getByExternalId("book", "Shared Key")?.title).toBe("Winter Lanterns");
+  });
+
+  it("removeItemsForInstance drops alias keys too", () => {
+    const index = new SearchItemIndex();
+    index.indexItem(
+      makeItem({
+        arrInstanceId: "inst-listenarr",
+        mediaType: "book",
+        externalId: "Primary Key",
+        externalIdAliases: ["Alias Key"],
+      }),
+      PACK,
+    );
+    index.removeItemsForInstance("inst-listenarr");
+
+    expect(index.getByExternalId("book", "Primary Key")).toBeNull();
+    expect(index.getByExternalId("book", "Alias Key")).toBeNull();
+  });
+
+  it("indexes an item without aliases exactly as before", () => {
+    const index = new SearchItemIndex();
+    index.indexItem(makeItem({ externalId: "500" }), PACK);
+    expect(index.getByExternalId("tv", "500")?.externalId).toBe("500");
+  });
 });

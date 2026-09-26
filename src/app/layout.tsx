@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     default: "UmlautAdaptarrEX",
   },
   description:
-    "Umlaut + German title proxy for Sonarr / Radarr / Lidarr / Readarr",
+    "Umlaut + German title proxy for Sonarr / Radarr / Lidarr / Readarr / Listenarr",
   icons: {
     icon: [{ url: "/brand/logo-mark.svg", type: "image/svg+xml" }],
     apple: "/brand/logo-mark.svg",

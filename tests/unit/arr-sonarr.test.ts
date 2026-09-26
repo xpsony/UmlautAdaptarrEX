@@ -148,6 +148,7 @@ describe("SonarrClient.fetchRawItems", () => {
       {
         arrId: 7,
         externalId: "300",
+        externalIdAliases: null,
         imdbId: null,
         title: "Realm of Ravens",
         year: 2019,
@@ -208,6 +209,7 @@ describe("SonarrClient.deriveItems", () => {
       {
         arrId: 7,
         externalId: "300",
+        externalIdAliases: null,
         imdbId: null,
         title: "Realm of Ravens",
         year: 2019,

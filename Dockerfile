@@ -63,6 +63,15 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
 FROM base-runtime AS runtime
 ARG APP_VERSION
 ENV APP_VERSION=$APP_VERSION
+
+# Image metadata that never varies between builds, kept here so the three
+# workflows that build this image (release, dev-image, security-rebuild) do not
+# each carry their own copy and drift apart. The per-build labels
+# (source, url, revision, version) stay in the workflows: they depend on the
+# repository and on the image name a fork may retarget.
+LABEL org.opencontainers.image.title="UmlautAdaptarrEX" \
+      org.opencontainers.image.description="Umlaut/German-title proxy for Sonarr/Radarr/Lidarr/Readarr/Listenarr" \
+      org.opencontainers.image.licenses="MIT"
 ENV NODE_ENV=production
 ENV DATABASE_URL=file:/data/umlautadaptarrex.db
 # Legacy port vars kept as fallbacks; the branded names are the documented,

@@ -2,6 +2,7 @@ import type { TitleProvider } from "@/providers/types";
 import type { ArrType } from "@/schemas/instance";
 import { type ArrClient, type ArrClientOptions } from "./base";
 import { LidarrClient } from "./lidarr";
+import { ListenarrClient } from "./listenarr";
 import { RadarrClient } from "./radarr";
 import { ReadarrClient } from "./readarr";
 import { SonarrClient } from "./sonarr";
@@ -21,5 +22,7 @@ export function buildArrClient(opts: BuildArrClientOptions): ArrClient {
       return new LidarrClient(opts);
     case "readarr":
       return new ReadarrClient(opts);
+    case "listenarr":
+      return new ListenarrClient(opts);
   }
 }

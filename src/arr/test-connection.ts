@@ -48,7 +48,7 @@ export async function testConnection(
       ok: false,
       code: "masked_api_key",
       error:
-        "The stored API key is only a Prowlarr mask. Enter the real key from Sonarr/Radarr/Lidarr/Readarr.",
+        "The stored API key is only a Prowlarr mask. Enter the real key from Sonarr/Radarr/Lidarr/Readarr/Listenarr.",
     };
   }
   // SSRF guard. Self-hosted is the default deployment shape, so private/LAN
@@ -63,13 +63,23 @@ export async function testConnection(
         "Refusing to connect to a private or loopback address. Strict mode is enabled (UA_BLOCK_PRIVATE_INSTANCE_HOSTS); unset it to allow same-host/LAN *Arr instances.",
     };
   }
+  // Listenarr has no /system/status and takes the key only as a header; every
+  // other *arr keeps the status endpoint with query-string auth.
+  const isListenarr = type === "listenarr";
+  const base = host.replace(/\/$/, "");
   const apiVersion = type === "sonarr" || type === "radarr" ? "v3" : "v1";
-  const url = `${host.replace(/\/$/, "")}/api/${apiVersion}/system/status?apikey=${encodeURIComponent(apiKey)}`;
+  const url = isListenarr
+    ? `${base}/api/v1/system/info`
+    : `${base}/api/${apiVersion}/system/status?apikey=${encodeURIComponent(apiKey)}`;
   const started = process.hrtime.bigint();
   try {
     const { statusCode, body } = await request(url, {
       method: "GET",
-      headers: { "User-Agent": userAgent, Accept: "application/json" },
+      headers: {
+        "User-Agent": userAgent,
+        Accept: "application/json",
+        ...(isListenarr ? { "X-Api-Key": apiKey } : {}),
+      },
       bodyTimeout: 5000,
       headersTimeout: 5000,
     });

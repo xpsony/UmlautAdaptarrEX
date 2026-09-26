@@ -112,3 +112,44 @@ describe("testConnection", () => {
     expect(url).toContain("apikey=key%20with%20spaces%20%26%20symbols");
   });
 });
+
+describe("testConnection for listenarr", () => {
+  it("calls system/info with the key in the header", async () => {
+    requestMock.mockResolvedValueOnce({
+      statusCode: 200,
+      body: { json: async () => ({ version: "1.2.3" }), text: async () => "{}" },
+    });
+
+    const res = await testConnection("listenarr", "http://listenarr.local", "listenarr-key");
+
+    const url = requestMock.mock.calls[0]?.[0] as string;
+    const args = requestMock.mock.calls[0]?.[1] as { headers: Record<string, string> };
+    expect(url).toBe("http://listenarr.local/api/v1/system/info");
+    expect(args.headers["X-Api-Key"]).toBe("listenarr-key");
+    expect(url).not.toContain("listenarr-key");
+    expect(res.ok).toBe(true);
+    expect(res.version).toBe("1.2.3");
+  });
+
+  it("reports a rejected key as upstream_unauthorized", async () => {
+    requestMock.mockResolvedValueOnce({
+      statusCode: 401,
+      body: { text: async () => "Unauthorized", json: async () => null },
+    });
+
+    const res = await testConnection("listenarr", "http://listenarr.local", "wrong-key");
+    expect(res.ok).toBe(false);
+    expect(res.code).toBe("upstream_unauthorized");
+  });
+
+  it("still puts the key in the query for the other arrs", async () => {
+    requestMock.mockResolvedValueOnce({
+      statusCode: 200,
+      body: { json: async () => ({ version: "4.0.0" }), text: async () => "{}" },
+    });
+
+    await testConnection("sonarr", "http://sonarr.local", "sonarr-key");
+    const url = requestMock.mock.calls[0]?.[0] as string;
+    expect(url).toContain("/api/v3/system/status?apikey=sonarr-key");
+  });
+});

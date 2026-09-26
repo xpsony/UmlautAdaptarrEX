@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- **Listenarr support.** [Listenarr](https://github.com/Listenarrs/Listenarr) is an audiobook manager, and it now sits behind the proxy like the other four \*Arrs: its library is synced, its searches are fanned out over the spelling variations, and its results are rewritten to `Author - Title`. It reuses the existing book media type, so the German umlaut plugin and the renaming options apply unchanged. One database migration runs automatically on first start.
+  - **Listenarr instances are added by hand**, under Arr instances → Add instance. Prowlarr has no Listenarr application type, so the setup wizard's Prowlarr auto-detection cannot discover one, and the wizard no longer claims otherwise. Beware a trap: Listenarr ships its own Prowlarr-compatible endpoint, so registering it in Prowlarr as a _Readarr_ application makes our detection read it back as `readarr`, after which it silently syncs nothing. Both READMEs spell this out.
+  - **A search that arrives without a category still resolves.** Listenarr's indexer categories are optional, and the category is normally what tells us a query is about a book. When it is missing, Listenarr's own User-Agent is used as the signal instead. Every other caller is unaffected: without that signal the route behaves exactly as before.
+  - Two internal details worth knowing if you read the code: Listenarr accepts its API key only as an `X-Api-Key` header, never in the query string, so `ArrClient` gained an overridable transport rather than a special case. And because Listenarr searches with `Title Author Series` while Readarr searches with `Title Author`, one audiobook is registered under both spellings from a single cache row (new nullable `SearchItem.externalIdAliases` column), instead of being written twice and showing up twice in the library.
+
 ## 1.4.0 - 2026-09-06
 
 The biggest release since the rewrite, and it changes both halves of the product: what gets searched, and what you can see and fix.

@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "UmlautAdaptarrEX",
-    "tagline": "Proxy de tréma et de titres allemands pour Sonarr / Radarr / Lidarr / Readarr"
+    "tagline": "Proxy de tréma et de titres allemands pour Sonarr / Radarr / Lidarr / Readarr / Listenarr"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -199,7 +199,7 @@
     "manageInstances": "Gérer",
     "addInstance": "Ajouter une instance",
     "noInstancesTitle": "Aucune instance connectée pour l'instant",
-    "noInstancesHint": "Connectez Sonarr, Radarr, Lidarr ou Readarr pour commencer.",
+    "noInstancesHint": "Connectez Sonarr, Radarr, Lidarr, Readarr ou Listenarr pour commencer.",
     "instanceStatus": {
       "ok": "OK",
       "error": "Erreur",
@@ -231,12 +231,12 @@
   },
   "instances": {
     "title": "Instances Arr",
-    "subtitle": "Gérez les connexions Sonarr / Radarr / Lidarr / Readarr.",
+    "subtitle": "Gérez les connexions Sonarr / Radarr / Lidarr / Readarr / Listenarr.",
     "listTitle": "Instances connectées",
     "listSubtitle": "Activez ou mettez en pause la synchronisation avec l'interrupteur.",
     "add": "Ajouter une instance",
     "addTitle": "Ajouter une nouvelle instance",
-    "addSubtitle": "Connectez Sonarr, Radarr, Lidarr ou Readarr.",
+    "addSubtitle": "Connectez Sonarr, Radarr, Lidarr, Readarr ou Listenarr.",
     "edit": "Modifier",
     "open": "Ouvrir l'instance",
     "editTitle": "Modifier l'instance",
@@ -257,7 +257,7 @@
     "hostHint": "URL complète, protocole inclus, ex. http://sonarr:8989",
     "apiKey": "Clé API",
     "apiKeyMaskedPlaceholder": "Saisissez la vraie clé API…",
-    "apiKeyMaskedHint": "La valeur stockée n'est que le masque Prowlarr (********). Saisissez la vraie clé API depuis Sonarr/Radarr/Lidarr/Readarr.",
+    "apiKeyMaskedHint": "La valeur stockée n'est que le masque Prowlarr (********). Saisissez la vraie clé API depuis Sonarr/Radarr/Lidarr/Readarr/Listenarr.",
     "enabled": "Activée",
     "enabledHint": "Les instances désactivées sont ignorées lors du sync.",
     "enableAria": "Activer/désactiver {name}",
@@ -287,7 +287,7 @@
     "statusError": "Erreur",
     "statusErrorHeading": "Dernière erreur de synchronisation",
     "statusDisabled": "Désactivée",
-    "noInstances": "Ajoutez votre premier Sonarr/Radarr/Lidarr/Readarr pour commencer.",
+    "noInstances": "Ajoutez votre premier Sonarr/Radarr/Lidarr/Readarr/Listenarr pour commencer.",
     "noInstancesTitle": "Aucune instance pour l'instant",
     "deleteConfirm": "Cela supprime définitivement « {name} » et ses éléments de recherche en cache. Cette action est irréversible.",
     "prowlarr": {
@@ -473,7 +473,7 @@
     "userAgentHint": "Optionnel. Laisser vide signifie automatique : UmlautAdaptarrEX plus la version en cours - la valeur suit alors chaque mise à jour sans que vous touchiez au champ.",
     "userAgentAutoHint": "Vide = automatique : {value}",
     "forwardArrUserAgent": "Transmettre le User-Agent de l'*Arr",
-    "forwardArrUserAgentDescription": "Envoie le User-Agent de Sonarr/Radarr/Lidarr/Readarr tel quel à l'indexeur au lieu du nôtre.",
+    "forwardArrUserAgentDescription": "Envoie le User-Agent de Sonarr/Radarr/Lidarr/Readarr/Listenarr tel quel à l'indexeur au lieu du nôtre.",
     "forwardArrUserAgentHint": "Désactivé par défaut : l'indexeur ne voit que « {ua} » et aucune empreinte de version de votre *Arr. À activer lorsqu'un indexeur n'accepte que des User-Agents de clients connus ou limite le débit d'après eux. Si l'*Arr n'envoie aucun en-tête, le nôtre est utilisé.",
     "logRetentionDays": "Rétention des journaux (jours)",
     "logRetentionDaysHint": "Les journaux plus anciens sont supprimés par une tâche de nettoyage toutes les 6 heures. 1–30 jours.",
@@ -781,7 +781,7 @@
   "about": {
     "title": "À propos",
     "subtitle": "Informations sur le projet, liens et remerciements.",
-    "tagline": "Proxy de tréma et de titres allemands pour Sonarr / Radarr / Lidarr / Readarr",
+    "tagline": "Proxy de tréma et de titres allemands pour Sonarr / Radarr / Lidarr / Readarr / Listenarr",
     "authorLabel": "Auteur",
     "linksTitle": "Liens",
     "linksHint": "Code source, signalement de bugs et canaux de support.",

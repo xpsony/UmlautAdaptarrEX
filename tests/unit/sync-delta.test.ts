@@ -6,6 +6,7 @@ function raw(over: Partial<RawArrItem> = {}): RawArrItem {
   return {
     arrId: 1,
     externalId: "100",
+    externalIdAliases: null,
     imdbId: null,
     title: "Realm of Ravens",
     year: 2019,
@@ -18,7 +19,29 @@ function raw(over: Partial<RawArrItem> = {}): RawArrItem {
 }
 
 function stored(over: Partial<StoredDeltaKey> = {}): StoredDeltaKey {
-  return { externalId: "100", title: "Realm of Ravens", year: 2019, ...over };
+  return {
+    externalId: "100",
+    title: "Realm of Ravens",
+    year: 2019,
+    externalIdAliases: null,
+    ...over,
+  };
+}
+
+/** A Listenarr-shaped audiobook: the series feeds only the alias list. */
+function book(over: Partial<RawArrItem> = {}): RawArrItem {
+  return raw({
+    externalId: "900",
+    title: "Sunken Bells",
+    year: 2026,
+    mediaType: "book",
+    expectedAuthor: "Marla Ostrand",
+    ...over,
+  });
+}
+
+function storedBook(over: Partial<StoredDeltaKey> = {}): StoredDeltaKey {
+  return stored({ externalId: "900", title: "Sunken Bells", year: 2026, ...over });
 }
 
 describe("planDelta", () => {
@@ -64,6 +87,40 @@ describe("planDelta", () => {
     const plan = planDelta([raw({ title: "First" }), raw({ title: "Second" })], []);
     expect(plan.changed).toHaveLength(1);
     expect(plan.changed[0]?.title).toBe("Second");
+  });
+
+  it("detects a Listenarr series being added to a book", () => {
+    // The series feeds neither externalId nor title nor year, only the alias.
+    const plan = planDelta(
+      [book({ externalIdAliases: ["Sunken Bells Marla Ostrand Tidewater Chronicles"] })],
+      [storedBook({ externalIdAliases: null })],
+    );
+    expect(plan.changed.map((c) => c.externalId)).toEqual(["900"]);
+    expect(plan.isEmpty).toBe(false);
+  });
+
+  it("detects a Listenarr series being removed from a book", () => {
+    const plan = planDelta(
+      [book({ externalIdAliases: null })],
+      [storedBook({ externalIdAliases: '["Sunken Bells Marla Ostrand Tidewater Chronicles"]' })],
+    );
+    expect(plan.changed.map((c) => c.externalId)).toEqual(["900"]);
+    expect(plan.isEmpty).toBe(false);
+  });
+
+  it("leaves an unchanged alias alone so a settled Listenarr library stays cheap", () => {
+    const plan = planDelta(
+      [book({ externalIdAliases: ["Sunken Bells Marla Ostrand Tidewater Chronicles"] })],
+      [storedBook({ externalIdAliases: '["Sunken Bells Marla Ostrand Tidewater Chronicles"]' })],
+    );
+    expect(plan.changed).toEqual([]);
+    expect(plan.isEmpty).toBe(true);
+  });
+
+  it("ignores the alias column for the *Arrs that never set one", () => {
+    const plan = planDelta([raw()], [stored()]);
+    expect(plan.changed).toEqual([]);
+    expect(plan.isEmpty).toBe(true);
   });
 
   it("handles both sides empty", () => {
