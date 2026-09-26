@@ -21,6 +21,7 @@ operations story.
 | Core principle (proxy + title variations + rewrite) | ✅                            | ✅ (same proven idea)                                                           |
 | Sonarr / Lidarr / Readarr                           | ✅                            | ✅                                                                              |
 | **Radarr**                                          | limited                       | ✅ fully supported                                                              |
+| **Listenarr** (audiobooks)                          | -                             | ✅ since 1.4.1                                                                  |
 | Web interface                                       | -                             | ✅ complete (setup wizard, dashboard, settings)                                 |
 | Configuration                                       | environment variables / files | ✅ entirely via the UI, persisted in SQLite                                     |
 | Title browser + manual title overrides              | -                             | ✅ fix individual mismatches instead of clearing the cache                      |

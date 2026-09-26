@@ -58,7 +58,7 @@ Defined in [src/server/routes/admin/login.ts](../src/server/routes/admin/login.t
 | GET    | `/api/auth/plugins`                        | public     | 20 / 5 min / IP | List built-in language plugins with current enable state.                                                                                                                                                                                            |
 | POST   | `/api/auth/setup`                          | setup-open | 20 / 5 min / IP | Final wizard submission; creates the admin user, persists settings, flips `setupComplete=true`. 409 once setup is done.                                                                                                                              |
 | POST   | `/api/auth/test-tmdb-key`                  | setup-open | 20 / 5 min / IP | Probe a TMDB v3 key. 409 once setup is done.                                                                                                                                                                                                         |
-| POST   | `/api/auth/instances/test`                 | setup-open | 20 / 5 min / IP | Test a Sonarr/Radarr/Lidarr/Readarr connection from the wizard.                                                                                                                                                                                      |
+| POST   | `/api/auth/instances/test`                 | setup-open | 20 / 5 min / IP | Test a Sonarr/Radarr/Lidarr/Readarr/Listenarr connection from the wizard.                                                                                                                                                                            |
 | POST   | `/api/auth/prowlarr/test`                  | setup-open | 20 / 5 min / IP | Test Prowlarr connection. Returns `{ ok, appsCount, skippedCount }`.                                                                                                                                                                                 |
 | POST   | `/api/auth/prowlarr/preview`               | setup-open | 20 / 5 min / IP | Fetch Prowlarr's connected applications. Real downstream API keys are replaced with opaque vault tokens; the wizard sends them back to `/api/auth/setup`, which resolves them server-side. Body accepts `{ host, apiKey }` or `{ useStored: true }`. |
 | DELETE | `/api/auth/prowlarr`                       | setup-open | 20 / 5 min / IP | Drop persisted Prowlarr host/key (e.g. user opted to skip the Prowlarr step).                                                                                                                                                                        |
@@ -73,13 +73,13 @@ All routes require a valid session cookie (and CSRF token on state-changing meth
 
 ### Arr instances ([instances-crud.ts](../src/server/routes/admin/instances-crud.ts))
 
-| Method | Path                        | Purpose                                                                   |
-| ------ | --------------------------- | ------------------------------------------------------------------------- |
-| GET    | `/api/admin/instances`      | List all configured Sonarr / Radarr / Lidarr / Readarr instances.         |
-| POST   | `/api/admin/instances`      | Create a new instance (`type`, `name`, `host`, `apiKey`, optional flags). |
-| PATCH  | `/api/admin/instances/:id`  | Partial update. Sends `apiKey` only when changing it.                     |
-| DELETE | `/api/admin/instances/:id`  | Remove instance.                                                          |
-| POST   | `/api/admin/instances/test` | Live `system/status` probe against an instance config (no DB write).      |
+| Method | Path                        | Purpose                                                                       |
+| ------ | --------------------------- | ----------------------------------------------------------------------------- |
+| GET    | `/api/admin/instances`      | List all configured Sonarr / Radarr / Lidarr / Readarr / Listenarr instances. |
+| POST   | `/api/admin/instances`      | Create a new instance (`type`, `name`, `host`, `apiKey`, optional flags).     |
+| PATCH  | `/api/admin/instances/:id`  | Partial update. Sends `apiKey` only when changing it.                         |
+| DELETE | `/api/admin/instances/:id`  | Remove instance.                                                              |
+| POST   | `/api/admin/instances/test` | Live `system/status` probe against an instance config (no DB write).          |
 
 ### Prowlarr admin ([prowlarr-admin.ts](../src/server/routes/admin/prowlarr-admin.ts))
 

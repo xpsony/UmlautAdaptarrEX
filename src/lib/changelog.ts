@@ -23,6 +23,27 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.4.1",
+    date: "2026-09-26",
+    title: "1.4.1: Listenarr support for audiobooks",
+    description:
+      "Adds Listenarr as a fifth *Arr, so audiobook libraries get the same umlaut and German-title treatment as series, films, music and books. Plus a dependency refresh. One database migration runs automatically on first start; nothing changes for installations that do not add a Listenarr instance.",
+    items: [
+      {
+        type: "feature",
+        text: "Listenarr support: your audiobook library is synced, searches are fanned out over the spelling variations, and results are rewritten to “Author - Title”. It reuses the book media type, so the German umlaut plugin and the renaming options apply unchanged. A search that arrives without a category (Listenarr's indexer categories are optional) is still recognised as a book search, and one audiobook is found both under Listenarr's “Title Author Series” and under Readarr's “Title Author” spelling.",
+      },
+      {
+        type: "improvement",
+        text: "Listenarr instances are added by hand under Arr instances → Add instance. Prowlarr has no Listenarr application type, so the setup wizard cannot discover one. If you registered Listenarr in Prowlarr as a Readarr application and imported it in the wizard, it was stored as Readarr and syncs nothing: delete it and add it again as type Listenarr.",
+      },
+      {
+        type: "improvement",
+        text: "Dependency refresh within the existing version ranges: Next.js 16.3.6, React 19.3, Fastify 5.12.5, Zod 4.6.5, undici 8.11 and others.",
+      },
+    ],
+  },
+  {
     version: "1.4.0",
     date: "2026-09-06",
     highlight: true,

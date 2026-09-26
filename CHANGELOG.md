@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 1.4.1 - 2026-09-26
+
+Adds **Listenarr** as a fifth \*Arr, so audiobook libraries get the same umlaut and German-title treatment as series, films, music and books. Plus a dependency refresh. One database migration runs automatically on first start. Nothing changes for installations that do not add a Listenarr instance.
 
 ### Features
 
@@ -8,6 +10,16 @@
   - **Listenarr instances are added by hand**, under Arr instances → Add instance. Prowlarr has no Listenarr application type, so the setup wizard's Prowlarr auto-detection cannot discover one, and the wizard no longer claims otherwise. Beware a trap: Listenarr ships its own Prowlarr-compatible endpoint, so registering it in Prowlarr as a _Readarr_ application makes our detection read it back as `readarr`, after which it silently syncs nothing. Both READMEs spell this out.
   - **A search that arrives without a category still resolves.** Listenarr's indexer categories are optional, and the category is normally what tells us a query is about a book. When it is missing, Listenarr's own User-Agent is used as the signal instead. Every other caller is unaffected: without that signal the route behaves exactly as before.
   - Two internal details worth knowing if you read the code: Listenarr accepts its API key only as an `X-Api-Key` header, never in the query string, so `ArrClient` gained an overridable transport rather than a special case. And because Listenarr searches with `Title Author Series` while Readarr searches with `Title Author`, one audiobook is registered under both spellings from a single cache row (new nullable `SearchItem.externalIdAliases` column), instead of being written twice and showing up twice in the library.
+
+### Dependencies & internals
+
+- Dependencies refreshed within their semver ranges and the supply-chain gate (`minimumReleaseAge`): Next 16.3.6, React 19.3.0, Fastify 5.12.5, Zod 4.6.5, undici 8.11.2, next-intl 4.14.7, typescript-eslint 8.70.1 and others. Vitest and its coverage provider moved to 5.x (test tooling only, nothing ships in the image).
+- CI: the static Docker image labels (title, description, license) are defined once in the `Dockerfile` instead of drifting apart across three workflows, and the description now names Listenarr. Checkouts no longer persist the git credential, workflow permissions are scoped per job, and actionlint noise was silenced.
+
+### Upgrade notes
+
+- **One new database migration runs automatically on first start:** it adds the nullable `SearchItem.externalIdAliases` column. Existing rows keep `NULL`, so no re-sync is needed and nothing changes for Sonarr, Radarr, Lidarr or Readarr instances.
+- **To use Listenarr, add the instance by hand** under Arr instances → Add instance, with type Listenarr. If you registered Listenarr in Prowlarr as a Readarr application and imported it through the setup wizard, that instance was stored as `readarr` and syncs nothing: delete it and add it again as Listenarr.
 
 ## 1.4.0 - 2026-09-06
 

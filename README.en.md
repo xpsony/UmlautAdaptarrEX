@@ -431,7 +431,7 @@ Key points:
 
 Recommended method, because there is no speed loss with multiple indexers.
 
-1. Start UmlautAdaptarrEX and walk through the setup in the web UI (create Sonarr/Radarr/Lidarr/Readarr instances).
+1. Start UmlautAdaptarrEX and walk through the setup in the web UI (create Sonarr/Radarr/Lidarr/Readarr instances, Listenarr see below).
 
    > **Listenarr instances are added by hand.** Prowlarr has no Listenarr application type, so the
    > Prowlarr auto-detection in the setup wizard cannot find one. Add the instance under
@@ -471,7 +471,7 @@ Recommended method, because there is no speed loss with multiple indexers.
 > Note: not yet tested
 
 With only a few indexers or without Prowlarr, enter the API URL per indexer directly in
-Sonarr/Radarr/Lidarr/Readarr:
+Sonarr/Radarr/Lidarr/Readarr/Listenarr:
 
 ```
 http://<host>:5005/<apiKey>/<indexer-host>

@@ -22,6 +22,7 @@ weiterzuentwickeln.
 | Grundprinzip (Proxy + Titelvarianten + Rewrite) | ✅                           | ✅ (gleiche bewährte Idee)                                                              |
 | Sonarr / Lidarr / Readarr                       | ✅                           | ✅                                                                                      |
 | **Radarr**                                      | eingeschränkt                | ✅ vollwertig unterstützt                                                               |
+| **Listenarr** (Hörbücher)                       | -                            | ✅ seit 1.4.1                                                                           |
 | Web-Oberfläche                                  | -                            | ✅ komplett (Setup-Wizard, Dashboard, Einstellungen)                                    |
 | Konfiguration                                   | Umgebungsvariablen / Dateien | ✅ vollständig über die UI, in SQLite persistiert                                       |
 | Titel-Browser + manuelles Titel-Override        | -                            | ✅ Fehlmatches pro Titel fixen statt Cache leeren                                       |

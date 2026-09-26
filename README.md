@@ -440,7 +440,7 @@ Kernpunkte:
 
 Empfohlene Methode, da bei mehreren Indexern kein Geschwindigkeitsverlust entsteht.
 
-1. UmlautAdaptarrEX starten und im Web-UI Setup durchlaufen (Sonarr/Radarr/Lidarr/Readarr-Instanzen anlegen).
+1. UmlautAdaptarrEX starten und im Web-UI Setup durchlaufen (Sonarr/Radarr/Lidarr/Readarr-Instanzen anlegen, Listenarr siehe unten).
 
    > **Listenarr-Instanzen legst du von Hand an.** Prowlarr kennt keinen Anwendungstyp Listenarr,
    > deshalb findet die Prowlarr-Erkennung im Setup-Wizard keine solche Instanz. Leg sie
@@ -481,7 +481,7 @@ Empfohlene Methode, da bei mehreren Indexern kein Geschwindigkeitsverlust entste
 
 > Anmerkung : Aktuell noch nicht getestet
 
-Bei wenigen Indexern oder ohne Prowlarr direkt in Sonarr/Radarr/Lidarr/Readarr je Indexer als API-URL eintragen:
+Bei wenigen Indexern oder ohne Prowlarr direkt in Sonarr/Radarr/Lidarr/Readarr/Listenarr je Indexer als API-URL eintragen:
 
 ```
 http://<host>:5005/<apiKey>/<host-des-indexers>
