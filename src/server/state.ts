@@ -28,7 +28,9 @@ import {
   type SearchItemRow,
 } from "./search-item";
 import { SearchItemIndex } from "./search-index";
-import { isVariationSearchEnabled, type VariationSwitches } from "./variation-gate";
+import type { IndexerVariationSetting } from "@/schemas/indexer-setting";
+import { toIndexerVariationSetting } from "./indexers/list";
+import { isVariationSearchEnabled, variationCap } from "./variation-gate";
 
 export type {
   CachedSearchItem,
@@ -80,8 +82,11 @@ interface AppSettings {
   movieVariationSearch: boolean;
   audioVariationSearch: boolean;
   bookVariationSearch: boolean;
-  /** Cap on GERMAN variations per search; q and expectedTitle come on top. */
-  maxTitleVariations: number;
+  /** Cap on GERMAN variations per search and media type; q and expectedTitle come on top. */
+  tvMaxTitleVariations: number;
+  movieMaxTitleVariations: number;
+  audioMaxTitleVariations: number;
+  bookMaxTitleVariations: number;
   operationMode: OperationMode;
   blockPrivateInstanceHosts: boolean;
   pausedUntil: Date | null;
@@ -119,7 +124,10 @@ const NO_SETTINGS: AppSettings = {
   movieVariationSearch: true,
   audioVariationSearch: true,
   bookVariationSearch: true,
-  maxTitleVariations: 1,
+  tvMaxTitleVariations: 1,
+  movieMaxTitleVariations: 1,
+  audioMaxTitleVariations: 1,
+  bookMaxTitleVariations: 1,
   operationMode: "proxy",
   blockPrivateInstanceHosts: false,
   pausedUntil: null,
@@ -159,8 +167,8 @@ export class AppState {
   // alongside SearchItems so findByTitle / toRewriteSearchItem can apply
   // them without an extra DB hit per request.
   private _instanceOptions = new Map<string, InstanceMatchOptions>();
-  // Per-indexer variation switches (IndexerSetting rows), keyed by host.
-  private _indexerSwitches = new Map<string, VariationSwitches>();
+  // Per-indexer variation settings (IndexerSetting rows), keyed by host.
+  private _indexerSettings = new Map<string, IndexerVariationSetting>();
   // Memoises a DbCachedTitleProvider per order signature (e.g.
   // "pcjones,tvdb,tmdb"), wrapping the matching Composite. Capped at six
   // permutations, so the cache stays small.
@@ -320,7 +328,10 @@ export class AppState {
       movieVariationSearch: row.movieVariationSearch,
       audioVariationSearch: row.audioVariationSearch,
       bookVariationSearch: row.bookVariationSearch,
-      maxTitleVariations: row.maxTitleVariations,
+      tvMaxTitleVariations: row.tvMaxTitleVariations,
+      movieMaxTitleVariations: row.movieMaxTitleVariations,
+      audioMaxTitleVariations: row.audioMaxTitleVariations,
+      bookMaxTitleVariations: row.bookMaxTitleVariations,
       // Defensive parse: SQLite TEXT column without CHECK; an invalid value
       // falls back cleanly to the recommended default "proxy".
       operationMode: OperationModeSchema.catch("proxy").parse(row.operationMode),
@@ -408,12 +419,14 @@ export class AppState {
         id: true,
         enableYearMatching: true,
         yearMatchingTolerance: true,
+        searchWithoutAuthor: true,
       },
     });
     for (const row of rows) {
       this._instanceOptions.set(row.id, {
         enableYearMatching: row.enableYearMatching,
         yearMatchingTolerance: row.yearMatchingTolerance,
+        searchWithoutAuthor: row.searchWithoutAuthor,
       });
     }
   }
@@ -438,20 +451,23 @@ export class AppState {
 
   async loadIndexerSettings(): Promise<void> {
     const rows = await prisma.indexerSetting.findMany();
-    this._indexerSwitches = new Map(
-      rows.map((r) => [r.host, { tv: r.tv, movie: r.movie, audio: r.audio, book: r.book }]),
-    );
+    this._indexerSettings = new Map(rows.map((r) => [r.host, toIndexerVariationSetting(r)]));
   }
 
   /** Keeps the in-memory map in step after the admin route wrote a row. */
-  setIndexerSwitches(host: string, switches: VariationSwitches | null): void {
-    if (switches) this._indexerSwitches.set(host, switches);
-    else this._indexerSwitches.delete(host);
+  setIndexerSetting(host: string, setting: IndexerVariationSetting | null): void {
+    if (setting) this._indexerSettings.set(host, setting);
+    else this._indexerSettings.delete(host);
   }
 
   /** Whether a search on `host` for `mediaType` fans out over the variations. */
   variationSearchEnabled(host: string, mediaType: MediaType): boolean {
-    return isVariationSearchEnabled(this._settings, this._indexerSwitches.get(host), mediaType);
+    return isVariationSearchEnabled(this._settings, this._indexerSettings.get(host), mediaType);
+  }
+
+  /** How many German variations a search on `host` for `mediaType` may use. */
+  variationCap(host: string, mediaType: MediaType): number {
+    return variationCap(this._settings, this._indexerSettings.get(host), mediaType);
   }
 
   // Converts + indexes a batch of raw SearchItem rows, skipping any row whose

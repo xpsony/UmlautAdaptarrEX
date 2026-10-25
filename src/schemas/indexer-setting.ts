@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { VariationCapSchema } from "./settings";
 
 /** Host and optional port, no path; the same rule as the legacy route target. */
 export const IndexerHostSchema = z
@@ -7,13 +8,18 @@ export const IndexerHostSchema = z
   .regex(/^[a-zA-Z0-9.-]+(:\d+)?$/)
   .transform((h) => h.toLowerCase());
 
-export const IndexerSwitchesSchema = z.object({
+/** A custom indexer row: per media type a switch and a variation cap. */
+export const IndexerVariationSettingSchema = z.object({
   tv: z.boolean(),
   movie: z.boolean(),
   audio: z.boolean(),
   book: z.boolean(),
+  tvMax: VariationCapSchema,
+  movieMax: VariationCapSchema,
+  audioMax: VariationCapSchema,
+  bookMax: VariationCapSchema,
 });
-export type IndexerSwitches = z.infer<typeof IndexerSwitchesSchema>;
+export type IndexerVariationSetting = z.infer<typeof IndexerVariationSettingSchema>;
 
 export interface IndexerListEntry {
   host: string;
@@ -21,8 +27,8 @@ export interface IndexerListEntry {
   name: string | null;
   /** ISO timestamp of the latest search through this host, else null. */
   lastSearchAt: string | null;
-  /** The custom switches, or null when the host follows the global ones. */
-  custom: IndexerSwitches | null;
+  /** The custom setting, or null when the host follows the global one. */
+  custom: IndexerVariationSetting | null;
 }
 
 export interface IndexerListResponse {

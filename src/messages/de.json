@@ -264,6 +264,8 @@
     "providerOrderHint": "Wird beim Sync von oben nach unten abgearbeitet. pcjones liefert nur deutsche Titel, TVDB und TMDB können alle Sprachen. Per Drag & Drop oder Pfeiltasten sortieren.",
     "enableYearMatching": "Jahres-Abgleich beim Title-Matching",
     "enableYearMatchingHint": "Wenn aktiv, weist der Matcher Releases mit einem 4-stelligen Jahres-Token im Dateinamen ab, wenn dieser ausserhalb des Toleranzfensters um das Release-/Erstausstrahlungsjahr aus Sonarr/Radarr liegt. Verhindert z.B., dass ein Sport-Event-Mitschnitt zu einem gleichnamigen Film aus einem anderen Jahr umgeschrieben wird. Ausschalten, wenn die Jahresangaben in der Library unzuverlässig sind und legitime Rewrites verschluckt werden.",
+    "searchWithoutAuthor": "Auch ohne Autor suchen",
+    "searchWithoutAuthorHint": "Sucht die Schreibweisen des Titels zusätzlich ohne Autor, z. B. „Brueckenkopf“ statt nur „Autor Brückenkopf“. Hilft, wenn ein Indexer Hörbücher oder Bücher ohne Autor im Namen führt. Diese Varianten zählen zu „Höchstens Varianten“ für Bücher & Hörbücher. Ein Treffer ohne Autor im Release-Namen wird gefunden, aber nicht umbenannt.",
     "yearMatchingTolerance": "Jahres-Toleranz (± Jahre)",
     "yearMatchingToleranceHint": "0 = exakte Jahresgleichheit, 1 = ±1 Jahr Toleranz (Default), bis 5. Fängt Produktions- vs. Veröffentlichungsjahr-Unterschiede ab.",
     "providerAdd": "Hinzufügen",
@@ -638,7 +640,7 @@
     },
     "indexerVariations": {
       "title": "Variantensuche pro Indexer",
-      "description": "Für Indexer mit knappen Limits kannst du die Variantensuche hier pro Medientyp abschalten. Ohne eigene Einstellung gelten die Schalter oben. Änderungen werden sofort gespeichert.",
+      "description": "Für Indexer mit knappen Limits kannst du die Variantensuche hier pro Medientyp abschalten oder die Zahl der Varianten senken. Ohne eigene Einstellung gelten die Schalter und Höchstwerte oben. Änderungen werden sofort gespeichert.",
       "custom": "Eigene Einstellung",
       "lastSearch": "Letzte Suche: {date}",
       "neverSearched": "Noch keine Suche",
@@ -666,6 +668,7 @@
       "bookVariationSearch": "Bücher & Hörbücher",
       "capLabel": "Höchstens Varianten",
       "capHint": "Zählt die deutschen Varianten. Dein Suchwort und der Originaltitel kommen obendrauf und werden nie weggelassen. 0 sucht ganz ohne deutsche Varianten.",
+      "capAria": "Höchstens Varianten: {type}",
       "exampleQuery": "Sonarr sucht nach",
       "exampleExtra": "Zusätzlich wird gesucht nach:",
       "cost": "Ergibt bis zu {max} zusätzliche Indexer-Anfragen pro Suche. Bei knappen Indexer-Limits vorsichtig einsetzen."

@@ -3,6 +3,16 @@ import { mergeIndexerList } from "@/server/indexers/list";
 
 describe("mergeIndexerList", () => {
   const at = new Date("2026-10-20T10:00:00Z");
+  const custom = {
+    tv: false,
+    movie: false,
+    audio: true,
+    book: true,
+    tvMax: 1,
+    movieMax: 0,
+    audioMax: 4,
+    bookMax: 2,
+  };
 
   it("unions history, Prowlarr and rows by lower-cased host", () => {
     const list = mergeIndexerList(
@@ -11,7 +21,7 @@ describe("mergeIndexerList", () => {
         { host: "idx-one.test", name: "Indexer One" },
         { host: "idx-two.test", name: "Indexer Two" },
       ],
-      [{ host: "idx-three.test", tv: false, movie: false, audio: true, book: true }],
+      [{ host: "idx-three.test", ...custom }],
     );
     // Sorted by name, unnamed hosts by host: "idx-three.test" < "Indexer One".
     expect(list).toEqual([
@@ -19,7 +29,7 @@ describe("mergeIndexerList", () => {
         host: "idx-three.test",
         name: null,
         lastSearchAt: null,
-        custom: { tv: false, movie: false, audio: true, book: true },
+        custom,
       },
       { host: "idx-one.test", name: "Indexer One", lastSearchAt: at.toISOString(), custom: null },
       { host: "idx-two.test", name: "Indexer Two", lastSearchAt: null, custom: null },

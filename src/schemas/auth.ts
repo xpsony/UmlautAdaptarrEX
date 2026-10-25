@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ArrInstanceSchema } from "./instance";
-import { OperationModeSchema } from "./settings";
+import { OperationModeSchema, VariationCapSchema } from "./settings";
 
 export const SetupSchema = z.object({
   username: z
@@ -29,7 +29,10 @@ export const SetupSchema = z.object({
   movieVariationSearch: z.boolean().optional(),
   audioVariationSearch: z.boolean().optional(),
   bookVariationSearch: z.boolean().optional(),
-  maxTitleVariations: z.number().int().min(0).max(20).optional(),
+  tvMaxTitleVariations: VariationCapSchema.optional(),
+  movieMaxTitleVariations: VariationCapSchema.optional(),
+  audioMaxTitleVariations: VariationCapSchema.optional(),
+  bookMaxTitleVariations: VariationCapSchema.optional(),
   syncIntervalMinutes: z
     .number()
     .int()

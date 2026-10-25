@@ -411,6 +411,7 @@ export function useSetupWizard(initialStatus: SetupStatus) {
         providerOrder: DEFAULT_PROVIDER_ORDER[app.type as ArrType] ?? null,
         enableYearMatching: true,
         yearMatchingTolerance: 1,
+        searchWithoutAuthor: false,
       });
     }
     if (out.length === 0 && selectedAppIds.size > 0) {

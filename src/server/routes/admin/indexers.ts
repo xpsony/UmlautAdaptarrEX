@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import {
   IndexerHostSchema,
   type IndexerListResponse,
-  IndexerSwitchesSchema,
+  IndexerVariationSettingSchema,
 } from "@/schemas/indexer-setting";
 import { requireAuth } from "@/server/auth/middleware";
 import { mergeIndexerList } from "@/server/indexers/list";
@@ -69,23 +69,23 @@ export async function indexerRoutes(app: FastifyInstance): Promise<void> {
   app.put("/api/admin/indexers/:host", auth, async (req, reply) => {
     const host = parseHost((req.params as { host?: string }).host, reply);
     if (!host) return;
-    const switches = parseOrReply(req.body, IndexerSwitchesSchema, reply);
-    if (!switches) return;
+    const setting = parseOrReply(req.body, IndexerVariationSettingSchema, reply);
+    if (!setting) return;
     await prisma.indexerSetting.upsert({
       where: { host },
-      create: { host, ...switches },
-      update: switches,
+      create: { host, ...setting },
+      update: setting,
     });
-    getAppState().setIndexerSwitches(host, switches);
-    req.log.info({ host, ...switches }, "indexer variation setting saved");
-    return { host, custom: switches };
+    getAppState().setIndexerSetting(host, setting);
+    req.log.info({ host, ...setting }, "indexer variation setting saved");
+    return { host, custom: setting };
   });
 
   app.delete("/api/admin/indexers/:host", auth, async (req, reply) => {
     const host = parseHost((req.params as { host?: string }).host, reply);
     if (!host) return;
     await prisma.indexerSetting.deleteMany({ where: { host } });
-    getAppState().setIndexerSwitches(host, null);
+    getAppState().setIndexerSetting(host, null);
     req.log.info({ host }, "indexer variation setting reset to global");
     return { host, custom: null };
   });

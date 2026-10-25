@@ -190,7 +190,10 @@ describe("GET /api/admin/settings", () => {
       "movieVariationSearch",
       "audioVariationSearch",
       "bookVariationSearch",
-      "maxTitleVariations",
+      "tvMaxTitleVariations",
+      "movieMaxTitleVariations",
+      "audioMaxTitleVariations",
+      "bookMaxTitleVariations",
       "syncIntervalMinutes",
       "fullSyncIntervalHours",
     ]) {

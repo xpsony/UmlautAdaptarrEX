@@ -44,6 +44,7 @@ interface DbInstance {
   providerOrder: string | null;
   enableYearMatching: boolean;
   yearMatchingTolerance: number;
+  searchWithoutAuthor: boolean;
   lastSyncAt: Date | null;
   lastSyncError: string | null;
   createdAt: Date;
@@ -61,6 +62,7 @@ function refreshInstanceOptionsCache(row: DbInstance): void {
   getAppState().setInstanceOptions(row.id, {
     enableYearMatching: row.enableYearMatching,
     yearMatchingTolerance: row.yearMatchingTolerance,
+    searchWithoutAuthor: row.searchWithoutAuthor,
   });
 }
 

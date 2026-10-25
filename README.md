@@ -451,6 +451,10 @@ Empfohlene Methode, da bei mehreren Indexern kein Geschwindigkeitsverlust entste
    > `readarr` zurück. Der Readarr-Client spricht dann `/api/v1/author` mit Auth über den Query-String
    > an und bekommt nichts Brauchbares. Eine solche Instanz legst du ebenfalls von Hand als Typ
    > Listenarr an.
+   >
+   > Führt ein Indexer Hörbücher ohne Autor im Namen, schalte in der Instanz **Auch ohne Autor
+   > suchen** ein (gibt es für Listenarr und Readarr, Standard aus). Dann werden auch die
+   > Schreibweisen des Titels allein gesucht. Solche Treffer werden gefunden, aber nicht umbenannt.
 
 2. In Prowlarr: **Settings → Indexers → Indexer Proxies → Add (HTTP)**
    - Name: `UmlautAdaptarrEX HTTP Proxy`

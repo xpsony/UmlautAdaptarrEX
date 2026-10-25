@@ -3,11 +3,14 @@ import type { MediaType } from "@/domain/variations/generate";
 export interface InstanceMatchOptions {
   enableYearMatching: boolean;
   yearMatchingTolerance: number;
+  /** Books only: fan out over the title's variations without the author too. */
+  searchWithoutAuthor: boolean;
 }
 
 export const DEFAULT_INSTANCE_OPTIONS: InstanceMatchOptions = {
   enableYearMatching: true,
   yearMatchingTolerance: 1,
+  searchWithoutAuthor: false,
 };
 
 export interface CachedSearchItem {

@@ -2,12 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/app/_lib/api-client";
-import type { IndexerListResponse, IndexerSwitches } from "@/schemas/indexer-setting";
+import type { IndexerListResponse, IndexerVariationSetting } from "@/schemas/indexer-setting";
 
 const KEY = ["indexer-settings"] as const;
 
-// List the indexers and save one host's switches; `null` resets the host to
-// the global switches.
+// List the indexers and save one host's setting; `null` resets the host to
+// the global switches and caps.
 export function useIndexerSettings() {
   const qc = useQueryClient();
 
@@ -17,10 +17,10 @@ export function useIndexerSettings() {
   });
 
   const save = useMutation({
-    mutationFn: ({ host, switches }: { host: string; switches: IndexerSwitches | null }) =>
+    mutationFn: ({ host, setting }: { host: string; setting: IndexerVariationSetting | null }) =>
       apiFetch(`/api/admin/indexers/${encodeURIComponent(host)}`, {
-        method: switches ? "PUT" : "DELETE",
-        ...(switches ? { body: JSON.stringify(switches) } : {}),
+        method: setting ? "PUT" : "DELETE",
+        ...(setting ? { body: JSON.stringify(setting) } : {}),
       }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: KEY }),
   });

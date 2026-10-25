@@ -371,7 +371,10 @@ describe("POST /api/auth/setup search behaviour", () => {
         onDemandLookup: false,
         tvVariationSearch: true,
         movieVariationSearch: false,
-        maxTitleVariations: 5,
+        tvMaxTitleVariations: 5,
+        movieMaxTitleVariations: 0,
+        audioMaxTitleVariations: 2,
+        bookMaxTitleVariations: 3,
         syncIntervalMinutes: 30,
         fullSyncIntervalHours: 12,
       },
@@ -383,7 +386,10 @@ describe("POST /api/auth/setup search behaviour", () => {
     expect(setting?.onDemandLookup).toBe(false);
     expect(setting?.tvVariationSearch).toBe(true);
     expect(setting?.movieVariationSearch).toBe(false);
-    expect(setting?.maxTitleVariations).toBe(5);
+    expect(setting?.tvMaxTitleVariations).toBe(5);
+    expect(setting?.movieMaxTitleVariations).toBe(0);
+    expect(setting?.audioMaxTitleVariations).toBe(2);
+    expect(setting?.bookMaxTitleVariations).toBe(3);
     expect(setting?.syncIntervalMinutes).toBe(30);
     expect(setting?.fullSyncIntervalHours).toBe(12);
   });
@@ -404,7 +410,10 @@ describe("POST /api/auth/setup search behaviour", () => {
     expect(setting?.onDemandLookup).toBe(true);
     expect(setting?.tvVariationSearch).toBe(true);
     expect(setting?.movieVariationSearch).toBe(true);
-    expect(setting?.maxTitleVariations).toBe(1);
+    expect(setting?.tvMaxTitleVariations).toBe(1);
+    expect(setting?.movieMaxTitleVariations).toBe(1);
+    expect(setting?.audioMaxTitleVariations).toBe(1);
+    expect(setting?.bookMaxTitleVariations).toBe(1);
     expect(setting?.syncIntervalMinutes).toBe(10);
     expect(setting?.fullSyncIntervalHours).toBe(24);
   });
@@ -413,7 +422,7 @@ describe("POST /api/auth/setup search behaviour", () => {
     const r = await app.inject({
       method: "POST",
       url: "/api/auth/setup",
-      payload: { ...minimalSetupPayload, maxTitleVariations: 99 },
+      payload: { ...minimalSetupPayload, movieMaxTitleVariations: 99 },
     });
     expect(r.statusCode).toBe(400);
   });

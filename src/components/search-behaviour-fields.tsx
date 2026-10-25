@@ -11,9 +11,8 @@ import { Switch } from "@/components/ui/switch";
 import { SYNC_PRESETS } from "@/schemas/settings";
 import {
   VARIATION_EXAMPLE,
-  VARIATION_TOGGLES,
+  VARIATION_TYPES,
   type SearchBehaviourValues,
-  type VariationToggle,
 } from "@/app/(admin)/settings/_lib/settings-types";
 
 export type { SearchBehaviourValues };
@@ -30,7 +29,7 @@ type PresetKey = keyof typeof SYNC_PRESETS;
 const PRESET_KEYS = ["recommended", "frugal", "legacy"] as const satisfies readonly PresetKey[];
 
 /**
- * The eight search-behaviour fields, shared by the setup wizard and the
+ * The search-behaviour fields, shared by the setup wizard and the
  * Settings -> Suche tab. Same sharing pattern as OperationModePicker.
  *
  * Deliberately not bound to react-hook-form: the wizard holds these in plain
@@ -43,6 +42,15 @@ export function SearchBehaviourFields({ values, onChange }: SearchBehaviourField
   const presetActive = (key: PresetKey): boolean =>
     values.syncIntervalMinutes === SYNC_PRESETS[key].syncIntervalMinutes &&
     values.fullSyncIntervalHours === SYNC_PRESETS[key].fullSyncIntervalHours;
+
+  // Worst case of one search: the highest cap among the switched-on types,
+  // plus q and the canonical title. With every type off, the highest cap
+  // overall, so the line still says what switching one on would cost.
+  const enabledTypes = VARIATION_TYPES.filter(({ toggle }) => values[toggle]);
+  const maxCap = Math.max(
+    0,
+    ...(enabledTypes.length > 0 ? enabledTypes : VARIATION_TYPES).map(({ cap }) => values[cap]),
+  );
 
   return (
     <div className="space-y-6">
@@ -79,37 +87,37 @@ export function SearchBehaviourFields({ values, onChange }: SearchBehaviourField
           <p className="text-xs text-muted-foreground">{t("variations.description")}</p>
         </div>
 
-        {VARIATION_TOGGLES.map((name: VariationToggle) => (
-          <div key={name} className="flex items-center justify-between gap-4">
-            <Label htmlFor={name} className="text-sm">
-              {t(`variations.${name}`)}
+        <div className="flex items-center justify-end gap-1.5 text-xs text-muted-foreground">
+          <span>{t("variations.capLabel")}</span>
+          <FieldHint text={t("variations.capHint")} />
+        </div>
+
+        {VARIATION_TYPES.map(({ toggle, cap }) => (
+          <div key={toggle} className="flex items-center justify-between gap-4">
+            <Label htmlFor={toggle} className="text-sm">
+              {t(`variations.${toggle}`)}
             </Label>
-            <Switch
-              id={name}
-              checked={values[name]}
-              onCheckedChange={(v) => onChange(name, v)}
-              aria-label={t(`variations.${name}`)}
-            />
+            <div className="flex items-center gap-3">
+              <Input
+                id={cap}
+                type="number"
+                min={0}
+                max={20}
+                value={values[cap]}
+                disabled={!values[toggle]}
+                onChange={(e) => onChange(cap, Number(e.target.value))}
+                aria-label={t("variations.capAria", { type: t(`variations.${toggle}`) })}
+                className="h-8 w-16"
+              />
+              <Switch
+                id={toggle}
+                checked={values[toggle]}
+                onCheckedChange={(v) => onChange(toggle, v)}
+                aria-label={t(`variations.${toggle}`)}
+              />
+            </div>
           </div>
         ))}
-
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-1.5">
-            <Label htmlFor="maxTitleVariations" className="text-sm">
-              {t("variations.capLabel")}
-            </Label>
-            <FieldHint text={t("variations.capHint")} />
-          </div>
-          <Input
-            id="maxTitleVariations"
-            type="number"
-            min={0}
-            max={20}
-            value={values.maxTitleVariations}
-            onChange={(e) => onChange("maxTitleVariations", Number(e.target.value))}
-            className="w-20"
-          />
-        </div>
 
         <div className="space-y-1.5 rounded-md bg-muted/50 p-2.5 text-xs text-muted-foreground">
           <p>
@@ -124,7 +132,7 @@ export function SearchBehaviourFields({ values, onChange }: SearchBehaviourField
               </li>
             ))}
           </ul>
-          <p>{t("variations.cost", { max: values.maxTitleVariations + 2 })}</p>
+          <p>{t("variations.cost", { max: maxCap + 2 })}</p>
         </div>
       </div>
 

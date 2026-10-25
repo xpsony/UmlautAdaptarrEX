@@ -76,6 +76,7 @@ export function InstanceDialog({ open, instance, onClose }: InstanceDialogProps)
           providerOrder: instance.providerOrder ?? DEFAULT_PROVIDER_ORDER[instance.type],
           enableYearMatching: instance.enableYearMatching ?? true,
           yearMatchingTolerance: instance.yearMatchingTolerance ?? 1,
+          searchWithoutAuthor: instance.searchWithoutAuthor ?? false,
         }
       : {
           type: "sonarr",
@@ -86,6 +87,7 @@ export function InstanceDialog({ open, instance, onClose }: InstanceDialogProps)
           providerOrder: DEFAULT_PROVIDER_ORDER.sonarr,
           enableYearMatching: true,
           yearMatchingTolerance: 1,
+          searchWithoutAuthor: false,
         },
   });
 
@@ -325,6 +327,29 @@ export function InstanceDialog({ open, instance, onClose }: InstanceDialogProps)
                   </p>
                 ) : null}
               </div>
+            </div>
+          ) : null}
+
+          {watchedType === "readarr" || watchedType === "listenarr" ? (
+            <div className="flex items-center justify-between gap-4 rounded-md border p-3">
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="searchWithoutAuthor" className="cursor-pointer text-sm font-medium">
+                  {t("searchWithoutAuthor")}
+                </Label>
+                <FieldHint text={t("searchWithoutAuthorHint")} />
+              </div>
+              <Controller
+                control={control}
+                name="searchWithoutAuthor"
+                render={({ field }) => (
+                  <Switch
+                    id="searchWithoutAuthor"
+                    checked={field.value ?? false}
+                    onCheckedChange={field.onChange}
+                    aria-label={t("searchWithoutAuthor")}
+                  />
+                )}
+              />
             </div>
           ) : null}
         </form>

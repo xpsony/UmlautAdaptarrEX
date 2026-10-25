@@ -33,9 +33,7 @@ export async function authedRequest(
   if (init?.data !== undefined) fetchInit.data = init.data;
   const res = await request.fetch(path, fetchInit);
   if (!res.ok() && res.status() !== 204) {
-    throw new Error(
-      `${method} ${path} -> ${res.status()}: ${await res.text()}`,
-    );
+    throw new Error(`${method} ${path} -> ${res.status()}: ${await res.text()}`);
   }
   if (res.status() === 204) return undefined;
   return res.json();
@@ -52,12 +50,9 @@ export async function deleteAllInstances(page: Page): Promise<void> {
     "/api/admin/instances",
   )) as ListedInstance[];
   for (const item of list) {
-    await authedRequest(
-      page.request,
-      page.context(),
-      `/api/admin/instances/${item.id}`,
-      { method: "DELETE" },
-    );
+    await authedRequest(page.request, page.context(), `/api/admin/instances/${item.id}`, {
+      method: "DELETE",
+    });
   }
 }
 
@@ -72,12 +67,9 @@ export async function disconnectProwlarr(page: Page): Promise<void> {
     "/api/admin/instances/prowlarr/config",
   )) as ProwlarrConfig;
   if (cfg.configured) {
-    await authedRequest(
-      page.request,
-      page.context(),
-      "/api/admin/instances/prowlarr/config",
-      { method: "DELETE" },
-    );
+    await authedRequest(page.request, page.context(), "/api/admin/instances/prowlarr/config", {
+      method: "DELETE",
+    });
   }
 }
 
@@ -107,21 +99,17 @@ export async function createInstance(
   page: Page,
   data: CreateInstanceInput,
 ): Promise<CreatedInstance> {
-  return (await authedRequest(
-    page.request,
-    page.context(),
-    "/api/admin/instances",
-    {
-      method: "POST",
-      data: {
-        type: data.type,
-        name: data.name,
-        host: data.host,
-        apiKey: data.apiKey,
-        enabled: data.enabled ?? true,
-        enableYearMatching: true,
-        yearMatchingTolerance: 1,
-      },
+  return (await authedRequest(page.request, page.context(), "/api/admin/instances", {
+    method: "POST",
+    data: {
+      type: data.type,
+      name: data.name,
+      host: data.host,
+      apiKey: data.apiKey,
+      enabled: data.enabled ?? true,
+      enableYearMatching: true,
+      yearMatchingTolerance: 1,
+      searchWithoutAuthor: false,
     },
-  )) as CreatedInstance;
+  })) as CreatedInstance;
 }

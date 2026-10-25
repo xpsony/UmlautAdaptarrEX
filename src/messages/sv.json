@@ -264,6 +264,8 @@
     "providerOrderHint": "Gås igenom uppifrån och ner vid varje synk. pcjones ger endast tyska titlar; TVDB och TMDB stödjer alla språk. Dra med handtaget eller använd piltangenter för att sortera om.",
     "enableYearMatching": "Årsdisambiguering vid titel-matchning",
     "enableYearMatchingHint": "När aktiverad avvisar matcharen utgåvor vars 4-siffriga år i filnamnet ligger utanför toleransfönstret runt utgivnings-/premiärsåret från Sonarr/Radarr. Förhindrar t.ex. att en sportevenemangsinspelning skrivs om till en likanamnig film från ett annat år. Stäng av om årtalen i ditt bibliotek är opålitliga och legitima omskrivningar undertrycks.",
+    "searchWithoutAuthor": "Sök även utan författare",
+    "searchWithoutAuthorHint": "Söker även titelns stavningar utan författare, t.ex. ”Brueckenkopf” i stället för bara ”Författare Brückenkopf”. Hjälper när en indexerare listar ljudböcker eller böcker utan författare i namnet. Dessa varianter räknas in i ”Högst antal varianter” för böcker och ljudböcker. En träff utan författare i release-namnet hittas men byter inte namn.",
     "yearMatchingTolerance": "Årstolerans (± år)",
     "yearMatchingToleranceHint": "0 = exakt likhet, 1 = ± 1 år tolerans (standard), upp till 5. Fångar upp skillnader mellan produktions- och utgivningsår.",
     "providerAdd": "Lägg till",
@@ -638,7 +640,7 @@
     },
     "indexerVariations": {
       "title": "Variantsökning per indexerare",
-      "description": "För indexerare med snäva gränser kan du stänga av variantsökningen per medietyp här. Utan egen inställning gäller reglagen ovan. Ändringar sparas direkt.",
+      "description": "För indexerare med snäva gränser kan du stänga av variantsökningen eller sänka antalet varianter per medietyp här. Utan egen inställning gäller reglagen och maxvärdena ovan. Ändringar sparas direkt.",
       "custom": "Egen inställning",
       "lastSearch": "Senaste sökning: {date}",
       "neverSearched": "Ingen sökning än",
@@ -666,6 +668,7 @@
       "bookVariationSearch": "Böcker och ljudböcker",
       "capLabel": "Högst antal varianter",
       "capHint": "Räknar de tyska varianterna. Ditt sökord och originaltiteln söks utöver dessa och tas aldrig bort. 0 söker helt utan tyska varianter.",
+      "capAria": "Högst antal varianter: {type}",
       "exampleQuery": "Sonarr söker efter",
       "exampleExtra": "Dessa söks också:",
       "cost": "Ger upp till {max} extra indexerar-förfrågningar per sökning. Använd med försiktighet om dina indexerar-gränser är snäva."

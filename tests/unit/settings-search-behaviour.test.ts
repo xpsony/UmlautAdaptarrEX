@@ -20,27 +20,31 @@ describe("search behaviour settings", () => {
     expect(full.bookVariationSearch).toBe(true);
   });
 
-  it("defaults the variation cap to one", () => {
-    expect(SettingsSchema.parse({}).maxTitleVariations).toBe(1);
+  it("defaults every per-type variation cap to one", () => {
+    const full = SettingsSchema.parse({});
+    expect(full.tvMaxTitleVariations).toBe(1);
+    expect(full.movieMaxTitleVariations).toBe(1);
+    expect(full.audioMaxTitleVariations).toBe(1);
+    expect(full.bookMaxTitleVariations).toBe(1);
   });
 
   it("accepts a cap of one", () => {
-    expect(partial.parse({ maxTitleVariations: 1 }).maxTitleVariations).toBe(1);
+    expect(partial.parse({ tvMaxTitleVariations: 1 }).tvMaxTitleVariations).toBe(1);
   });
 
   it("accepts a cap of zero - no German variations, tail still searched", () => {
-    expect(partial.parse({ maxTitleVariations: 0 }).maxTitleVariations).toBe(0);
+    expect(partial.parse({ movieMaxTitleVariations: 0 }).movieMaxTitleVariations).toBe(0);
   });
 
   it("rejects a negative cap", () => {
-    expect(() => partial.parse({ maxTitleVariations: -1 })).toThrow();
+    expect(() => partial.parse({ audioMaxTitleVariations: -1 })).toThrow();
   });
 
   it("rejects a cap above twenty", () => {
-    expect(() => partial.parse({ maxTitleVariations: 21 })).toThrow();
+    expect(() => partial.parse({ bookMaxTitleVariations: 21 })).toThrow();
   });
 
   it("rejects a fractional cap", () => {
-    expect(() => partial.parse({ maxTitleVariations: 2.5 })).toThrow();
+    expect(() => partial.parse({ tvMaxTitleVariations: 2.5 })).toThrow();
   });
 });

@@ -1,4 +1,4 @@
-import type { IndexerListEntry, IndexerSwitches } from "@/schemas/indexer-setting";
+import type { IndexerListEntry, IndexerVariationSetting } from "@/schemas/indexer-setting";
 
 export interface HistoryHost {
   domain: string;
@@ -10,8 +10,22 @@ export interface ProwlarrHost {
   name: string;
 }
 
-export interface IndexerSettingRow extends IndexerSwitches {
+export interface IndexerSettingRow extends IndexerVariationSetting {
   host: string;
+}
+
+/** The setting part of a row, without the host and any extra DB columns. */
+export function toIndexerVariationSetting(r: IndexerVariationSetting): IndexerVariationSetting {
+  return {
+    tv: r.tv,
+    movie: r.movie,
+    audio: r.audio,
+    book: r.book,
+    tvMax: r.tvMax,
+    movieMax: r.movieMax,
+    audioMax: r.audioMax,
+    bookMax: r.bookMax,
+  };
 }
 
 /**
@@ -44,7 +58,7 @@ export function mergeIndexerList(
   }
   for (const p of prowlarr) entry(p.host).name = p.name;
   for (const r of rows) {
-    entry(r.host).custom = { tv: r.tv, movie: r.movie, audio: r.audio, book: r.book };
+    entry(r.host).custom = toIndexerVariationSetting(r);
   }
   return Array.from(byHost.values()).sort((a, b) =>
     (a.name ?? a.host).localeCompare(b.name ?? b.host),

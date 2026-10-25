@@ -264,6 +264,8 @@
     "providerOrderHint": "Walked top to bottom on every sync. pcjones returns German titles only; TVDB and TMDB serve any language. Drag with the handle or use arrow keys to reorder.",
     "enableYearMatching": "Year disambiguation in title matching",
     "enableYearMatchingHint": "When enabled, the matcher rejects releases whose 4-digit year token in the filename lies outside the tolerance window around the release/first-air year from Sonarr/Radarr. Prevents e.g. a sports-event recording from being rewritten as a same-named movie released in a different year. Disable this if your library years are unreliable and legitimate rewrites are being suppressed.",
+    "searchWithoutAuthor": "Also search without the author",
+    "searchWithoutAuthorHint": "Also searches the title's spellings without the author, e.g. “Brueckenkopf” instead of only “Author Brückenkopf”. Helps when an indexer lists audiobooks or books without the author in the name. These variations count towards “At most variations” for books & audiobooks. A hit without the author in the release name is found but not renamed.",
     "yearMatchingTolerance": "Year tolerance (+/- years)",
     "yearMatchingToleranceHint": "0 = strict equality, 1 = +/-1 year tolerance (default), up to 5. Absorbs production-vs-release-year skew.",
     "providerAdd": "Add",
@@ -638,7 +640,7 @@
     },
     "indexerVariations": {
       "title": "Variation search per indexer",
-      "description": "For indexers with tight limits you can switch the variation search off per media type here. Without a custom setting the switches above apply. Changes are saved immediately.",
+      "description": "For indexers with tight limits you can switch the variation search off or lower the number of variations per media type here. Without a custom setting the switches and caps above apply. Changes are saved immediately.",
       "custom": "Custom setting",
       "lastSearch": "Last search: {date}",
       "neverSearched": "No search yet",
@@ -666,6 +668,7 @@
       "bookVariationSearch": "Books & audiobooks",
       "capLabel": "At most variations",
       "capHint": "Counts the German variations. Your search term and the original title are searched on top and are never dropped. 0 searches without any German variations.",
+      "capAria": "At most variations: {type}",
       "exampleQuery": "Sonarr searches for",
       "exampleExtra": "These are searched as well:",
       "cost": "Results in up to {max} extra indexer requests per search. Use with care if your indexer limits are tight."

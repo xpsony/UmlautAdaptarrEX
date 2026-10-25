@@ -5,19 +5,12 @@ import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  type ProwlarrParsedApp,
-  type ProwlarrPreviewResult,
-} from "@/schemas/prowlarr";
+import { type ProwlarrParsedApp, type ProwlarrPreviewResult } from "@/schemas/prowlarr";
 import type { ArrInstanceInput, ArrType } from "@/schemas/instance";
 import { DEFAULT_PROVIDER_ORDER } from "@/app/(admin)/instances/_lib/instances-types";
 import { isMaskedSecret } from "@/lib/secrets";
 import { ApiError, apiFetch } from "@/app/_lib/api-client";
-import {
-  describeError,
-  extractErrorCode,
-  extractErrorMessageOnly,
-} from "@/lib/error-format";
+import { describeError, extractErrorCode, extractErrorMessageOnly } from "@/lib/error-format";
 import {
   type AppRowState,
   type EmptyReason,
@@ -58,8 +51,7 @@ export function useProwlarrImport(
     configured: false,
   });
   const [rows, setRows] = useState<Map<number, AppRowState>>(new Map());
-  const [overwriteConfirm, setOverwriteConfirm] =
-    useState<OverwriteState>(emptyOverwrite);
+  const [overwriteConfirm, setOverwriteConfirm] = useState<OverwriteState>(emptyOverwrite);
   const [emptyReason, setEmptyReason] = useState<EmptyReason>("none");
   // Guards the pre-submit list fetch so the submit button can't be
   // double-clicked before importMut.isPending flips.
@@ -108,14 +100,12 @@ export function useProwlarrImport(
 
   const importMut = useMutation({
     mutationFn: (selections: ArrInstanceInput[]) =>
-      apiFetch<{ created: number; updated: number }>(
-        "/api/admin/instances/prowlarr/import",
-        { method: "POST", body: JSON.stringify({ selections }) },
-      ),
+      apiFetch<{ created: number; updated: number }>("/api/admin/instances/prowlarr/import", {
+        method: "POST",
+        body: JSON.stringify({ selections }),
+      }),
     onSuccess: (result) => {
-      toast.success(
-        t("imported", { created: result.created, updated: result.updated }),
-      );
+      toast.success(t("imported", { created: result.created, updated: result.updated }));
       onImported?.(result);
       setOverwriteConfirm(emptyOverwrite);
       onOpenChange(false);
@@ -239,6 +229,7 @@ export function useProwlarrImport(
         providerOrder: DEFAULT_PROVIDER_ORDER[app.type as ArrType] ?? null,
         enableYearMatching: true,
         yearMatchingTolerance: 1,
+        searchWithoutAuthor: false,
       });
     }
     if (selections.length === 0) {
@@ -303,9 +294,7 @@ export function useProwlarrImport(
   };
 
   const allSelected =
-    preview != null &&
-    preview.apps.length > 0 &&
-    selectedIds.size === preview.apps.length;
+    preview != null && preview.apps.length > 0 && selectedIds.size === preview.apps.length;
   // `checking` covers the pre-submit list fetch; folding it in keeps the
   // submit button disabled (and spinning) across that gap, closing the
   // double-submit window.

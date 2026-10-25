@@ -1,33 +1,66 @@
 "use client";
 
+import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Server } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { describeError } from "@/lib/error-format";
-import type { IndexerListEntry, IndexerSwitches } from "@/schemas/indexer-setting";
+import type { IndexerListEntry, IndexerVariationSetting } from "@/schemas/indexer-setting";
 import { useIndexerSettings } from "../_lib/use-indexer-settings";
-import type { SearchBehaviourValues } from "../_lib/settings-types";
-
-// Row switch key -> label key under searchBehaviour.variations.
-const TYPES = [
-  ["tv", "tvVariationSearch"],
-  ["movie", "movieVariationSearch"],
-  ["audio", "audioVariationSearch"],
-  ["book", "bookVariationSearch"],
-] as const;
+import { VARIATION_TYPES, type SearchBehaviourValues } from "../_lib/settings-types";
 
 interface IndexerVariationCardProps {
-  /** The global switches; a new custom setting starts from these. */
+  /** The global switches and caps; a new custom setting starts from these. */
   global: SearchBehaviourValues;
 }
 
+interface CapInputProps {
+  value: number;
+  disabled: boolean;
+  label: string;
+  onCommit: (value: number) => void;
+}
+
+// Commits on blur or Enter rather than per keystroke: every commit is one
+// PUT, and typing "12" would otherwise save 1 first. An invalid entry falls
+// back to the stored value. The parent keys it on the stored value, so a
+// saved change resets the draft.
+function CapInput({ value, disabled, label, onCommit }: CapInputProps) {
+  const [draft, setDraft] = useState(String(value));
+  const commit = (): void => {
+    const n = Number(draft);
+    if (draft.trim() === "" || !Number.isInteger(n) || n < 0 || n > 20) {
+      setDraft(String(value));
+      return;
+    }
+    if (n !== value) onCommit(n);
+  };
+  return (
+    <Input
+      type="number"
+      min={0}
+      max={20}
+      value={draft}
+      disabled={disabled}
+      aria-label={label}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.currentTarget.blur();
+      }}
+      className="h-7 w-14 px-2 text-xs"
+    />
+  );
+}
+
 // Saves on every change rather than through the tab's save bar: each toggle
-// writes one IndexerSetting row, and mixing that with the form's dirty state
+// or cap writes one IndexerSetting row, and mixing that with the form's dirty state
 // would make "Save" mean two different things.
 export function IndexerVariationCard({ global }: IndexerVariationCardProps) {
   const t = useTranslations("settings.indexerVariations");
@@ -35,9 +68,9 @@ export function IndexerVariationCard({ global }: IndexerVariationCardProps) {
   const locale = useLocale();
   const { query, save } = useIndexerSettings();
 
-  const persist = (host: string, switches: IndexerSwitches | null): void => {
+  const persist = (host: string, setting: IndexerVariationSetting | null): void => {
     save.mutate(
-      { host, switches },
+      { host, setting },
       {
         onSuccess: () => toast.success(t("saved")),
         onError: (err) => toast.error(t("saveFailed", { error: describeError(err) })),
@@ -45,11 +78,15 @@ export function IndexerVariationCard({ global }: IndexerVariationCardProps) {
     );
   };
 
-  const fromGlobal = (): IndexerSwitches => ({
+  const fromGlobal = (): IndexerVariationSetting => ({
     tv: global.tvVariationSearch,
     movie: global.movieVariationSearch,
     audio: global.audioVariationSearch,
     book: global.bookVariationSearch,
+    tvMax: global.tvMaxTitleVariations,
+    movieMax: global.movieMaxTitleVariations,
+    audioMax: global.audioMaxTitleVariations,
+    bookMax: global.bookMaxTitleVariations,
   });
 
   const row = (ix: IndexerListEntry) => {
@@ -81,24 +118,43 @@ export function IndexerVariationCard({ global }: IndexerVariationCardProps) {
             />
           </div>
         </div>
-        <div className="flex flex-wrap gap-x-4 gap-y-1">
-          {TYPES.map(([key, label]) => (
-            <label
-              key={key}
-              className={
-                custom
-                  ? "flex cursor-pointer items-center gap-1.5 text-xs"
-                  : "flex cursor-not-allowed items-center gap-1.5 text-xs opacity-60"
-              }
-            >
-              <Checkbox
-                checked={effective[key]}
-                disabled={!custom || save.isPending}
-                onCheckedChange={(c) => persist(ix.host, { ...effective, [key]: c === true })}
-              />
-              {tTypes(label)}
-            </label>
-          ))}
+        <div className="flex flex-wrap gap-x-5 gap-y-2">
+          {VARIATION_TYPES.map(({ mediaType, toggle }) => {
+            const capKey = `${mediaType}Max` as const;
+            const label = tTypes(toggle);
+            return (
+              <div
+                key={mediaType}
+                className={
+                  custom ? "flex items-center gap-2" : "flex items-center gap-2 opacity-60"
+                }
+              >
+                <label
+                  className={
+                    custom
+                      ? "flex cursor-pointer items-center gap-1.5 text-xs"
+                      : "flex cursor-not-allowed items-center gap-1.5 text-xs"
+                  }
+                >
+                  <Checkbox
+                    checked={effective[mediaType]}
+                    disabled={!custom || save.isPending}
+                    onCheckedChange={(c) =>
+                      persist(ix.host, { ...effective, [mediaType]: c === true })
+                    }
+                  />
+                  {label}
+                </label>
+                <CapInput
+                  key={`${ix.host}-${capKey}-${effective[capKey]}`}
+                  value={effective[capKey]}
+                  disabled={!custom || !effective[mediaType] || save.isPending}
+                  label={tTypes("capAria", { type: label })}
+                  onCommit={(n) => persist(ix.host, { ...effective, [capKey]: n })}
+                />
+              </div>
+            );
+          })}
         </div>
       </li>
     );

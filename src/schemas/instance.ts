@@ -45,6 +45,9 @@ export const ArrInstanceSchema = z
     // ignorieren die Felder vollstaendig.
     enableYearMatching: z.boolean().default(true),
     yearMatchingTolerance: YearToleranceSchema.default(1),
+    // Readarr/Listenarr only: also search the title's spelling variations
+    // without the author. Every other type ignores it.
+    searchWithoutAuthor: z.boolean().default(false),
   })
   .superRefine((data, ctx) => {
     const needsProvider = data.type === "sonarr" || data.type === "radarr";
@@ -75,6 +78,7 @@ export const ArrInstanceUpdateSchema = z.object({
   providerOrder: ProviderOrderSchema.nullable().optional(),
   enableYearMatching: z.boolean().optional(),
   yearMatchingTolerance: YearToleranceSchema.optional(),
+  searchWithoutAuthor: z.boolean().optional(),
 });
 
 export const TestConnectionSchema = z.object({

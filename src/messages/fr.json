@@ -264,6 +264,8 @@
     "providerOrderHint": "Parcouru du haut vers le bas à chaque synchronisation. pcjones ne renvoie que des titres allemands ; TVDB et TMDB couvrent toutes les langues. Glissez avec la poignée ou utilisez les flèches pour réordonner.",
     "enableYearMatching": "Désambiguïsation par année dans l'appariement de titres",
     "enableYearMatchingHint": "Lorsqu'activé, l'appariement rejette les sorties dont le marqueur d'année à 4 chiffres dans le nom de fichier sort de la fenêtre de tolérance autour de l'année de sortie/de première diffusion fournie par Sonarr/Radarr. Empêche par exemple qu'un enregistrement d'événement sportif soit réécrit en film homonyme sorti une autre année. Désactivez si les années dans votre bibliothèque sont peu fiables et que des réécritures légitimes sont supprimées.",
+    "searchWithoutAuthor": "Rechercher aussi sans l'auteur",
+    "searchWithoutAuthorHint": "Recherche aussi les graphies du titre sans l'auteur, p. ex. « Brueckenkopf » au lieu de seulement « Auteur Brückenkopf ». Utile lorsqu'un indexeur liste des livres audio ou des livres sans l'auteur dans le nom. Ces variantes comptent dans le « Nombre maximal de variantes » pour les livres et livres audio. Un résultat sans l'auteur dans le nom de la release est trouvé, mais pas renommé.",
     "yearMatchingTolerance": "Tolérance d'année (± années)",
     "yearMatchingToleranceHint": "0 = égalité stricte, 1 = ± 1 an de tolérance (par défaut), jusqu'à 5. Absorbe les écarts entre année de production et de sortie.",
     "providerAdd": "Ajouter",
@@ -638,7 +640,7 @@
     },
     "indexerVariations": {
       "title": "Recherche de variantes par indexeur",
-      "description": "Pour les indexeurs aux limites serrées, vous pouvez désactiver ici la recherche de variantes par type de média. Sans réglage propre, les interrupteurs ci-dessus s'appliquent. Les modifications sont enregistrées immédiatement.",
+      "description": "Pour les indexeurs aux limites serrées, vous pouvez désactiver ici la recherche de variantes ou réduire le nombre de variantes par type de média. Sans réglage propre, les interrupteurs et plafonds ci-dessus s'appliquent. Les modifications sont enregistrées immédiatement.",
       "custom": "Réglage propre",
       "lastSearch": "Dernière recherche : {date}",
       "neverSearched": "Aucune recherche pour l'instant",
@@ -666,6 +668,7 @@
       "bookVariationSearch": "Livres et livres audio",
       "capLabel": "Nombre maximal de variantes",
       "capHint": "Compte les variantes allemandes. Votre terme de recherche et le titre original sont recherchés en plus et ne sont jamais écartés. 0 recherche sans aucune variante allemande.",
+      "capAria": "Nombre maximal de variantes : {type}",
       "exampleQuery": "Sonarr recherche",
       "exampleExtra": "Ces requêtes sont également envoyées :",
       "cost": "Génère jusqu'à {max} requêtes supplémentaires par recherche. À utiliser avec prudence si les limites de vos indexeurs sont serrées."

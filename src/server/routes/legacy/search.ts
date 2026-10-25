@@ -197,18 +197,43 @@ function matchedSearchItemId(item: CachedSearchItem | null): string | null {
 }
 
 /**
+ * The title-only spellings of a book, alternated with its "Author Title"
+ * spellings so a low cap still searches both kinds. The canonical title is
+ * left out: it already goes into the uncapped tail.
+ */
+function withTitleOnlyVariations(searchItem: CachedSearchItem): string[] {
+  const withAuthor = searchItem.titleSearchVariations;
+  const titleOnly = searchItem.titleMatchVariations.filter(
+    (v) => v !== searchItem.expectedTitle && !withAuthor.includes(v),
+  );
+  const out: string[] = [];
+  for (let i = 0; i < Math.max(withAuthor.length, titleOnly.length); i++) {
+    if (i < withAuthor.length) out.push(withAuthor[i]!);
+    if (i < titleOnly.length) out.push(titleOnly[i]!);
+  }
+  return Array.from(new Set(out));
+}
+
+/**
  * Mirrors SearchControllerBase.BaseSearch's variation list builder, split in
  * two so the cap can apply to the generated German variations alone.
  *
  * `tail` is the highest-value part of the list - the user's literal `q` and
  * the canonical `expectedTitle` - and is never subject to the cap. That is
  * why a cap of 3 means "three German variations", not "three requests".
+ *
+ * `searchWithoutAuthor` (a Readarr/Listenarr instance option) adds a book's
+ * title-only spellings to the generated part, so they count against the cap.
  */
 function buildVariationList(
   searchItem: CachedSearchItem,
   searchQuery: string,
+  searchWithoutAuthor: boolean,
 ): { generated: string[]; tail: string[] } {
-  const generated: string[] = [...searchItem.titleSearchVariations];
+  const generated: string[] =
+    searchWithoutAuthor && searchItem.mediaType === "book"
+      ? withTitleOnlyVariations(searchItem)
+      : [...searchItem.titleSearchVariations];
   const tail: string[] = [];
   if (searchQuery) {
     // Old behavior: if the query is already in the alias list, drop it (the
@@ -378,8 +403,13 @@ export async function handleSearch(
       !isPaused &&
       fanoutEnabled
     ) {
-      const { generated, tail } = buildVariationList(fanoutItem, q ?? "");
-      const cap = state.settings.maxTitleVariations;
+      const { generated, tail } = buildVariationList(
+        fanoutItem,
+        q ?? "",
+        state.getInstanceOptions(fanoutItem.arrInstanceId).searchWithoutAuthor,
+      );
+      // Per media type and per indexer, with the same precedence as the switch.
+      const cap = state.variationCap(indexerHost(ctx.domain), fanoutItem.mediaType);
       const capped = generated.length > cap;
       // The cap applies to the generated German variations only; the tail
       // (the literal `q` / the canonical `expectedTitle`) is the

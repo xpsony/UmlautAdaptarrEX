@@ -17,6 +17,22 @@ vi.mock("@/lib/db", () => ({
 }));
 
 type GateMediaType = "tv" | "movie" | "audio" | "book";
+type IndexerRow = Record<GateMediaType, boolean> & Record<`${GateMediaType}Max`, number>;
+
+/** An indexer row with every switch on and every cap at 10, plus overrides. */
+function indexerRow(overrides: Partial<IndexerRow>): IndexerRow {
+  return {
+    tv: true,
+    movie: true,
+    audio: true,
+    book: true,
+    tvMax: 10,
+    movieMax: 10,
+    audioMax: 10,
+    bookMax: 10,
+    ...overrides,
+  };
+}
 
 const { mockState } = vi.hoisted(() => {
   const state = {
@@ -28,19 +44,32 @@ const { mockState } = vi.hoisted(() => {
       movieVariationSearch: true,
       audioVariationSearch: true,
       bookVariationSearch: true,
-      maxTitleVariations: 10,
+      tvMaxTitleVariations: 10,
+      movieMaxTitleVariations: 10,
+      audioMaxTitleVariations: 10,
+      bookMaxTitleVariations: 10,
     },
-    indexerSwitches: {} as Record<string, Record<GateMediaType, boolean>>,
+    indexerSettings: {} as Record<string, IndexerRow>,
+    // Instance ids with `searchWithoutAuthor` switched on.
+    searchWithoutAuthor: new Set<string>(),
     languagePack: {},
     getByExternalId: vi.fn(),
     getByImdbId: vi.fn(),
     findByTitle: vi.fn(),
     toRewriteSearchItem: vi.fn(),
     isPausedNow: vi.fn(() => false),
-    // Mirrors AppState.variationSearchEnabled: the indexer row first, then
-    // the global `<mediaType>VariationSearch` switch.
+    // Mirror AppState.variationSearchEnabled / variationCap: the indexer row
+    // first, then the global `<mediaType>VariationSearch` switch and
+    // `<mediaType>MaxTitleVariations` cap.
     variationSearchEnabled: (host: string, mt: GateMediaType): boolean =>
-      state.indexerSwitches[host]?.[mt] ?? state.settings[`${mt}VariationSearch`],
+      state.indexerSettings[host]?.[mt] ?? state.settings[`${mt}VariationSearch`],
+    variationCap: (host: string, mt: GateMediaType): number =>
+      state.indexerSettings[host]?.[`${mt}Max`] ?? state.settings[`${mt}MaxTitleVariations`],
+    getInstanceOptions: (id: string) => ({
+      enableYearMatching: true,
+      yearMatchingTolerance: 1,
+      searchWithoutAuthor: state.searchWithoutAuthor.has(id),
+    }),
   };
   return { mockState: state };
 });
@@ -139,9 +168,13 @@ beforeEach(() => {
   mockState.settings.movieVariationSearch = true;
   mockState.settings.audioVariationSearch = true;
   mockState.settings.bookVariationSearch = true;
-  mockState.indexerSwitches = {};
+  mockState.indexerSettings = {};
+  mockState.searchWithoutAuthor = new Set();
   // 10 keeps the pre-existing fan-out tests asserting the old hard-coded cap.
-  mockState.settings.maxTitleVariations = 10;
+  mockState.settings.tvMaxTitleVariations = 10;
+  mockState.settings.movieMaxTitleVariations = 10;
+  mockState.settings.audioMaxTitleVariations = 10;
+  mockState.settings.bookMaxTitleVariations = 10;
   mockState.getByExternalId.mockReset();
   mockState.getByImdbId.mockReset();
   mockState.findByTitle.mockReset();
@@ -384,7 +417,7 @@ describe("handleSearch with a searchItem", () => {
       { type: "tvsearch" },
       { fetcher: fetcher as never },
     );
-    // maxTitleVariations counts the GENERATED German variations only; the
+    // The cap counts the GENERATED German variations only; the
     // tail (q + expectedTitle) is appended on top and never capped. So with
     // a cap of 10: 1 main + 10 generated + 2 tail = 13.
     expect(fetcher.fetch).toHaveBeenCalledTimes(13);
@@ -639,12 +672,12 @@ describe("variation gate per media type and indexer", () => {
   });
 
   it("lets an indexer row switch the fan-out off for that host", async () => {
-    mockState.indexerSwitches["idx.test"] = { tv: true, movie: true, audio: false, book: true };
+    mockState.indexerSettings["idx.test"] = indexerRow({ audio: false });
     expect((await runAudio()).fetch).toHaveBeenCalledOnce();
   });
 
   it("matches the indexer row case-insensitively on the host", async () => {
-    mockState.indexerSwitches["idx.test"] = { tv: true, movie: true, audio: false, book: true };
+    mockState.indexerSettings["idx.test"] = indexerRow({ audio: false });
     mockState.getByExternalId.mockReturnValue(audioItem);
     mockState.toRewriteSearchItem.mockReturnValue({});
     const fetcher: FakeFetcher = {
@@ -666,6 +699,88 @@ describe("variation gate per media type and indexer", () => {
       { fetcher: fetcher as never },
     );
     expect(fetcher.fetch).toHaveBeenCalledOnce();
+  });
+});
+
+describe("search without the author", () => {
+  const bookItem = {
+    id: "b1",
+    arrInstanceId: "listenarr-1",
+    mediaType: "book",
+    expectedTitle: "Brückenkopf",
+    titleSearchVariations: [
+      "Anna Müller Brückenkopf",
+      "Anna Mueller Brueckenkopf",
+      "Anna Muller Bruckenkopf",
+    ],
+    titleMatchVariations: ["Brückenkopf", "Brueckenkopf", "Bruckenkopf"],
+    authorMatchVariations: ["Anna Müller"],
+  };
+  const runBook = async (item: object = bookItem, cat = "7000") => {
+    mockState.getByExternalId.mockReturnValue(item);
+    mockState.toRewriteSearchItem.mockReturnValue({});
+    const fetcher: FakeFetcher = {
+      fetch: vi.fn().mockResolvedValue({
+        status: 200,
+        contentType: "application/xml",
+        body: Buffer.from("<rss/>"),
+        cacheHit: false,
+      }),
+    };
+    await handleSearch(
+      {
+        ...makeReq(),
+        url: `/key/host.example/api?t=search&q=Brueckenkopf+Anna+Mueller&cat=${cat}`,
+      } as never,
+      makeReply() as never,
+      { type: "search" },
+      { fetcher: fetcher as never },
+    );
+    // Every request after the main one, as the `q` it sent.
+    return fetcher.fetch.mock.calls
+      .slice(1)
+      .map((c) => new URLSearchParams(new URL(String(c[0])).search).get("q"));
+  };
+
+  it("searches only the author spellings while the option is off", async () => {
+    expect(await runBook()).toEqual([
+      "Anna Müller Brückenkopf",
+      "Anna Mueller Brueckenkopf",
+      "Anna Muller Bruckenkopf",
+      "Brueckenkopf Anna Mueller",
+      "Brückenkopf",
+    ]);
+  });
+
+  it("alternates title-only spellings with the author spellings when it is on", async () => {
+    mockState.searchWithoutAuthor.add("listenarr-1");
+    // The canonical title stays in the tail, so it is not repeated here.
+    expect(await runBook()).toEqual([
+      "Anna Müller Brückenkopf",
+      "Brueckenkopf",
+      "Anna Mueller Brueckenkopf",
+      "Bruckenkopf",
+      "Anna Muller Bruckenkopf",
+      "Brueckenkopf Anna Mueller",
+      "Brückenkopf",
+    ]);
+  });
+
+  it("counts the title-only spellings against the books cap", async () => {
+    mockState.searchWithoutAuthor.add("listenarr-1");
+    mockState.settings.bookMaxTitleVariations = 2;
+    expect(await runBook()).toEqual([
+      "Anna Müller Brückenkopf",
+      "Brueckenkopf",
+      "Brueckenkopf Anna Mueller",
+      "Brückenkopf",
+    ]);
+  });
+
+  it("only applies to books, not to music", async () => {
+    mockState.searchWithoutAuthor.add("listenarr-1");
+    const queries = await runBook({ ...bookItem, mediaType: "audio" }, "3000");
+    expect(queries).not.toContain("Brueckenkopf");
   });
 });
 
@@ -886,7 +1001,7 @@ describe("variation cap", () => {
   }
 
   it("caps the German variations and still appends q and expectedTitle", async () => {
-    mockState.settings.maxTitleVariations = 3;
+    mockState.settings.tvMaxTitleVariations = 3;
     mockState.getByExternalId.mockReturnValue(itemWithVariations());
     mockState.toRewriteSearchItem.mockReturnValue({});
 
@@ -901,7 +1016,7 @@ describe("variation cap", () => {
   });
 
   it("honours a cap of one", async () => {
-    mockState.settings.maxTitleVariations = 1;
+    mockState.settings.tvMaxTitleVariations = 1;
     mockState.getByExternalId.mockReturnValue(itemWithVariations());
     mockState.toRewriteSearchItem.mockReturnValue({});
 
@@ -915,7 +1030,7 @@ describe("variation cap", () => {
   });
 
   it("drops every German variation at a cap of zero, keeping only q and expectedTitle", async () => {
-    mockState.settings.maxTitleVariations = 0;
+    mockState.settings.tvMaxTitleVariations = 0;
     mockState.getByExternalId.mockReturnValue(itemWithVariations());
     mockState.toRewriteSearchItem.mockReturnValue({});
 
@@ -935,7 +1050,7 @@ describe("variation cap", () => {
   });
 
   it("never trims q or expectedTitle away", async () => {
-    mockState.settings.maxTitleVariations = 1;
+    mockState.settings.tvMaxTitleVariations = 1;
     mockState.getByExternalId.mockReturnValue(itemWithVariations());
     mockState.toRewriteSearchItem.mockReturnValue({});
 
@@ -950,6 +1065,38 @@ describe("variation cap", () => {
       .map((c) => new URLSearchParams(new URL(String(c[0])).search).get("q"));
     expect(queries).toContain("Some Other Query");
     expect(queries).toContain("Realm of Ravens");
+  });
+
+  it("uses the cap of the item's media type only", async () => {
+    mockState.settings.tvMaxTitleVariations = 2;
+    mockState.settings.movieMaxTitleVariations = 0;
+    mockState.getByExternalId.mockReturnValue(itemWithVariations());
+    mockState.toRewriteSearchItem.mockReturnValue({});
+
+    const { fetcher } = await runSearch(
+      "?t=tvsearch&tvdbid=100&q=Some+Other+Query",
+      "tvsearch",
+      okFetcher(20),
+    );
+
+    // 1 main + 2 German variations (the series cap) + q + expectedTitle = 5
+    expect(fetcher.fetch).toHaveBeenCalledTimes(5);
+  });
+
+  it("lets an indexer row's cap win over the global cap", async () => {
+    mockState.settings.tvMaxTitleVariations = 10;
+    mockState.indexerSettings["host.example"] = indexerRow({ tvMax: 1 });
+    mockState.getByExternalId.mockReturnValue(itemWithVariations());
+    mockState.toRewriteSearchItem.mockReturnValue({});
+
+    const { fetcher } = await runSearch(
+      "?t=tvsearch&tvdbid=100&q=Some+Other+Query",
+      "tvsearch",
+      okFetcher(20),
+    );
+
+    // 1 main + 1 German variation + q + expectedTitle = 4
+    expect(fetcher.fetch).toHaveBeenCalledTimes(4);
   });
 });
 

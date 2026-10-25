@@ -33,7 +33,13 @@ export function SearchTab({ form, onSave, saving }: SearchTabProps) {
     movieVariationSearch: watched.movieVariationSearch ?? SEARCH_DEFAULTS.movieVariationSearch,
     audioVariationSearch: watched.audioVariationSearch ?? SEARCH_DEFAULTS.audioVariationSearch,
     bookVariationSearch: watched.bookVariationSearch ?? SEARCH_DEFAULTS.bookVariationSearch,
-    maxTitleVariations: watched.maxTitleVariations ?? SEARCH_DEFAULTS.maxTitleVariations,
+    tvMaxTitleVariations: watched.tvMaxTitleVariations ?? SEARCH_DEFAULTS.tvMaxTitleVariations,
+    movieMaxTitleVariations:
+      watched.movieMaxTitleVariations ?? SEARCH_DEFAULTS.movieMaxTitleVariations,
+    audioMaxTitleVariations:
+      watched.audioMaxTitleVariations ?? SEARCH_DEFAULTS.audioMaxTitleVariations,
+    bookMaxTitleVariations:
+      watched.bookMaxTitleVariations ?? SEARCH_DEFAULTS.bookMaxTitleVariations,
     syncIntervalMinutes: watched.syncIntervalMinutes ?? SEARCH_DEFAULTS.syncIntervalMinutes,
     fullSyncIntervalHours: watched.fullSyncIntervalHours ?? SEARCH_DEFAULTS.fullSyncIntervalHours,
   };

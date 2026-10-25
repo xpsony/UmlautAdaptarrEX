@@ -441,6 +441,10 @@ Recommended method, because there is no speed loss with multiple indexers.
    > Listenarr in Prowlarr as a _Readarr_ application, our auto-detection reads it back as `readarr`,
    > and the Readarr client then talks to `/api/v1/author` with query-string auth and gets nothing
    > usable. Add such an instance by hand as type Listenarr.
+   >
+   > If an indexer lists audiobooks without the author in the name, switch on **Also search without
+   > the author** in the instance (available for Listenarr and Readarr, off by default). The title's
+   > spellings on their own are then searched too. Such hits are found but not renamed.
 
 2. In Prowlarr: **Settings → Indexers → Indexer Proxies → Add (HTTP)**
    - Name: `UmlautAdaptarrEX HTTP Proxy`

@@ -195,6 +195,40 @@ describe("PATCH /api/admin/instances/:id", () => {
     expect(args.data).toEqual({ name: "renamed" });
   });
 
+  it("saves searchWithoutAuthor and refreshes the option cache", async () => {
+    mockArr.update.mockResolvedValueOnce({
+      id: "i1",
+      type: "listenarr",
+      name: "Audiobooks",
+      host: "http://x",
+      apiKey: "k",
+      enabled: true,
+      providerOrder: null,
+      enableYearMatching: true,
+      yearMatchingTolerance: 1,
+      searchWithoutAuthor: true,
+      lastSyncAt: null,
+      lastSyncError: null,
+      createdAt: new Date(0),
+      updatedAt: new Date(0),
+    });
+    const r = await app.inject({
+      method: "PATCH",
+      url: "/api/admin/instances/i1",
+      payload: { searchWithoutAuthor: true },
+    });
+    expect(r.statusCode).toBe(200);
+    const args = mockArr.update.mock.calls[0]?.[0] as {
+      data: Record<string, unknown>;
+    };
+    expect(args.data).toEqual({ searchWithoutAuthor: true });
+    expect(mockState.setInstanceOptions).toHaveBeenCalledWith("i1", {
+      enableYearMatching: true,
+      yearMatchingTolerance: 1,
+      searchWithoutAuthor: true,
+    });
+  });
+
   it("converts an array providerOrder into CSV", async () => {
     mockArr.update.mockResolvedValueOnce({
       id: "i1",

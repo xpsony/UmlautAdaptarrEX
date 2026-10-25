@@ -107,9 +107,13 @@ model Setting {
   // film switch into both for existing installs.
   audioVariationSearch      Boolean   @default(true)
   bookVariationSearch       Boolean   @default(true)
-  // Obergrenze der deutschen Titelvarianten pro Suche. Das literale Suchwort
-  // und der Originaltitel kommen obendrauf, der Worst Case ist also N+2.
-  maxTitleVariations        Int       @default(1)
+  // Cap on German title variations per search, per media type. The literal
+  // query and the canonical title come on top, so the worst case is N+2.
+  // Replaces the single maxTitleVariations; the migration copies it into all four.
+  tvMaxTitleVariations      Int       @default(1)
+  movieMaxTitleVariations   Int       @default(1)
+  audioMaxTitleVariations   Int       @default(1)
+  bookMaxTitleVariations    Int       @default(1)
   // HMAC-Secret für CSRF-Tokens (base64). Wird beim ersten Boot via
   // `ensureCsrfSecret()` generiert und persistiert, damit Tokens
   // Container-Restarts überleben. ENV `CSRF_SECRET` überschreibt die DB.
@@ -186,6 +190,10 @@ model ArrInstance {
   // Lidarr/Readarr nutzen einen anderen Match-Pfad.
   enableYearMatching    Boolean      @default(true)
   yearMatchingTolerance Int          @default(1)
+  // Readarr/Listenarr only: also fan out over the spelling variations of the
+  // title alone, without the author. Search only; the rename still needs the
+  // author in the release name. Off by default, so nothing changes on upgrade.
+  searchWithoutAuthor   Boolean      @default(false)
   lastSyncAt            DateTime?
   // Letzter Vollabgleich. NULL bedeutet "noch nie" und erzwingt beim naechsten
   // Tick einen Full-Sync - das ist der einmalige erste Scan.
@@ -376,7 +384,7 @@ model TitleOverride {
   @@unique([mediaType, externalId])
 }
 
-// Per-indexer override of the variation-search switches. A row means "custom
+// Per-indexer override of the variation-search switches and caps. A row means "custom
 // setting for this host"; no row means the global Setting switches apply.
 // `host` is the indexer host as RequestHistory.domain stores it, lower-cased,
 // port kept.
@@ -386,5 +394,12 @@ model IndexerSetting {
   movie     Boolean
   audio     Boolean
   book      Boolean
+  // Per-type cap on German variations, like Setting.<type>MaxTitleVariations.
+  // Every write sets them; the defaults only exist so the migration can add
+  // the columns to rows that predate them.
+  tvMax     Int      @default(1)
+  movieMax  Int      @default(1)
+  audioMax  Int      @default(1)
+  bookMax   Int      @default(1)
   updatedAt DateTime @updatedAt
 }

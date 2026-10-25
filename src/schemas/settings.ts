@@ -40,6 +40,12 @@ const proxyPasswordInput = z
   )
   .optional();
 
+/**
+ * The cap on German title variations per search. Shared by the global
+ * per-type caps, the setup wizard and the per-indexer rows.
+ */
+export const VariationCapSchema = z.number().int().min(0).max(20);
+
 export const SettingsSchema = z.object({
   proxyPort: z.number().int().min(1024).max(65535).default(5006),
   proxyUsername: z
@@ -88,7 +94,11 @@ export const SettingsSchema = z.object({
   // for. The default is deliberately low - one alias covers the common case
   // (an indexer listing the release under its German name) at a third of the
   // outbound cost, and an operator who wants broader coverage raises it.
-  maxTitleVariations: z.number().int().min(0).max(20).default(1),
+  // One cap per media type, next to its switch.
+  tvMaxTitleVariations: VariationCapSchema.default(1),
+  movieMaxTitleVariations: VariationCapSchema.default(1),
+  audioMaxTitleVariations: VariationCapSchema.default(1),
+  bookMaxTitleVariations: VariationCapSchema.default(1),
   titleApiHost: z.string().url().default("https://umlautadaptarr.pcjones.de/api/v1"),
   tmdbApiKey: optionalSecret,
   // TVDB v4 API: key plus optional subscriber PIN. Some v4 endpoints

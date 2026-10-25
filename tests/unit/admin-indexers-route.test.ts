@@ -13,7 +13,7 @@ const { mockDb, mockState, mockHosts } = vi.hoisted(() => ({
     indexerSetting: { findMany: vi.fn(), upsert: vi.fn(), deleteMany: vi.fn() },
     setting: { findUnique: vi.fn() },
   },
-  mockState: { settings: { userAgent: "UA" }, setIndexerSwitches: vi.fn() },
+  mockState: { settings: { userAgent: "UA" }, setIndexerSetting: vi.fn() },
   mockHosts: vi.fn(),
 }));
 
@@ -32,7 +32,7 @@ beforeEach(async () => {
     mockDb.indexerSetting.upsert,
     mockDb.indexerSetting.deleteMany,
     mockDb.setting.findUnique,
-    mockState.setIndexerSwitches,
+    mockState.setIndexerSetting,
     mockHosts,
   ]) {
     fn.mockReset();
@@ -46,7 +46,16 @@ afterEach(async () => {
   await app.close();
 });
 
-const switches = { tv: true, movie: false, audio: true, book: false };
+const setting = {
+  tv: true,
+  movie: false,
+  audio: true,
+  book: false,
+  tvMax: 2,
+  movieMax: 1,
+  audioMax: 0,
+  bookMax: 1,
+};
 
 describe("GET /api/admin/indexers", () => {
   it("merges history, Prowlarr names and rows", async () => {
@@ -89,28 +98,44 @@ describe("GET /api/admin/indexers", () => {
 
 describe("PUT/DELETE /api/admin/indexers/:host", () => {
   it("upserts a row, lower-cases the host and refreshes the state", async () => {
-    mockDb.indexerSetting.upsert.mockResolvedValue({ host: "idx.test", ...switches });
+    mockDb.indexerSetting.upsert.mockResolvedValue({ host: "idx.test", ...setting });
 
     const res = await app.inject({
       method: "PUT",
       url: "/api/admin/indexers/IDX.test",
-      payload: switches,
+      payload: setting,
     });
 
     expect(res.statusCode).toBe(200);
     expect(mockDb.indexerSetting.upsert).toHaveBeenCalledWith({
       where: { host: "idx.test" },
-      create: { host: "idx.test", ...switches },
-      update: switches,
+      create: { host: "idx.test", ...setting },
+      update: setting,
     });
-    expect(mockState.setIndexerSwitches).toHaveBeenCalledWith("idx.test", switches);
+    expect(mockState.setIndexerSetting).toHaveBeenCalledWith("idx.test", setting);
+  });
+
+  it("rejects a cap outside 0-20 and a body without caps", async () => {
+    const tooHigh = await app.inject({
+      method: "PUT",
+      url: "/api/admin/indexers/a.test",
+      payload: { ...setting, tvMax: 21 },
+    });
+    expect(tooHigh.statusCode).toBe(400);
+    const noCaps = await app.inject({
+      method: "PUT",
+      url: "/api/admin/indexers/a.test",
+      payload: { tv: true, movie: false, audio: true, book: false },
+    });
+    expect(noCaps.statusCode).toBe(400);
+    expect(mockDb.indexerSetting.upsert).not.toHaveBeenCalled();
   });
 
   it("rejects a host with a path and a bad body", async () => {
     const withPath = await app.inject({
       method: "PUT",
       url: "/api/admin/indexers/a.test%2Fapi",
-      payload: switches,
+      payload: setting,
     });
     expect(withPath.statusCode).toBe(400);
     const badBody = await app.inject({
@@ -129,6 +154,6 @@ describe("PUT/DELETE /api/admin/indexers/:host", () => {
 
     expect(res.statusCode).toBe(200);
     expect(mockDb.indexerSetting.deleteMany).toHaveBeenCalledWith({ where: { host: "idx.test" } });
-    expect(mockState.setIndexerSwitches).toHaveBeenCalledWith("idx.test", null);
+    expect(mockState.setIndexerSetting).toHaveBeenCalledWith("idx.test", null);
   });
 });
