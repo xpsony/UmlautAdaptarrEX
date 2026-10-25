@@ -11,6 +11,7 @@ import {
 import type { IndexerFetcher } from "@/server/proxy/indexer-fetcher";
 import { type AppState, type CachedSearchItem, getAppState } from "@/server/state";
 import { type OnDemandRequest, resolveOnDemand } from "@/server/on-demand/resolve";
+import { indexerHost } from "@/server/variation-gate";
 import {
   assertLegacyContext,
   buildIndexerUrl,
@@ -364,12 +365,10 @@ export async function handleSearch(
     // Match SearchControllerBase.BaseSearch ordering: aggregate variations
     // first, then merge the initial response last so dedup keeps variation
     // hits ahead of the (typically less specific) original query.
-    // Per-media-type gate: German variation search is opt-out for series
-    // (today's behaviour) and, for existing installs, opt-in for movies.
+    // Per media type (Settings -> Search) and per indexer: a custom indexer
+    // setting overrides the global switches for its host.
     const fanoutEnabled = fanoutItem
-      ? fanoutItem.mediaType === "tv"
-        ? state.settings.tvVariationSearch
-        : state.settings.movieVariationSearch
+      ? state.variationSearchEnabled(indexerHost(ctx.domain), fanoutItem.mediaType)
       : false;
     if (
       fanoutItem &&

@@ -91,6 +91,7 @@ export async function bootServer(opts: BootOptions): Promise<{
     );
   }
   await state.loadSearchItemsFromDb();
+  await state.loadIndexerSettings();
 
   const fetcher = new IndexerFetcher(state, logger);
 

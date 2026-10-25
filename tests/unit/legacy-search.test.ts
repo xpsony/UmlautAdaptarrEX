@@ -16,24 +16,34 @@ vi.mock("@/lib/db", () => ({
   prisma: { requestHistory: mockRequest, renameHistory: mockRename },
 }));
 
-const { mockState } = vi.hoisted(() => ({
-  mockState: {
+type GateMediaType = "tv" | "movie" | "audio" | "book";
+
+const { mockState } = vi.hoisted(() => {
+  const state = {
     settings: {
       appApiKey: "",
       indexerTimeoutSeconds: 60,
       onDemandLookup: true,
       tvVariationSearch: true,
       movieVariationSearch: true,
+      audioVariationSearch: true,
+      bookVariationSearch: true,
       maxTitleVariations: 10,
     },
+    indexerSwitches: {} as Record<string, Record<GateMediaType, boolean>>,
     languagePack: {},
     getByExternalId: vi.fn(),
     getByImdbId: vi.fn(),
     findByTitle: vi.fn(),
     toRewriteSearchItem: vi.fn(),
     isPausedNow: vi.fn(() => false),
-  },
-}));
+    // Mirrors AppState.variationSearchEnabled: the indexer row first, then
+    // the global `<mediaType>VariationSearch` switch.
+    variationSearchEnabled: (host: string, mt: GateMediaType): boolean =>
+      state.indexerSwitches[host]?.[mt] ?? state.settings[`${mt}VariationSearch`],
+  };
+  return { mockState: state };
+});
 
 vi.mock("@/server/state", () => ({
   getAppState: () => mockState,
@@ -127,6 +137,9 @@ beforeEach(() => {
   mockState.settings.onDemandLookup = true;
   mockState.settings.tvVariationSearch = true;
   mockState.settings.movieVariationSearch = true;
+  mockState.settings.audioVariationSearch = true;
+  mockState.settings.bookVariationSearch = true;
+  mockState.indexerSwitches = {};
   // 10 keeps the pre-existing fan-out tests asserting the old hard-coded cap.
   mockState.settings.maxTitleVariations = 10;
   mockState.getByExternalId.mockReset();
@@ -579,6 +592,80 @@ describe("handleSearch routing variants", () => {
     // The lookup key is lidarrSearchKey(q), the same reduction the sync
     // applies when it stores the album.
     expect(mockState.getByExternalId).toHaveBeenCalledWith("audio", "key:Some Album");
+  });
+});
+
+describe("variation gate per media type and indexer", () => {
+  const audioItem = {
+    id: "a1",
+    mediaType: "audio",
+    expectedTitle: "Mondfähre",
+    titleSearchVariations: ["Die Baeren Mondfaehre"],
+    titleMatchVariations: ["Mondfähre"],
+    authorMatchVariations: ["Die Bären"],
+  };
+  const runAudio = async () => {
+    mockState.getByExternalId.mockReturnValue(audioItem);
+    mockState.toRewriteSearchItem.mockReturnValue({});
+    const fetcher: FakeFetcher = {
+      fetch: vi.fn().mockResolvedValue({
+        status: 200,
+        contentType: "application/xml",
+        body: Buffer.from("<rss/>"),
+        cacheHit: false,
+      }),
+    };
+    await handleSearch(
+      {
+        ...makeReq(),
+        url: "/key/idx.test/api?t=search&q=Die+Baren+Mondfahre&cat=3000",
+        params: { apiKey: "key", "*": "idx.test/api" },
+      } as never,
+      makeReply() as never,
+      { type: "search" },
+      { fetcher: fetcher as never },
+    );
+    return fetcher;
+  };
+
+  it("follows the music switch, not the film switch", async () => {
+    mockState.settings.movieVariationSearch = false;
+    expect((await runAudio()).fetch.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it("does not fan out for music when the music switch is off", async () => {
+    mockState.settings.audioVariationSearch = false;
+    expect((await runAudio()).fetch).toHaveBeenCalledOnce();
+  });
+
+  it("lets an indexer row switch the fan-out off for that host", async () => {
+    mockState.indexerSwitches["idx.test"] = { tv: true, movie: true, audio: false, book: true };
+    expect((await runAudio()).fetch).toHaveBeenCalledOnce();
+  });
+
+  it("matches the indexer row case-insensitively on the host", async () => {
+    mockState.indexerSwitches["idx.test"] = { tv: true, movie: true, audio: false, book: true };
+    mockState.getByExternalId.mockReturnValue(audioItem);
+    mockState.toRewriteSearchItem.mockReturnValue({});
+    const fetcher: FakeFetcher = {
+      fetch: vi.fn().mockResolvedValue({
+        status: 200,
+        contentType: "application/xml",
+        body: Buffer.from("<rss/>"),
+        cacheHit: false,
+      }),
+    };
+    await handleSearch(
+      {
+        ...makeReq(),
+        url: "/key/IDX.test/api?t=search&q=Die+Baren+Mondfahre&cat=3000",
+        params: { apiKey: "key", "*": "IDX.test/api" },
+      } as never,
+      makeReply() as never,
+      { type: "search" },
+      { fetcher: fetcher as never },
+    );
+    expect(fetcher.fetch).toHaveBeenCalledOnce();
   });
 });
 

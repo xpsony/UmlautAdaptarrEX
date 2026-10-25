@@ -28,6 +28,7 @@ import {
   type SearchItemRow,
 } from "./search-item";
 import { SearchItemIndex } from "./search-index";
+import { isVariationSearchEnabled, type VariationSwitches } from "./variation-gate";
 
 export type {
   CachedSearchItem,
@@ -158,6 +159,8 @@ export class AppState {
   // alongside SearchItems so findByTitle / toRewriteSearchItem can apply
   // them without an extra DB hit per request.
   private _instanceOptions = new Map<string, InstanceMatchOptions>();
+  // Per-indexer variation switches (IndexerSetting rows), keyed by host.
+  private _indexerSwitches = new Map<string, VariationSwitches>();
   // Memoises a DbCachedTitleProvider per order signature (e.g.
   // "pcjones,tvdb,tmdb"), wrapping the matching Composite. Capped at six
   // permutations, so the cache stays small.
@@ -431,6 +434,24 @@ export class AppState {
 
   removeInstanceOptions(instanceId: string): void {
     this._instanceOptions.delete(instanceId);
+  }
+
+  async loadIndexerSettings(): Promise<void> {
+    const rows = await prisma.indexerSetting.findMany();
+    this._indexerSwitches = new Map(
+      rows.map((r) => [r.host, { tv: r.tv, movie: r.movie, audio: r.audio, book: r.book }]),
+    );
+  }
+
+  /** Keeps the in-memory map in step after the admin route wrote a row. */
+  setIndexerSwitches(host: string, switches: VariationSwitches | null): void {
+    if (switches) this._indexerSwitches.set(host, switches);
+    else this._indexerSwitches.delete(host);
+  }
+
+  /** Whether a search on `host` for `mediaType` fans out over the variations. */
+  variationSearchEnabled(host: string, mediaType: MediaType): boolean {
+    return isVariationSearchEnabled(this._settings, this._indexerSwitches.get(host), mediaType);
   }
 
   // Converts + indexes a batch of raw SearchItem rows, skipping any row whose
