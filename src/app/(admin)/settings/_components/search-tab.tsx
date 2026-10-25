@@ -8,6 +8,7 @@ import {
   type SearchBehaviourValues,
 } from "@/components/search-behaviour-fields";
 import { SaveBar } from "./save-bar";
+import { IndexerVariationCard } from "./indexer-variation-card";
 import { SEARCH_DEFAULTS } from "../_lib/settings-types";
 import type { SearchForm, SearchFormOutput } from "../_lib/settings-types";
 
@@ -48,21 +49,26 @@ export function SearchTab({ form, onSave, saving }: SearchTabProps) {
   };
 
   return (
-    <form id="search-form" onSubmit={form.handleSubmit(onSave)} className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Search className="h-4 w-4" />
-            {t("section.search")}
-          </CardTitle>
-          <CardDescription>{t("section.searchHint")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SearchBehaviourFields values={values} onChange={onChange} />
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <form id="search-form" onSubmit={form.handleSubmit(onSave)} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Search className="h-4 w-4" />
+              {t("section.search")}
+            </CardTitle>
+            <CardDescription>{t("section.searchHint")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SearchBehaviourFields values={values} onChange={onChange} />
+          </CardContent>
+        </Card>
 
-      <SaveBar form="search-form" pending={saving} dirty={form.formState.isDirty} />
-    </form>
+        <SaveBar form="search-form" pending={saving} dirty={form.formState.isDirty} />
+      </form>
+      {/* Outside the form: its controls save on their own and must neither
+          submit the form nor mark it dirty. */}
+      <IndexerVariationCard global={values} />
+    </div>
   );
 }

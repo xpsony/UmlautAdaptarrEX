@@ -635,6 +635,17 @@
         "description": "Cuts at the matched variation's raw length instead of counting normalized characters - and turns the token-boundary check off with it.",
         "hint": "Only enable this if you need the exact old behaviour. When a variation ends on a digit the cut can land inside the release's year and mangle it (see the example). Without this switch UmlautAdaptarrEX declines such matches instead."
       }
+    },
+    "indexerVariations": {
+      "title": "Variation search per indexer",
+      "description": "For indexers with tight limits you can switch the variation search off per media type here. Without a custom setting the switches above apply. Changes are saved immediately.",
+      "custom": "Custom setting",
+      "lastSearch": "Last search: {date}",
+      "neverSearched": "No search yet",
+      "empty": "No indexers known yet. They appear after the first search or once Prowlarr is connected.",
+      "saved": "Saved.",
+      "saveFailed": "Saving failed: {error}",
+      "loadFailed": "Could not load indexers: {error}"
     }
   },
   "searchBehaviour": {

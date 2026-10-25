@@ -635,6 +635,17 @@
         "description": "Schneidet nach Rohlänge der gefundenen Variante statt nach normalisierten Zeichen - und schaltet die Token-Grenzen-Prüfung mit ab.",
         "hint": "Nur einschalten, wenn du exakt das alte Verhalten brauchst. Endet eine Variante auf einer Ziffer, kann der Schnitt mitten in die Jahreszahl des Releases fallen und sie verstümmeln (siehe Beispiel). Ohne diesen Schalter lehnt UmlautAdaptarrEX solche Treffer stattdessen ab."
       }
+    },
+    "indexerVariations": {
+      "title": "Variantensuche pro Indexer",
+      "description": "Für Indexer mit knappen Limits kannst du die Variantensuche hier pro Medientyp abschalten. Ohne eigene Einstellung gelten die Schalter oben. Änderungen werden sofort gespeichert.",
+      "custom": "Eigene Einstellung",
+      "lastSearch": "Letzte Suche: {date}",
+      "neverSearched": "Noch keine Suche",
+      "empty": "Noch keine Indexer bekannt. Sie erscheinen nach der ersten Suche oder sobald Prowlarr verbunden ist.",
+      "saved": "Gespeichert.",
+      "saveFailed": "Speichern fehlgeschlagen: {error}",
+      "loadFailed": "Indexer konnten nicht geladen werden: {error}"
     }
   },
   "searchBehaviour": {

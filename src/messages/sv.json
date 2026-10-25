@@ -635,6 +635,17 @@
         "description": "Klipper vid den hittade variantens råa längd istället för att räkna normaliserade tecken - och stänger av tokengränskontrollen på samma gång.",
         "hint": "Aktivera bara om du behöver exakt det gamla beteendet. Om en variant slutar på en siffra kan snittet hamna mitt i releasens årtal och förvanska det (se exemplet). Utan den här reglaget avvisar UmlautAdaptarrEX sådana träffar istället."
       }
+    },
+    "indexerVariations": {
+      "title": "Variantsökning per indexerare",
+      "description": "För indexerare med snäva gränser kan du stänga av variantsökningen per medietyp här. Utan egen inställning gäller reglagen ovan. Ändringar sparas direkt.",
+      "custom": "Egen inställning",
+      "lastSearch": "Senaste sökning: {date}",
+      "neverSearched": "Ingen sökning än",
+      "empty": "Inga indexerare kända än. De visas efter första sökningen eller när Prowlarr är anslutet.",
+      "saved": "Sparat.",
+      "saveFailed": "Det gick inte att spara: {error}",
+      "loadFailed": "Det gick inte att läsa in indexerare: {error}"
     }
   },
   "searchBehaviour": {

@@ -635,6 +635,17 @@
         "description": "Coupe à la longueur brute de la variante trouvée au lieu de compter les caractères normalisés - et désactive du même coup le contrôle des limites de token.",
         "hint": "À n'activer que si vous avez besoin du comportement exact de l'ancienne version. Lorsqu'une variante se termine par un chiffre, la coupe peut tomber au milieu de l'année de la release et la mutiler (voir l'exemple). Sans cet interrupteur, UmlautAdaptarrEX refuse plutôt ces correspondances."
       }
+    },
+    "indexerVariations": {
+      "title": "Recherche de variantes par indexeur",
+      "description": "Pour les indexeurs aux limites serrées, vous pouvez désactiver ici la recherche de variantes par type de média. Sans réglage propre, les interrupteurs ci-dessus s'appliquent. Les modifications sont enregistrées immédiatement.",
+      "custom": "Réglage propre",
+      "lastSearch": "Dernière recherche : {date}",
+      "neverSearched": "Aucune recherche pour l'instant",
+      "empty": "Aucun indexeur connu pour l'instant. Ils apparaissent après la première recherche ou dès que Prowlarr est connecté.",
+      "saved": "Enregistré.",
+      "saveFailed": "Échec de l'enregistrement : {error}",
+      "loadFailed": "Impossible de charger les indexeurs : {error}"
     }
   },
   "searchBehaviour": {
