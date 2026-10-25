@@ -70,18 +70,15 @@ describe("LidarrClient.fetchAllItems", () => {
   });
 
   it("derives externalId from '{artist} {album}' so same-titled albums across artists do not collide", async () => {
-    // Matches LidarrClient.cs in the .NET predecessor:
-    //   var expectedTitle = $"{artistName} {albumTitle}";
-    //   var externalId   = expectedTitle.GetLidarrTitleForExternalId();
     requestMock
       .mockResolvedValueOnce(
         jsonResponse([
-          { id: 1, artistName: "Queen" },
-          { id: 2, artistName: "Eagles" },
+          { id: 1, artistName: "Nordlicht" },
+          { id: 2, artistName: "Kranichflug" },
         ]),
       )
-      .mockResolvedValueOnce(jsonResponse([{ id: 10, artistId: 1, title: "Greatest Hits" }]))
-      .mockResolvedValueOnce(jsonResponse([{ id: 20, artistId: 2, title: "Greatest Hits" }]));
+      .mockResolvedValueOnce(jsonResponse([{ id: 10, artistId: 1, title: "Best Of" }]))
+      .mockResolvedValueOnce(jsonResponse([{ id: 20, artistId: 2, title: "Best Of" }]));
 
     const client = new LidarrClient({
       instanceId: "i",
@@ -95,8 +92,40 @@ describe("LidarrClient.fetchAllItems", () => {
     expect(items).toHaveLength(2);
     const externalIds = items.map((i) => i.externalId);
     expect(new Set(externalIds).size).toBe(2);
-    expect(externalIds).toContain("Queen Greatest Hits");
-    expect(externalIds).toContain("Eagles Greatest Hits");
+    expect(externalIds).toContain("nordlicht best of");
+    expect(externalIds).toContain("kranichflug best of");
+  });
+
+  it("keys an album by the search Lidarr sends, umlauts stripped, so t=search finds it", async () => {
+    requestMock
+      .mockResolvedValueOnce(jsonResponse([{ id: 1, artistName: "The Bären" }]))
+      .mockResolvedValueOnce(
+        jsonResponse([
+          {
+            id: 10,
+            artistId: 1,
+            title: "Mondfähre",
+            disambiguation: "Deluxe",
+            releaseDate: "2004-01-01T00:00:00Z",
+          },
+          { id: 11, artistId: 1, title: "The Bären", releaseDate: "2009-01-01T00:00:00Z" },
+        ]),
+      );
+    const client = new LidarrClient({
+      instanceId: "i",
+      instanceName: "n",
+      host: "http://lidarr.local",
+      apiKey: "k",
+      userAgent: "UA",
+    });
+
+    const [deluxe, selfTitled] = await client.fetchRawItems();
+    // Lidarr's default query: "Baren Mondfahre Deluxe"; raw: "The Bären Mondfähre Deluxe".
+    expect(deluxe?.externalId).toBe("baren mondfahre deluxe");
+    expect(deluxe?.externalIdAliases).toEqual(["the baren mondfahre deluxe"]);
+    // Self-titled: Lidarr appends the release year.
+    expect(selfTitled?.externalId).toBe("baren baren 2009");
+    expect(deluxe?.title).toBe("Mondfähre");
   });
 });
 

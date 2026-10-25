@@ -1,10 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "@/lib/db";
 import { canonicalImdbId } from "@/lib/imdb-id";
-import {
-  getLidarrTitleForExternalId,
-  getReadarrTitleForExternalId,
-} from "@/domain/normalization/index";
+import { getReadarrTitleForExternalId, lidarrSearchKey } from "@/domain/normalization/index";
 import {
   aggregateIndexerResponses,
   type NewznabError,
@@ -90,7 +87,9 @@ export function determineSearchItem(
         return state.getByExternalId("book", getReadarrTitleForExternalId(q));
       }
       if (cats.some((c) => LIDARR_CATEGORY_IDS.has(c))) {
-        return state.getByExternalId("audio", getLidarrTitleForExternalId(q));
+        // Lidarr has stripped umlauts and punctuation from `q` already (see
+        // lidarrQueryTitle); the stored keys are built the same way.
+        return state.getByExternalId("audio", lidarrSearchKey(q));
       }
       return null;
     }

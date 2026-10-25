@@ -68,7 +68,7 @@ vi.mock("@/domain/xml", async () => ({
 }));
 
 vi.mock("@/domain/normalization/index", () => ({
-  getLidarrTitleForExternalId: (s: string) => s,
+  lidarrSearchKey: (s: string) => `key:${s}`,
   getReadarrTitleForExternalId: (s: string) => s,
 }));
 
@@ -576,7 +576,9 @@ describe("handleSearch routing variants", () => {
       { type: "search" },
       { fetcher: fetcher as never },
     );
-    expect(mockState.getByExternalId).toHaveBeenCalledWith("audio", "Some Album");
+    // The lookup key is lidarrSearchKey(q), the same reduction the sync
+    // applies when it stores the album.
+    expect(mockState.getByExternalId).toHaveBeenCalledWith("audio", "key:Some Album");
   });
 });
 

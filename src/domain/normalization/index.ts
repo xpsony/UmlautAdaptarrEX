@@ -1,6 +1,7 @@
 export * from "./accents";
 export * from "./clean";
 export * from "./comparison";
+export * from "./lidarr";
 
 import {escapeRegex} from "../matching/separator";
 import {getActiveLanguagePack, type LanguagePack} from "../plugins";
@@ -25,23 +26,12 @@ export function stripLeadingArticle(
     return input.replace(re, "");
 }
 
-export function getLidarrTitleForExternalId(
-    title: string,
-    pack: LanguagePack = getActiveLanguagePack(),
-): string {
-    return removeAccentButKeepDiacritics(
-        stripLeadingArticle(title, pack),
-        pack,
-    ).trim();
-}
-
 export function getReadarrTitleForExternalId(
     title: string,
     pack: LanguagePack = getActiveLanguagePack(),
 ): string {
-    // Honor the active language pack's article list (German/French/...), like
-    // the sibling `getLidarrTitleForExternalId`, instead of stripping only the
-    // English "the".
+    // Honor the active language pack's article list (German/French/...)
+    // instead of stripping only the English "the".
     const noArticle = stripLeadingArticle(title, pack);
     const sepReplaced = noArticle.replace(/[.\-:]/g, " ").replace(/\s+/g, " ");
     return removeAccentButKeepDiacritics(sepReplaced, pack).trim();
