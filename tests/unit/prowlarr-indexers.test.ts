@@ -5,6 +5,7 @@ import {
   applyPatchToRaw,
   computePatchPlan,
   detachTagIds,
+  fetchProwlarrIndexerHosts,
   fetchProwlarrIndexers,
   findOtherProxies,
   flipScheme,
@@ -267,6 +268,27 @@ describe("Prowlarr indexer calls", () => {
       [1, true, [{ name: "UmlautAdaptarr", tags: ["umlautadaptarr"] }]],
       [2, true, []],
     ]);
+  });
+
+  it("lists indexer names with the host of their base URL", async () => {
+    const pool = mockAgent.get(HOST);
+    pool.intercept({ path: "/api/v1/indexer", method: "GET" }).reply(200, [
+      raw({
+        id: 1,
+        name: "Indexer One",
+        fields: [{ name: "baseUrl", value: "https://Idx.test:8443/api" }],
+      }),
+      raw({ id: 2, name: "Tracker", fields: [] }),
+    ]);
+    expect(await fetchProwlarrIndexerHosts(HOST, "key-12345678", "test")).toEqual([
+      { host: "idx.test:8443", name: "Indexer One" },
+    ]);
+  });
+
+  it("returns no hosts when Prowlarr cannot be reached", async () => {
+    const pool = mockAgent.get(HOST);
+    pool.intercept({ path: "/api/v1/indexer", method: "GET" }).reply(500, "boom");
+    expect(await fetchProwlarrIndexerHosts(HOST, "key-12345678", "test")).toEqual([]);
   });
 
   it("still lists indexers when the proxy list cannot be read", async () => {

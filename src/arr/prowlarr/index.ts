@@ -14,6 +14,7 @@ export {
 } from "./install-proxy";
 
 export {
+  fetchProwlarrIndexerHosts,
   fetchProwlarrIndexers,
   reconcileIndexerPatches,
   type FetchIndexersResult,

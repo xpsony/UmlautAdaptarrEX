@@ -437,3 +437,33 @@ export async function reconcileIndexerPatches(
   }
   return { ok: true, results };
 }
+
+/**
+ * Name and base-URL host of every Prowlarr indexer that has a base URL, for
+ * labelling hosts in the per-indexer settings. The host is lower-cased with a
+ * non-default port kept, the form RequestHistory.domain uses. Fails soft: no
+ * names is better than no list.
+ */
+export async function fetchProwlarrIndexerHosts(
+  host: string,
+  apiKey: string,
+  ua: string,
+  logger?: CompatLogger,
+): Promise<{ host: string; name: string }[]> {
+  const res = await fetchRawIndexers(makeCtx(host, apiKey, ua, logger));
+  if (!res.ok || !Array.isArray(res.data)) return [];
+  const out: { host: string; name: string }[] = [];
+  for (const raw of res.data) {
+    const baseUrl = getBaseUrlValue(raw);
+    if (!baseUrl || !isPatchableUrl(baseUrl)) continue;
+    let urlHost: string;
+    try {
+      urlHost = new URL(baseUrl).host.toLowerCase();
+    } catch {
+      continue;
+    }
+    const name = typeof raw.name === "string" && raw.name ? raw.name : `#${raw.id}`;
+    out.push({ host: urlHost, name });
+  }
+  return out;
+}
