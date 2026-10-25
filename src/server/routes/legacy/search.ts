@@ -5,7 +5,12 @@ import {
   getLidarrTitleForExternalId,
   getReadarrTitleForExternalId,
 } from "@/domain/normalization/index";
-import { aggregateIndexerResponses, rewriteIndexerXml } from "@/domain/xml";
+import {
+  aggregateIndexerResponses,
+  type NewznabError,
+  parseNewznabError,
+  rewriteIndexerXml,
+} from "@/domain/xml";
 import type { IndexerFetcher } from "@/server/proxy/indexer-fetcher";
 import { type AppState, type CachedSearchItem, getAppState } from "@/server/state";
 import { type OnDemandRequest, resolveOnDemand } from "@/server/on-demand/resolve";
@@ -338,7 +343,22 @@ export async function handleSearch(
     cacheHit = cacheHit && main.cacheHit;
 
     let initialBody = main.body.toString("utf8");
-    if (lastStatus === 200) {
+    // A limit hit ("Request limit reached") or a rejected key arrives as an
+    // HTTP 200 error document. It is passed through untouched so Prowlarr sees
+    // it and backs off, and no variation search is spent on top of it.
+    const upstreamError = lastStatus === 200 ? parseNewznabError(initialBody) : null;
+    if (upstreamError) {
+      req.log.info(
+        {
+          domain: ctx.domain,
+          route: spec.type,
+          query: q,
+          code: upstreamError.code,
+          description: upstreamError.description,
+        },
+        "indexer returned an error, variation search skipped",
+      );
+    } else if (lastStatus === 200) {
       initialBody = rewriteResponse(initialBody);
     }
 
@@ -355,6 +375,7 @@ export async function handleSearch(
     if (
       fanoutItem &&
       lastStatus === 200 &&
+      !upstreamError &&
       fanoutItem.expectedTitle &&
       !isPaused &&
       fanoutEnabled
@@ -376,6 +397,7 @@ export async function handleSearch(
       // limit wait + fetch timeout) can still push the total past the budget.
       const deadlineMs = state.settings.indexerTimeoutSeconds * 1000 * 0.75;
       let deadlineHit = false;
+      let variationError: NewznabError | null = null;
       let fetched = 0;
       for (const variation of variations) {
         if (Date.now() - start > deadlineMs) {
@@ -392,8 +414,29 @@ export async function handleSearch(
         });
         cacheHit = cacheHit && extra.cacheHit;
         if (extra.status === 200 && extra.body.length > 0) {
-          responses.push(rewriteResponse(extra.body.toString("utf8")));
+          const body = extra.body.toString("utf8");
+          // The limit was hit mid fan-out: every further variation would get
+          // the same answer. The error document is also kept out of the
+          // aggregate, which would otherwise return it instead of the results
+          // collected so far.
+          variationError = parseNewznabError(body);
+          if (variationError) break;
+          responses.push(rewriteResponse(body));
         }
+      }
+      if (variationError) {
+        req.log.info(
+          {
+            domain: ctx.domain,
+            route: spec.type,
+            query: q,
+            requested,
+            fetched,
+            code: variationError.code,
+            description: variationError.description,
+          },
+          "indexer returned an error, variation search stopped",
+        );
       }
       // A cap that simply did what it was configured to do is not a warning -
       // with the default of 1 it is the normal outcome for any item with more

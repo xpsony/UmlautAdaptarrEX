@@ -59,9 +59,12 @@ const { mockRewrite, mockAggregate } = vi.hoisted(() => ({
   mockAggregate: vi.fn((bodies: string[]) => bodies.join("|")),
 }));
 
-vi.mock("@/domain/xml", () => ({
+vi.mock("@/domain/xml", async () => ({
   rewriteIndexerXml: mockRewrite,
   aggregateIndexerResponses: mockAggregate,
+  parseNewznabError: (
+    await vi.importActual<typeof import("@/domain/xml/error")>("@/domain/xml/error")
+  ).parseNewznabError,
 }));
 
 vi.mock("@/domain/normalization/index", () => ({
@@ -449,6 +452,63 @@ describe("handleSearch with a searchItem", () => {
     } finally {
       dateNowSpy.mockRestore();
     }
+  });
+});
+
+describe("handleSearch with an indexer error document", () => {
+  const LIMIT = `<?xml version="1.0" encoding="UTF-8"?>\n<error code="500" description="Request limit reached"/>`;
+  const item = {
+    id: "i1",
+    mediaType: "tv",
+    expectedTitle: "Realm of Ravens",
+    titleSearchVariations: ["Lied der Schwarzen Raben", "Rabenlied"],
+    titleMatchVariations: ["Realm of Ravens", "Lied der Schwarzen Raben"],
+    authorMatchVariations: [],
+  };
+  const ok = (body: string) => ({
+    status: 200,
+    contentType: "application/xml",
+    body: Buffer.from(body),
+    cacheHit: false,
+  });
+  const run = async (fetcher: FakeFetcher) => {
+    mockState.getByExternalId.mockReturnValue(item);
+    mockState.toRewriteSearchItem.mockReturnValue({});
+    const reply = makeReply();
+    await handleSearch(
+      {
+        ...makeReq(),
+        url: "/key/host.example/api?t=tvsearch&tvdbid=121361&q=Realm+of+Ravens",
+      } as never,
+      reply as never,
+      { type: "tvsearch" },
+      { fetcher: fetcher as never },
+    );
+    return reply;
+  };
+
+  it("passes a 200 error document through untouched and skips the variation search", async () => {
+    const fetcher: FakeFetcher = { fetch: vi.fn().mockResolvedValue(ok(LIMIT)) };
+    const reply = await run(fetcher);
+    expect(fetcher.fetch).toHaveBeenCalledOnce();
+    expect(mockRewrite).not.toHaveBeenCalled();
+    expect(reply._statusCode).toBe(200);
+    expect(reply._payload).toBe(LIMIT);
+  });
+
+  it("stops the variation search at the first error and keeps it out of the aggregate", async () => {
+    const fetcher: FakeFetcher = {
+      fetch: vi
+        .fn()
+        .mockResolvedValueOnce(ok("<rss>main</rss>"))
+        .mockResolvedValueOnce(ok("<rss>v1</rss>"))
+        .mockResolvedValueOnce(ok(LIMIT))
+        .mockResolvedValue(ok("<rss>never</rss>")),
+    };
+    const reply = await run(fetcher);
+    expect(fetcher.fetch).toHaveBeenCalledTimes(3);
+    expect(mockAggregate).toHaveBeenCalledWith(["<rss>v1</rss>", "<rss>main</rss>"]);
+    expect(reply._payload).toBe("<rss>v1</rss>|<rss>main</rss>");
   });
 });
 

@@ -152,7 +152,6 @@
     },
     "patchStepTitle": "Patcher les indexeurs",
     "patchStepSkip": "Ignorer",
-    "patchIndexersDone": "Indexeurs patchés.",
     "searchStepTitle": "Comportement de recherche",
     "searchStepHint": "Ces options déterminent la façon dont UmlautAdaptarrEX recherche. Chacune indique son exemple et son coût."
   },
@@ -578,12 +577,18 @@
       "patchStatusUnpatched": "non patché",
       "patchNotPatchable": "Pas d'URL de base modifiable - impossible à patcher.",
       "patchUnsupportedApi": "Pas une API Newznab/Torznab ({implementation}) - non corrigeable via le proxy.",
+      "patchOtherProxyTitle": "Certains indexeurs sont encore rattachés à un autre proxy",
+      "patchOtherProxyBody": "{count, plural, one {# indexeur porte} other {# indexeurs portent}} aussi le tag d'un autre proxy : {proxies}. Prowlarr ne fait passer chaque indexeur que par un seul proxy, en général celui créé en premier. Pour que les recherches passent par UmlautAdaptarrEX, l'ancien tag doit disparaître : cochez « retirer » ci-dessous (uniquement pour les indexeurs sélectionnés) ou retirez le tag vous-même dans Prowlarr. Par défaut, rien ne change, afin qu'une migration progressive reste possible. L'autre proxy lui-même n'est jamais supprimé.",
+      "patchOtherProxyEntry": "{name} (tag : {tags})",
+      "patchOtherProxyLine": "Aussi rattaché à {name} (tag : {tags})",
+      "patchOtherProxyRemove": "retirer",
       "patchApply": "Appliquer",
       "patchApplying": "Application en cours…",
       "patchEmpty": "Aucun indexeur trouvé dans Prowlarr.",
       "patchLoadFailed": "Impossible de charger les indexeurs : {error}",
       "patchResult": "{patched} patché(s), {unpatched} réinitialisé(s), {unchanged} inchangé(s), {skipped} ignoré(s), {failed} échoué(s).",
       "patchResultFailedDetail": "Échec : {names}",
+      "patchResultDetached": "Le tag d'un autre proxy a été retiré de {count, plural, one {un indexeur} other {# indexeurs}}.",
       "patchRetry": "Réessayer"
     },
     "renaming": {

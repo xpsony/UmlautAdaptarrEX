@@ -131,6 +131,8 @@ export function SetupClient({ initialStatus }: { initialStatus: SetupStatus }) {
             submitting={w.patchSubmitting}
             onToggle={w.togglePatchIndexer}
             onToggleAll={w.togglePatchAll}
+            detachIds={w.patchDetachIds}
+            onToggleDetach={w.togglePatchDetach}
             onSkip={w.skipPatchIndexers}
             onSubmit={w.submitPatchIndexers}
           />

@@ -152,7 +152,6 @@
     },
     "patchStepTitle": "Patcha indexerare",
     "patchStepSkip": "Hoppa över",
-    "patchIndexersDone": "Indexerare patchade.",
     "searchStepTitle": "Sökbeteende",
     "searchStepHint": "Dessa alternativ styr hur UmlautAdaptarrEX söker. Varje alternativ anger sitt exempel och sin kostnad."
   },
@@ -578,12 +577,18 @@
       "patchStatusUnpatched": "inte patchad",
       "patchNotPatchable": "Ingen redigerbar bas-URL - kan inte patchas.",
       "patchUnsupportedApi": "Inte ett Newznab/Torznab-API ({implementation}) - kan inte korrigeras via proxyn.",
+      "patchOtherProxyTitle": "Vissa indexerare är fortfarande kopplade till en annan proxy",
+      "patchOtherProxyBody": "{count, plural, one {# indexerare har} other {# indexerare har}} även taggen för en annan proxy: {proxies}. Prowlarr skickar varje indexerare genom endast en proxy, oftast den som skapades först. För att sökningarna ska gå via UmlautAdaptarrEX måste den gamla taggen bort: kryssa i ”ta bort” nedan (endast för valda indexerare) eller ta bort taggen i Prowlarr själv. Som standard förblir allt som det är, så att ett stegvis byte förblir möjligt. Den andra proxyn tas aldrig bort.",
+      "patchOtherProxyEntry": "{name} (tagg: {tags})",
+      "patchOtherProxyLine": "Även kopplad till {name} (tagg: {tags})",
+      "patchOtherProxyRemove": "ta bort",
       "patchApply": "Tillämpa",
       "patchApplying": "Tillämpar…",
       "patchEmpty": "Inga indexerare hittades i Prowlarr.",
       "patchLoadFailed": "Kunde inte läsa in indexerare: {error}",
       "patchResult": "{patched} patchade, {unpatched} återställda, {unchanged} oförändrade, {skipped} överhoppade, {failed} misslyckade.",
       "patchResultFailedDetail": "Misslyckades: {names}",
+      "patchResultDetached": "Taggen för en annan proxy togs bort från {count, plural, one {en indexerare} other {# indexerare}}.",
       "patchRetry": "Försök igen"
     },
     "renaming": {

@@ -456,7 +456,7 @@ describe("POST /api/admin/instances/prowlarr/indexers/patch", () => {
       "https://prowlarr.test",
       "key12345",
       "UA",
-      [1],
+      { selectedIds: [1], detachIds: [] },
       expect.anything(),
     );
   });

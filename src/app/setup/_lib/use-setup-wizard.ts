@@ -12,6 +12,7 @@ import {
   type SearchBehaviourValues,
 } from "@/app/(admin)/settings/_lib/settings-types";
 import type {
+  PatchIndexersResponse,
   ProwlarrIndexerView,
   ProwlarrParsedApp,
   ProwlarrPreviewResult,
@@ -23,6 +24,7 @@ import type { PluginListEntry } from "@/schemas/plugins";
 import { isMaskedSecret } from "@/lib/secrets";
 import { ApiError, apiFetch } from "@/app/_lib/api-client";
 import { describeError } from "@/lib/error-format";
+import { toastPatchResult } from "@/components/instances/prowlarr-patch-summary";
 import {
   AdminSchema,
   type AdminFormInput,
@@ -44,6 +46,7 @@ import {
 export function useSetupWizard(initialStatus: SetupStatus) {
   const t = useTranslations("setup");
   const tProw = useTranslations("instances.prowlarr");
+  const tPatch = useTranslations("settings.prowlarr");
   const router = useRouter();
 
   const [step, setStep] = useState<Step>("admin");
@@ -76,6 +79,8 @@ export function useSetupWizard(initialStatus: SetupStatus) {
 
   const [patchIndexers, setPatchIndexers] = useState<ProwlarrIndexerView[]>([]);
   const [patchSelectedIds, setPatchSelectedIds] = useState<Set<number>>(new Set());
+  // Opt-in per indexer: other proxies' tags are only removed where ticked.
+  const [patchDetachIds, setPatchDetachIds] = useState<Set<number>>(new Set());
   const [patchLoading, setPatchLoading] = useState(false);
   const [patchSubmitting, setPatchSubmitting] = useState(false);
 
@@ -496,6 +501,15 @@ export function useSetupWizard(initialStatus: SetupStatus) {
     );
   };
 
+  const togglePatchDetach = (id: number) => {
+    setPatchDetachIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   const finishAfterPatch = () => {
     if (importedInstancesCount > 0) setStep("sync");
     else router.push("/dashboard");
@@ -504,11 +518,17 @@ export function useSetupWizard(initialStatus: SetupStatus) {
   const submitPatchIndexers = async () => {
     setPatchSubmitting(true);
     try {
-      await apiFetch("/api/admin/instances/prowlarr/indexers/patch", {
-        method: "POST",
-        body: JSON.stringify({ selectedIds: Array.from(patchSelectedIds) }),
-      });
-      toast.success(t("patchIndexersDone"));
+      const res = await apiFetch<PatchIndexersResponse>(
+        "/api/admin/instances/prowlarr/indexers/patch",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            selectedIds: Array.from(patchSelectedIds),
+            detachIds: Array.from(patchDetachIds).filter((id) => patchSelectedIds.has(id)),
+          }),
+        },
+      );
+      toastPatchResult(tPatch, res);
     } catch (err) {
       toast.error(tProw("fetchFailed", { error: describeError(err) }));
     } finally {
@@ -728,6 +748,8 @@ export function useSetupWizard(initialStatus: SetupStatus) {
     patchSubmitting,
     togglePatchIndexer,
     togglePatchAll,
+    patchDetachIds,
+    togglePatchDetach,
     submitPatchIndexers,
     skipPatchIndexers,
     // sync

@@ -152,7 +152,6 @@
     },
     "patchStepTitle": "Indexer patchen",
     "patchStepSkip": "Überspringen",
-    "patchIndexersDone": "Indexer wurden gepatcht.",
     "searchStepTitle": "Suchverhalten",
     "searchStepHint": "Diese Optionen bestimmen, wie UmlautAdaptarrEX sucht. Jede nennt ihr Beispiel und ihre Kosten."
   },
@@ -578,12 +577,18 @@
       "patchStatusUnpatched": "nicht gepatcht",
       "patchNotPatchable": "Keine editierbare Basis-URL - kann nicht gepatcht werden.",
       "patchUnsupportedApi": "Keine Newznab/Torznab-API ({implementation}) - über den Proxy nicht korrigierbar.",
+      "patchOtherProxyTitle": "Einige Indexer hängen noch an einem anderen Proxy",
+      "patchOtherProxyBody": "{count, plural, one {# Indexer trägt} other {# Indexer tragen}} zusätzlich den Tag eines anderen Proxys: {proxies}. Prowlarr leitet jeden Indexer nur über einen Proxy, in der Regel über den zuerst angelegten. Damit die Suche über UmlautAdaptarrEX läuft, muss der alte Tag weg: Setze dafür unten bei „entfernen“ einen Haken (nur bei ausgewählten Indexern möglich) oder nimm den Tag in Prowlarr selbst ab. Standardmäßig bleibt alles, wie es ist, damit ein schrittweiser Umstieg möglich bleibt. Der andere Proxy selbst wird nie gelöscht.",
+      "patchOtherProxyEntry": "{name} (Tag: {tags})",
+      "patchOtherProxyLine": "Hängt zusätzlich an {name} (Tag: {tags})",
+      "patchOtherProxyRemove": "entfernen",
       "patchApply": "Anwenden",
       "patchApplying": "Wird angewendet…",
       "patchEmpty": "Keine Indexer in Prowlarr gefunden.",
       "patchLoadFailed": "Indexer konnten nicht geladen werden: {error}",
       "patchResult": "{patched} gepatcht, {unpatched} zurückgesetzt, {unchanged} unverändert, {skipped} übersprungen, {failed} fehlgeschlagen.",
       "patchResultFailedDetail": "Fehlgeschlagen: {names}",
+      "patchResultDetached": "{count, plural, one {Bei einem Indexer wurde} other {Bei # Indexern wurde}} der Tag eines anderen Proxys entfernt.",
       "patchRetry": "Erneut versuchen"
     },
     "renaming": {

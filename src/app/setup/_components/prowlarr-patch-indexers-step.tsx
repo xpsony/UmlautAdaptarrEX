@@ -15,6 +15,8 @@ interface ProwlarrPatchIndexersStepProps {
   submitting: boolean;
   onToggle: (id: number) => void;
   onToggleAll: (checked: boolean) => void;
+  detachIds: Set<number>;
+  onToggleDetach: (id: number) => void;
   onSkip: () => void;
   onSubmit: () => void;
 }
@@ -26,6 +28,8 @@ export function ProwlarrPatchIndexersStep({
   submitting,
   onToggle,
   onToggleAll,
+  detachIds,
+  onToggleDetach,
   onSkip,
   onSubmit,
 }: ProwlarrPatchIndexersStepProps): React.ReactElement {
@@ -47,6 +51,8 @@ export function ProwlarrPatchIndexersStep({
             selectedIds={selectedIds}
             onToggle={onToggle}
             onToggleAll={onToggleAll}
+            detachIds={detachIds}
+            onToggleDetach={onToggleDetach}
           />
         )}
       </CardContent>

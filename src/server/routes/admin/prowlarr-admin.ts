@@ -283,13 +283,7 @@ async function postPatchIndexers(req: FastifyRequest, reply: FastifyReply): Prom
   const creds = await loadStoredProwlarrCreds(reply);
   if (!creds) return;
   const ua = getAppState().settings.userAgent;
-  const result = await reconcileIndexerPatches(
-    creds.host,
-    creds.apiKey,
-    ua,
-    data.selectedIds,
-    req.log,
-  );
+  const result = await reconcileIndexerPatches(creds.host, creds.apiKey, ua, data, req.log);
   if (!result.ok) {
     return replyProwlarrUpstreamError(reply, result, "patch_failed");
   }
