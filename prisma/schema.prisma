@@ -102,6 +102,11 @@ model Setting {
   // gepinnt, weil der Sprung sonst ungefragt Indexer-Last erzeugt.
   tvVariationSearch         Boolean   @default(true)
   movieVariationSearch      Boolean   @default(true)
+  // Music (Lidarr) and books & audiobooks (Readarr, Listenarr) used to follow
+  // movieVariationSearch. Fresh installs get `true`; the migration copies the
+  // film switch into both for existing installs.
+  audioVariationSearch      Boolean   @default(true)
+  bookVariationSearch       Boolean   @default(true)
   // Obergrenze der deutschen Titelvarianten pro Suche. Das literale Suchwort
   // und der Originaltitel kommen obendrauf, der Worst Case ist also N+2.
   maxTitleVariations        Int       @default(1)
@@ -369,4 +374,17 @@ model TitleOverride {
   updatedAt   DateTime @updatedAt
 
   @@unique([mediaType, externalId])
+}
+
+// Per-indexer override of the variation-search switches. A row means "custom
+// setting for this host"; no row means the global Setting switches apply.
+// `host` is the indexer host as RequestHistory.domain stores it, lower-cased,
+// port kept.
+model IndexerSetting {
+  host      String   @id
+  tv        Boolean
+  movie     Boolean
+  audio     Boolean
+  book      Boolean
+  updatedAt DateTime @updatedAt
 }
