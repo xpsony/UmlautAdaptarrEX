@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronDown, Info, ShieldCheck } from "lucide-react";
-import type { ProwlarrIndexerView } from "@/schemas/prowlarr";
+import { ChevronDown, Info, ShieldCheck, TriangleAlert } from "lucide-react";
+import type { ProwlarrIndexerView, ProwlarrOtherProxy } from "@/schemas/prowlarr";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -14,6 +14,23 @@ interface IndexerPatchListProps {
   selectedIds: Set<number>;
   onToggle: (id: number) => void;
   onToggleAll: (checked: boolean) => void;
+  /** Indexers whose tags of other proxies should come off (opt-in). */
+  detachIds: Set<number>;
+  onToggleDetach: (id: number) => void;
+}
+
+// One entry per foreign proxy across all indexers, with the union of the tags
+// it shares with them, e.g. "UmlautAdaptarr (Tag: umlautadaptarr)".
+function collectOtherProxies(indexers: ProwlarrIndexerView[]): ProwlarrOtherProxy[] {
+  const byName = new Map<string, Set<string>>();
+  for (const ix of indexers) {
+    for (const p of ix.otherProxies) {
+      const tags = byName.get(p.name) ?? new Set<string>();
+      for (const tag of p.tags) tags.add(tag);
+      byName.set(p.name, tags);
+    }
+  }
+  return Array.from(byName, ([name, tags]) => ({ name, tags: Array.from(tags) }));
 }
 
 // Shared, data-source-agnostic list used by both the settings dialog and the
@@ -26,12 +43,16 @@ export function IndexerPatchList({
   selectedIds,
   onToggle,
   onToggleAll,
+  detachIds,
+  onToggleDetach,
 }: IndexerPatchListProps): React.ReactElement {
   const t = useTranslations("settings.prowlarr");
   const [open, setOpen] = useState(false);
 
   const patchable = indexers.filter((i) => i.patchable);
   const allSelected = patchable.length > 0 && patchable.every((i) => selectedIds.has(i.id));
+  const conflicted = indexers.filter((i) => i.otherProxies.length > 0);
+  const otherProxies = collectOtherProxies(conflicted);
 
   return (
     <div className="space-y-4">
@@ -61,6 +82,27 @@ export function IndexerPatchList({
           </div>
         </div>
       </div>
+
+      {conflicted.length > 0 ? (
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+          <div className="flex items-start gap-2">
+            <TriangleAlert className="mt-0.5 h-4 w-4 shrink-0" />
+            <div className="space-y-1">
+              <p className="font-medium">{t("patchOtherProxyTitle")}</p>
+              <p>
+                {t("patchOtherProxyBody", {
+                  count: conflicted.length,
+                  proxies: otherProxies
+                    .map((p) =>
+                      t("patchOtherProxyEntry", { name: p.name, tags: p.tags.join(", ") }),
+                    )
+                    .join("; "),
+                })}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {indexers.length === 0 ? (
         <p className="text-sm text-muted-foreground">{t("patchEmpty")}</p>
@@ -102,6 +144,9 @@ export function IndexerPatchList({
                   </Badge>
                 </label>
               );
+              // Detaching only makes sense for an indexer that ends up on our
+              // proxy; the server enforces the same rule.
+              const canDetach = selectedIds.has(ix.id) && interactive;
               return (
                 <li key={ix.id}>
                   {ix.patchable ? (
@@ -118,6 +163,31 @@ export function IndexerPatchList({
                       </TooltipContent>
                     </Tooltip>
                   )}
+                  {ix.otherProxies.length > 0 ? (
+                    <div className="flex items-center gap-2 pr-3 pb-2 pl-10 text-xs text-amber-700 dark:text-amber-300">
+                      <TriangleAlert className="h-3.5 w-3.5 shrink-0" />
+                      <span className="flex-1">
+                        {ix.otherProxies
+                          .map((p) =>
+                            t("patchOtherProxyLine", { name: p.name, tags: p.tags.join(", ") }),
+                          )
+                          .join("; ")}
+                      </span>
+                      <label
+                        className={cn(
+                          "flex items-center gap-1.5",
+                          canDetach ? "cursor-pointer" : "cursor-not-allowed opacity-60",
+                        )}
+                      >
+                        <Checkbox
+                          checked={canDetach && detachIds.has(ix.id)}
+                          disabled={!canDetach}
+                          onCheckedChange={() => onToggleDetach(ix.id)}
+                        />
+                        {t("patchOtherProxyRemove")}
+                      </label>
+                    </div>
+                  ) : null}
                 </li>
               );
             })}

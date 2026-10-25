@@ -7,9 +7,9 @@ import type { OperationMode } from "@/components/operation-mode-picker";
 // Per-tab field subsets of SettingsUpdateSchema (Epic 6 / Task 7): the
 // settings form was split into one RHF instance per tab so a dirty edit in
 // tab A no longer keeps tab B's Save button enabled, and each Save only PUTs
-// the fields that tab actually owns. `SettingsUpdateSchema` is already
-// `SettingsSchema.partial()`, so every field here stays optional and a
-// partial PUT is a no-op change on the server.
+// the fields that tab actually owns. `SettingsUpdateSchema` is
+// `SettingsSchema.partial()` with the defaults stripped, so every field here
+// stays optional and an omitted field is left untouched on the server.
 export const GeneralSettingsSchema = SettingsUpdateSchema.pick({
   proxyUsername: true,
   proxyPassword: true,
@@ -60,7 +60,12 @@ export const SearchSettingsSchema = SettingsUpdateSchema.pick({
   onDemandLookup: true,
   tvVariationSearch: true,
   movieVariationSearch: true,
-  maxTitleVariations: true,
+  audioVariationSearch: true,
+  bookVariationSearch: true,
+  tvMaxTitleVariations: true,
+  movieMaxTitleVariations: true,
+  audioMaxTitleVariations: true,
+  bookMaxTitleVariations: true,
   syncIntervalMinutes: true,
   fullSyncIntervalHours: true,
 });
@@ -70,7 +75,7 @@ export type SearchFormOutput = z.infer<typeof SearchSettingsSchema>;
 export type SearchForm = UseFormReturn<SearchFormInput, unknown, SearchFormOutput>;
 
 /**
- * The six search fields with every value present. `SearchFormOutput` comes
+ * The search fields with every value present. `SearchFormOutput` comes
  * from a partial schema, so its fields are optional; the UI needs a shape
  * where they are not, and both the settings tab and the setup wizard render
  * against this one.
@@ -79,13 +84,18 @@ export interface SearchBehaviourValues {
   onDemandLookup: boolean;
   tvVariationSearch: boolean;
   movieVariationSearch: boolean;
-  maxTitleVariations: number;
+  audioVariationSearch: boolean;
+  bookVariationSearch: boolean;
+  tvMaxTitleVariations: number;
+  movieMaxTitleVariations: number;
+  audioMaxTitleVariations: number;
+  bookMaxTitleVariations: number;
   syncIntervalMinutes: number;
   fullSyncIntervalHours: number;
 }
 
 /**
- * The fresh-install values for the six search fields, used as placeholders
+ * The fresh-install values for the search fields, used as placeholders
  * until the settings query resolves. Derived from `SettingsSchema` rather
  * than restated, so the UI can never drift from the server defaults.
  */
@@ -95,19 +105,28 @@ export const SEARCH_DEFAULTS: SearchBehaviourValues = (() => {
     onDemandLookup: full.onDemandLookup,
     tvVariationSearch: full.tvVariationSearch,
     movieVariationSearch: full.movieVariationSearch,
-    maxTitleVariations: full.maxTitleVariations,
+    audioVariationSearch: full.audioVariationSearch,
+    bookVariationSearch: full.bookVariationSearch,
+    tvMaxTitleVariations: full.tvMaxTitleVariations,
+    movieMaxTitleVariations: full.movieMaxTitleVariations,
+    audioMaxTitleVariations: full.audioMaxTitleVariations,
+    bookMaxTitleVariations: full.bookMaxTitleVariations,
     syncIntervalMinutes: full.syncIntervalMinutes,
     fullSyncIntervalHours: full.fullSyncIntervalHours,
   };
 })();
 
-/** The two fan-out toggles, in the order the UI renders them. */
-export const VARIATION_TOGGLES = [
-  "tvVariationSearch",
-  "movieVariationSearch",
-] as const satisfies ReadonlyArray<keyof SearchFormOutput>;
-
-export type VariationToggle = (typeof VARIATION_TOGGLES)[number];
+/** Per media type the fan-out toggle and its cap, in the order the UI renders them. */
+export const VARIATION_TYPES = [
+  { mediaType: "tv", toggle: "tvVariationSearch", cap: "tvMaxTitleVariations" },
+  { mediaType: "movie", toggle: "movieVariationSearch", cap: "movieMaxTitleVariations" },
+  { mediaType: "audio", toggle: "audioVariationSearch", cap: "audioMaxTitleVariations" },
+  { mediaType: "book", toggle: "bookVariationSearch", cap: "bookMaxTitleVariations" },
+] as const satisfies ReadonlyArray<{
+  mediaType: string;
+  toggle: keyof SearchFormOutput;
+  cap: keyof SearchFormOutput;
+}>;
 
 /**
  * The worked example for the fan-out toggles: which extra queries actually go

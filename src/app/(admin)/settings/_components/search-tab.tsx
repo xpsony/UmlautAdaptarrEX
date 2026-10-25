@@ -8,6 +8,7 @@ import {
   type SearchBehaviourValues,
 } from "@/components/search-behaviour-fields";
 import { SaveBar } from "./save-bar";
+import { IndexerVariationCard } from "./indexer-variation-card";
 import { SEARCH_DEFAULTS } from "../_lib/settings-types";
 import type { SearchForm, SearchFormOutput } from "../_lib/settings-types";
 
@@ -30,7 +31,15 @@ export function SearchTab({ form, onSave, saving }: SearchTabProps) {
     onDemandLookup: watched.onDemandLookup ?? SEARCH_DEFAULTS.onDemandLookup,
     tvVariationSearch: watched.tvVariationSearch ?? SEARCH_DEFAULTS.tvVariationSearch,
     movieVariationSearch: watched.movieVariationSearch ?? SEARCH_DEFAULTS.movieVariationSearch,
-    maxTitleVariations: watched.maxTitleVariations ?? SEARCH_DEFAULTS.maxTitleVariations,
+    audioVariationSearch: watched.audioVariationSearch ?? SEARCH_DEFAULTS.audioVariationSearch,
+    bookVariationSearch: watched.bookVariationSearch ?? SEARCH_DEFAULTS.bookVariationSearch,
+    tvMaxTitleVariations: watched.tvMaxTitleVariations ?? SEARCH_DEFAULTS.tvMaxTitleVariations,
+    movieMaxTitleVariations:
+      watched.movieMaxTitleVariations ?? SEARCH_DEFAULTS.movieMaxTitleVariations,
+    audioMaxTitleVariations:
+      watched.audioMaxTitleVariations ?? SEARCH_DEFAULTS.audioMaxTitleVariations,
+    bookMaxTitleVariations:
+      watched.bookMaxTitleVariations ?? SEARCH_DEFAULTS.bookMaxTitleVariations,
     syncIntervalMinutes: watched.syncIntervalMinutes ?? SEARCH_DEFAULTS.syncIntervalMinutes,
     fullSyncIntervalHours: watched.fullSyncIntervalHours ?? SEARCH_DEFAULTS.fullSyncIntervalHours,
   };
@@ -46,21 +55,26 @@ export function SearchTab({ form, onSave, saving }: SearchTabProps) {
   };
 
   return (
-    <form id="search-form" onSubmit={form.handleSubmit(onSave)} className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Search className="h-4 w-4" />
-            {t("section.search")}
-          </CardTitle>
-          <CardDescription>{t("section.searchHint")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SearchBehaviourFields values={values} onChange={onChange} />
-        </CardContent>
-      </Card>
+    <div className="space-y-6">
+      <form id="search-form" onSubmit={form.handleSubmit(onSave)} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Search className="h-4 w-4" />
+              {t("section.search")}
+            </CardTitle>
+            <CardDescription>{t("section.searchHint")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SearchBehaviourFields values={values} onChange={onChange} />
+          </CardContent>
+        </Card>
 
-      <SaveBar form="search-form" pending={saving} dirty={form.formState.isDirty} />
-    </form>
+        <SaveBar form="search-form" pending={saving} dirty={form.formState.isDirty} />
+      </form>
+      {/* Outside the form: its controls save on their own and must neither
+          submit the form nor mark it dirty. */}
+      <IndexerVariationCard global={values} />
+    </div>
   );
 }

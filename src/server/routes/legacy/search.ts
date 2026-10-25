@@ -1,14 +1,17 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "@/lib/db";
 import { canonicalImdbId } from "@/lib/imdb-id";
+import { getReadarrTitleForExternalId, lidarrSearchKey } from "@/domain/normalization/index";
 import {
-  getLidarrTitleForExternalId,
-  getReadarrTitleForExternalId,
-} from "@/domain/normalization/index";
-import { aggregateIndexerResponses, rewriteIndexerXml } from "@/domain/xml";
+  aggregateIndexerResponses,
+  type NewznabError,
+  parseNewznabError,
+  rewriteIndexerXml,
+} from "@/domain/xml";
 import type { IndexerFetcher } from "@/server/proxy/indexer-fetcher";
 import { type AppState, type CachedSearchItem, getAppState } from "@/server/state";
 import { type OnDemandRequest, resolveOnDemand } from "@/server/on-demand/resolve";
+import { indexerHost } from "@/server/variation-gate";
 import {
   assertLegacyContext,
   buildIndexerUrl,
@@ -43,14 +46,20 @@ const READARR_CATEGORY_IDS = new Set([
 ]);
 const LIDARR_CATEGORY_IDS = new Set(["3000", "3010", "3020", "3040", "3050"]);
 
+// Listenarr identifies itself to the indexer as
+// `Listenarr/<version> (+https://github.com/Listenarrs/listenarr)`.
+const LISTENARR_USER_AGENT_PREFIX = "Listenarr/";
+
 // Reproduces SearchController's per-action upfront lookup. Returning null
 // means "no upfront searchItem" - rewrites still happen via per-item title
 // lookup against the cache (matches old `useCacheService = searchItem == null`
 // path in TitleMatchingService.RenameTitlesInContent).
-function determineSearchItem(
+// Exported for unit tests; the route itself is the only production caller.
+export function determineSearchItem(
   spec: RouteSpec,
   params: URLSearchParams,
   state: AppState,
+  userAgent: string,
 ): CachedSearchItem | null {
   const q = params.get("q");
   switch (spec.type) {
@@ -63,13 +72,25 @@ function determineSearchItem(
     case "search": {
       if (!q) return null;
       const cat = params.get("cat");
-      if (!cat) return null;
+      if (!cat) {
+        // Listenarr's indexer categories are optional, so a search can arrive
+        // with no `cat` at all. Its user agent is then the only signal that
+        // this is an audiobook query. Additive: without that signal we return
+        // null exactly as before and the per-item findByTitle fallback carries
+        // the rewrite.
+        if (userAgent.startsWith(LISTENARR_USER_AGENT_PREFIX)) {
+          return state.getByExternalId("book", getReadarrTitleForExternalId(q));
+        }
+        return null;
+      }
       const cats = cat.split(",").map((c) => c.trim());
       if (cats.some((c) => READARR_CATEGORY_IDS.has(c))) {
         return state.getByExternalId("book", getReadarrTitleForExternalId(q));
       }
       if (cats.some((c) => LIDARR_CATEGORY_IDS.has(c))) {
-        return state.getByExternalId("audio", getLidarrTitleForExternalId(q));
+        // Lidarr has stripped umlauts and punctuation from `q` already (see
+        // lidarrQueryTitle); the stored keys are built the same way.
+        return state.getByExternalId("audio", lidarrSearchKey(q));
       }
       return null;
     }
@@ -176,18 +197,43 @@ function matchedSearchItemId(item: CachedSearchItem | null): string | null {
 }
 
 /**
+ * The title-only spellings of a book, alternated with its "Author Title"
+ * spellings so a low cap still searches both kinds. The canonical title is
+ * left out: it already goes into the uncapped tail.
+ */
+function withTitleOnlyVariations(searchItem: CachedSearchItem): string[] {
+  const withAuthor = searchItem.titleSearchVariations;
+  const titleOnly = searchItem.titleMatchVariations.filter(
+    (v) => v !== searchItem.expectedTitle && !withAuthor.includes(v),
+  );
+  const out: string[] = [];
+  for (let i = 0; i < Math.max(withAuthor.length, titleOnly.length); i++) {
+    if (i < withAuthor.length) out.push(withAuthor[i]!);
+    if (i < titleOnly.length) out.push(titleOnly[i]!);
+  }
+  return Array.from(new Set(out));
+}
+
+/**
  * Mirrors SearchControllerBase.BaseSearch's variation list builder, split in
  * two so the cap can apply to the generated German variations alone.
  *
  * `tail` is the highest-value part of the list - the user's literal `q` and
  * the canonical `expectedTitle` - and is never subject to the cap. That is
  * why a cap of 3 means "three German variations", not "three requests".
+ *
+ * `searchWithoutAuthor` (a Readarr/Listenarr instance option) adds a book's
+ * title-only spellings to the generated part, so they count against the cap.
  */
 function buildVariationList(
   searchItem: CachedSearchItem,
   searchQuery: string,
+  searchWithoutAuthor: boolean,
 ): { generated: string[]; tail: string[] } {
-  const generated: string[] = [...searchItem.titleSearchVariations];
+  const generated: string[] =
+    searchWithoutAuthor && searchItem.mediaType === "book"
+      ? withTitleOnlyVariations(searchItem)
+      : [...searchItem.titleSearchVariations];
   const tail: string[] = [];
   if (searchQuery) {
     // Old behavior: if the query is already in the alias list, drop it (the
@@ -224,7 +270,8 @@ export async function handleSearch(
   const q = params.get("q");
 
   const state = getAppState();
-  let searchItem = determineSearchItem(spec, params, state);
+  const userAgent = String(req.headers["user-agent"] ?? "");
+  let searchItem = determineSearchItem(spec, params, state, userAgent);
   let fanoutItem = resolveFanoutItem(spec, params, state, searchItem);
   // While paused, the legacy path becomes a transparent pass-through: no
   // outbound variation fan-out and no response-XML rewriting. Logging and
@@ -244,7 +291,6 @@ export async function handleSearch(
     ? resolveOnDemand(onDemandTarget, { state, logger: req.log })
     : null;
 
-  const userAgent = String(req.headers["user-agent"] ?? "");
   const responses: string[] = [];
   let lastStatus = 200;
   let lastContentType = "application/xml";
@@ -322,29 +368,48 @@ export async function handleSearch(
     cacheHit = cacheHit && main.cacheHit;
 
     let initialBody = main.body.toString("utf8");
-    if (lastStatus === 200) {
+    // A limit hit ("Request limit reached") or a rejected key arrives as an
+    // HTTP 200 error document. It is passed through untouched so Prowlarr sees
+    // it and backs off, and no variation search is spent on top of it.
+    const upstreamError = lastStatus === 200 ? parseNewznabError(initialBody) : null;
+    if (upstreamError) {
+      req.log.info(
+        {
+          domain: ctx.domain,
+          route: spec.type,
+          query: q,
+          code: upstreamError.code,
+          description: upstreamError.description,
+        },
+        "indexer returned an error, variation search skipped",
+      );
+    } else if (lastStatus === 200) {
       initialBody = rewriteResponse(initialBody);
     }
 
     // Match SearchControllerBase.BaseSearch ordering: aggregate variations
     // first, then merge the initial response last so dedup keeps variation
     // hits ahead of the (typically less specific) original query.
-    // Per-media-type gate: German variation search is opt-out for series
-    // (today's behaviour) and, for existing installs, opt-in for movies.
+    // Per media type (Settings -> Search) and per indexer: a custom indexer
+    // setting overrides the global switches for its host.
     const fanoutEnabled = fanoutItem
-      ? fanoutItem.mediaType === "tv"
-        ? state.settings.tvVariationSearch
-        : state.settings.movieVariationSearch
+      ? state.variationSearchEnabled(indexerHost(ctx.domain), fanoutItem.mediaType)
       : false;
     if (
       fanoutItem &&
       lastStatus === 200 &&
+      !upstreamError &&
       fanoutItem.expectedTitle &&
       !isPaused &&
       fanoutEnabled
     ) {
-      const { generated, tail } = buildVariationList(fanoutItem, q ?? "");
-      const cap = state.settings.maxTitleVariations;
+      const { generated, tail } = buildVariationList(
+        fanoutItem,
+        q ?? "",
+        state.getInstanceOptions(fanoutItem.arrInstanceId).searchWithoutAuthor,
+      );
+      // Per media type and per indexer, with the same precedence as the switch.
+      const cap = state.variationCap(indexerHost(ctx.domain), fanoutItem.mediaType);
       const capped = generated.length > cap;
       // The cap applies to the generated German variations only; the tail
       // (the literal `q` / the canonical `expectedTitle`) is the
@@ -360,6 +425,7 @@ export async function handleSearch(
       // limit wait + fetch timeout) can still push the total past the budget.
       const deadlineMs = state.settings.indexerTimeoutSeconds * 1000 * 0.75;
       let deadlineHit = false;
+      let variationError: NewznabError | null = null;
       let fetched = 0;
       for (const variation of variations) {
         if (Date.now() - start > deadlineMs) {
@@ -376,8 +442,29 @@ export async function handleSearch(
         });
         cacheHit = cacheHit && extra.cacheHit;
         if (extra.status === 200 && extra.body.length > 0) {
-          responses.push(rewriteResponse(extra.body.toString("utf8")));
+          const body = extra.body.toString("utf8");
+          // The limit was hit mid fan-out: every further variation would get
+          // the same answer. The error document is also kept out of the
+          // aggregate, which would otherwise return it instead of the results
+          // collected so far.
+          variationError = parseNewznabError(body);
+          if (variationError) break;
+          responses.push(rewriteResponse(body));
         }
+      }
+      if (variationError) {
+        req.log.info(
+          {
+            domain: ctx.domain,
+            route: spec.type,
+            query: q,
+            requested,
+            fetched,
+            code: variationError.code,
+            description: variationError.description,
+          },
+          "indexer returned an error, variation search stopped",
+        );
       }
       // A cap that simply did what it was configured to do is not a warning -
       // with the default of 1 it is the normal outcome for any item with more

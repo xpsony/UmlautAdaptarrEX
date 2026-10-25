@@ -40,6 +40,12 @@ const proxyPasswordInput = z
   )
   .optional();
 
+/**
+ * The cap on German title variations per search. Shared by the global
+ * per-type caps, the setup wizard and the per-indexer rows.
+ */
+export const VariationCapSchema = z.number().int().min(0).max(20);
+
 export const SettingsSchema = z.object({
   proxyPort: z.number().int().min(1024).max(65535).default(5006),
   proxyUsername: z
@@ -79,14 +85,20 @@ export const SettingsSchema = z.object({
   // Search with the German title variations too, per media type.
   tvVariationSearch: z.boolean().default(true),
   movieVariationSearch: z.boolean().default(true),
+  audioVariationSearch: z.boolean().default(true),
+  bookVariationSearch: z.boolean().default(true),
   // Counts GERMAN VARIATIONS, not total requests: the literal query and the
   // canonical title are appended on top, so the worst case is N+2 extra
   // indexer requests. 0 means "no German variations at all" and still searches
-  // those two; dropping the fan-out entirely is what the two toggles above are
+  // those two; dropping the fan-out entirely is what the toggles above are
   // for. The default is deliberately low - one alias covers the common case
   // (an indexer listing the release under its German name) at a third of the
   // outbound cost, and an operator who wants broader coverage raises it.
-  maxTitleVariations: z.number().int().min(0).max(20).default(1),
+  // One cap per media type, next to its switch.
+  tvMaxTitleVariations: VariationCapSchema.default(1),
+  movieMaxTitleVariations: VariationCapSchema.default(1),
+  audioMaxTitleVariations: VariationCapSchema.default(1),
+  bookMaxTitleVariations: VariationCapSchema.default(1),
   titleApiHost: z.string().url().default("https://umlautadaptarr.pcjones.de/api/v1"),
   tmdbApiKey: optionalSecret,
   // TVDB v4 API: key plus optional subscriber PIN. Some v4 endpoints
@@ -158,7 +170,24 @@ export const DEFAULT_RENAME_PRESET = {
   renameStripSpecialChars: true,
 } as const;
 
-export const SettingsUpdateSchema = SettingsSchema.partial();
+type WithoutDefaults<T extends z.ZodRawShape> = {
+  [K in keyof T]: T[K] extends z.ZodDefault<infer Inner> ? Inner : T[K];
+};
+
+function withoutDefaults<T extends z.ZodRawShape>(shape: T): WithoutDefaults<T> {
+  return Object.fromEntries(
+    Object.entries(shape).map(([key, field]) => [
+      key,
+      field instanceof z.ZodDefault ? field.unwrap() : field,
+    ]),
+  ) as WithoutDefaults<T>;
+}
+
+// Defaults are stripped before `.partial()`: since Zod 4 an optional field
+// still applies its `.default()` when the key is missing, so a partial PUT
+// would carry every default and overwrite the stored settings (and trip the
+// env-managed proxyPort check, issue #152). Omitted keys must stay undefined.
+export const SettingsUpdateSchema = z.object(withoutDefaults(SettingsSchema.shape)).partial();
 export type SettingsUpdate = z.infer<typeof SettingsUpdateSchema>;
 
 // Pause-Schalter (Header-Komponente). `durationMinutes = null` => unbegrenzte

@@ -1,23 +1,15 @@
 import { describe, expect, it } from "vitest";
-import {
-  removeAccent,
-  removeAccentButKeepDiacritics,
-} from "@/domain/normalization/accents.js";
-import {
-  getCleanTitle,
-  removeExtraWhitespaces,
-} from "@/domain/normalization/clean.js";
+import { removeAccent, removeAccentButKeepDiacritics } from "@/domain/normalization/accents.js";
+import { getCleanTitle, removeExtraWhitespaces } from "@/domain/normalization/clean.js";
 import { normalizeForComparison } from "@/domain/normalization/comparison.js";
 import {
-  getLidarrTitleForExternalId,
   getReadarrTitleForExternalId,
+  lidarrAlbumSearchKeys,
+  lidarrQueryTitle,
+  lidarrSearchKey,
   stripLeadingArticle,
 } from "@/domain/normalization/index.js";
-import {
-  aggregatePlugins,
-  applyCharMap,
-  hasMappedChar,
-} from "@/domain/plugins/aggregate.js";
+import { aggregatePlugins, applyCharMap, hasMappedChar } from "@/domain/plugins/aggregate.js";
 import { germanUmlauts } from "@/domain/plugins/german-umlauts/index.js";
 
 const germanPack = aggregatePlugins([germanUmlauts]);
@@ -70,9 +62,7 @@ describe("removeAccent", () => {
 
 describe("removeAccentButKeepDiacritics (German pack)", () => {
   it("keeps ä/ö/ü, removes other accents", () => {
-    expect(removeAccentButKeepDiacritics("café Bär", germanPack)).toBe(
-      "cafe Bär",
-    );
+    expect(removeAccentButKeepDiacritics("café Bär", germanPack)).toBe("cafe Bär");
   });
 });
 
@@ -82,9 +72,7 @@ describe("getCleanTitle (German pack)", () => {
     ["Sigrid: Beyond the Realm's End", "Sigrid  Beyond the Realms End"],
     ["Some.Show.S01E01.GERMAN", "Some Show S01E01 GERMAN"],
   ])("%j -> %j", (input, expected) => {
-    expect(getCleanTitle(input, germanPack)).toBe(
-      removeExtraWhitespaces(expected),
-    );
+    expect(getCleanTitle(input, germanPack)).toBe(removeExtraWhitespaces(expected));
   });
 
   it("keeps a space when words are separated by tab/newline/CR", () => {
@@ -93,20 +81,14 @@ describe("getCleanTitle (German pack)", () => {
     expect(getCleanTitle("a\tb", germanPack)).toBe("a b");
     expect(getCleanTitle("a\nb", germanPack)).toBe("a b");
     expect(getCleanTitle("a\r\nb", germanPack)).toBe("a b");
-    expect(getCleanTitle("Some\tShow\nTitle", germanPack)).toBe(
-      "Some Show Title",
-    );
+    expect(getCleanTitle("Some\tShow\nTitle", germanPack)).toBe("Some Show Title");
   });
 });
 
 describe("normalizeForComparison (German pack)", () => {
   it("strips spaces, special chars, lowercases, folds umlauts", () => {
-    expect(normalizeForComparison("Bär: müde Strasse", germanPack)).toBe(
-      "barmudestrasse",
-    );
-    expect(normalizeForComparison("Realm.of.Ravens", germanPack)).toBe(
-      "realmofravens",
-    );
+    expect(normalizeForComparison("Bär: müde Strasse", germanPack)).toBe("barmudestrasse");
+    expect(normalizeForComparison("Realm.of.Ravens", germanPack)).toBe("realmofravens");
   });
 });
 
@@ -123,23 +105,75 @@ describe("stripLeadingArticle (German pack)", () => {
   });
 });
 
-describe("getLidarrTitleForExternalId", () => {
-  it("strips article and accents, keeps umlauts", () => {
-    expect(getLidarrTitleForExternalId("The Bär", germanPack)).toBe("Bär");
-    expect(getLidarrTitleForExternalId("Die café", germanPack)).toBe("cafe");
+describe("lidarrQueryTitle (mirrors Lidarr's GetQueryTitle)", () => {
+  it.each([
+    ["Die Bären", "Die Baren"],
+    ["The Lanterns", "Lanterns"],
+    ["AB/CD", "AB CD"],
+    ["Mondfähre (Live)", "Mondfahre Live"],
+    ["Sören\u2019s Kapelle", "Soren's Kapelle"],
+    ["Various Artists", "VA"],
+    ["Straße", "Straße"],
+    ["!!!", "!!!"],
+  ])("%j -> %j", (input, expected) => {
+    expect(lidarrQueryTitle(input)).toBe(expected);
+  });
+});
+
+describe("lidarrSearchKey", () => {
+  it("folds case, accents, punctuation and whitespace", () => {
+    expect(lidarrSearchKey("  Die  Bären: Mondfähre ")).toBe("die baren mondfahre");
+    expect(lidarrSearchKey("AB/CD")).toBe("ab cd");
+  });
+});
+
+describe("lidarrAlbumSearchKeys", () => {
+  // `q` as Lidarr sends it: the cleaned artist and album joined by a space
+  // (default), or the raw names when the indexer reports searchEngine="raw".
+  it.each([
+    ["Die Bären", "Mondfähre", "Die Baren Mondfahre"],
+    ["Die Bären", "Mondfähre", "Die Bären Mondfähre"],
+    ["AB/CD", "Grauzone", "AB CD Grauzone"],
+    ["The Lanterns", "The Quiet Harbour", "Lanterns Quiet Harbour"],
+    ["The Lanterns", "The Quiet Harbour", "The Lanterns The Quiet Harbour"],
+  ])("finds %j - %j under the query %j", (artist, album, q) => {
+    expect(lidarrAlbumSearchKeys({ artist, album })).toContain(lidarrSearchKey(q));
+  });
+
+  it("appends the disambiguation the way Lidarr does", () => {
+    const keys = lidarrAlbumSearchKeys({
+      artist: "Die Bären",
+      album: "Mondfähre",
+      disambiguation: "Deluxe",
+    });
+    expect(keys).toContain(lidarrSearchKey("Die Baren Mondfahre Deluxe"));
+    expect(keys).not.toContain(lidarrSearchKey("Die Baren Mondfahre"));
+  });
+
+  it("appends the year to a self-titled album, 0 when Lidarr knows no release date", () => {
+    expect(lidarrAlbumSearchKeys({ artist: "Nordlicht", album: "Nordlicht", year: 2004 })).toEqual([
+      "nordlicht nordlicht 2004",
+    ]);
+    expect(lidarrAlbumSearchKeys({ artist: "Nordlicht", album: "Nordlicht" })).toEqual([
+      "nordlicht nordlicht 0",
+    ]);
+  });
+
+  it("returns one key when the raw and the cleaned query coincide", () => {
+    expect(lidarrAlbumSearchKeys({ artist: "Nordlicht", album: "Polarnacht" })).toEqual([
+      "nordlicht polarnacht",
+    ]);
   });
 });
 
 describe("getReadarrTitleForExternalId", () => {
   it("strips 'the', replaces separators", () => {
-    expect(getReadarrTitleForExternalId("The Foo:Bar-Baz", germanPack)).toBe(
-      "Foo Bar Baz",
-    );
+    expect(getReadarrTitleForExternalId("The Foo:Bar-Baz", germanPack)).toBe("Foo Bar Baz");
   });
 
   it("honors the language pack's article list (German), not just English 'the'", () => {
     // Routed through stripLeadingArticle so German articles are stripped too,
-    // consistent with getLidarrTitleForExternalId.
+    // consistent with the other article-aware helpers.
     expect(getReadarrTitleForExternalId("Der König", germanPack)).toBe("König");
     expect(getReadarrTitleForExternalId("Die Hütte", germanPack)).toBe("Hütte");
   });

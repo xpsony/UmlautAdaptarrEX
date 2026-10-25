@@ -23,6 +23,64 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.5.0",
+    date: "2026-10-25",
+    highlight: true,
+    title: "1.5.0: Listenarr for audiobooks, variation search per media type and per indexer",
+    description:
+      "The biggest update since 1.4.0. Listenarr joins as a fifth *Arr, so audiobook libraries get the same umlaut and German-title treatment as series, films, music and books. The variation search can now be tuned per media type and per indexer, so indexers with tight limits stop using up requests on variations. Plus a round of fixes and a dependency refresh. Four database migrations run automatically on first start, and existing installations keep their current behaviour. 1.4.1 was never released; its changes are part of this release.",
+    items: [
+      {
+        type: "feature",
+        text: "Listenarr support: your audiobook library is synced, searches are fanned out over the spelling variations, and results are rewritten to “Author - Title”. It reuses the book media type, so the German umlaut plugin and the renaming options apply unchanged. A search that arrives without a category (Listenarr's indexer categories are optional) is still recognised as a book search, and one audiobook is found both under Listenarr's “Title Author Series” and under Readarr's “Title Author” spelling.",
+      },
+      {
+        type: "feature",
+        text: "Readarr and Listenarr instances can also search without the author (Arr instances → edit, off by default): the spelling variations of the title alone are searched too, for indexers that list books and audiobooks without the author. They count towards the books & audiobooks cap. A hit without the author in the release name is found but not renamed.",
+      },
+      {
+        type: "feature",
+        text: "Series, films, music, and books & audiobooks each have their own variation-search switch and their own “At most variations” cap (Settings → Search and the setup wizard). Music and books used to follow the film switch, and one cap applied to everything. Existing installations keep their values: both new switches start from the film switch, and the current cap is copied into all four.",
+      },
+      {
+        type: "feature",
+        text: "Variation search per indexer: under Settings → Search → Variation search per indexer, every indexer can get its own switches and caps per media type, for example to leave a free-tier indexer out of the variation search for films. Without a custom setting an indexer follows the global values. Changes take effect immediately.",
+      },
+      {
+        type: "improvement",
+        text: "Listenarr instances are added by hand under Arr instances → Add instance. Prowlarr has no Listenarr application type, so the setup wizard cannot discover one. If you registered Listenarr in Prowlarr as a Readarr application and imported it in the wizard, it was stored as Readarr and syncs nothing: delete it and add it again as type Listenarr.",
+      },
+      {
+        type: "improvement",
+        text: "The indexer patch list shows indexers that still hang on another proxy, such as the old UmlautAdaptarr, and can take that proxy's tag off them during the patch. Thanks to luckyaid for the report and the idea for removing the tag.",
+      },
+      {
+        type: "improvement",
+        text: "A 403 on the direct indexer URL now logs a hint when the indexer key or the old “_” placeholder was used instead of the UmlautAdaptarrEX API key.",
+      },
+      {
+        type: "improvement",
+        text: "Dependency refresh: Next.js 16.4.3, React 19.3.1, Fastify 5.12.7, Zod 4.6.7, undici 8.12 and others.",
+      },
+      {
+        type: "fix",
+        text: "Saving a Settings tab no longer resets the settings on the other tabs to their defaults, and no longer fails with 409 when UMLAUTADAPTARREX_PROXY_PORT is set to anything but 5006. If settings on other tabs changed back unexpectedly after a save on 1.4.x, check and re-enter them once. Thanks to Blacks-Army for the report (#152).",
+      },
+      {
+        type: "fix",
+        text: "An indexer error sent as HTTP 200 (“Request limit reached”, rejected API key) no longer triggers the variation search, and a limit hit partway through the variations stops the remaining ones and returns the results collected so far. Thanks to luckyaid for the report.",
+      },
+      {
+        type: "fix",
+        text: "Lidarr text searches for albums with umlauts find their album again, so the variations are searched for music too. The next sync rewrites the album keys on its own. Thanks to luckyaid for the report.",
+      },
+      {
+        type: "fix",
+        text: "Patching indexers in Prowlarr no longer skips an indexer that is at its daily limit, and the setup wizard names every indexer whose patch failed. Thanks to luckyaid for both reports.",
+      },
+    ],
+  },
+  {
     version: "1.4.0",
     date: "2026-09-06",
     highlight: true,

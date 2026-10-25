@@ -26,14 +26,17 @@ name: Dependabot auto-merge
 on:
   pull_request:
 
-permissions:
-  contents: write
-  pull-requests: write
+permissions: {}
 
 jobs:
   automerge:
     name: Auto-merge Dependabot PR
     runs-on: ubuntu-latest
+    # Scoped to this job rather than the whole workflow: it is the only job
+    # that writes, and a future read-only job should not inherit write.
+    permissions:
+      contents: write
+      pull-requests: write
     if: github.actor == 'dependabot[bot]' && github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
       - name: Fetch Dependabot metadata

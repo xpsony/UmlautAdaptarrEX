@@ -55,6 +55,7 @@ describe("AppState.reindexInstance", () => {
         arrInstanceId: true,
         arrId: true,
         externalId: true,
+        externalIdAliases: true,
         imdbId: true,
         title: true,
         expectedTitle: true,

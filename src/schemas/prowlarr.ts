@@ -69,6 +69,17 @@ export interface InstallProxyResponse {
 // never mapped into this view.
 export type ProwlarrIndexerSkipReason = "no_base_url" | "unsupported_api";
 
+/**
+ * Another Prowlarr proxy (not ours, not FlareSolverr) that shares a tag with
+ * the indexer. Prowlarr uses only one such proxy per indexer, so this is a
+ * conflict the user has to resolve in Prowlarr; we never remove foreign tags.
+ */
+export interface ProwlarrOtherProxy {
+  name: string;
+  /** Labels of the tags the proxy and the indexer have in common. */
+  tags: string[];
+}
+
 export interface ProwlarrIndexerView {
   id: number;
   name: string;
@@ -83,6 +94,7 @@ export interface ProwlarrIndexerView {
   currentBaseUrl: string | null;
   isPatched: boolean;
   patchable: boolean;
+  otherProxies: ProwlarrOtherProxy[];
   reason?: ProwlarrIndexerSkipReason; // set when patchable === false
 }
 
@@ -92,10 +104,13 @@ export interface ProwlarrIndexersResponse {
 }
 
 // `selectedIds` is the DESIRED final selection (toggle semantics): indexers in
-// the set are patched, indexers not in the set are un-patched. Capped to keep
-// a malformed payload from fanning out into unbounded Prowlarr PUTs.
+// the set are patched, indexers not in the set are un-patched. `detachIds` are
+// the indexers whose tags of other proxies should come off (opt-in, empty by
+// default). Capped to keep a malformed payload from fanning out into unbounded
+// Prowlarr PUTs.
 export const PatchIndexersSchema = z.object({
   selectedIds: z.array(z.number().int().nonnegative()).max(1000),
+  detachIds: z.array(z.number().int().nonnegative()).max(1000).default([]),
 });
 export type PatchIndexersInput = z.infer<typeof PatchIndexersSchema>;
 
@@ -103,6 +118,8 @@ export interface PatchIndexerResult {
   id: number;
   name: string;
   action: "patched" | "unpatched" | "unchanged" | "failed" | "skipped";
+  /** Set when the tags of other proxies were taken off this indexer. */
+  detached?: true;
   error?: string;
 }
 

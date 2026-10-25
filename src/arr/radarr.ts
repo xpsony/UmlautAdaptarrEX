@@ -109,6 +109,7 @@ function toRaw(m: RadarrMovie): RawArrItem {
   return {
     arrId: m.id,
     externalId: String(m.tmdbId),
+    externalIdAliases: null,
     imdbId: m.imdbId ?? null,
     title: m.title,
     year: m.year && m.year > 0 ? m.year : null,

@@ -54,8 +54,8 @@ export function SettingsClient() {
   // button enabled too. Each form is scoped to its own field subset via
   // `SettingsUpdateSchema.pick(...)` (see settings-types.ts) and PUTs only
   // those fields, which the partial-update-friendly `SettingsUpdateSchema`
-  // (already `SettingsSchema.partial()`) and `putSettings` already support
-  // unmodified.
+  // (`SettingsSchema.partial()` without defaults) and `putSettings` already
+  // support unmodified.
   //
   // The dirty-guarded reset effect + onSuccess-reset pattern from Epic 8 is
   // replicated per form below:

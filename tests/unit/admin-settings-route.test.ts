@@ -180,6 +180,27 @@ describe("GET /api/admin/settings", () => {
     expect(body.proxyPortEnvManaged).toBe(true);
   });
 
+  it("selects the search-behaviour fields, so the Search tab shows stored values", async () => {
+    mockSetting.findUnique.mockResolvedValueOnce(null);
+    await app.inject({ method: "GET", url: "/api/admin/settings" });
+    const select = mockSetting.findUnique.mock.calls[0]![0].select as Record<string, boolean>;
+    for (const key of [
+      "onDemandLookup",
+      "tvVariationSearch",
+      "movieVariationSearch",
+      "audioVariationSearch",
+      "bookVariationSearch",
+      "tvMaxTitleVariations",
+      "movieMaxTitleVariations",
+      "audioMaxTitleVariations",
+      "bookMaxTitleVariations",
+      "syncIntervalMinutes",
+      "fullSyncIntervalHours",
+    ]) {
+      expect(select[key], key).toBe(true);
+    }
+  });
+
   it("returns null when the setting row does not exist", async () => {
     mockSetting.findUnique.mockResolvedValueOnce(null);
     const r = await app.inject({ method: "GET", url: "/api/admin/settings" });
@@ -283,13 +304,8 @@ describe("PUT /api/admin/settings", () => {
       data: Record<string, unknown>;
     };
     // `tmdbApiKey: null` is the load-bearing assertion: empty input must
-    // wipe the stored secret. The route also writes back the other settings
-    // because `SettingsSchema.partial()` keeps `.default()` semantics on
-    // omitted fields. We only care that the secret reached Prisma as null
-    // and that the masked-only fields stayed out.
-    expect(call.data).toMatchObject({ tmdbApiKey: null });
-    expect(call.data).not.toHaveProperty("tvdbApiKey");
-    expect(call.data).not.toHaveProperty("tvdbPin");
+    // wipe the stored secret, and nothing else may reach Prisma.
+    expect(call.data).toEqual({ tmdbApiKey: null });
   });
 
   it("rejects a proxyPort change when the port is env-managed", async () => {
@@ -321,6 +337,26 @@ describe("PUT /api/admin/settings", () => {
     };
     expect(call.data).not.toHaveProperty("proxyPort");
     expect(call.data).toMatchObject({ logRetentionDays: 30 });
+  });
+
+  it("accepts a save without proxyPort when the port is env-managed off 5006 (#152)", async () => {
+    process.env.UMLAUTADAPTARREX_PROXY_PORT = "5106";
+    mockSetting.update.mockResolvedValueOnce({
+      id: 1,
+      renameYearGuard: false,
+    });
+    const r = await app.inject({
+      method: "PUT",
+      url: "/api/admin/settings",
+      payload: { renameYearGuard: false },
+    });
+    expect(r.statusCode).toBe(200);
+    const call = mockSetting.update.mock.calls[0]?.[0] as {
+      data: Record<string, unknown>;
+    };
+    // Only the field that was sent reaches Prisma: no defaulted proxyPort,
+    // and no other setting reset to its default.
+    expect(call.data).toEqual({ renameYearGuard: false });
   });
 });
 

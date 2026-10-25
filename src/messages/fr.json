@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "UmlautAdaptarrEX",
-    "tagline": "Proxy de tréma et de titres allemands pour Sonarr / Radarr / Lidarr / Readarr"
+    "tagline": "Proxy de tréma et de titres allemands pour Sonarr / Radarr / Lidarr / Readarr / Listenarr"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -152,7 +152,6 @@
     },
     "patchStepTitle": "Patcher les indexeurs",
     "patchStepSkip": "Ignorer",
-    "patchIndexersDone": "Indexeurs patchés.",
     "searchStepTitle": "Comportement de recherche",
     "searchStepHint": "Ces options déterminent la façon dont UmlautAdaptarrEX recherche. Chacune indique son exemple et son coût."
   },
@@ -199,7 +198,7 @@
     "manageInstances": "Gérer",
     "addInstance": "Ajouter une instance",
     "noInstancesTitle": "Aucune instance connectée pour l'instant",
-    "noInstancesHint": "Connectez Sonarr, Radarr, Lidarr ou Readarr pour commencer.",
+    "noInstancesHint": "Connectez Sonarr, Radarr, Lidarr, Readarr ou Listenarr pour commencer.",
     "instanceStatus": {
       "ok": "OK",
       "error": "Erreur",
@@ -231,12 +230,12 @@
   },
   "instances": {
     "title": "Instances Arr",
-    "subtitle": "Gérez les connexions Sonarr / Radarr / Lidarr / Readarr.",
+    "subtitle": "Gérez les connexions Sonarr / Radarr / Lidarr / Readarr / Listenarr.",
     "listTitle": "Instances connectées",
     "listSubtitle": "Activez ou mettez en pause la synchronisation avec l'interrupteur.",
     "add": "Ajouter une instance",
     "addTitle": "Ajouter une nouvelle instance",
-    "addSubtitle": "Connectez Sonarr, Radarr, Lidarr ou Readarr.",
+    "addSubtitle": "Connectez Sonarr, Radarr, Lidarr, Readarr ou Listenarr.",
     "edit": "Modifier",
     "open": "Ouvrir l'instance",
     "editTitle": "Modifier l'instance",
@@ -257,7 +256,7 @@
     "hostHint": "URL complète, protocole inclus, ex. http://sonarr:8989",
     "apiKey": "Clé API",
     "apiKeyMaskedPlaceholder": "Saisissez la vraie clé API…",
-    "apiKeyMaskedHint": "La valeur stockée n'est que le masque Prowlarr (********). Saisissez la vraie clé API depuis Sonarr/Radarr/Lidarr/Readarr.",
+    "apiKeyMaskedHint": "La valeur stockée n'est que le masque Prowlarr (********). Saisissez la vraie clé API depuis Sonarr/Radarr/Lidarr/Readarr/Listenarr.",
     "enabled": "Activée",
     "enabledHint": "Les instances désactivées sont ignorées lors du sync.",
     "enableAria": "Activer/désactiver {name}",
@@ -265,6 +264,8 @@
     "providerOrderHint": "Parcouru du haut vers le bas à chaque synchronisation. pcjones ne renvoie que des titres allemands ; TVDB et TMDB couvrent toutes les langues. Glissez avec la poignée ou utilisez les flèches pour réordonner.",
     "enableYearMatching": "Désambiguïsation par année dans l'appariement de titres",
     "enableYearMatchingHint": "Lorsqu'activé, l'appariement rejette les sorties dont le marqueur d'année à 4 chiffres dans le nom de fichier sort de la fenêtre de tolérance autour de l'année de sortie/de première diffusion fournie par Sonarr/Radarr. Empêche par exemple qu'un enregistrement d'événement sportif soit réécrit en film homonyme sorti une autre année. Désactivez si les années dans votre bibliothèque sont peu fiables et que des réécritures légitimes sont supprimées.",
+    "searchWithoutAuthor": "Rechercher aussi sans l'auteur",
+    "searchWithoutAuthorHint": "Recherche aussi les graphies du titre sans l'auteur, p. ex. « Brueckenkopf » au lieu de seulement « Auteur Brückenkopf ». Utile lorsqu'un indexeur liste des livres audio ou des livres sans l'auteur dans le nom. Ces variantes comptent dans le « Nombre maximal de variantes » pour les livres et livres audio. Un résultat sans l'auteur dans le nom de la release est trouvé, mais pas renommé.",
     "yearMatchingTolerance": "Tolérance d'année (± années)",
     "yearMatchingToleranceHint": "0 = égalité stricte, 1 = ± 1 an de tolérance (par défaut), jusqu'à 5. Absorbe les écarts entre année de production et de sortie.",
     "providerAdd": "Ajouter",
@@ -287,7 +288,7 @@
     "statusError": "Erreur",
     "statusErrorHeading": "Dernière erreur de synchronisation",
     "statusDisabled": "Désactivée",
-    "noInstances": "Ajoutez votre premier Sonarr/Radarr/Lidarr/Readarr pour commencer.",
+    "noInstances": "Ajoutez votre premier Sonarr/Radarr/Lidarr/Readarr/Listenarr pour commencer.",
     "noInstancesTitle": "Aucune instance pour l'instant",
     "deleteConfirm": "Cela supprime définitivement « {name} » et ses éléments de recherche en cache. Cette action est irréversible.",
     "prowlarr": {
@@ -473,7 +474,7 @@
     "userAgentHint": "Optionnel. Laisser vide signifie automatique : UmlautAdaptarrEX plus la version en cours - la valeur suit alors chaque mise à jour sans que vous touchiez au champ.",
     "userAgentAutoHint": "Vide = automatique : {value}",
     "forwardArrUserAgent": "Transmettre le User-Agent de l'*Arr",
-    "forwardArrUserAgentDescription": "Envoie le User-Agent de Sonarr/Radarr/Lidarr/Readarr tel quel à l'indexeur au lieu du nôtre.",
+    "forwardArrUserAgentDescription": "Envoie le User-Agent de Sonarr/Radarr/Lidarr/Readarr/Listenarr tel quel à l'indexeur au lieu du nôtre.",
     "forwardArrUserAgentHint": "Désactivé par défaut : l'indexeur ne voit que « {ua} » et aucune empreinte de version de votre *Arr. À activer lorsqu'un indexeur n'accepte que des User-Agents de clients connus ou limite le débit d'après eux. Si l'*Arr n'envoie aucun en-tête, le nôtre est utilisé.",
     "logRetentionDays": "Rétention des journaux (jours)",
     "logRetentionDaysHint": "Les journaux plus anciens sont supprimés par une tâche de nettoyage toutes les 6 heures. 1–30 jours.",
@@ -578,12 +579,18 @@
       "patchStatusUnpatched": "non patché",
       "patchNotPatchable": "Pas d'URL de base modifiable - impossible à patcher.",
       "patchUnsupportedApi": "Pas une API Newznab/Torznab ({implementation}) - non corrigeable via le proxy.",
+      "patchOtherProxyTitle": "Certains indexeurs sont encore rattachés à un autre proxy",
+      "patchOtherProxyBody": "{count, plural, one {# indexeur porte} other {# indexeurs portent}} aussi le tag d'un autre proxy : {proxies}. Prowlarr ne fait passer chaque indexeur que par un seul proxy, en général celui créé en premier. Pour que les recherches passent par UmlautAdaptarrEX, l'ancien tag doit disparaître : cochez « retirer » ci-dessous (uniquement pour les indexeurs sélectionnés) ou retirez le tag vous-même dans Prowlarr. Par défaut, rien ne change, afin qu'une migration progressive reste possible. L'autre proxy lui-même n'est jamais supprimé.",
+      "patchOtherProxyEntry": "{name} (tag : {tags})",
+      "patchOtherProxyLine": "Aussi rattaché à {name} (tag : {tags})",
+      "patchOtherProxyRemove": "retirer",
       "patchApply": "Appliquer",
       "patchApplying": "Application en cours…",
       "patchEmpty": "Aucun indexeur trouvé dans Prowlarr.",
       "patchLoadFailed": "Impossible de charger les indexeurs : {error}",
       "patchResult": "{patched} patché(s), {unpatched} réinitialisé(s), {unchanged} inchangé(s), {skipped} ignoré(s), {failed} échoué(s).",
       "patchResultFailedDetail": "Échec : {names}",
+      "patchResultDetached": "Le tag d'un autre proxy a été retiré de {count, plural, one {un indexeur} other {# indexeurs}}.",
       "patchRetry": "Réessayer"
     },
     "renaming": {
@@ -630,6 +637,17 @@
         "description": "Coupe à la longueur brute de la variante trouvée au lieu de compter les caractères normalisés - et désactive du même coup le contrôle des limites de token.",
         "hint": "À n'activer que si vous avez besoin du comportement exact de l'ancienne version. Lorsqu'une variante se termine par un chiffre, la coupe peut tomber au milieu de l'année de la release et la mutiler (voir l'exemple). Sans cet interrupteur, UmlautAdaptarrEX refuse plutôt ces correspondances."
       }
+    },
+    "indexerVariations": {
+      "title": "Recherche de variantes par indexeur",
+      "description": "Pour les indexeurs aux limites serrées, vous pouvez désactiver ici la recherche de variantes ou réduire le nombre de variantes par type de média. Sans réglage propre, les interrupteurs et plafonds ci-dessus s'appliquent. Les modifications sont enregistrées immédiatement.",
+      "custom": "Réglage propre",
+      "lastSearch": "Dernière recherche : {date}",
+      "neverSearched": "Aucune recherche pour l'instant",
+      "empty": "Aucun indexeur connu pour l'instant. Ils apparaissent après la première recherche ou dès que Prowlarr est connecté.",
+      "saved": "Enregistré.",
+      "saveFailed": "Échec de l'enregistrement : {error}",
+      "loadFailed": "Impossible de charger les indexeurs : {error}"
     }
   },
   "searchBehaviour": {
@@ -646,8 +664,11 @@
       "description": "Nécessaire lorsqu'un indexeur ne référence une release que sous son nom allemand.",
       "tvVariationSearch": "Séries",
       "movieVariationSearch": "Films",
+      "audioVariationSearch": "Musique",
+      "bookVariationSearch": "Livres et livres audio",
       "capLabel": "Nombre maximal de variantes",
       "capHint": "Compte les variantes allemandes. Votre terme de recherche et le titre original sont recherchés en plus et ne sont jamais écartés. 0 recherche sans aucune variante allemande.",
+      "capAria": "Nombre maximal de variantes : {type}",
       "exampleQuery": "Sonarr recherche",
       "exampleExtra": "Ces requêtes sont également envoyées :",
       "cost": "Génère jusqu'à {max} requêtes supplémentaires par recherche. À utiliser avec prudence si les limites de vos indexeurs sont serrées."
@@ -781,7 +802,7 @@
   "about": {
     "title": "À propos",
     "subtitle": "Informations sur le projet, liens et remerciements.",
-    "tagline": "Proxy de tréma et de titres allemands pour Sonarr / Radarr / Lidarr / Readarr",
+    "tagline": "Proxy de tréma et de titres allemands pour Sonarr / Radarr / Lidarr / Readarr / Listenarr",
     "authorLabel": "Auteur",
     "linksTitle": "Liens",
     "linksHint": "Code source, signalement de bugs et canaux de support.",

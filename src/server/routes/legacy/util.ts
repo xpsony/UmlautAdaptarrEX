@@ -88,6 +88,18 @@ export function isApiKeyValid(
   return constantTimeEquals(provided, expected);
 }
 
+// Operator-facing hint for the two common misconfigurations behind a 403.
+// Both checks only look at caller-supplied values, never at the stored key.
+function apiKeyMismatchHint(ctx: LegacyContext): string | undefined {
+  if (ctx.apiKey === "_") {
+    return 'the "_" placeholder from UmlautAdaptarr 1.x is only accepted from loopback; put the UmlautAdaptarrEX application API key (Settings -> General) in the URL path';
+  }
+  if (ctx.apiKey === new URLSearchParams(ctx.search).get("apikey")) {
+    return "the URL path contains the indexer API key; it must hold the UmlautAdaptarrEX application API key (Settings -> General), the indexer key belongs in the *arr API key field";
+  }
+  return undefined;
+}
+
 /**
  * Single entry-guard for legacy routes (caps + search). On failure it logs,
  * sends the appropriate error response, and returns null. SRP: validation +
@@ -118,12 +130,14 @@ export function assertLegacyContext(
     return null;
   }
   if (!isApiKeyValid(parsed.apiKey, { fromLoopback: isLoopbackRequest(req) })) {
+    const hint = apiKeyMismatchHint(parsed);
     req.log.warn(
       {
         route,
         domain: parsed.domain,
         apiKeyTail: parsed.apiKey.slice(-6),
         ip: req.ip,
+        ...(hint ? { hint } : {}),
       },
       "legacy request rejected: api key mismatch",
     );

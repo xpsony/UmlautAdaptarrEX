@@ -3,11 +3,14 @@ import type { MediaType } from "@/domain/variations/generate";
 export interface InstanceMatchOptions {
   enableYearMatching: boolean;
   yearMatchingTolerance: number;
+  /** Books only: fan out over the title's variations without the author too. */
+  searchWithoutAuthor: boolean;
 }
 
 export const DEFAULT_INSTANCE_OPTIONS: InstanceMatchOptions = {
   enableYearMatching: true,
   yearMatchingTolerance: 1,
+  searchWithoutAuthor: false,
 };
 
 export interface CachedSearchItem {
@@ -15,6 +18,11 @@ export interface CachedSearchItem {
   arrInstanceId: string;
   arrId: number;
   externalId: string;
+  /**
+   * Extra keys the index registers alongside `externalId`, all pointing at
+   * this same item. Only Listenarr supplies any.
+   */
+  externalIdAliases?: string[] | null;
   /**
    * IMDb id when the *Arr knows one - emitted as a newznab `imdb` attribute.
    * Optional: only Radarr supplies it, and rows written before the
@@ -62,6 +70,7 @@ export interface SearchItemRow {
   arrInstanceId: string;
   arrId: number;
   externalId: string;
+  externalIdAliases: string | null;
   imdbId: string | null;
   title: string;
   expectedTitle: string;
@@ -83,6 +92,7 @@ export const SEARCH_ITEM_SELECT = {
   arrInstanceId: true,
   arrId: true,
   externalId: true,
+  externalIdAliases: true,
   imdbId: true,
   title: true,
   expectedTitle: true,
@@ -102,6 +112,9 @@ export function toCachedSearchItem(row: SearchItemRow): CachedSearchItemInput {
     arrInstanceId: row.arrInstanceId,
     arrId: row.arrId,
     externalId: row.externalId,
+    externalIdAliases: row.externalIdAliases
+      ? (JSON.parse(row.externalIdAliases) as string[])
+      : null,
     imdbId: row.imdbId,
     title: row.title,
     expectedTitle: row.expectedTitle,

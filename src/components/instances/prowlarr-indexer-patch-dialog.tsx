@@ -15,33 +15,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IndexerPatchList } from "@/components/instances/prowlarr-indexer-patch-list";
+import { toastPatchResult } from "@/components/instances/prowlarr-patch-summary";
 import { useProwlarrIndexers } from "@/app/(admin)/settings/_lib/use-prowlarr-indexers";
-import type { PatchIndexersResponse } from "@/schemas/prowlarr";
 
 interface ProwlarrIndexerPatchDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-}
-
-function summarize(t: ReturnType<typeof useTranslations>, res: PatchIndexersResponse): void {
-  const count = (a: string): number => res.results.filter((r) => r.action === a).length;
-  toast.success(
-    t("patchResult", {
-      patched: count("patched"),
-      unpatched: count("unpatched"),
-      unchanged: count("unchanged"),
-      skipped: count("skipped"),
-      failed: count("failed"),
-    }),
-  );
-  const failed = res.results.filter((r) => r.action === "failed");
-  if (failed.length > 0) {
-    toast.error(
-      t("patchResultFailedDetail", {
-        names: failed.map((f) => f.name).join(", "),
-      }),
-    );
-  }
 }
 
 export function ProwlarrIndexerPatchDialog({
@@ -57,6 +36,9 @@ export function ProwlarrIndexerPatchDialog({
   // "select all" default). This mirrors the install dialog's editedHost
   // pattern and avoids a setState-in-effect cascade.
   const [override, setOverride] = useState<Set<number> | null>(null);
+  // Opt-in per indexer, empty by default: other proxies' tags stay untouched
+  // unless the user ticks "remove" for that indexer.
+  const [detach, setDetach] = useState<Set<number>>(new Set());
 
   const allPatchable = useMemo(
     () => new Set((query.data?.indexers ?? []).filter((i) => i.patchable).map((i) => i.id)),
@@ -73,27 +55,41 @@ export function ProwlarrIndexerPatchDialog({
   const toggleAll = (checked: boolean): void => {
     setOverride(checked ? new Set(allPatchable) : new Set());
   };
+  const toggleDetach = (id: number): void => {
+    const next = new Set(detach);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setDetach(next);
+  };
 
   const apply = (): void => {
-    patchMut.mutate(Array.from(selected), {
-      onSuccess: (res) => {
-        summarize(t, res);
-        onOpenChange(false);
+    const selectedIds = Array.from(selected);
+    const detachIds = selectedIds.filter((id) => detach.has(id));
+    patchMut.mutate(
+      { selectedIds, detachIds },
+      {
+        onSuccess: (res) => {
+          toastPatchResult(t, res);
+          onOpenChange(false);
+        },
+        onError: (err) =>
+          toast.error(
+            t("patchLoadFailed", {
+              error: err instanceof Error ? err.message : "unknown",
+            }),
+          ),
       },
-      onError: (err) =>
-        toast.error(
-          t("patchLoadFailed", {
-            error: err instanceof Error ? err.message : "unknown",
-          }),
-        ),
-    });
+    );
   };
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) setOverride(null);
+        if (!next) {
+          setOverride(null);
+          setDetach(new Set());
+        }
         onOpenChange(next);
       }}
     >
@@ -122,6 +118,8 @@ export function ProwlarrIndexerPatchDialog({
             selectedIds={selected}
             onToggle={toggle}
             onToggleAll={toggleAll}
+            detachIds={detach}
+            onToggleDetach={toggleDetach}
           />
         )}
 

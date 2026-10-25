@@ -227,6 +227,36 @@ describe("assertLegacyContext", () => {
     expect(reply._statusCode).toBe(403);
     expect(reply._payload).toBe("Forbidden");
   });
+
+  it("logs no hint for a plain api key mismatch", () => {
+    mockState.settings.appApiKey = "real-key";
+    const req = makeReq({
+      url: "/wrong/host/api?t=caps&apikey=indexer-key",
+      params: { apiKey: "wrong", "*": "host/api" },
+    });
+    assertLegacyContext(req as never, makeReply() as never, "caps");
+    expect(req.log.warn.mock.calls[0]![0]).not.toHaveProperty("hint");
+  });
+
+  it("hints that the indexer key was put in the path when it equals the apikey query param", () => {
+    mockState.settings.appApiKey = "real-key";
+    const req = makeReq({
+      url: "/indexer-key/host/api?t=caps&apikey=indexer-key",
+      params: { apiKey: "indexer-key", "*": "host/api" },
+    });
+    assertLegacyContext(req as never, makeReply() as never, "caps");
+    expect(req.log.warn.mock.calls[0]![0].hint).toMatch(/indexer api key/i);
+  });
+
+  it("hints that '_' is not accepted from non-loopback callers", () => {
+    mockState.settings.appApiKey = "real-key";
+    const req = makeReq({
+      url: "/_/host/api?t=caps&apikey=indexer-key",
+      params: { apiKey: "_", "*": "host/api" },
+    });
+    assertLegacyContext(req as never, makeReply() as never, "caps");
+    expect(req.log.warn.mock.calls[0]![0].hint).toMatch(/"_"/);
+  });
 });
 
 describe("recordRequest", () => {

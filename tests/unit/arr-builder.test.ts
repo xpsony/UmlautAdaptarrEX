@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildArrClient } from "@/arr";
 import { LidarrClient } from "@/arr/lidarr";
+import { ListenarrClient } from "@/arr/listenarr";
 import { RadarrClient } from "@/arr/radarr";
 import { ReadarrClient } from "@/arr/readarr";
 import { SonarrClient } from "@/arr/sonarr";
@@ -25,26 +26,22 @@ const common = {
 
 describe("buildArrClient", () => {
   it("returns a SonarrClient for type=sonarr", () => {
-    expect(buildArrClient({ ...common, type: "sonarr" })).toBeInstanceOf(
-      SonarrClient,
-    );
+    expect(buildArrClient({ ...common, type: "sonarr" })).toBeInstanceOf(SonarrClient);
   });
 
   it("returns a RadarrClient for type=radarr", () => {
-    expect(buildArrClient({ ...common, type: "radarr" })).toBeInstanceOf(
-      RadarrClient,
-    );
+    expect(buildArrClient({ ...common, type: "radarr" })).toBeInstanceOf(RadarrClient);
   });
 
   it("returns a LidarrClient for type=lidarr", () => {
-    expect(buildArrClient({ ...common, type: "lidarr" })).toBeInstanceOf(
-      LidarrClient,
-    );
+    expect(buildArrClient({ ...common, type: "lidarr" })).toBeInstanceOf(LidarrClient);
   });
 
   it("returns a ReadarrClient for type=readarr", () => {
-    expect(buildArrClient({ ...common, type: "readarr" })).toBeInstanceOf(
-      ReadarrClient,
-    );
+    expect(buildArrClient({ ...common, type: "readarr" })).toBeInstanceOf(ReadarrClient);
+  });
+
+  it("returns a ListenarrClient for type=listenarr", () => {
+    expect(buildArrClient({ ...common, type: "listenarr" })).toBeInstanceOf(ListenarrClient);
   });
 });

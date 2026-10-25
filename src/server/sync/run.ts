@@ -383,6 +383,9 @@ async function persistItems(
           titleMatchVariations: JSON.stringify(item.titleMatchVariations),
           authorMatchVariations: JSON.stringify(item.authorMatchVariations),
           aliases: item.aliases ? JSON.stringify(item.aliases) : null,
+          externalIdAliases: item.externalIdAliases
+            ? JSON.stringify(item.externalIdAliases)
+            : null,
         };
         const prior = existingMap.get(item.externalId);
         if (prior) {
@@ -539,7 +542,7 @@ async function deltaAndPersist(
   const raw = await client.fetchRawItems();
   const stored = await prisma.searchItem.findMany({
     where: { arrInstanceId: instance.id },
-    select: { externalId: true, title: true, year: true },
+    select: { externalId: true, title: true, year: true, externalIdAliases: true },
   });
   const plan = planDelta(raw, stored);
 

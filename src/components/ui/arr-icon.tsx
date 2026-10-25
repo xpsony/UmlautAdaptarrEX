@@ -6,6 +6,7 @@ export type ArrIconType =
     | "radarr"
     | "lidarr"
     | "readarr"
+    | "listenarr"
     | "prowlarr";
 
 const SRC: Record<ArrIconType, string> = {
@@ -13,6 +14,7 @@ const SRC: Record<ArrIconType, string> = {
     radarr: "/arr/radarr.svg",
     lidarr: "/arr/lidarr.svg",
     readarr: "/arr/readarr.svg",
+    listenarr: "/arr/listenarr.svg",
     prowlarr: "/arr/prowlarr.svg",
 };
 
@@ -21,6 +23,7 @@ const LABEL: Record<ArrIconType, string> = {
     radarr: "Radarr",
     lidarr: "Lidarr",
     readarr: "Readarr",
+    listenarr: "Listenarr",
     prowlarr: "Prowlarr",
 };
 

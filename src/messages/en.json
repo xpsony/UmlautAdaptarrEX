@@ -1,7 +1,7 @@
 {
   "app": {
     "name": "UmlautAdaptarrEX",
-    "tagline": "Umlaut + German title proxy for Sonarr / Radarr / Lidarr / Readarr"
+    "tagline": "Umlaut + German title proxy for Sonarr / Radarr / Lidarr / Readarr / Listenarr"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -152,7 +152,6 @@
     },
     "patchStepTitle": "Patch indexers",
     "patchStepSkip": "Skip",
-    "patchIndexersDone": "Indexers patched.",
     "searchStepTitle": "Search behaviour",
     "searchStepHint": "These options decide how UmlautAdaptarrEX searches. Each one states its example and its cost."
   },
@@ -199,7 +198,7 @@
     "manageInstances": "Manage",
     "addInstance": "Add instance",
     "noInstancesTitle": "No instances connected yet",
-    "noInstancesHint": "Connect Sonarr, Radarr, Lidarr or Readarr to get started.",
+    "noInstancesHint": "Connect Sonarr, Radarr, Lidarr, Readarr or Listenarr to get started.",
     "instanceStatus": {
       "ok": "OK",
       "error": "Error",
@@ -231,12 +230,12 @@
   },
   "instances": {
     "title": "Arr instances",
-    "subtitle": "Manage Sonarr / Radarr / Lidarr / Readarr connections.",
+    "subtitle": "Manage Sonarr / Radarr / Lidarr / Readarr / Listenarr connections.",
     "listTitle": "Connected instances",
     "listSubtitle": "Toggle the switch to enable or pause syncing.",
     "add": "Add instance",
     "addTitle": "Add a new instance",
-    "addSubtitle": "Connect Sonarr, Radarr, Lidarr or Readarr.",
+    "addSubtitle": "Connect Sonarr, Radarr, Lidarr, Readarr or Listenarr.",
     "edit": "Edit",
     "open": "Open instance",
     "editTitle": "Edit instance",
@@ -257,7 +256,7 @@
     "hostHint": "Full URL including protocol, e.g. http://sonarr:8989",
     "apiKey": "API key",
     "apiKeyMaskedPlaceholder": "Enter the real API key…",
-    "apiKeyMaskedHint": "The stored value is only the Prowlarr mask (********). Enter the real API key from Sonarr/Radarr/Lidarr/Readarr.",
+    "apiKeyMaskedHint": "The stored value is only the Prowlarr mask (********). Enter the real API key from Sonarr/Radarr/Lidarr/Readarr/Listenarr.",
     "enabled": "Enabled",
     "enabledHint": "Disabled instances are skipped during sync.",
     "enableAria": "Toggle {name}",
@@ -265,6 +264,8 @@
     "providerOrderHint": "Walked top to bottom on every sync. pcjones returns German titles only; TVDB and TMDB serve any language. Drag with the handle or use arrow keys to reorder.",
     "enableYearMatching": "Year disambiguation in title matching",
     "enableYearMatchingHint": "When enabled, the matcher rejects releases whose 4-digit year token in the filename lies outside the tolerance window around the release/first-air year from Sonarr/Radarr. Prevents e.g. a sports-event recording from being rewritten as a same-named movie released in a different year. Disable this if your library years are unreliable and legitimate rewrites are being suppressed.",
+    "searchWithoutAuthor": "Also search without the author",
+    "searchWithoutAuthorHint": "Also searches the title's spellings without the author, e.g. “Brueckenkopf” instead of only “Author Brückenkopf”. Helps when an indexer lists audiobooks or books without the author in the name. These variations count towards “At most variations” for books & audiobooks. A hit without the author in the release name is found but not renamed.",
     "yearMatchingTolerance": "Year tolerance (+/- years)",
     "yearMatchingToleranceHint": "0 = strict equality, 1 = +/-1 year tolerance (default), up to 5. Absorbs production-vs-release-year skew.",
     "providerAdd": "Add",
@@ -287,7 +288,7 @@
     "statusError": "Error",
     "statusErrorHeading": "Last sync error",
     "statusDisabled": "Disabled",
-    "noInstances": "Add your first Sonarr/Radarr/Lidarr/Readarr to get started.",
+    "noInstances": "Add your first Sonarr/Radarr/Lidarr/Readarr/Listenarr to get started.",
     "noInstancesTitle": "No instances yet",
     "deleteConfirm": "This permanently removes \"{name}\" and its cached search items. This cannot be undone.",
     "prowlarr": {
@@ -473,7 +474,7 @@
     "userAgentHint": "Optional. Leaving it empty means automatic: UmlautAdaptarrEX plus the running version - the value then follows every update without you touching the field.",
     "userAgentAutoHint": "Empty = automatic: {value}",
     "forwardArrUserAgent": "Forward the *Arr's User-Agent",
-    "forwardArrUserAgentDescription": "Sends Sonarr/Radarr/Lidarr/Readarr's User-Agent to the indexer verbatim instead of our own.",
+    "forwardArrUserAgentDescription": "Sends Sonarr/Radarr/Lidarr/Readarr/Listenarr's User-Agent to the indexer verbatim instead of our own.",
     "forwardArrUserAgentHint": "Off by default: the indexer sees only \"{ua}\" and no version fingerprint of your *Arr. Turn it on when an indexer only accepts known client User-Agents or rate-limits by them. If the *Arr sends no header, ours is used.",
     "logRetentionDays": "Log retention (days)",
     "logRetentionDaysHint": "Logs older than this are deleted by a cleanup job that runs every 6 hours. 1–30 days.",
@@ -578,12 +579,18 @@
       "patchStatusUnpatched": "not patched",
       "patchNotPatchable": "No editable base URL - cannot be patched.",
       "patchUnsupportedApi": "Not a Newznab/Torznab API ({implementation}) - cannot be corrected through the proxy.",
+      "patchOtherProxyTitle": "Some indexers are still attached to another proxy",
+      "patchOtherProxyBody": "{count, plural, one {# indexer also carries} other {# indexers also carry}} the tag of another proxy: {proxies}. Prowlarr routes each indexer through only one proxy, usually the one created first. For searches to go through UmlautAdaptarrEX, the old tag has to go: tick “remove” below (only for selected indexers) or take the tag off in Prowlarr yourself. By default everything stays as it is, so a step-by-step migration stays possible. The other proxy itself is never deleted.",
+      "patchOtherProxyEntry": "{name} (tag: {tags})",
+      "patchOtherProxyLine": "Also attached to {name} (tag: {tags})",
+      "patchOtherProxyRemove": "remove",
       "patchApply": "Apply",
       "patchApplying": "Applying…",
       "patchEmpty": "No indexers found in Prowlarr.",
       "patchLoadFailed": "Failed to load indexers: {error}",
       "patchResult": "{patched} patched, {unpatched} reset, {unchanged} unchanged, {skipped} skipped, {failed} failed.",
       "patchResultFailedDetail": "Failed: {names}",
+      "patchResultDetached": "Removed another proxy's tag from {count, plural, one {one indexer} other {# indexers}}.",
       "patchRetry": "Retry"
     },
     "renaming": {
@@ -630,6 +637,17 @@
         "description": "Cuts at the matched variation's raw length instead of counting normalized characters - and turns the token-boundary check off with it.",
         "hint": "Only enable this if you need the exact old behaviour. When a variation ends on a digit the cut can land inside the release's year and mangle it (see the example). Without this switch UmlautAdaptarrEX declines such matches instead."
       }
+    },
+    "indexerVariations": {
+      "title": "Variation search per indexer",
+      "description": "For indexers with tight limits you can switch the variation search off or lower the number of variations per media type here. Without a custom setting the switches and caps above apply. Changes are saved immediately.",
+      "custom": "Custom setting",
+      "lastSearch": "Last search: {date}",
+      "neverSearched": "No search yet",
+      "empty": "No indexers known yet. They appear after the first search or once Prowlarr is connected.",
+      "saved": "Saved.",
+      "saveFailed": "Saving failed: {error}",
+      "loadFailed": "Could not load indexers: {error}"
     }
   },
   "searchBehaviour": {
@@ -646,8 +664,11 @@
       "description": "Needed when an indexer only lists a release under its German name.",
       "tvVariationSearch": "Series",
       "movieVariationSearch": "Films",
+      "audioVariationSearch": "Music",
+      "bookVariationSearch": "Books & audiobooks",
       "capLabel": "At most variations",
       "capHint": "Counts the German variations. Your search term and the original title are searched on top and are never dropped. 0 searches without any German variations.",
+      "capAria": "At most variations: {type}",
       "exampleQuery": "Sonarr searches for",
       "exampleExtra": "These are searched as well:",
       "cost": "Results in up to {max} extra indexer requests per search. Use with care if your indexer limits are tight."
@@ -781,7 +802,7 @@
   "about": {
     "title": "About",
     "subtitle": "Project info, links and acknowledgements.",
-    "tagline": "Umlaut + German title proxy for Sonarr / Radarr / Lidarr / Readarr",
+    "tagline": "Umlaut + German title proxy for Sonarr / Radarr / Lidarr / Readarr / Listenarr",
     "authorLabel": "Author",
     "linksTitle": "Links",
     "linksHint": "Source code, issues and support channels.",

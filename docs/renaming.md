@@ -2,7 +2,7 @@
 
 When an \*arr issues a search through UmlautAdaptarrEX, the indexer's XML response is parsed, every `<item>`
 runs through the rename pipeline, and the `<title>` node is rewritten in place before the response goes back
-to Sonarr/Radarr/Lidarr/Readarr.
+to Sonarr/Radarr/Lidarr/Readarr/Listenarr.
 
 The goal: a release like `Drei.Haselnuesse.fuer.Aschenbroedel.1973.German.1080p.BluRay.x264-EXAMPLE` is
 rewritten so the \*arr can match it against its expected title (`Drei Haselnüsse für Aschenbrödel 1973

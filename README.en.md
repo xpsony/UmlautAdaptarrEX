@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <em>Umlaut and German-title proxy for Sonarr / Radarr / Lidarr / Readarr.</em>
+  <em>Umlaut and German-title proxy for Sonarr / Radarr / Lidarr / Readarr / Listenarr.</em>
 </p>
 
 <p align="center">
@@ -15,6 +15,7 @@
   <img src="public/arr/radarr.svg" alt="Radarr" height="36" />&nbsp;&nbsp;
   <img src="public/arr/lidarr.svg" alt="Lidarr" height="36" />&nbsp;&nbsp;
   <img src="public/arr/readarr.svg" alt="Readarr" height="36" />&nbsp;&nbsp;
+  <img src="public/arr/listenarr.svg" alt="Listenarr" height="36" />&nbsp;&nbsp;
   <img src="public/arr/prowlarr.svg" alt="Prowlarr" height="36" />
 </p>
 
@@ -52,6 +53,7 @@ imported.
 | <img src="public/arr/radarr.svg" height="16" alt="" align="top" />&nbsp; Radarr support (native, via `alternateTitles` + optional TMDB) |   ✓    |
 | <img src="public/arr/lidarr.svg" height="16" alt="" align="top" />&nbsp; Lidarr support                                                 |   ✓    |
 | <img src="public/arr/readarr.svg" height="16" alt="" align="top" />&nbsp; Readarr support                                               |   ✓    |
+| <img src="public/arr/listenarr.svg" height="16" alt="" align="top" />&nbsp; Listenarr support (audiobooks)                              |   ✓    |
 | <img src="public/arr/prowlarr.svg" height="16" alt="" align="top" />&nbsp; Prowlarr & NZB Hydra support                                 |   ✓    |
 | **Prowlarr indexer-patch dialog**: select indexers, auto-tag them & switch from `https` to `http`                                       |   ✓    |
 | Newznab (Usenet) & Torznab (Torrent) support                                                                                            |   ✓    |
@@ -429,7 +431,21 @@ Key points:
 
 Recommended method, because there is no speed loss with multiple indexers.
 
-1. Start UmlautAdaptarrEX and walk through the setup in the web UI (create Sonarr/Radarr/Lidarr/Readarr instances).
+1. Start UmlautAdaptarrEX and walk through the setup in the web UI (create Sonarr/Radarr/Lidarr/Readarr instances, Listenarr see below).
+
+   > **Listenarr instances are added by hand.** Prowlarr has no Listenarr application type, so the
+   > Prowlarr auto-detection in the setup wizard cannot find one. Add the instance under
+   > **Arr instances → Add instance** instead.
+   >
+   > Listenarr ships its own Prowlarr-compatible endpoint under `/api/v1/prowlarr/…`. If you register
+   > Listenarr in Prowlarr as a _Readarr_ application, our auto-detection reads it back as `readarr`,
+   > and the Readarr client then talks to `/api/v1/author` with query-string auth and gets nothing
+   > usable. Add such an instance by hand as type Listenarr.
+   >
+   > If an indexer lists audiobooks without the author in the name, switch on **Also search without
+   > the author** in the instance (available for Listenarr and Readarr, off by default). The title's
+   > spellings on their own are then searched too. Such hits are found but not renamed.
+
 2. In Prowlarr: **Settings → Indexers → Indexer Proxies → Add (HTTP)**
    - Name: `UmlautAdaptarrEX HTTP Proxy`
    - Host: container name (`umlautadaptarrex`) or host IP
@@ -459,13 +475,23 @@ Recommended method, because there is no speed loss with multiple indexers.
 > Note: not yet tested
 
 With only a few indexers or without Prowlarr, enter the API URL per indexer directly in
-Sonarr/Radarr/Lidarr/Readarr:
+Sonarr/Radarr/Lidarr/Readarr/Listenarr:
 
 ```
-http://<host>:5005/<apiKey>/<indexer-host>
+http://<host>:5005/<UAex-API-key>/<indexer-host>
 ```
 
-The API key is set as usual. The `apiKey` for UmlautAdaptarrEX is created in the web UI.
+There are two different keys here, and they must not be swapped:
+
+- **In the URL** goes the **UmlautAdaptarrEX application API key** (web UI → Settings → General →
+  "Application API key"). The \*arr app uses it to authenticate against UmlautAdaptarrEX.
+- **In the "API Key" field** of the \*arr app goes the **indexer's API key**, as usual. UmlautAdaptarrEX passes it
+  through to the indexer unchanged.
+
+The `_` placeholder from the old UmlautAdaptarr (`http://<host>:5005/_/<indexer-host>`) does not work here:
+UmlautAdaptarrEX always has an application API key and accepts `_` only internally from its own proxy. A wrong key
+in the URL leads to `403 Forbidden`, and the log shows `legacy request rejected: api key mismatch`, with a `hint`
+field for both mistakes above.
 
 The full HTTP API (admin, auth, legacy, WebSocket, TCP proxy) is documented in [docs/api.md](docs/api.md).
 The release-rename pipeline is described in [docs/renaming.md](docs/renaming.md). For users who want to fork the
@@ -521,7 +547,7 @@ src/
 │   ├─ plugins/           # Language plugins (DE umlauts, SE umlauts, FR accents)
 │   └─ xml/               # Newznab/Torznab XML rewriting
 ├─ providers/             # External title providers (pcjones, TVDB, TMDB, db-cache)
-├─ arr/                   # Sonarr/Radarr/Lidarr/Readarr/Prowlarr clients
+├─ arr/                   # Sonarr/Radarr/Lidarr/Readarr/Listenarr/Prowlarr clients
 ├─ schemas/               # Zod schemas (shared client/server)
 ├─ messages/              # i18n (de, en, fr, sv)
 └─ lib/                   # db, auth, secrets, legacy-env, i18n, utils

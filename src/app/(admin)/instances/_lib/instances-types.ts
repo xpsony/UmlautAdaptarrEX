@@ -19,7 +19,7 @@ export interface TestConnectionResponse {
   error?: string;
 }
 
-export const ARR_TYPES = ["sonarr", "radarr", "lidarr", "readarr"] as const;
+export const ARR_TYPES = ["sonarr", "radarr", "lidarr", "readarr", "listenarr"] as const;
 export const PROVIDER_IDS = ["pcjones", "tvdb", "tmdb"] as const;
 
 /**
@@ -29,13 +29,14 @@ export const PROVIDER_IDS = ["pcjones", "tvdb", "tmdb"] as const;
  *  - Radarr: TMDB first (Radarr returns TMDB ids natively, no resolve step
  *    needed), TVDB as backup. pcjones is not in the default because the
  *    provider does not support movies.
- *  - Lidarr/Readarr: no TitleProvider; the field stays `null`.
+ *  - Lidarr/Readarr/Listenarr: no TitleProvider; the field stays `null`.
  */
 export const DEFAULT_PROVIDER_ORDER: Record<ArrType, ProviderId[] | null> = {
   sonarr: ["pcjones", "tvdb", "tmdb"],
   radarr: ["tmdb", "tvdb"],
   lidarr: null,
   readarr: null,
+  listenarr: null,
 };
 
 export function needsProviderOrder(type: ArrType): boolean {

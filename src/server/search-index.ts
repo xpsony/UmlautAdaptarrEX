@@ -65,6 +65,11 @@ export class SearchItemIndex {
     );
     const indexed: CachedSearchItem = { ...item, normalizedMatchVariations };
     this.byExternalId.set(`${indexed.mediaType}:${indexed.externalId}`, indexed);
+    // Alias keys point at the same object, so a lookup under either spelling
+    // returns one item. Last writer wins, same as the primary key.
+    for (const alias of indexed.externalIdAliases ?? []) {
+      this.byExternalId.set(`${indexed.mediaType}:${alias}`, indexed);
+    }
     if (indexed.imdbId) this.byImdbId.set(indexed.imdbId, indexed);
     for (const norm of normalizedMatchVariations) {
       const prefix = `${indexed.mediaType}:${norm.slice(0, 5)}`;
@@ -88,6 +93,13 @@ export class SearchItemIndex {
     const item = this.byExternalId.get(key);
     if (!item) return;
     this.byExternalId.delete(key);
+    // Only drop an alias that still points at *this* item: byExternalId is
+    // keyed without the instance id, so a later indexItem may have taken the
+    // key over. Same identity check as byImdbId below.
+    for (const alias of item.externalIdAliases ?? []) {
+      const aliasKey = `${mediaType}:${alias}`;
+      if (this.byExternalId.get(aliasKey) === item) this.byExternalId.delete(aliasKey);
+    }
     if (item.imdbId && this.byImdbId.get(item.imdbId) === item) {
       this.byImdbId.delete(item.imdbId);
     }

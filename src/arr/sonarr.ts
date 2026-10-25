@@ -76,6 +76,7 @@ function toRaw(s: SonarrSeries): RawArrItem {
   return {
     arrId: s.id,
     externalId: String(s.tvdbId),
+    externalIdAliases: null,
     imdbId: null,
     title: s.title,
     year: s.year && s.year > 0 ? s.year : null,
