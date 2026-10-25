@@ -7,9 +7,9 @@ import type { OperationMode } from "@/components/operation-mode-picker";
 // Per-tab field subsets of SettingsUpdateSchema (Epic 6 / Task 7): the
 // settings form was split into one RHF instance per tab so a dirty edit in
 // tab A no longer keeps tab B's Save button enabled, and each Save only PUTs
-// the fields that tab actually owns. `SettingsUpdateSchema` is already
-// `SettingsSchema.partial()`, so every field here stays optional and a
-// partial PUT is a no-op change on the server.
+// the fields that tab actually owns. `SettingsUpdateSchema` is
+// `SettingsSchema.partial()` with the defaults stripped, so every field here
+// stays optional and an omitted field is left untouched on the server.
 export const GeneralSettingsSchema = SettingsUpdateSchema.pick({
   proxyUsername: true,
   proxyPassword: true,

@@ -20,3 +20,24 @@ describe("SettingsSchema.historyRetentionDays", () => {
     }
   });
 });
+
+// Issue #152: Zod 4's `.partial()` still applies `.default()` to omitted keys,
+// so a partial PUT used to carry every default (proxyPort: 5006 included),
+// rejecting saves with 409 under an env-managed proxy port and silently
+// resetting every other setting otherwise.
+describe("SettingsUpdateSchema", () => {
+  it("leaves omitted keys undefined instead of filling in defaults", () => {
+    expect(SettingsUpdateSchema.parse({ cacheDurationMinutes: 30 })).toEqual({
+      cacheDurationMinutes: 30,
+    });
+  });
+
+  it("parses an empty body to an empty update", () => {
+    expect(SettingsUpdateSchema.parse({})).toEqual({});
+  });
+
+  it("still validates the keys that are sent", () => {
+    expect(SettingsUpdateSchema.safeParse({ proxyPort: 80 }).success).toBe(false);
+    expect(SettingsUpdateSchema.safeParse({ operationMode: "nope" }).success).toBe(false);
+  });
+});

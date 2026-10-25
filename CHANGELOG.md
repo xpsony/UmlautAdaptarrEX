@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+- **Saving a Settings tab no longer fails with 409 when `UMLAUTADAPTARREX_PROXY_PORT` is set to anything but 5006** ([#152](https://github.com/xpsony/UmlautAdaptarrEX/issues/152)). Since Zod 4, the partial update schema still filled in the default for every field the request did not send, so each save carried `proxyPort: 5006` and was rejected as a change to the env-managed port. Without the env var, the same bug was silent and worse: saving one tab reset every setting on the other tabs (and the proxy port) to its default. Omitted fields now stay untouched. If settings on other tabs changed back unexpectedly after a save on 1.4.x, check and re-enter them once.
+
 ## 1.4.1 - 2026-09-26
 
 Adds **Listenarr** as a fifth \*Arr, so audiobook libraries get the same umlaut and German-title treatment as series, films, music and books. Plus a dependency refresh. One database migration runs automatically on first start. Nothing changes for installations that do not add a Listenarr instance.
