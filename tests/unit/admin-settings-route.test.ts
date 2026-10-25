@@ -180,6 +180,24 @@ describe("GET /api/admin/settings", () => {
     expect(body.proxyPortEnvManaged).toBe(true);
   });
 
+  it("selects the search-behaviour fields, so the Search tab shows stored values", async () => {
+    mockSetting.findUnique.mockResolvedValueOnce(null);
+    await app.inject({ method: "GET", url: "/api/admin/settings" });
+    const select = mockSetting.findUnique.mock.calls[0]![0].select as Record<string, boolean>;
+    for (const key of [
+      "onDemandLookup",
+      "tvVariationSearch",
+      "movieVariationSearch",
+      "audioVariationSearch",
+      "bookVariationSearch",
+      "maxTitleVariations",
+      "syncIntervalMinutes",
+      "fullSyncIntervalHours",
+    ]) {
+      expect(select[key], key).toBe(true);
+    }
+  });
+
   it("returns null when the setting row does not exist", async () => {
     mockSetting.findUnique.mockResolvedValueOnce(null);
     const r = await app.inject({ method: "GET", url: "/api/admin/settings" });

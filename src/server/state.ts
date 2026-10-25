@@ -77,6 +77,8 @@ interface AppSettings {
   /** Search with German title variations, per media type. */
   tvVariationSearch: boolean;
   movieVariationSearch: boolean;
+  audioVariationSearch: boolean;
+  bookVariationSearch: boolean;
   /** Cap on GERMAN variations per search; q and expectedTitle come on top. */
   maxTitleVariations: number;
   operationMode: OperationMode;
@@ -114,6 +116,8 @@ const NO_SETTINGS: AppSettings = {
   onDemandLookup: true,
   tvVariationSearch: true,
   movieVariationSearch: true,
+  audioVariationSearch: true,
+  bookVariationSearch: true,
   maxTitleVariations: 1,
   operationMode: "proxy",
   blockPrivateInstanceHosts: false,
@@ -311,6 +315,8 @@ export class AppState {
       onDemandLookup: row.onDemandLookup,
       tvVariationSearch: row.tvVariationSearch,
       movieVariationSearch: row.movieVariationSearch,
+      audioVariationSearch: row.audioVariationSearch,
+      bookVariationSearch: row.bookVariationSearch,
       maxTitleVariations: row.maxTitleVariations,
       // Defensive parse: SQLite TEXT column without CHECK; an invalid value
       // falls back cleanly to the recommended default "proxy".

@@ -79,10 +79,12 @@ export const SettingsSchema = z.object({
   // Search with the German title variations too, per media type.
   tvVariationSearch: z.boolean().default(true),
   movieVariationSearch: z.boolean().default(true),
+  audioVariationSearch: z.boolean().default(true),
+  bookVariationSearch: z.boolean().default(true),
   // Counts GERMAN VARIATIONS, not total requests: the literal query and the
   // canonical title are appended on top, so the worst case is N+2 extra
   // indexer requests. 0 means "no German variations at all" and still searches
-  // those two; dropping the fan-out entirely is what the two toggles above are
+  // those two; dropping the fan-out entirely is what the toggles above are
   // for. The default is deliberately low - one alias covers the common case
   // (an indexer listing the release under its German name) at a third of the
   // outbound cost, and an operator who wants broader coverage raises it.

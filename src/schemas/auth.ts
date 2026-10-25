@@ -27,6 +27,8 @@ export const SetupSchema = z.object({
   onDemandLookup: z.boolean().optional(),
   tvVariationSearch: z.boolean().optional(),
   movieVariationSearch: z.boolean().optional(),
+  audioVariationSearch: z.boolean().optional(),
+  bookVariationSearch: z.boolean().optional(),
   maxTitleVariations: z.number().int().min(0).max(20).optional(),
   syncIntervalMinutes: z
     .number()

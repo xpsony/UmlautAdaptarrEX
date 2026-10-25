@@ -59,6 +59,16 @@ async function getSettings(): Promise<unknown> {
       historyRetentionDays: true,
       indexerRateLimitMs: true,
       indexerTimeoutSeconds: true,
+      // Search tab. These were missing, so the tab always showed the
+      // defaults instead of the stored values.
+      onDemandLookup: true,
+      tvVariationSearch: true,
+      movieVariationSearch: true,
+      audioVariationSearch: true,
+      bookVariationSearch: true,
+      maxTitleVariations: true,
+      syncIntervalMinutes: true,
+      fullSyncIntervalHours: true,
       operationMode: true,
       blockPrivateInstanceHosts: true,
       pausedUntil: true,

@@ -14,6 +14,12 @@ describe("search behaviour settings", () => {
     expect(full.movieVariationSearch).toBe(true);
   });
 
+  it("defaults the music and book variation searches to on for a fresh install", () => {
+    const full = SettingsSchema.parse({});
+    expect(full.audioVariationSearch).toBe(true);
+    expect(full.bookVariationSearch).toBe(true);
+  });
+
   it("defaults the variation cap to one", () => {
     expect(SettingsSchema.parse({}).maxTitleVariations).toBe(1);
   });

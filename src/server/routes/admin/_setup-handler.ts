@@ -66,6 +66,8 @@ async function persistInitialSettings(data: SetupInput, apiKey: string): Promise
     onDemandLookup: data.onDemandLookup ?? true,
     tvVariationSearch: data.tvVariationSearch ?? true,
     movieVariationSearch: data.movieVariationSearch ?? true,
+    audioVariationSearch: data.audioVariationSearch ?? true,
+    bookVariationSearch: data.bookVariationSearch ?? true,
     maxTitleVariations: data.maxTitleVariations ?? 1,
     syncIntervalMinutes: data.syncIntervalMinutes ?? 10,
     fullSyncIntervalHours: data.fullSyncIntervalHours ?? 24,
