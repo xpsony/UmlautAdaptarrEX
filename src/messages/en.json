@@ -651,6 +651,8 @@
       "description": "Needed when an indexer only lists a release under its German name.",
       "tvVariationSearch": "Series",
       "movieVariationSearch": "Films",
+      "audioVariationSearch": "Music",
+      "bookVariationSearch": "Books & audiobooks",
       "capLabel": "At most variations",
       "capHint": "Counts the German variations. Your search term and the original title are searched on top and are never dropped. 0 searches without any German variations.",
       "exampleQuery": "Sonarr searches for",

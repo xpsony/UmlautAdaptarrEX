@@ -30,7 +30,7 @@ type PresetKey = keyof typeof SYNC_PRESETS;
 const PRESET_KEYS = ["recommended", "frugal", "legacy"] as const satisfies readonly PresetKey[];
 
 /**
- * The six search-behaviour fields, shared by the setup wizard and the
+ * The eight search-behaviour fields, shared by the setup wizard and the
  * Settings -> Suche tab. Same sharing pattern as OperationModePicker.
  *
  * Deliberately not bound to react-hook-form: the wizard holds these in plain

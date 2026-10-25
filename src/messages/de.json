@@ -651,6 +651,8 @@
       "description": "Nötig, wenn ein Indexer ein Release nur unter seinem deutschen Namen führt.",
       "tvVariationSearch": "Serien",
       "movieVariationSearch": "Filme",
+      "audioVariationSearch": "Musik",
+      "bookVariationSearch": "Bücher & Hörbücher",
       "capLabel": "Höchstens Varianten",
       "capHint": "Zählt die deutschen Varianten. Dein Suchwort und der Originaltitel kommen obendrauf und werden nie weggelassen. 0 sucht ganz ohne deutsche Varianten.",
       "exampleQuery": "Sonarr sucht nach",

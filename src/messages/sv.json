@@ -651,6 +651,8 @@
       "description": "Behövs när en indexerare bara listar en release under dess tyska namn.",
       "tvVariationSearch": "Serier",
       "movieVariationSearch": "Filmer",
+      "audioVariationSearch": "Musik",
+      "bookVariationSearch": "Böcker och ljudböcker",
       "capLabel": "Högst antal varianter",
       "capHint": "Räknar de tyska varianterna. Ditt sökord och originaltiteln söks utöver dessa och tas aldrig bort. 0 söker helt utan tyska varianter.",
       "exampleQuery": "Sonarr söker efter",

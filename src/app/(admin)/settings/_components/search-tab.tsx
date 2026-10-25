@@ -30,6 +30,8 @@ export function SearchTab({ form, onSave, saving }: SearchTabProps) {
     onDemandLookup: watched.onDemandLookup ?? SEARCH_DEFAULTS.onDemandLookup,
     tvVariationSearch: watched.tvVariationSearch ?? SEARCH_DEFAULTS.tvVariationSearch,
     movieVariationSearch: watched.movieVariationSearch ?? SEARCH_DEFAULTS.movieVariationSearch,
+    audioVariationSearch: watched.audioVariationSearch ?? SEARCH_DEFAULTS.audioVariationSearch,
+    bookVariationSearch: watched.bookVariationSearch ?? SEARCH_DEFAULTS.bookVariationSearch,
     maxTitleVariations: watched.maxTitleVariations ?? SEARCH_DEFAULTS.maxTitleVariations,
     syncIntervalMinutes: watched.syncIntervalMinutes ?? SEARCH_DEFAULTS.syncIntervalMinutes,
     fullSyncIntervalHours: watched.fullSyncIntervalHours ?? SEARCH_DEFAULTS.fullSyncIntervalHours,

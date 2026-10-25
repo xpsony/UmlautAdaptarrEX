@@ -60,6 +60,8 @@ export const SearchSettingsSchema = SettingsUpdateSchema.pick({
   onDemandLookup: true,
   tvVariationSearch: true,
   movieVariationSearch: true,
+  audioVariationSearch: true,
+  bookVariationSearch: true,
   maxTitleVariations: true,
   syncIntervalMinutes: true,
   fullSyncIntervalHours: true,
@@ -70,7 +72,7 @@ export type SearchFormOutput = z.infer<typeof SearchSettingsSchema>;
 export type SearchForm = UseFormReturn<SearchFormInput, unknown, SearchFormOutput>;
 
 /**
- * The six search fields with every value present. `SearchFormOutput` comes
+ * The eight search fields with every value present. `SearchFormOutput` comes
  * from a partial schema, so its fields are optional; the UI needs a shape
  * where they are not, and both the settings tab and the setup wizard render
  * against this one.
@@ -79,13 +81,15 @@ export interface SearchBehaviourValues {
   onDemandLookup: boolean;
   tvVariationSearch: boolean;
   movieVariationSearch: boolean;
+  audioVariationSearch: boolean;
+  bookVariationSearch: boolean;
   maxTitleVariations: number;
   syncIntervalMinutes: number;
   fullSyncIntervalHours: number;
 }
 
 /**
- * The fresh-install values for the six search fields, used as placeholders
+ * The fresh-install values for the eight search fields, used as placeholders
  * until the settings query resolves. Derived from `SettingsSchema` rather
  * than restated, so the UI can never drift from the server defaults.
  */
@@ -95,16 +99,20 @@ export const SEARCH_DEFAULTS: SearchBehaviourValues = (() => {
     onDemandLookup: full.onDemandLookup,
     tvVariationSearch: full.tvVariationSearch,
     movieVariationSearch: full.movieVariationSearch,
+    audioVariationSearch: full.audioVariationSearch,
+    bookVariationSearch: full.bookVariationSearch,
     maxTitleVariations: full.maxTitleVariations,
     syncIntervalMinutes: full.syncIntervalMinutes,
     fullSyncIntervalHours: full.fullSyncIntervalHours,
   };
 })();
 
-/** The two fan-out toggles, in the order the UI renders them. */
+/** The fan-out toggles, in the order the UI renders them. */
 export const VARIATION_TOGGLES = [
   "tvVariationSearch",
   "movieVariationSearch",
+  "audioVariationSearch",
+  "bookVariationSearch",
 ] as const satisfies ReadonlyArray<keyof SearchFormOutput>;
 
 export type VariationToggle = (typeof VARIATION_TOGGLES)[number];

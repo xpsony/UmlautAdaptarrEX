@@ -651,6 +651,8 @@
       "description": "Nécessaire lorsqu'un indexeur ne référence une release que sous son nom allemand.",
       "tvVariationSearch": "Séries",
       "movieVariationSearch": "Films",
+      "audioVariationSearch": "Musique",
+      "bookVariationSearch": "Livres et livres audio",
       "capLabel": "Nombre maximal de variantes",
       "capHint": "Compte les variantes allemandes. Votre terme de recherche et le titre original sont recherchés en plus et ne sont jamais écartés. 0 recherche sans aucune variante allemande.",
       "exampleQuery": "Sonarr recherche",
