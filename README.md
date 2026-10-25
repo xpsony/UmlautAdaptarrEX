@@ -484,10 +484,20 @@ Empfohlene Methode, da bei mehreren Indexern kein Geschwindigkeitsverlust entste
 Bei wenigen Indexern oder ohne Prowlarr direkt in Sonarr/Radarr/Lidarr/Readarr/Listenarr je Indexer als API-URL eintragen:
 
 ```
-http://<host>:5005/<apiKey>/<host-des-indexers>
+http://<host>:5005/<UAex-API-Key>/<host-des-indexers>
 ```
 
-API-Key wird normal gesetzt. Den `apiKey` für UmlautAdaptarrEX erzeugst du im Web-UI.
+Dabei gibt es zwei verschiedene Keys, die nicht vertauscht werden dürfen:
+
+- **In der URL** steht der **Anwendungs-API-Key von UmlautAdaptarrEX** (Web-UI → Einstellungen → Allgemein →
+  „Anwendungs-API-Key"). Damit authentifiziert sich die \*arr-App gegenüber UmlautAdaptarrEX.
+- **Im Feld „API Key"** der \*arr-App steht wie gewohnt der **API-Key des Indexers**. UmlautAdaptarrEX
+  reicht ihn unverändert an den Indexer durch.
+
+Der Platzhalter `_` aus dem alten UmlautAdaptarr (`http://<host>:5005/_/<host-des-indexers>`) funktioniert hier
+nicht: UmlautAdaptarrEX hat immer einen Anwendungs-API-Key und akzeptiert `_` nur intern vom eigenen Proxy. Ein
+falscher Key in der URL führt zu `403 Forbidden`, im Log steht dann `legacy request rejected: api key mismatch`,
+bei den beiden Fehlern oben mit einem `hint`-Feld.
 
 Die vollständige HTTP-API (Admin, Auth, Legacy, WebSocket, TCP-Proxy) ist in [docs/api.md](docs/api.md) dokumentiert.
 Die Release-Rename-Pipeline ist in [docs/renaming.md](docs/renaming.md) beschrieben. Wer das Projekt forken und auf

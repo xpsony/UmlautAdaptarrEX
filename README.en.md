@@ -474,10 +474,20 @@ With only a few indexers or without Prowlarr, enter the API URL per indexer dire
 Sonarr/Radarr/Lidarr/Readarr/Listenarr:
 
 ```
-http://<host>:5005/<apiKey>/<indexer-host>
+http://<host>:5005/<UAex-API-key>/<indexer-host>
 ```
 
-The API key is set as usual. The `apiKey` for UmlautAdaptarrEX is created in the web UI.
+There are two different keys here, and they must not be swapped:
+
+- **In the URL** goes the **UmlautAdaptarrEX application API key** (web UI → Settings → General →
+  "Application API key"). The \*arr app uses it to authenticate against UmlautAdaptarrEX.
+- **In the "API Key" field** of the \*arr app goes the **indexer's API key**, as usual. UmlautAdaptarrEX passes it
+  through to the indexer unchanged.
+
+The `_` placeholder from the old UmlautAdaptarr (`http://<host>:5005/_/<indexer-host>`) does not work here:
+UmlautAdaptarrEX always has an application API key and accepts `_` only internally from its own proxy. A wrong key
+in the URL leads to `403 Forbidden`, and the log shows `legacy request rejected: api key mismatch`, with a `hint`
+field for both mistakes above.
 
 The full HTTP API (admin, auth, legacy, WebSocket, TCP proxy) is documented in [docs/api.md](docs/api.md).
 The release-rename pipeline is described in [docs/renaming.md](docs/renaming.md). For users who want to fork the
