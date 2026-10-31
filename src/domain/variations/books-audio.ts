@@ -1,3 +1,4 @@
+import {escapeRegex} from "../matching/separator";
 import {removeExtraWhitespaces} from "../normalization/clean";
 import {getActiveLanguagePack, type LanguagePack} from "../plugins";
 import {generateVariations, type MediaType} from "./generate";
@@ -20,10 +21,20 @@ export function generateForBooksAndAudio(
 ): BooksAudioVariationOutput {
     const {expectedTitle, expectedAuthor, mediaType} = input;
 
+    // Case-insensitive, so "OOMPH!" by "Oomph!" or "KRS-ONE" by "KRS-One" is
+    // stripped like an exact self-titled album. Otherwise the bare artist name
+    // ends up in titleMatchVariations and matches every release of the artist.
+    // Only as a whole word: "Nas" must not be cut out of "NASIR" (leaving "IR")
+    // or "Cher" out of "Cherished". Letters/digits as the boundary instead of \b,
+    // so names starting or ending in punctuation (AC/DC, Oomph!, +44) still work.
+    const authorPattern = new RegExp(
+        `(?<![\\p{L}\\p{N}])${escapeRegex(expectedAuthor)}(?![\\p{L}\\p{N}])`,
+        "iu",
+    );
     let titleMatch: string[];
-    if (expectedTitle.includes(expectedAuthor)) {
+    if (authorPattern.test(expectedTitle)) {
         const stripped = removeExtraWhitespaces(
-            expectedTitle.replace(expectedAuthor, ""),
+            expectedTitle.replace(authorPattern, ""),
         );
         titleMatch = generateVariations(stripped, mediaType, pack);
     } else {
