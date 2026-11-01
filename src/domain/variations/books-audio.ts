@@ -1,3 +1,4 @@
+import {escapeRegex} from "../matching/separator";
 import {removeExtraWhitespaces} from "../normalization/clean";
 import {getActiveLanguagePack, type LanguagePack} from "../plugins";
 import {generateVariations, type MediaType} from "./generate";
@@ -20,15 +21,25 @@ export function generateForBooksAndAudio(
 ): BooksAudioVariationOutput {
     const {expectedTitle, expectedAuthor, mediaType} = input;
 
-    let titleMatch: string[];
-    if (expectedTitle.includes(expectedAuthor)) {
-        const stripped = removeExtraWhitespaces(
-            expectedTitle.replace(expectedAuthor, ""),
-        );
-        titleMatch = generateVariations(stripped, mediaType, pack);
-    } else {
-        titleMatch = generateVariations(expectedTitle, mediaType, pack);
-    }
+    // Strip the artist out of the album title case-insensitively, so "GROLLT!"
+    // by "Grollt!" is treated like an exact self-titled album. Otherwise the
+    // bare artist name ends up in titleMatchVariations and then matches every
+    // release of that artist.
+    // Only as a whole word: "Vex" must not be cut out of "VEXILLUM" (leaving
+    // "ILLUM") or "Lark" out of "Larkspur". Letters/digits as the boundary
+    // instead of \b, so names that start or end in punctuation (Nord/Stil,
+    // Grollt!, +71) still match.
+    // No match leaves the title untouched, so the replace covers both cases -
+    // generateVariations normalizes the whitespace again either way.
+    const authorPattern = new RegExp(
+        `(?<![\\p{L}\\p{N}])${escapeRegex(expectedAuthor)}(?![\\p{L}\\p{N}])`,
+        "iu",
+    );
+    const titleMatch = generateVariations(
+        removeExtraWhitespaces(expectedTitle.replace(authorPattern, "")),
+        mediaType,
+        pack,
+    );
 
     const titleSearch = generateVariations(
         `${expectedAuthor} ${expectedTitle}`,

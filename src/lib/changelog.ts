@@ -23,6 +23,19 @@ export interface ChangelogEntry {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: "1.5.1",
+    date: "2026-11-01",
+    title: "1.5.1: self-titled albums no longer rename every release of the artist",
+    description:
+      "A patch release with one fix. An album whose title is the artist name in a different spelling of upper and lower case was not recognised as self-titled, so the bare artist name was used to match releases - and every release of that artist was rewritten to that one album. Thanks to LuckyAid for the pull request and the fix.",
+    items: [
+      {
+        type: "fix",
+        text: "A self-titled album is recognised regardless of upper and lower case, so “GROLLT!” by “Grollt!” is handled like an exact match. Before, the artist name stayed in the album’s match list and matched every release of that artist, so any of their releases could be renamed to that album. The artist is only removed as a whole word, so an album like “VEXILLUM” by “Vex” keeps its title. No re-sync is needed: the next sync rewrites the affected albums on its own. Thanks to LuckyAid for the pull request and the fix (#159).",
+      },
+    ],
+  },
+  {
     version: "1.5.0",
     date: "2026-10-25",
     highlight: true,

@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.1 - 2026-11-01
+
+A patch release with a single fix for music and audiobook libraries. An album whose title is the artist's own name, but written with different upper and lower case, was not recognised as self-titled. The bare artist name then stayed in the album's match list, and because that name appears in every release of that artist, any of their releases could be rewritten to that one album. Thanks to [@LuckyAid](https://github.com/LuckyAid) for the pull request and the fix.
+
+### Fixes
+
+- **A self-titled album is now recognised regardless of upper and lower case** ([#159](https://github.com/xpsony/UmlautAdaptarrEX/pull/159) - thanks [@LuckyAid](https://github.com/LuckyAid) for the pull request and the fix). The artist name is stripped out of the album title before the match variations are built, so that a self-titled album does not match on the artist name alone. That comparison was case-sensitive, so an album stored as "GROLLT!" by the artist "Grollt!" was not seen as self-titled, and "GROLLT!" ended up in the album's match list. Every release of that artist contains the artist name, so every one of them matched that album and could be renamed to it. The comparison is now case-insensitive. It also only strips the artist as a whole word, with letters and digits as the boundary rather than `\b`, so an album "VEXILLUM" by "Vex" or "Larkspur" by "Lark" keeps its full title, while artist names that start or end in punctuation ("Nord/Stil", "Grollt!", "+71") are still stripped correctly.
+  - **Nothing to do after the upgrade.** The match variations are rebuilt by the next sync: the quick sync within 10 minutes, or the next full sync if quick sync is off.
+  - Note the trade-off this makes deliberately: a self-titled album has nothing left after the artist name is stripped, so its releases are found but not renamed. That is the same behaviour self-titled albums already had when the case matched exactly, and it is the safe side of the choice - the alternative renamed the artist's whole discography to that one album.
+
+### Internals
+
+- The author-strip branch in `generateForBooksAndAudio` was folded into a single `replace`: a pattern that does not match leaves the title untouched, so the separate "does it match?" test was doing the same scan twice.
+
 ## 1.5.0 - 2026-10-25
 
 The biggest update since 1.4.0. **Listenarr** joins as a fifth \*Arr, so audiobook libraries get the same umlaut and German-title treatment as series, films, music and books. The variation search can now be tuned per media type and per indexer: series, films, music, and books & audiobooks each get their own switch and their own variation cap, and an indexer with tight limits can get its own values or be left out entirely. Plus a round of fixes: saving a Settings tab no longer resets the other tabs, indexers at their daily limit get patched, an indexer error sent as HTTP 200 no longer uses up extra requests, and Lidarr searches for albums with umlauts find them again. Four database migrations run automatically on first start, and existing installations keep their current behaviour. 1.4.1 was never released; its changes are part of this release.
