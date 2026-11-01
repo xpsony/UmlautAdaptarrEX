@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { renameForBooksAndAudio } from "@/domain/matching/books-audio.js";
 import {
   buildSearchItem,
   generateVariations,
@@ -116,6 +117,96 @@ describe("buildSearchItem (audio/book)", () => {
     expect(item.titleMatchVariations.some((v) => /best of/i.test(v))).toBe(
       true,
     );
+  });
+
+  it("strips the author from the title case-insensitively", () => {
+    const item = buildSearchItem({
+      arrId: 1,
+      externalId: "x",
+      title: "Best of DIE WÖLFE",
+      expectedTitle: "Best of DIE WÖLFE",
+      expectedAuthor: "Die Wölfe",
+      mediaType: "audio",
+    });
+    expect(item.titleMatchVariations).toContain("Best of");
+    expect(item.titleMatchVariations.some((v) => /wölfe|woelfe/i.test(v))).toBe(
+      false,
+    );
+  });
+
+  it.each([
+    ["NASIR", "Nas", "NASIR"],
+    ["Cherished", "Cher", "Cherished"],
+    ["beautifulgarbage", "Garbage", "beautifulgarbage"],
+  ])(
+    "keeps %s by %s intact (author only inside a word)",
+    (expectedTitle, expectedAuthor, kept) => {
+      const item = buildSearchItem({
+        arrId: 1,
+        externalId: "x",
+        title: expectedTitle,
+        expectedTitle,
+        expectedAuthor,
+        mediaType: "audio",
+      });
+      expect(item.titleMatchVariations).toContain(kept);
+    },
+  );
+
+  it.each([
+    ["Best of AC/DC", "AC/DC", "Best of"],
+    ["Best of +44", "+44", "Best of"],
+    ["Best_of_Nas", "Nas", "Bestof"],
+  ])(
+    "strips %s by %s as a whole word (punctuation and underscore are boundaries)",
+    (expectedTitle, expectedAuthor, stripped) => {
+      const item = buildSearchItem({
+        arrId: 1,
+        externalId: "x",
+        title: expectedTitle,
+        expectedTitle,
+        expectedAuthor,
+        mediaType: "audio",
+      });
+      expect(item.titleMatchVariations).toContain(stripped);
+    },
+  );
+
+  it.each([
+    ["Oomph!", "Oomph!"],
+    ["OOMPH!", "Oomph!"],
+    ["KRS-ONE", "KRS-One"],
+  ])(
+    "treats self-titled album %s by %s alike regardless of case",
+    (expectedTitle, expectedAuthor) => {
+      const item = buildSearchItem({
+        arrId: 1,
+        externalId: "x",
+        title: expectedTitle,
+        expectedTitle,
+        expectedAuthor,
+        mediaType: "audio",
+      });
+      expect(item.titleMatchVariations).toEqual([]);
+    },
+  );
+
+  it("does not rename other releases of the artist to a self-titled album in different case", () => {
+    const item = buildSearchItem({
+      arrId: 1,
+      externalId: "x",
+      title: "OOMPH!",
+      expectedTitle: "OOMPH!",
+      expectedAuthor: "Oomph!",
+      mediaType: "audio",
+    });
+    const result = renameForBooksAndAudio("Oomph! - Monster (2008)", {
+      expectedTitle: "OOMPH!",
+      expectedAuthor: "Oomph!",
+      titleMatchVariations: item.titleMatchVariations,
+      authorMatchVariations: item.authorMatchVariations,
+    });
+    expect(result.rewrittenTitle).toBeNull();
   });
 
   it("adds 'Lastname, Firstnames' alternative for books", () => {
