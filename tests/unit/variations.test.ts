@@ -135,9 +135,9 @@ describe("buildSearchItem (audio/book)", () => {
   });
 
   it.each([
-    ["NASIR", "Nas", "NASIR"],
-    ["Cherished", "Cher", "Cherished"],
-    ["beautifulgarbage", "Garbage", "beautifulgarbage"],
+    ["VEXILLUM", "Vex", "VEXILLUM"],
+    ["Larkspur", "Lark", "Larkspur"],
+    ["greenkelpmorning", "Kelp", "greenkelpmorning"],
   ])(
     "keeps %s by %s intact (author only inside a word)",
     (expectedTitle, expectedAuthor, kept) => {
@@ -154,9 +154,9 @@ describe("buildSearchItem (audio/book)", () => {
   );
 
   it.each([
-    ["Best of AC/DC", "AC/DC", "Best of"],
-    ["Best of +44", "+44", "Best of"],
-    ["Best_of_Nas", "Nas", "Bestof"],
+    ["Best of Nord/Stil", "Nord/Stil", "Best of"],
+    ["Best of +71", "+71", "Best of"],
+    ["Best_of_Vex", "Vex", "Bestof"],
   ])(
     "strips %s by %s as a whole word (punctuation and underscore are boundaries)",
     (expectedTitle, expectedAuthor, stripped) => {
@@ -173,9 +173,9 @@ describe("buildSearchItem (audio/book)", () => {
   );
 
   it.each([
-    ["Oomph!", "Oomph!"],
-    ["OOMPH!", "Oomph!"],
-    ["KRS-ONE", "KRS-One"],
+    ["Grollt!", "Grollt!"],
+    ["GROLLT!", "Grollt!"],
+    ["VEL-NINE", "Vel-Nine"],
   ])(
     "treats self-titled album %s by %s alike regardless of case",
     (expectedTitle, expectedAuthor) => {
@@ -195,14 +195,14 @@ describe("buildSearchItem (audio/book)", () => {
     const item = buildSearchItem({
       arrId: 1,
       externalId: "x",
-      title: "OOMPH!",
-      expectedTitle: "OOMPH!",
-      expectedAuthor: "Oomph!",
+      title: "GROLLT!",
+      expectedTitle: "GROLLT!",
+      expectedAuthor: "Grollt!",
       mediaType: "audio",
     });
-    const result = renameForBooksAndAudio("Oomph! - Monster (2008)", {
-      expectedTitle: "OOMPH!",
-      expectedAuthor: "Oomph!",
+    const result = renameForBooksAndAudio("Grollt! - Nachtfalter (2008)", {
+      expectedTitle: "GROLLT!",
+      expectedAuthor: "Grollt!",
       titleMatchVariations: item.titleMatchVariations,
       authorMatchVariations: item.authorMatchVariations,
     });

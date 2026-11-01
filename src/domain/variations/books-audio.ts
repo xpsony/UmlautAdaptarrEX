@@ -21,25 +21,25 @@ export function generateForBooksAndAudio(
 ): BooksAudioVariationOutput {
     const {expectedTitle, expectedAuthor, mediaType} = input;
 
-    // Case-insensitive, so "OOMPH!" by "Oomph!" or "KRS-ONE" by "KRS-One" is
-    // stripped like an exact self-titled album. Otherwise the bare artist name
-    // ends up in titleMatchVariations and matches every release of the artist.
-    // Only as a whole word: "Nas" must not be cut out of "NASIR" (leaving "IR")
-    // or "Cher" out of "Cherished". Letters/digits as the boundary instead of \b,
-    // so names starting or ending in punctuation (AC/DC, Oomph!, +44) still work.
+    // Strip the artist out of the album title case-insensitively, so "GROLLT!"
+    // by "Grollt!" is treated like an exact self-titled album. Otherwise the
+    // bare artist name ends up in titleMatchVariations and then matches every
+    // release of that artist.
+    // Only as a whole word: "Vex" must not be cut out of "VEXILLUM" (leaving
+    // "ILLUM") or "Lark" out of "Larkspur". Letters/digits as the boundary
+    // instead of \b, so names that start or end in punctuation (Nord/Stil,
+    // Grollt!, +71) still match.
+    // No match leaves the title untouched, so the replace covers both cases -
+    // generateVariations normalizes the whitespace again either way.
     const authorPattern = new RegExp(
         `(?<![\\p{L}\\p{N}])${escapeRegex(expectedAuthor)}(?![\\p{L}\\p{N}])`,
         "iu",
     );
-    let titleMatch: string[];
-    if (authorPattern.test(expectedTitle)) {
-        const stripped = removeExtraWhitespaces(
-            expectedTitle.replace(authorPattern, ""),
-        );
-        titleMatch = generateVariations(stripped, mediaType, pack);
-    } else {
-        titleMatch = generateVariations(expectedTitle, mediaType, pack);
-    }
+    const titleMatch = generateVariations(
+        removeExtraWhitespaces(expectedTitle.replace(authorPattern, "")),
+        mediaType,
+        pack,
+    );
 
     const titleSearch = generateVariations(
         `${expectedAuthor} ${expectedTitle}`,
