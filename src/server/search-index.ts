@@ -32,6 +32,31 @@ function mapNormalizedLengthToOriginal(
   return original.length;
 }
 
+// Music releases are named "Artist - Album ...". An album title on its own
+// therefore only prefix-matches a release when the title happens to be the
+// start of the artist's name - "Michael" (Michael Jackson) would claim every
+// "Michael Jackson - ..." release, "Green" (R.E.M.) every "Green Lung - ..."
+// release. Audio items are looked up by author + title instead. Without an
+// author, and for every other media type, the title variations stay the keys.
+function lookupKeysFor(
+  item: CachedSearchItemInput,
+  normalizedMatchVariations: string[],
+  pack: LanguagePack,
+): string[] {
+  if (item.mediaType !== "audio") return normalizedMatchVariations;
+  const authors = item.authorMatchVariations
+    .map((variation) => normalizeForComparison(variation, pack))
+    .filter((norm) => norm.length > 0);
+  if (authors.length === 0) return normalizedMatchVariations;
+  const keys = new Set<string>();
+  for (const author of authors) {
+    for (const title of normalizedMatchVariations) {
+      if (title.length > 0) keys.add(author + title);
+    }
+  }
+  return [...keys];
+}
+
 /** Resolves the owning instance's match options for a candidate item. */
 export type ResolveInstanceOptions = (instanceId: string) => InstanceMatchOptions;
 
@@ -57,13 +82,18 @@ export class SearchItemIndex {
    * or `clear`) before re-indexing.
    */
   indexItem(item: CachedSearchItemInput, pack: LanguagePack): CachedSearchItem {
-    // Normalize each match variation exactly once, reusing the result for
-    // both the byTitlePrefix bucket key and the stored array that
-    // bestVariationMatchLen reads at request time.
+    // Normalize each match variation exactly once. The lookup keys derived
+    // from them serve both as the byTitlePrefix bucket keys and as the
+    // stored array that bestVariationMatchLen reads at request time.
     const normalizedMatchVariations = item.titleMatchVariations.map((variation) =>
       normalizeForComparison(variation, pack),
     );
-    const indexed: CachedSearchItem = { ...item, normalizedMatchVariations };
+    const normalizedLookupKeys = lookupKeysFor(item, normalizedMatchVariations, pack);
+    const indexed: CachedSearchItem = {
+      ...item,
+      normalizedMatchVariations,
+      normalizedLookupKeys,
+    };
     this.byExternalId.set(`${indexed.mediaType}:${indexed.externalId}`, indexed);
     // Alias keys point at the same object, so a lookup under either spelling
     // returns one item. Last writer wins, same as the primary key.
@@ -71,7 +101,7 @@ export class SearchItemIndex {
       this.byExternalId.set(`${indexed.mediaType}:${alias}`, indexed);
     }
     if (indexed.imdbId) this.byImdbId.set(indexed.imdbId, indexed);
-    for (const norm of normalizedMatchVariations) {
+    for (const norm of normalizedLookupKeys) {
       const prefix = `${indexed.mediaType}:${norm.slice(0, 5)}`;
       let bucket = this.byTitlePrefix.get(prefix);
       if (!bucket) {
@@ -85,7 +115,7 @@ export class SearchItemIndex {
 
   /**
    * Removes one item from all three maps. Uses the item's own
-   * `normalizedMatchVariations` to find its buckets, so the cost is
+   * `normalizedLookupKeys` to find its buckets, so the cost is
    * proportional to that item's variation count rather than to the index.
    */
   removeItem(mediaType: MediaType, externalId: string): void {
@@ -103,7 +133,7 @@ export class SearchItemIndex {
     if (item.imdbId && this.byImdbId.get(item.imdbId) === item) {
       this.byImdbId.delete(item.imdbId);
     }
-    for (const norm of item.normalizedMatchVariations) {
+    for (const norm of item.normalizedLookupKeys) {
       const prefix = `${mediaType}:${norm.slice(0, 5)}`;
       const bucket = this.byTitlePrefix.get(prefix);
       if (!bucket) continue;
@@ -203,7 +233,7 @@ function bestVariationMatchLen(
   minLen: number,
 ): number {
   let bestLen = 0;
-  for (const variationNorm of item.normalizedMatchVariations) {
+  for (const variationNorm of item.normalizedLookupKeys) {
     if (variationNorm.length === 0) continue;
     if (variationNorm.length <= minLen) continue;
     if (variationNorm.length <= bestLen) continue;
