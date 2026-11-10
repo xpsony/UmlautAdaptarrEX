@@ -95,4 +95,156 @@ describe("renameForBooksAndAudio", () => {
       "Jane Doe - Tiefes Wasser-[[MP3-128kbps]]",
     );
   });
+
+  describe("album title that is (part of) the artist's name", () => {
+    // Album "Michael" by Michael Jackson, "Andrea" / "Bocelli" by Andrea
+    // Bocelli, "ALICIA" by Alicia Keys: the title must not be found inside
+    // the artist's name, or every release of the artist is renamed to it.
+    const michael = {
+      expectedAuthor: "Michael Jackson",
+      expectedTitle: "Michael",
+      titleMatchVariations: ["Michael"],
+      authorMatchVariations: ["Michael Jackson"],
+    };
+
+    it.each([
+      "Michael Jackson - Thriller (1982) FLAC",
+      "Michael.Jackson-Thriller-LP-FLAC-1982-GROUP",
+      "Michael_Jackson-Got_to_Be_There-1972-GROUP",
+    ])("does not rename %s to album Michael", (release) => {
+      expect(renameForBooksAndAudio(release, michael).rewrittenTitle).toBeNull();
+    });
+
+    it("still renames the self-titled release itself", () => {
+      expect(
+        renameForBooksAndAudio("Michael Jackson - Michael (2010) FLAC", michael).rewrittenTitle,
+      ).toBe("Michael Jackson - Michael-[(2010) FLAC]");
+    });
+
+    it.each(["Andrea", "Bocelli"])("does not rename Duets to album %s", (album) => {
+      const result = renameForBooksAndAudio("Andrea Bocelli - Duets (2024) FLAC", {
+        expectedAuthor: "Andrea Bocelli",
+        expectedTitle: album,
+        titleMatchVariations: [album],
+        authorMatchVariations: ["Andrea Bocelli"],
+      });
+      expect(result.rewrittenTitle).toBeNull();
+    });
+
+    it("ignores every occurrence of the artist's name, not only the first", () => {
+      const result = renameForBooksAndAudio("Alicia Keys - Alicia Keys - Unplugged MP3", {
+        expectedAuthor: "Alicia Keys",
+        expectedTitle: "ALICIA",
+        titleMatchVariations: ["ALICIA"],
+        authorMatchVariations: ["Alicia Keys"],
+      });
+      expect(result.rewrittenTitle).toBeNull();
+    });
+
+    it("still renames a self-titled album that is also an artist variation", () => {
+      // "Specials" is both the album and an author variation of The Specials
+      // (article dropped): only a LONGER occurrence of the name rules it out.
+      const result = renameForBooksAndAudio("The Specials - Specials (1979) FLAC", {
+        expectedAuthor: "The Specials",
+        expectedTitle: "Specials",
+        titleMatchVariations: ["Specials"],
+        authorMatchVariations: ["The Specials", "Specials"],
+      });
+      expect(result.rewrittenTitle).toBe("The Specials - Specials-[(1979) FLAC]");
+    });
+
+    it("still finds a title that merely starts with the artist's name", () => {
+      const result = renameForBooksAndAudio("Kiss-Kissin Time-CD-FLAC-1974-GROUP", {
+        expectedAuthor: "Kiss",
+        expectedTitle: "Kissin’ Time",
+        titleMatchVariations: ["Kissin Time"],
+        authorMatchVariations: ["Kiss"],
+      });
+      expect(result.rewrittenTitle).toBe("Kiss - Kissin’ Time-[CD-FLAC-1974-GROUP]");
+    });
+  });
+
+  describe("whole words only", () => {
+    // An author or title found inside another word must not count: "Usher"
+    // in "Crushers", "Rage" in "Outrageous", "Confidence" in "Overconfidence".
+    function item(author: string, title: string, titleVariation = title) {
+      return {
+        expectedAuthor: author,
+        expectedTitle: title,
+        titleMatchVariations: [titleVariation],
+        authorMatchVariations: [author],
+      };
+    }
+
+    it.each([
+      ["Hayley And The Crushers-Cool Lame-16BIT-WEB-FLAC-2018-GROUP", item("Usher", "A")],
+      ["Unity Klan - Outrageous (2001) FLAC", item("Rage", "Unity")],
+      ["The Hoosiers - Overconfidence (2024) FLAC", item("The Hoosiers", "Confidence")],
+      ["Usher - Here I Stand (2008) FLAC", item("Usher", "“A”", "A")],
+      ["R. Kelly-R. Kelly-WEB-2000-GRP", item("R. Kelly", "R.", "R")],
+    ])("does not rename %s", (release, searchItem) => {
+      expect(renameForBooksAndAudio(release, searchItem).rewrittenTitle).toBeNull();
+    });
+
+    it.each([
+      [
+        "Oomph!-Monster-DE-CD-FLAC-2008-GROUP",
+        item("Oomph!", "Monster"),
+        "Oomph! - Monster-[DE-CD-FLAC-2008-GROUP]",
+      ],
+      [
+        "AC/DC-Back in Black-CD-FLAC-1980-GROUP",
+        item("AC/DC", "Back in Black"),
+        "AC/DC - Back in Black-[CD-FLAC-1980-GROUP]",
+      ],
+      [
+        "Fischerspooner - #1 (2001) FLAC",
+        item("Fischerspooner", "#1"),
+        "Fischerspooner - #1-[(2001) FLAC]",
+      ],
+      ["Adele-21-WEB-2011-GROUP", item("Adele", "21"), "Adele - 21-[WEB-2011-GROUP]"],
+    ])("still renames %s", (release, searchItem, expected) => {
+      expect(renameForBooksAndAudio(release, searchItem).rewrittenTitle).toBe(expected);
+    });
+
+    it.each([
+      ["Die Band - Heiß Onne (2000) FLAC", "Sonne"], // starts on the 2nd "s" of ß -> "ss"
+      ["Die Band - Groß Stadt (2000) FLAC", "Gros"], // ends on the 1st "s" of ß -> "ss"
+    ])("does not match inside an expanded character: %s / %s", (release, title) => {
+      expect(renameForBooksAndAudio(release, item("Die Band", title)).rewrittenTitle).toBeNull();
+    });
+
+    it("still matches a whole word with an expanded character", () => {
+      expect(
+        renameForBooksAndAudio("Die Band - Straße (2000) FLAC", item("Die Band", "Straße"))
+          .rewrittenTitle,
+      ).toBe("Die Band - Straße-[(2000) FLAC]");
+    });
+
+    it("keeps a separate combining mark with its letter", () => {
+      // Decomposed "u" + U+0308 as some indexers post it; the mark is neither a
+      // separator nor the end of the word.
+      const result = renameForBooksAndAudio("Einstürzende Neubauten - Kassetten [2006] flac", {
+        expectedAuthor: "Einstürzende Neubauten",
+        expectedTitle: "Kassetten",
+        titleMatchVariations: ["Kassetten"],
+        authorMatchVariations: ["Einstürzende Neubauten", "Einstuerzende Neubauten"],
+      });
+      expect(result.rewrittenTitle).toBe("Einstürzende Neubauten - Kassetten-[[2006] flac]");
+      expect(
+        renameForBooksAndAudio("Die Band - Café (2000) FLAC", item("Die Band", "Café"))
+          .rewrittenTitle,
+      ).toBe("Die Band - Café-[(2000) FLAC]");
+    });
+
+    it("treats underscores and dots as word boundaries", () => {
+      const result = renameForBooksAndAudio("Boehse_Onkelz-Weiss-DE-CD-FLAC-1993-GROUP", {
+        expectedAuthor: "Böhse Onkelz",
+        expectedTitle: "Weiß",
+        titleMatchVariations: ["Weiß", "Weiss"],
+        authorMatchVariations: ["Böhse Onkelz", "Boehse Onkelz", "Bohse Onkelz"],
+      });
+      expect(result.rewrittenTitle).toBe("Böhse Onkelz - Weiß-[DE-CD-FLAC-1993-GROUP]");
+    });
+  });
 });
