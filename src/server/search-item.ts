@@ -45,6 +45,14 @@ export interface CachedSearchItem {
    * variation on every lookup.
    */
   normalizedMatchVariations: string[];
+  /**
+   * The normalized strings `findByTitle` prefix-matches a release title
+   * against. Precomputed in `indexItem`. For movies, TV and books these are
+   * `normalizedMatchVariations`; for audio every author variation is put in
+   * front of every title variation ("michaeljackson" + "thriller"), because
+   * music releases start with the artist, not with the album.
+   */
+  normalizedLookupKeys: string[];
   authorMatchVariations: string[];
   /**
    * True for items resolved on demand and held only in memory. They have no
@@ -56,13 +64,16 @@ export interface CachedSearchItem {
 
 /**
  * Shape accepted by `SearchItemIndex.indexItem`: everything a
- * CachedSearchItem needs except `normalizedMatchVariations`, which only
- * `indexItem` can fill in (it requires the active LanguagePack). Keeping this
- * as a distinct type - rather than an optional field with a `!` assertion -
- * means callers that build a fresh item (sync, tests) never have to know
- * about normalization at construction time.
+ * CachedSearchItem needs except `normalizedMatchVariations` and
+ * `normalizedLookupKeys`, which only `indexItem` can fill in (they require
+ * the active LanguagePack). Keeping this as a distinct type - rather than an
+ * optional field with a `!` assertion - means callers that build a fresh item
+ * (sync, tests) never have to know about normalization at construction time.
  */
-export type CachedSearchItemInput = Omit<CachedSearchItem, "normalizedMatchVariations">;
+export type CachedSearchItemInput = Omit<
+  CachedSearchItem,
+  "normalizedMatchVariations" | "normalizedLookupKeys"
+>;
 
 /** Raw shape of the columns `toCachedSearchItem` consumes. */
 export interface SearchItemRow {
