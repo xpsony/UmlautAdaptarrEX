@@ -25,6 +25,10 @@ up the exact expected title.
 4. **Resolve a SearchItem.** Either passed in directly (`options.searchItem`, set by the resolving
    `tvsearch`/`movie`/`music`/`book` endpoint) or looked up via `options.lookup(mediaType, cleanTitle)`
    against the in-memory index in `AppState`. Items without a matching SearchItem are skipped.
+   The lookup is a prefix match on the item's `normalizedLookupKeys`: the title variations, and for
+   `audio` each author variation followed by each title variation (`michaeljackson` + `thriller`), because
+   music releases start with the artist. A title-only key would match only albums whose title happens to
+   be the start of the artist's name ("Michael" by Michael Jackson) - in every release of that artist.
 5. **Run the rename**, dispatched by media type:
    - `tv` / `movie` → [`renameForMoviesAndTv`](../src/domain/matching/rename.ts)
    - `audio` / `book` → [`renameForBooksAndAudio`](../src/domain/matching/books-audio.ts) (requires
@@ -91,9 +95,18 @@ Result      : Sebastian Fitzek - Das Geschenk-[Thriller (Hörbuch).MP3-EXAMPLE]
 
 Steps:
 
-1. **`findBestMatch` for the author** and **for the title**, independently. "Best" = longest _normalized_
-   match length; ties go to the earliest start. That way a more specific variation wins, and a coincidental
-   short hit late in the release name doesn't push the end index into the quality tags.
+1. **`findBestMatch` for the author**, then **for the title**. "Best" = longest _normalized_ match length;
+   ties go to the earliest start. That way a more specific variation wins, and a coincidental short hit late
+   in the release name doesn't push the end index into the quality tags. A title occurrence that lies
+   entirely within a longer occurrence of the author is skipped, so album "Michael" is not found in
+   `Michael Jackson - Thriller`. A title that merely starts with the author's name ("Kissin' Time" by
+   Kiss) is still found, and so is a self-titled release (`Michael Jackson - Michael`,
+   `The Specials - Specials`). Both author and title only count as **whole words**: the characters
+   directly before and after the match in the original must not be letters or digits, so "Usher" is not
+   found in `Hayley And The Crushers` and "Rage" not in `Unity Klan - Outrageous`. Separators such as space, `.`, `_`,
+   `-` and punctuation are boundaries. A match must also start and end on a whole original character, so
+   it cannot begin or end inside an expansion (`ß` → `ss`); a separate combining mark counts as part of
+   the letter before it.
 2. **If both match:** end position = `max(author.end, title.end)`. If a single delimiter (`␣`, `-`, `_`, `.`)
    sits right after that index, advance one more character.
 3. **Trim the suffix** (everything past the end position) and strip any leading delimiters.
