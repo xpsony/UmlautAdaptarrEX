@@ -179,3 +179,124 @@ describe("SearchItemIndex", () => {
     expect(index.getByExternalId("tv", "500")?.externalId).toBe("500");
   });
 });
+
+describe("SearchItemIndex.findByTitle (audio)", () => {
+  // Music releases start with the artist ("Michael Jackson - Thriller"), so
+  // audio items are looked up by author + title, not by the title alone.
+  function album(
+    externalId: string,
+    author: string,
+    title: string,
+    authorMatchVariations: string[] = [author],
+    titleMatchVariations: string[] = [title],
+  ): CachedSearchItemInput {
+    return makeItem({
+      id: `id-${externalId}`,
+      externalId,
+      mediaType: "audio",
+      title,
+      expectedTitle: title,
+      expectedAuthor: author,
+      titleMatchVariations,
+      authorMatchVariations,
+    });
+  }
+
+  function find(index: SearchItemIndex, release: string) {
+    return index.findByTitle("audio", release, PACK, resolveOptions);
+  }
+
+  it("finds the album named after the artist", () => {
+    const index = new SearchItemIndex();
+    index.indexItem(album("thriller", "Michael Jackson", "Thriller"), PACK);
+    expect(find(index, "Michael Jackson - Thriller (1982) FLAC")?.externalId).toBe("thriller");
+  });
+
+  it("does not hand every release of the artist to an album named like the artist", () => {
+    const index = new SearchItemIndex();
+    index.indexItem(album("michael", "Michael Jackson", "Michael"), PACK);
+    index.indexItem(album("alanis", "Alanis Morissette", "Alanis"), PACK);
+    expect(find(index, "Michael Jackson - Thriller (1982) FLAC")).toBeNull();
+    expect(
+      find(index, "Alanis Morissette - Good Weather For Immaculate Conception (2026) FLAC"),
+    ).toBeNull();
+    // The self-titled release itself is still found.
+    expect(find(index, "Michael Jackson - Michael (2010) FLAC")?.externalId).toBe("michael");
+  });
+
+  it("does not match an album title at the start of another artist's release", () => {
+    const index = new SearchItemIndex();
+    index.indexItem(album("green", "R.E.M.", "Green", ["R E M"]), PACK);
+    index.indexItem(album("trailer", "Ash", "Trailer"), PACK);
+    expect(find(index, "Green Lung - Necropolitan (2026) FLAC")).toBeNull();
+    expect(find(index, "Trailer Trash Tracys - Althaea (2017) WEB")).toBeNull();
+    expect(find(index, "R.E.M. - Green (1988) FLAC")?.externalId).toBe("green");
+  });
+
+  it("finds a release that spells the artist's umlaut differently", () => {
+    const index = new SearchItemIndex();
+    index.indexItem(
+      album(
+        "weiss",
+        "Böhse Onkelz",
+        "Weiß",
+        ["Böhse Onkelz", "Boehse Onkelz", "Bohse Onkelz"],
+        ["Weiß", "Weiss"],
+      ),
+      PACK,
+    );
+    expect(find(index, "Boehse.Onkelz-Weiss-DE-CD-FLAC-1993-GROUP")?.externalId).toBe("weiss");
+  });
+
+  it("prefers the longest album title", () => {
+    const index = new SearchItemIndex();
+    index.indexItem(album("britney", "Britney Spears", "Britney"), PACK);
+    index.indexItem(album("britney-jean", "Britney Spears", "Britney Jean"), PACK);
+    expect(find(index, "Britney Spears - Britney Jean (Deluxe Edition) 2013")?.externalId).toBe(
+      "britney-jean",
+    );
+  });
+
+  it.each([
+    ["1995 first", false],
+    ["2014 first", true],
+  ])("picks the album by year when two albums share a lookup key (%s)", (_label, reversed) => {
+    // "The Infamous…" (1995) and "The Infamous Mobb Deep" (2014, artist name
+    // stripped from the title) both end up under "mobbdeep" + "theinfamous".
+    const albums = [
+      {
+        ...album("infamous", "Mobb Deep", "The Infamous…", ["Mobb Deep"], ["The Infamous"]),
+        year: 1995,
+      },
+      {
+        ...album(
+          "infamous-mobb-deep",
+          "Mobb Deep",
+          "The Infamous Mobb Deep",
+          ["Mobb Deep"],
+          ["The Infamous"],
+        ),
+        year: 2014,
+      },
+    ];
+    const index = new SearchItemIndex();
+    for (const a of reversed ? albums.reverse() : albums) index.indexItem(a, PACK);
+    expect(find(index, "Mobb Deep - The Infamous (1995) FLAC")?.externalId).toBe("infamous");
+    expect(find(index, "Mobb.Deep-The.Infamous.Mobb.Deep-WEB-2014-GROUP")?.externalId).toBe(
+      "infamous-mobb-deep",
+    );
+  });
+
+  it("falls back to the title alone when the item has no author variations", () => {
+    const index = new SearchItemIndex();
+    index.indexItem(album("thriller", "Michael Jackson", "Thriller", []), PACK);
+    expect(find(index, "Thriller (1982) FLAC")?.externalId).toBe("thriller");
+  });
+
+  it("removeItem drops an audio item from its author + title buckets", () => {
+    const index = new SearchItemIndex();
+    index.indexItem(album("thriller", "Michael Jackson", "Thriller"), PACK);
+    index.removeItem("audio", "thriller");
+    expect(find(index, "Michael Jackson - Thriller (1982) FLAC")).toBeNull();
+  });
+});
